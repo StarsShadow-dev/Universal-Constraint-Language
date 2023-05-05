@@ -4,8 +4,10 @@ import Foundation
 // build - build as executable
 // run - build and then run
 var mode: String = "run"
-var outputFileName: String = "test2"
+var outputFileName: String = "test"
+var logEverything: Bool = true
 var printProgress: Bool = true
+var compileFailed: Bool = false
 
 // LLVMSource puts "abc" to stdout
 var LLVMSource: String = """
@@ -21,8 +23,6 @@ entry:
 
 declare i32 @putchar(i32 noundef) #1
 """
-
-print("Current directory: \(FileManager.default.currentDirectoryPath)")
 
 // these functions assume that ~/.zshrc exists and that it defines: llc and clang
 func findLLCPath() throws -> String {
@@ -40,7 +40,63 @@ func progressLog(_ string: String) {
 	}
 }
 
+func compileError(_ message: String) {
+	print("Compile Error:")
+	print("\(message)")
+	
+	abort()
+}
+
+func lex(_ string: String) -> [String] {
+	var tokens: [String] = []
+	
+	var past = ""
+	
+	for (_, char) in string.enumerated() {
+		print("char: \(char)")
+		if (char.isLetter) {
+			past.append(char)
+		}
+	}
+	
+//	if (!past.isEmpty) {
+//		compileError("past")
+//	}
+	
+	return tokens
+}
+
+func parse(_ tokens: [String]) -> [String:Any] {
+	var AST: [String:Any] = [:]
+	
+	return AST
+}
+
+func buildLLVM(_ AST: [String:Any]) {
+	
+}
+
 func compile() throws {
+	print("Current directory: \(FileManager.default.currentDirectoryPath)")
+	
+	let tokens = lex("function ")
+	
+	if (logEverything) {
+		print("tokens:\n\(tokens)")
+	}
+	
+	let abstractSyntaxTree = parse(tokens)
+	
+	if (logEverything) {
+		print("abstractSyntaxTree:\n\(abstractSyntaxTree)")
+	}
+	
+	buildLLVM(abstractSyntaxTree)
+	
+	if (logEverything) {
+		print("LLVMSource:\n\(LLVMSource)")
+	}
+	
 	progressLog("creating object file...")
 	let LLVMOutput = try Shell.exec(findLLCPath(), with: [
 		// set the output type to be an object file ready for linking.
