@@ -9,6 +9,12 @@ var logEverything: Bool = true
 var printProgress: Bool = true
 var compileFailed: Bool = false
 
+var sourceCode: String = """
+function() {
+
+}
+"""
+
 // LLVMSource puts "abc" to stdout
 var LLVMSource: String = """
 ; ModuleID = 'test'
@@ -40,28 +46,65 @@ func progressLog(_ string: String) {
 	}
 }
 
-func compileError(_ message: String) {
+func compileError(_ message: String, _ lineNumber:Int?) {
 	print("Compile Error:")
 	print("\(message)")
+	
+	let lines = sourceCode.components(separatedBy: "\n")
+	
+	if let lineNumber {
+		if (lineNumber-2 > lines.count) {
+			print("\(lineNumber-2) | \(lines[lineNumber-2])")
+		}
+		if (lineNumber-1 > lines.count) {
+			print("\(lineNumber-1) | \(lines[lineNumber-1])")
+		}
+		print("\(lineNumber) | \(sourceCode.components(separatedBy: "\n")[lineNumber])")
+		if (lineNumber+1 < lines.count) {
+			print("\(lineNumber+1) | \(lines[lineNumber+1])")
+		}
+		if (lineNumber+2 < lines.count) {
+			print("\(lineNumber+2) | \(lines[lineNumber+2])")
+		}
+	}
 	
 	abort()
 }
 
-func lex(_ string: String) -> [String] {
+func lex() -> [String] {
 	var tokens: [String] = []
+	
+	var line = 0
+	var row = 0
 	
 	var past = ""
 	
-	for (_, char) in string.enumerated() {
+	for (_, char) in sourceCode.enumerated() {
 		print("char: \(char)")
-		if (char.isLetter) {
+		
+		row += 1
+		
+		if (char == "\n") {
+			line += 1
+			row = 0
+		}
+		
+		else if (char.isLetter) {
 			past.append(char)
+		}
+		
+//		else if (char.isNumber) {
+//
+//		}
+		
+		else {
+			compileError("unknown character", line)
 		}
 	}
 	
-//	if (!past.isEmpty) {
-//		compileError("past")
-//	}
+	if (!past.isEmpty) {
+		compileError("past is not empty", line)
+	}
 	
 	return tokens
 }
@@ -79,7 +122,7 @@ func buildLLVM(_ AST: [String:Any]) {
 func compile() throws {
 	print("Current directory: \(FileManager.default.currentDirectoryPath)")
 	
-	let tokens = lex("function ")
+	let tokens = lex()
 	
 	if (logEverything) {
 		print("tokens:\n\(tokens)")
