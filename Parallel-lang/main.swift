@@ -1,5 +1,10 @@
 import Foundation
 
+struct token {
+	var name: String
+	var value: String
+}
+
 // mode can be:
 // build - build as executable
 // run - build and then run
@@ -11,7 +16,7 @@ var compileFailed: Bool = false
 
 var sourceCode: String = """
 function() {
-
+	"testing"
 }
 """
 
@@ -46,7 +51,7 @@ func progressLog(_ string: String) {
 	}
 }
 
-func compileError(_ message: String, _ lineNumber:Int?) {
+func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int? = nil, _ columnEnd:Int? = nil) {
 	print("Compile Error:")
 	print("\(message)")
 	
@@ -59,7 +64,14 @@ func compileError(_ message: String, _ lineNumber:Int?) {
 		if (lineNumber-1 > lines.count) {
 			print("\(lineNumber-1) | \(lines[lineNumber-1])")
 		}
-		print("\(lineNumber) | \(sourceCode.components(separatedBy: "\n")[lineNumber])")
+		
+		print("\(lineNumber) | \(lines[lineNumber])")
+		if let columnStart, let columnEnd {
+			print("\(String(repeating: "-", count: "\(lineNumber)".count))---\(String(repeating: "-", count: columnStart))\(String(repeating: "^", count: columnEnd - columnStart + 1))")
+		} else {
+			print("\(String(repeating: "-", count: "\(lineNumber)".count))---\(String(repeating: "^", count: lines[lineNumber].count))")
+		}
+		
 		if (lineNumber+1 < lines.count) {
 			print("\(lineNumber+1) | \(lines[lineNumber+1])")
 		}
@@ -71,45 +83,95 @@ func compileError(_ message: String, _ lineNumber:Int?) {
 	abort()
 }
 
-func lex() -> [String] {
-	var tokens: [String] = []
+func lex() -> [token] {
+	var tokens: [token] = []
 	
 	var line = 0
-	var row = 0
+	var column = 0
 	
-	var past = ""
+	var index = 0
 	
-	for (_, char) in sourceCode.enumerated() {
-		print("char: \(char)")
+	while (true) {
+		if (sourceCode.count <= index) {
+			break
+		}
+		let char = sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index)]
 		
-		row += 1
+		print("index: \(index) char: \(char)")
 		
 		if (char == "\n") {
 			line += 1
-			row = 0
+			column = 0
+		}
+		
+		// space or tab
+		else if (char == " " || char == "\t") {
+			// do nothing
+		}
+		
+		// strings
+		else if (char == "\"") {
+			// eat the opening "
+			column += 1
+			index += 1
+			
+			tokens.append(token(name: "string", value: read_while({ char in
+				return char != "\""
+			})))
 		}
 		
 		else if (char.isLetter) {
-			past.append(char)
+			tokens.append(token(name: "word", value: read_while({ char in
+				return char.isLetter
+			})))
 		}
 		
-//		else if (char.isNumber) {
-//
-//		}
+		else if (char.isNumber) {
+			tokens.append(token(name: "number", value: read_while({ char in
+				return char.isNumber || char == "."
+			})))
+		}
+		
+		else if (char == "(" || char == ")" || char == "{" || char == "}" || char == ":") {
+			tokens.append(token(name: "separator", value: String(char)))
+		}
 		
 		else {
-			compileError("unknown character", line)
+			compileError("unexpected character: \(char)", line, column, column)
 		}
-	}
-	
-	if (!past.isEmpty) {
-		compileError("past is not empty", line)
+		
+		column += 1
+		index += 1
 	}
 	
 	return tokens
+	
+	func read_while(_ function: (_ char: Character) -> Bool) -> String {
+		var past = ""
+		while (true) {
+			if (sourceCode.count <= index) {
+				column -= 1
+				index -= 1
+				return past
+			} else {
+				let char = sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index)]
+				
+				if (function(char)) {
+					past.append(char)
+				} else {
+					column -= 1
+					index -= 1
+					return past
+				}
+			}
+			
+			column += 1
+			index += 1
+		}
+	}
 }
 
-func parse(_ tokens: [String]) -> [String:Any] {
+func parse(_ tokens: [token]) -> [String:Any] {
 	var AST: [String:Any] = [:]
 	
 	return AST
@@ -139,6 +201,8 @@ func compile() throws {
 	if (logEverything) {
 		print("LLVMSource:\n\(LLVMSource)")
 	}
+	
+	return;
 	
 	progressLog("creating object file...")
 	let LLVMOutput = try Shell.exec(findLLCPath(), with: [
