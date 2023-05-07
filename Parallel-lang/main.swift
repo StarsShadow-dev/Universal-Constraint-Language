@@ -2,7 +2,21 @@ import Foundation
 
 struct token {
 	var name: String
+	
+	var lineNumber: Int
+	var start: Int
+	var end: Int
+	
 	var value: String
+}
+
+struct ParserContext {
+	var index: Int
+}
+
+struct BuilderContext {
+	var index: Int
+	var variables: [String:any buildVariable]
 }
 
 // mode can be:
@@ -12,28 +26,24 @@ var mode: String = "run"
 var outputFileName: String = "test"
 var logEverything: Bool = true
 var printProgress: Bool = true
-var compileFailed: Bool = false
 
 var sourceCode: String = """
-function() {
-	"testing"
+function main(): Int {
+	return 5
 }
 """
 
-// LLVMSource puts "abc" to stdout
-var LLVMSource: String = """
-; ModuleID = 'test'
-
-define i32 @main() {
-entry:
-	%0 = call i32 @putchar(i32 noundef 97)
-	%1 = call i32 @putchar(i32 noundef 98)
-	%2 = call i32 @putchar(i32 noundef 99)
-	ret i32 0
-}
-
-declare i32 @putchar(i32 noundef) #1
-"""
+//; ModuleID = 'test'
+//
+//declare i32 @putchar(i32 noundef) #1
+//
+//define i32 @main() {
+//entry:
+//	%0 = call i32 @putchar(i32 noundef 97)
+//	%1 = call i32 @putchar(i32 noundef 98)
+//	%2 = call i32 @putchar(i32 noundef 99)
+//	ret i32 0
+//}
 
 // these functions assume that ~/.zshrc exists and that it defines: llc and clang
 func findLLCPath() throws -> String {
@@ -97,7 +107,7 @@ func lex() -> [token] {
 		}
 		let char = sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index)]
 		
-		print("index: \(index) char: \(char)")
+		let startColumn = column
 		
 		if (char == "\n") {
 			line += 1
@@ -109,31 +119,66 @@ func lex() -> [token] {
 			// do nothing
 		}
 		
+		else if (char.isLetter) {
+			
+			let value = read_while({ char in
+				return char.isLetter
+			})
+			
+			tokens.append(token(name: "word",
+				lineNumber: line,
+				start: startColumn,
+				end: column,
+				value: value
+			))
+		}
+		
 		// strings
 		else if (char == "\"") {
 			// eat the opening "
 			column += 1
 			index += 1
 			
-			tokens.append(token(name: "string", value: read_while({ char in
+			let value = read_while({ char in
 				return char != "\""
-			})))
-		}
-		
-		else if (char.isLetter) {
-			tokens.append(token(name: "word", value: read_while({ char in
-				return char.isLetter
-			})))
+			})
+			
+			tokens.append(token(name: "string",
+				lineNumber: line,
+				start: startColumn,
+				end: column,
+				value: value
+			))
+			
+			// eat the closing "
+			column += 1
+			index += 1
 		}
 		
 		else if (char.isNumber) {
-			tokens.append(token(name: "number", value: read_while({ char in
-				return char.isNumber || char == "."
-			})))
+			tokens.append(token(name: "number",
+				lineNumber: line,
+				start: startColumn,
+				end: column,
+				value: read_while({ char in
+					return char.isNumber || char == "."
+				})
+			))
 		}
 		
 		else if (char == "(" || char == ")" || char == "{" || char == "}" || char == ":") {
-			tokens.append(token(name: "separator", value: String(char)))
+			tokens.append(token(name: "separator",
+				lineNumber: line,
+				start: startColumn,
+				end: column,
+				value: String(char)
+			))
+		}
+		
+		else if (char == "/" && sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index+1)] == "/") {
+			let _ = read_while({ char in
+				return char != "\n"
+			})
 		}
 		
 		else {
@@ -171,18 +216,193 @@ func lex() -> [token] {
 	}
 }
 
-func parse(_ tokens: [token]) -> [String:Any] {
-	var AST: [String:Any] = [:]
+func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1Token: Bool = false) -> [any SyntaxProtocol] {
+	var AST: [any SyntaxProtocol] = []
+	
+	var token = tokens[parserContext.index]
+	
+	while (true) {
+		if (parserContext.index >= tokens.count) {
+			break
+		}
+		
+		token = tokens[parserContext.index]
+		
+		if (token.name == "word") {
+			switch (token.value) {
+			case "function": parse_function()
+				break
+			case "return": parse_return()
+				break
+			default:
+				if (tokens[parserContext.index+1].name == "separator" && tokens[parserContext.index+1].value == "(") {
+					// eat the word and separator
+					parserContext.index += 2
+					
+					let arguments = parse(&parserContext, tokens)
+					
+					AST.append(SyntaxCall(name: token.value, arguments: arguments))
+				} else {
+					AST.append(SyntaxWord(value: token.value))
+				}
+			}
+		}
+		
+		else if (token.name == "string") {
+			AST.append(SyntaxString(value: token.value))
+		}
+		
+		else if (token.name == "number") {
+			AST.append(SyntaxNumber(value: token.value))
+		}
+		
+		else if (token.name == "separator") {
+//			if (token.value == ":") {
+//				AST.append(parse_type())
+//			}
+			
+			if (token.value == ")") {
+				break
+			}
+			
+			else if (token.value == "}") {
+				break
+			}
+			
+			else {
+				compileError("unexpected separator \(token)", token.lineNumber, token.start, token.end)
+			}
+		}
+		
+		else {
+			compileError("unknown token name \(token)", token.lineNumber, token.start, token.end)
+		}
+		
+		if (endAfter1Token) {
+			break
+		}
+		
+		parserContext.index += 1
+	}
 	
 	return AST
+	
+	func parse_function() {
+		let nameToken = getNextToken()
+		if (nameToken.name != "word") {
+			compileError("function definition expected a name, example: `function main(): Int {}`", token.lineNumber, token.start, token.end)
+		}
+		
+		let openingParentheses = getNextToken()
+		if (openingParentheses.name != "separator" || openingParentheses.value != "(") {
+			compileError("function definition expected an openingParentheses, example: `function main(): Int {}`", token.lineNumber, token.start, token.end)
+		}
+		parserContext.index += 1
+		let arguments = parse(&parserContext, tokens)
+		
+		let colonToken = getNextToken()
+		if (colonToken.name != "separator" || colonToken.value != ":") {
+			compileError("function definition expected a colon, example: `function main(): Int {}`", token.lineNumber, token.start, token.end)
+		}
+		
+		let returnType = parse_type()
+		
+		let openingBracket = getNextToken()
+		if (openingBracket.name != "separator" || openingBracket.value != "{") {
+			compileError("function definition expected an openingBracket, example: `function main(): Int {}`", token.lineNumber, token.start, token.end)
+		}
+		parserContext.index += 1
+		let codeBlock = parse(&parserContext, tokens)
+		
+		AST.append(SyntaxFunction(name: nameToken.value, arguments: arguments, codeBlock: codeBlock, returnValue: returnType))
+	}
+	
+	func parse_return() {
+		parserContext.index += 1
+		let value = parse(&parserContext, tokens, true)
+		
+		AST.append(SyntaxReturn(value: value[0]))
+	}
+	
+	func parse_type() -> any buildVariable {
+		let typeToken = getNextToken()
+		
+		if (typeToken.name != "word") {
+			compileError("type expected a word but got a \(typeToken.name)`", typeToken.lineNumber, typeToken.start, typeToken.end)
+		}
+		
+		return variableData(type: typeToken.value)
+//		return SyntaxType(value: SyntaxSimpleType(value: typeToken.value))
+	}
+	
+	func getNextToken() -> token {
+		parserContext.index += 1
+		return tokens[parserContext.index]
+	}
 }
 
-func buildLLVM(_ AST: [String:Any]) {
+func buildLLVM(_ builderContext: inout BuilderContext, _ AST: [any SyntaxProtocol]) -> String {
+	var LLVMSource: String = ""
 	
+//	while (true) {
+//		if (builderContext.index >= AST.count) {
+//			break
+//		}
+//
+//		let node = AST[builderContext.index]
+//
+//		if let node = node as? SyntaxFunction {
+//			builderContext.variables[node.name] = functionData(arguments: node.arguments, codeBlock: <#T##[SyntaxProtocol]#>)
+//		}
+//
+//		builderContext.index += 1
+//	}
+	
+	builderContext.index = 0
+	
+	while (true) {
+		if (builderContext.index >= AST.count) {
+			break
+		}
+		
+		let node = AST[builderContext.index]
+		
+		print("ASTnode: \(node)")
+		
+		if let node = node as? SyntaxFunction {
+			if (node.name == "main") {
+				let build = buildLLVM(&builderContext, node.codeBlock)
+				
+				LLVMSource.append("define i32 @main() {\nentry:\n")
+				
+				LLVMSource.append(build)
+				
+				LLVMSource.append("\n}")
+			}
+		}
+		
+		else if let node = node as? SyntaxReturn {
+			LLVMSource.append("\nret i32 \(buildLLVM(&builderContext, [node.value]))")
+		}
+		
+		else if let node = node as? SyntaxNumber {
+			LLVMSource.append(node.value)
+		}
+		
+		else {
+			compileError("unexpected node type \(node)")
+		}
+		
+		builderContext.index += 1
+	}
+	
+	return LLVMSource
 }
 
 func compile() throws {
 	print("Current directory: \(FileManager.default.currentDirectoryPath)")
+	
+	progressLog("building...")
 	
 	let tokens = lex()
 	
@@ -190,19 +410,23 @@ func compile() throws {
 		print("tokens:\n\(tokens)")
 	}
 	
-	let abstractSyntaxTree = parse(tokens)
+	var parserContext = ParserContext(index: 0)
+	
+	let abstractSyntaxTree = parse(&parserContext, tokens)
 	
 	if (logEverything) {
 		print("abstractSyntaxTree:\n\(abstractSyntaxTree)")
 	}
 	
-	buildLLVM(abstractSyntaxTree)
+	var builderContext = BuilderContext(index: 0, variables: [:])
+	
+	let LLVMSource = buildLLVM(&builderContext, abstractSyntaxTree)
 	
 	if (logEverything) {
 		print("LLVMSource:\n\(LLVMSource)")
 	}
 	
-	return;
+	progressLog("build complete!")
 	
 	progressLog("creating object file...")
 	let LLVMOutput = try Shell.exec(findLLCPath(), with: [
@@ -222,17 +446,17 @@ func compile() throws {
 	progressLog("object file created!")
 	
 	progressLog("linking...")
-	let clang = try Shell.exec(findclangPath(), with: [
+	let clangOutput = try Shell.exec(findclangPath(), with: [
 		outputFileName + ".o", "-o",
 		// write the output to the given file.
 		outputFileName
 	], input: nil)
 	
-	if !clang.stderr.isEmpty {
-		fatalError("clang Errors: \n\(clang.stderr)")
+	if !clangOutput.stderr.isEmpty {
+		fatalError("clang Errors: \n\(clangOutput.stderr)")
 	}
-	if clang.exitCode != 0 {
-		fatalError("clang failed with exit code: \(clang.exitCode)")
+	if clangOutput.exitCode != 0 {
+		fatalError("clang failed with exit code: \(clangOutput.exitCode)")
 	}
 	
 	progressLog("linking complete!")

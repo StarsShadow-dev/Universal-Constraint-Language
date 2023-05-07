@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		02392DF92A04024600F1AE9C /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02392DF82A04024600F1AE9C /* main.swift */; };
 		02392E002A0414AF00F1AE9C /* ShellCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */; };
+		026FC1902A05E22400EF5FD9 /* ASTtypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026FC18F2A05E22400EF5FD9 /* ASTtypes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +29,7 @@
 		02392DF82A04024600F1AE9C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
 		02392E012A046E2B00F1AE9C /* acronyms.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = acronyms.txt; sourceTree = "<group>"; };
+		026FC18F2A05E22400EF5FD9 /* ASTtypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASTtypes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				02392DF82A04024600F1AE9C /* main.swift */,
+				026FC18F2A05E22400EF5FD9 /* ASTtypes.swift */,
 				02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */,
 			);
 			path = "Parallel-lang";
@@ -127,6 +130,7 @@
 			files = (
 				02392E002A0414AF00F1AE9C /* ShellCommand.swift in Sources */,
 				02392DF92A04024600F1AE9C /* main.swift in Sources */,
+				026FC1902A05E22400EF5FD9 /* ASTtypes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
