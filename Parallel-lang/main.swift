@@ -5,12 +5,12 @@ import Foundation
 // run - build and then run
 var mode: String = "run"
 var outputFileName: String = "test"
-var logEverything: Bool = false
-var printProgress: Bool = false
+var logEverything: Bool = true
+var printProgress: Bool = true
 
 var sourceCode: String = """
 function main(): Int {
-	putchar(97)
+	putchar(97):
 	putchar(98)
 	putchar(99)
 
@@ -97,6 +97,9 @@ func lex() -> [token] {
 		if (char == "\n") {
 			line += 1
 			column = 0
+			
+			index += 1
+			continue
 		}
 		
 		// space or tab
@@ -242,16 +245,16 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 		}
 		
 		else if (token.name == "separator") {
-//			if (token.value == ":") {
-//				AST.append(parse_type())
-//			}
-			
 			if (token.value == ")") {
 				break
 			}
 			
 			else if (token.value == "}") {
 				break
+			}
+			
+			else if (token.value == ":") {
+				compileError("unexpected colon", token.lineNumber, token.start, token.end)
 			}
 			
 			else {
