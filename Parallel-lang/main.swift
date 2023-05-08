@@ -60,7 +60,7 @@ func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int?
 			print("\(lineNumber-1) | \(lines[lineNumber-1])")
 		}
 		
-		print("\(lineNumber) | \(lines[lineNumber])")
+		print("\(lineNumber) | \(lines[lineNumber].replacingOccurrences(of: "\t", with: " "))")
 		if let columnStart, let columnEnd {
 			print("\(String(repeating: "-", count: "\(lineNumber)".count))---\(String(repeating: "-", count: columnStart))\(String(repeating: "^", count: columnEnd - columnStart + 1))")
 		} else {
