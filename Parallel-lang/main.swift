@@ -1,35 +1,20 @@
 import Foundation
 
-struct token {
-	var name: String
-	
-	var lineNumber: Int
-	var start: Int
-	var end: Int
-	
-	var value: String
-}
-
-struct ParserContext {
-	var index: Int
-}
-
-struct BuilderContext {
-	var index: Int
-	var variables: [String:any buildVariable]
-}
-
 // mode can be:
 // build - build as executable
 // run - build and then run
 var mode: String = "run"
 var outputFileName: String = "test"
-var logEverything: Bool = true
-var printProgress: Bool = true
+var logEverything: Bool = false
+var printProgress: Bool = false
 
 var sourceCode: String = """
 function main(): Int {
-	return 5
+	putchar(97)
+	putchar(98)
+	putchar(99)
+
+	return 0
 }
 """
 
@@ -331,8 +316,11 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 			compileError("type expected a word but got a \(typeToken.name)`", typeToken.lineNumber, typeToken.start, typeToken.end)
 		}
 		
-		return variableData(type: typeToken.value)
-//		return SyntaxType(value: SyntaxSimpleType(value: typeToken.value))
+		let variable = variableData()
+		
+		variable.type = typeToken.value
+		
+		return variable
 	}
 	
 	func getNextToken() -> token {
@@ -341,59 +329,87 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 	}
 }
 
-func buildLLVM(_ builderContext: inout BuilderContext, _ AST: [any SyntaxProtocol]) -> String {
+func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?, _ AST: [any SyntaxProtocol], _ newLevel: Bool) -> String {
 	var LLVMSource: String = ""
 	
-//	while (true) {
-//		if (builderContext.index >= AST.count) {
-//			break
-//		}
-//
-//		let node = AST[builderContext.index]
-//
-//		if let node = node as? SyntaxFunction {
-//			builderContext.variables[node.name] = functionData(arguments: node.arguments, codeBlock: <#T##[SyntaxProtocol]#>)
-//		}
-//
-//		builderContext.index += 1
-//	}
+	var index = 0
 	
-	builderContext.index = 0
+	if (newLevel) {
+		builderContext.level += 1
+		builderContext.variables.append([:])
+	}
 	
 	while (true) {
-		if (builderContext.index >= AST.count) {
+		if (index >= AST.count) {
+			break
+		}
+
+		let node = AST[index]
+
+		if let node = node as? SyntaxFunction {
+			let data = functionData()
+			
+			data.arguments = node.arguments
+			
+			builderContext.variables[builderContext.level][node.name] = data
+		}
+
+		index += 1
+	}
+	
+	index = 0
+	
+	while (true) {
+		if (index >= AST.count) {
 			break
 		}
 		
-		let node = AST[builderContext.index]
-		
-		print("ASTnode: \(node)")
+		let node = AST[index]
 		
 		if let node = node as? SyntaxFunction {
 			if (node.name == "main") {
-				let build = buildLLVM(&builderContext, node.codeBlock)
+				let function = builderContext.variables[builderContext.level][node.name]
+				let build = buildLLVM(builderContext, function, node.codeBlock, true)
 				
-				LLVMSource.append("define i32 @main() {\nentry:\n")
+				LLVMSource.append("define i32 @main() {\nentry:")
 				
 				LLVMSource.append(build)
 				
 				LLVMSource.append("\n}")
+			} else {
+				compileError("only the main function is usable right now")
 			}
 		}
 		
 		else if let node = node as? SyntaxReturn {
-			LLVMSource.append("\nret i32 \(buildLLVM(&builderContext, [node.value]))")
+			LLVMSource.append("\n\tret \(buildLLVM(builderContext, inside, [node.value], false))")
 		}
 		
 		else if let node = node as? SyntaxNumber {
-			LLVMSource.append(node.value)
+			LLVMSource.append("i32 \(node.value)")
+		}
+		
+		else if let node = node as? SyntaxCall {
+			if let inside = inside as? functionData {
+				let string: String = buildLLVM(builderContext, inside, node.arguments, false)
+				
+				LLVMSource.append("\n\t%\(inside.instructionCount) = call i32 @putchar(\(string))")
+				inside.instructionCount += 1
+			} else {
+				compileError("call outside of a function")
+			}
 		}
 		
 		else {
 			compileError("unexpected node type \(node)")
 		}
 		
-		builderContext.index += 1
+		index += 1
+	}
+	
+	if (newLevel) {
+		builderContext.level -= 1
+		let _ = builderContext.variables.popLast()
 	}
 	
 	return LLVMSource
@@ -418,9 +434,10 @@ func compile() throws {
 		print("abstractSyntaxTree:\n\(abstractSyntaxTree)")
 	}
 	
-	var builderContext = BuilderContext(index: 0, variables: [:])
+	let builderContext = BuilderContext(level: -1, variables: [])
+	let inside: (any buildVariable)? = nil
 	
-	let LLVMSource = buildLLVM(&builderContext, abstractSyntaxTree)
+	let LLVMSource = "declare i32 @putchar(i32 noundef) #1\n\n" + buildLLVM(builderContext, inside, abstractSyntaxTree, true)
 	
 	if (logEverything) {
 		print("LLVMSource:\n\(LLVMSource)")

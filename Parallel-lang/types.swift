@@ -1,18 +1,62 @@
 import Foundation
 
-public protocol buildVariable {}
+//
+// token
+//
 
-public struct functionData: buildVariable {
-//	var name: String
-	var arguments: [any SyntaxProtocol]
+struct token {
+	var name: String
 	
-	var codeBlock: [any SyntaxProtocol]
+	var lineNumber: Int
+	var start: Int
+	var end: Int
+	
+	var value: String
 }
 
-public struct variableData: buildVariable {
-//	var name: String
-	var type: String
+//
+// context
+//
+
+struct ParserContext {
+	var index: Int
 }
+
+class BuilderContext {
+	
+	var level: Int
+	
+	var variables: [[String:any buildVariable]]
+	
+	init(level: Int, variables: [[String : any buildVariable]]) {
+		self.level = level
+		self.variables = variables
+	}
+}
+
+//
+// build
+//
+
+public protocol buildVariable: AnyObject {}
+
+public class functionData: buildVariable {
+//	var name: String
+	var arguments: [any SyntaxProtocol] = []
+	
+	var instructionCount: Int = 0
+	
+	var hasReturned: Bool = false
+}
+
+public class variableData: buildVariable {
+//	var name: String
+	var type: String = ""
+}
+
+//
+// AST
+//
 
 public protocol SyntaxProtocol {}
 
