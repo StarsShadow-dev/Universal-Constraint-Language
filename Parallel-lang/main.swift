@@ -9,11 +9,16 @@ var logEverything: Bool = true
 var printProgress: Bool = true
 
 var sourceCode: String = """
+/*
+	testing
+*/
 function main(): Int {
-	putchar(97):
+	// put abc to the stdout
+	putchar(97)
 	putchar(98)
 	putchar(99)
-
+	
+	// return with exit code 0
 	return 0
 }
 """
@@ -163,10 +168,28 @@ func lex() -> [token] {
 			))
 		}
 		
+		// for comments
 		else if (char == "/" && sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index+1)] == "/") {
 			let _ = read_while({ char in
 				return char != "\n"
 			})
+		}
+		
+		/*
+			for multi line comments
+		*/
+		else if (char == "/" && sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index+1)] == "*") {
+			let _ = read_while({ char in
+				if (sourceCode.count <= index) {
+					compileError("multi line comment never ended")
+				}
+				let next = sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index+1)]
+				return char != "*" || next != "/"
+			})
+			
+			// eat the / and *
+			column += 2
+			index += 2
 		}
 		
 		else {
@@ -188,6 +211,11 @@ func lex() -> [token] {
 				return past
 			} else {
 				let char = sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index)]
+				
+				if (char == "\n") {
+					line += 1
+					column = 0
+				}
 				
 				if (function(char)) {
 					past.append(char)
