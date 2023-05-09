@@ -9,9 +9,8 @@ var logEverything: Bool = true
 var printProgress: Bool = true
 
 var sourceCode: String = """
-/*
-	testing
-*/
+include
+
 function main(): Int {
 	// put abc to the stdout
 	putchar(97)
@@ -383,6 +382,10 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 			data.arguments = node.arguments
 			
 			builderContext.variables[builderContext.level][node.name] = data
+		} else {
+			if (builderContext.level == 0) {
+				compileError("only functions are allowed at top level")
+			}
 		}
 
 		index += 1
