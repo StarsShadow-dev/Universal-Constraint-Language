@@ -8,8 +8,14 @@ var outputFileName: String = "test"
 var logEverything: Bool = true
 var printProgress: Bool = true
 
+var toplevelLLVM = ""
+
+var externalFunctions: [String:ExternalFunction] = [
+	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1")
+]
+
 var sourceCode: String = """
-include
+include { putchar }
 
 function main(): Int {
 	// put abc to the stdout
@@ -21,18 +27,6 @@ function main(): Int {
 	return 0
 }
 """
-
-//; ModuleID = 'test'
-//
-//declare i32 @putchar(i32 noundef) #1
-//
-//define i32 @main() {
-//entry:
-//	%0 = call i32 @putchar(i32 noundef 97)
-//	%1 = call i32 @putchar(i32 noundef 98)
-//	%2 = call i32 @putchar(i32 noundef 99)
-//	ret i32 0
-//}
 
 // these functions assume that ~/.zshrc exists and that it defines: llc and clang
 func findLLCPath() throws -> String {
@@ -247,6 +241,8 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 			switch (token.value) {
 			case "function": parse_function()
 				break
+			case "include": parse_include()
+				break
 			case "return": parse_return()
 				break
 			default:
@@ -332,6 +328,17 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 		AST.append(SyntaxFunction(name: nameToken.value, arguments: arguments, codeBlock: codeBlock, returnValue: returnType))
 	}
 	
+	func parse_include() {
+		let openingBracket = getNextToken()
+		if (openingBracket.name != "separator" || openingBracket.value != "{") {
+			compileError("function definition expected an openingBracket, example: `function main(): Int {}`", token.lineNumber, token.start, token.end)
+		}
+		parserContext.index += 1
+		let names = parse(&parserContext, tokens)
+		
+		AST.append(SyntaxInclude(names: names))
+	}
+	
 	func parse_return() {
 		parserContext.index += 1
 		let value = parse(&parserContext, tokens, true)
@@ -382,9 +389,30 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 			data.arguments = node.arguments
 			
 			builderContext.variables[builderContext.level][node.name] = data
-		} else {
+		}
+		
+		else if let node = node as? SyntaxInclude {
+			print("include \(node)")
+			for name in node.names {
+				if let name = name as? SyntaxWord {
+					if let externalFunction = externalFunctions[name.value] {
+						if (externalFunction.hasBeenDefined) {
+							compileError("external function \(name.value) has already been defined")
+						}
+						toplevelLLVM += externalFunction.LLVM + "\n"
+						externalFunction.hasBeenDefined = true
+					} else {
+						compileError("external function \(name.value) does not exist")
+					}
+				} else {
+					compileError("not a word in an include statement")
+				}
+			}
+		}
+		
+		else {
 			if (builderContext.level == 0) {
-				compileError("only functions are allowed at top level")
+				compileError("only functions and include are allowed at top level")
 			}
 		}
 
@@ -413,6 +441,10 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 			} else {
 				compileError("only the main function is usable right now")
 			}
+		}
+		
+		else if let node = node as? SyntaxInclude {
+			
 		}
 		
 		else if let node = node as? SyntaxReturn {
@@ -471,7 +503,10 @@ func compile() throws {
 	let builderContext = BuilderContext(level: -1, variables: [])
 	let inside: (any buildVariable)? = nil
 	
-	let LLVMSource = "declare i32 @putchar(i32 noundef) #1\n\n" + buildLLVM(builderContext, inside, abstractSyntaxTree, true)
+	print("topLevelLLVM", toplevelLLVM)
+	var LLVMSource = buildLLVM(builderContext, inside, abstractSyntaxTree, true)
+	
+	LLVMSource = toplevelLLVM + "\n" + LLVMSource
 	
 	if (logEverything) {
 		print("LLVMSource:\n\(LLVMSource)")

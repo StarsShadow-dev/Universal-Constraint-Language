@@ -69,6 +69,10 @@ public struct SyntaxFunction: SyntaxProtocol {
 	var returnValue: any buildVariable
 }
 
+public struct SyntaxInclude: SyntaxProtocol {
+	var names: [any SyntaxProtocol]
+}
+
 public struct SyntaxReturn: SyntaxProtocol {
 	var value: any SyntaxProtocol
 }
@@ -96,4 +100,15 @@ public struct SyntaxNumber: SyntaxProtocol {
 public struct SyntaxCall: SyntaxProtocol {
 	var name: String
 	var arguments: [any SyntaxProtocol]
+}
+
+
+class ExternalFunction {
+	var hasBeenDefined: Bool
+	var LLVM: String
+	
+	init(_ LLVM: String) {
+		self.hasBeenDefined = false
+		self.LLVM = LLVM
+	}
 }
