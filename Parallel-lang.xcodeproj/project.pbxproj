@@ -28,7 +28,7 @@
 		02392DF52A04024600F1AE9C /* Parallel-lang */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Parallel-lang"; sourceTree = BUILT_PRODUCTS_DIR; };
 		02392DF82A04024600F1AE9C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
-		02392E012A046E2B00F1AE9C /* acronyms.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = acronyms.txt; sourceTree = "<group>"; };
+		02392E012A046E2B00F1AE9C /* AcronymsAndAbbreviations.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = AcronymsAndAbbreviations.txt; sourceTree = "<group>"; };
 		026FC18F2A05E22400EF5FD9 /* types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = types.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -46,7 +46,7 @@
 		02392DEC2A04024600F1AE9C = {
 			isa = PBXGroup;
 			children = (
-				02392E012A046E2B00F1AE9C /* acronyms.txt */,
+				02392E012A046E2B00F1AE9C /* AcronymsAndAbbreviations.txt */,
 				02392DF72A04024600F1AE9C /* Parallel-lang */,
 				02392DF62A04024600F1AE9C /* Products */,
 			);
