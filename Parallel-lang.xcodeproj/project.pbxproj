@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0203000E2A0C04C60082A063 /* lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0203000D2A0C04C60082A063 /* lexer.swift */; };
+		020300102A0C05360082A063 /* parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0203000F2A0C05360082A063 /* parser.swift */; };
+		020300122A0C05730082A063 /* builder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020300112A0C05730082A063 /* builder.swift */; };
 		02392DF92A04024600F1AE9C /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02392DF82A04024600F1AE9C /* main.swift */; };
 		02392E002A0414AF00F1AE9C /* ShellCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */; };
 		026FC1902A05E22400EF5FD9 /* types.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026FC18F2A05E22400EF5FD9 /* types.swift */; };
@@ -25,6 +28,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0203000D2A0C04C60082A063 /* lexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = lexer.swift; sourceTree = "<group>"; };
+		0203000F2A0C05360082A063 /* parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = parser.swift; sourceTree = "<group>"; };
+		020300112A0C05730082A063 /* builder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = builder.swift; sourceTree = "<group>"; };
 		02392DF52A04024600F1AE9C /* Parallel-lang */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Parallel-lang"; sourceTree = BUILT_PRODUCTS_DIR; };
 		02392DF82A04024600F1AE9C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
@@ -64,6 +70,9 @@
 			isa = PBXGroup;
 			children = (
 				02392DF82A04024600F1AE9C /* main.swift */,
+				0203000D2A0C04C60082A063 /* lexer.swift */,
+				0203000F2A0C05360082A063 /* parser.swift */,
+				020300112A0C05730082A063 /* builder.swift */,
 				026FC18F2A05E22400EF5FD9 /* types.swift */,
 				02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */,
 			);
@@ -129,7 +138,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				02392E002A0414AF00F1AE9C /* ShellCommand.swift in Sources */,
+				020300122A0C05730082A063 /* builder.swift in Sources */,
 				02392DF92A04024600F1AE9C /* main.swift in Sources */,
+				0203000E2A0C04C60082A063 /* lexer.swift in Sources */,
+				020300102A0C05360082A063 /* parser.swift in Sources */,
 				026FC1902A05E22400EF5FD9 /* types.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
