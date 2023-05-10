@@ -18,18 +18,7 @@ var externalFunctions: [String:ExternalFunction] = [
 var sourceCode: String = """
 //include { putchar }
 
-// put abc to the stdout
-/*function abc(): Int32 {
-	putchar(97)
-	putchar(98)
-	putchar(99)
-
-	return 0
-}*/
-
 function main(): Int32 {
-	//abc()
-	
 	// return with exit code 0
 	return 0
 }
@@ -83,6 +72,11 @@ func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int?
 	abort()
 }
 
+/// this function takes a message and something that conforms to hasLocation
+func compileErrorWithHasLocation(_ message: String, _ location: any hasLocation) {
+	compileError(message, location.lineNumber, location.start, location.end)
+}
+
 func lex() -> [token] {
 	var tokens: [token] = []
 	
@@ -115,7 +109,7 @@ func lex() -> [token] {
 		// words must start with a letter or an underscore
 		else if (char.isLetter || char == "_") {
 			
-			let value = read_while({ char in
+			let value = readWhile({ char in
 				// words can have numbers after the first character
 				return char.isLetter || char == "_" || char.isNumber
 			})
@@ -134,7 +128,7 @@ func lex() -> [token] {
 			column += 1
 			index += 1
 			
-			let value = read_while({ char in
+			let value = readWhile({ char in
 				return char != "\""
 			})
 			
@@ -155,7 +149,7 @@ func lex() -> [token] {
 				lineNumber: line,
 				start: startColumn,
 				end: column,
-				value: read_while({ char in
+				value: readWhile({ char in
 					return char.isNumber || char == "."
 				})
 			))
@@ -172,7 +166,7 @@ func lex() -> [token] {
 		
 		// for comments
 		else if (char == "/" && sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index+1)] == "/") {
-			let _ = read_while({ char in
+			let _ = readWhile({ char in
 				return char != "\n"
 			})
 		}
@@ -181,7 +175,7 @@ func lex() -> [token] {
 			for multi line comments
 		*/
 		else if (char == "/" && sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index+1)] == "*") {
-			let _ = read_while({ char in
+			let _ = readWhile({ char in
 				if (sourceCode.count <= index) {
 					compileError("multi line comment never ended")
 				}
@@ -204,7 +198,7 @@ func lex() -> [token] {
 	
 	return tokens
 	
-	func read_while(_ function: (_ char: Character) -> Bool) -> String {
+	func readWhile(_ function: (_ char: Character) -> Bool) -> String {
 		var past = ""
 		while (true) {
 			if (sourceCode.count <= index) {
@@ -214,22 +208,21 @@ func lex() -> [token] {
 			} else {
 				let char = sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index)]
 				
-				if (char == "\n") {
-					line += 1
-					column = 0
-				}
-				
 				if (function(char)) {
 					past.append(char)
+					if (char == "\n") {
+						line += 1
+						column = 0
+					} else {
+						column += 1
+						index += 1
+					}
 				} else {
 					column -= 1
 					index -= 1
 					return past
 				}
 			}
-			
-			column += 1
-			index += 1
 		}
 	}
 }
@@ -261,19 +254,19 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 					
 					let arguments = parse(&parserContext, tokens)
 					
-					AST.append(SyntaxCall(name: token.value, arguments: arguments))
+					AST.append(SyntaxCall(lineNumber: token.lineNumber, start: token.start, end: token.end, name: token.value, arguments: arguments))
 				} else {
-					AST.append(SyntaxWord(value: token.value))
+					AST.append(SyntaxWord(lineNumber: token.lineNumber, start: token.start, end: token.end, value: token.value))
 				}
 			}
 		}
 		
 		else if (token.name == "string") {
-			AST.append(SyntaxString(value: token.value))
+			AST.append(SyntaxString(lineNumber: token.lineNumber, start: token.start, end: token.end, value: token.value))
 		}
 		
 		else if (token.name == "number") {
-			AST.append(SyntaxNumber(value: token.value))
+			AST.append(SyntaxNumber(lineNumber: token.lineNumber, start: token.start, end: token.end, value: token.value))
 		}
 		
 		else if (token.name == "separator") {
@@ -334,7 +327,7 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 		parserContext.index += 1
 		let codeBlock = parse(&parserContext, tokens)
 		
-		AST.append(SyntaxFunction(name: nameToken.value, arguments: arguments, codeBlock: codeBlock, returnType: returnType))
+		AST.append(SyntaxFunction(lineNumber: token.lineNumber, start: token.start, end: token.end, name: nameToken.value, arguments: arguments, codeBlock: codeBlock, returnType: returnType))
 	}
 	
 	func parse_include() {
@@ -345,14 +338,14 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 		parserContext.index += 1
 		let names = parse(&parserContext, tokens)
 		
-		AST.append(SyntaxInclude(names: names))
+		AST.append(SyntaxInclude(lineNumber: token.lineNumber, start: token.start, end: token.end, names: names))
 	}
 	
 	func parse_return() {
 		parserContext.index += 1
 		let value = parse(&parserContext, tokens, true)
 		
-		AST.append(SyntaxReturn(value: value[0]))
+		AST.append(SyntaxReturn(lineNumber: token.lineNumber, start: token.start, end: token.end, value: value[0]))
 	}
 	
 	func parse_type() -> any buildType {
@@ -404,27 +397,26 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 		}
 		
 		else if let node = node as? SyntaxInclude {
-			print("include \(node)")
 			for name in node.names {
 				if let name = name as? SyntaxWord {
 					if let externalFunction = externalFunctions[name.value] {
 						if (externalFunction.hasBeenDefined) {
-							compileError("external function \(name.value) has already been defined")
+							compileErrorWithHasLocation("external function \(name.value) has already been defined", name)
 						}
 						toplevelLLVM += externalFunction.LLVM + "\n"
 						externalFunction.hasBeenDefined = true
 					} else {
-						compileError("external function \(name.value) does not exist")
+						compileErrorWithHasLocation("external function \(name.value) does not exist", name)
 					}
 				} else {
-					compileError("not a word in an include statement")
+					compileErrorWithHasLocation("not a word in an include statement", name)
 				}
 			}
 		}
 		
 		else {
 			if (builderContext.level == 0) {
-				compileError("only functions and include are allowed at top level")
+				compileErrorWithHasLocation("only functions and include are allowed at top level", node)
 			}
 		}
 
@@ -459,7 +451,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 			if let inside = inside as? functionData {
 				LLVMSource.append("\n\tret \(buildLLVM(builderContext, inside, [node.value], [inside.returnType], false))")
 			} else {
-				compileError("return outside of a function")
+				compileErrorWithHasLocation("return outside of a function", node)
 			}
 		}
 		
@@ -470,7 +462,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 				LLVMSource.append("\n\t%\(inside.instructionCount) = call i32 @\(node.name)(\(string))")
 				inside.instructionCount += 1
 			} else {
-				compileError("call outside of a function")
+				compileErrorWithHasLocation("call outside of a function", node)
 			}
 		}
 		
@@ -479,15 +471,15 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 				if (type.name == "Int32") {
 					LLVMSource.append("i32 \(node.value)")
 				} else {
-					compileError("expected type Int32 but got type \(type.name)")
+					compileErrorWithHasLocation("expected type Int32 but got type \(type.name)", node)
 				}
 			} else {
-				compileError("not buildTypeSimple?")
+				compileErrorWithHasLocation("not buildTypeSimple?", node)
 			}
 		}
 		
 		else {
-			compileError("unexpected node type \(node)")
+			compileErrorWithHasLocation("unexpected node type \(node)", node)
 		}
 		
 		index += 1

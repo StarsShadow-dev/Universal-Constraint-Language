@@ -1,15 +1,31 @@
 import Foundation
 
+class ExternalFunction {
+	var hasBeenDefined: Bool
+	var LLVM: String
+	
+	init(_ LLVM: String) {
+		self.hasBeenDefined = false
+		self.LLVM = LLVM
+	}
+}
+
+protocol hasLocation {
+	var lineNumber: Int? { get }
+	var start: Int? { get }
+	var end: Int? { get }
+}
+
 //
 // token
 //
 
-struct token {
+struct token: hasLocation {
 	var name: String
 	
-	var lineNumber: Int
-	var start: Int
-	var end: Int
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
 	
 	var value: String
 }
@@ -37,9 +53,13 @@ class BuilderContext {
 // AST
 //
 
-protocol SyntaxProtocol {}
+protocol SyntaxProtocol: hasLocation {}
 
 struct SyntaxFunction: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var name: String
 	var arguments: [any SyntaxProtocol]
 	
@@ -49,10 +69,18 @@ struct SyntaxFunction: SyntaxProtocol {
 }
 
 struct SyntaxInclude: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var names: [any SyntaxProtocol]
 }
 
 struct SyntaxReturn: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var value: any SyntaxProtocol
 }
 
@@ -61,35 +89,44 @@ struct SyntaxReturn: SyntaxProtocol {
 //}
 
 struct SyntaxSimpleType: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var value: String
 }
 
 struct SyntaxWord: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var value: String
 }
 
 struct SyntaxString: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var value: String
 }
 
 struct SyntaxNumber: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var value: String
 }
 
 struct SyntaxCall: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
 	var name: String
 	var arguments: [any SyntaxProtocol]
-}
-
-
-class ExternalFunction {
-	var hasBeenDefined: Bool
-	var LLVM: String
-	
-	init(_ LLVM: String) {
-		self.hasBeenDefined = false
-		self.LLVM = LLVM
-	}
 }
 
 //
