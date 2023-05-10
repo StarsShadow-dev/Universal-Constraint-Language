@@ -23,7 +23,6 @@ struct ParserContext {
 }
 
 class BuilderContext {
-	
 	var level: Int
 	
 	var variables: [[String:any buildVariable]]
@@ -35,69 +34,49 @@ class BuilderContext {
 }
 
 //
-// build
-//
-
-public protocol buildVariable: AnyObject {}
-
-public class functionData: buildVariable {
-//	var name: String
-	var arguments: [any SyntaxProtocol] = []
-	
-	var instructionCount: Int = 0
-	
-	var hasReturned: Bool = false
-}
-
-public class variableData: buildVariable {
-//	var name: String
-	var type: String = ""
-}
-
-//
 // AST
 //
 
-public protocol SyntaxProtocol {}
+protocol SyntaxProtocol {}
 
-public struct SyntaxFunction: SyntaxProtocol {
+struct SyntaxFunction: SyntaxProtocol {
 	var name: String
 	var arguments: [any SyntaxProtocol]
 	
 	var codeBlock: [any SyntaxProtocol]
 	
-	var returnValue: any buildVariable
+	var returnType: any buildType
 }
 
-public struct SyntaxInclude: SyntaxProtocol {
+struct SyntaxInclude: SyntaxProtocol {
 	var names: [any SyntaxProtocol]
 }
 
-public struct SyntaxReturn: SyntaxProtocol {
+struct SyntaxReturn: SyntaxProtocol {
 	var value: any SyntaxProtocol
 }
 
-//public struct SyntaxType: SyntaxProtocol {
+//struct SyntaxType: SyntaxProtocol {
 //	var value: any SyntaxProtocol
 //}
 
-public struct SyntaxSimpleType: SyntaxProtocol {
+struct SyntaxSimpleType: SyntaxProtocol {
 	var value: String
 }
 
-public struct SyntaxWord: SyntaxProtocol {
+struct SyntaxWord: SyntaxProtocol {
 	var value: String
 }
 
-public struct SyntaxString: SyntaxProtocol {
+struct SyntaxString: SyntaxProtocol {
 	var value: String
 }
 
-public struct SyntaxNumber: SyntaxProtocol {
+struct SyntaxNumber: SyntaxProtocol {
 	var value: String
 }
 
-public struct SyntaxCall: SyntaxProtocol {
+struct SyntaxCall: SyntaxProtocol {
 	var name: String
 	var arguments: [any SyntaxProtocol]
 }
@@ -110,5 +89,47 @@ class ExternalFunction {
 	init(_ LLVM: String) {
 		self.hasBeenDefined = false
 		self.LLVM = LLVM
+	}
+}
+
+//
+// build variables
+//
+
+protocol buildVariable: AnyObject {}
+
+class functionData: buildVariable {
+//	var name: String
+	var arguments: [any SyntaxProtocol] = []
+	var returnType: any buildType = buildTypeSimple("null")
+	
+	var instructionCount: Int = 0
+	
+	var hasReturned: Bool = false
+	
+	init(_ arguments: [any SyntaxProtocol], _ returnType: any buildType) {
+		self.arguments = arguments
+		self.returnType = returnType
+	}
+}
+
+class variableData: buildVariable {
+//	var name: String
+	var type: String = ""
+}
+
+//
+// build types
+//
+
+protocol buildType: AnyObject {}
+
+// a simple type that only contains a name and a value
+class buildTypeSimple: buildType {
+	var name: String
+	var value: String = ""
+	
+	init(_ name: String) {
+		self.name = name
 	}
 }
