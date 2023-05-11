@@ -100,7 +100,11 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 		parserContext.index += 1
 		let codeBlock = parse(&parserContext, tokens)
 		
-		AST.append(SyntaxFunction(lineNumber: token.lineNumber, start: token.start, end: token.end, name: nameToken.value, arguments: arguments, codeBlock: codeBlock, returnType: returnType))
+		if (arguments.count != 0) {
+			compileError("function arguments are not available right now", token.lineNumber, token.start, token.end)
+		}
+		
+		AST.append(SyntaxFunction(lineNumber: token.lineNumber, start: token.start, end: token.end, name: nameToken.value, arguments: [], codeBlock: codeBlock, returnType: returnType))
 	}
 	
 	func parse_include() {

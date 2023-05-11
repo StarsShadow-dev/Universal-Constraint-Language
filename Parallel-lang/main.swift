@@ -12,13 +12,17 @@ var optimize: Bool = false
 var toplevelLLVM = ""
 
 var externalFunctions: [String:ExternalFunction] = [
-	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1")
+	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", [buildTypeSimple("Int32")], buildTypeSimple("Void")))
 ]
 
 var sourceCode: String = """
-//include { putchar }
+include { putchar }
 
 function main(): Int32 {
+	putchar(97)
+	putchar(98)
+	putchar(99)
+	
 	// return with exit code 0
 	return 0
 }

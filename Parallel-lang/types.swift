@@ -3,10 +3,12 @@ import Foundation
 class ExternalFunction {
 	var hasBeenDefined: Bool
 	var LLVM: String
+	var data: functionData
 	
-	init(_ LLVM: String) {
+	init(_ LLVM: String, _ data: functionData) {
 		self.hasBeenDefined = false
 		self.LLVM = LLVM
+		self.data = data
 	}
 }
 
@@ -61,7 +63,7 @@ struct SyntaxFunction: SyntaxProtocol {
 	var end: Int?
 	
 	var name: String
-	var arguments: [any SyntaxProtocol]
+	var arguments: [any buildType]
 	
 	var codeBlock: [any SyntaxProtocol]
 	
@@ -136,15 +138,16 @@ struct SyntaxCall: SyntaxProtocol {
 protocol buildVariable: AnyObject {}
 
 class functionData: buildVariable {
-//	var name: String
-	var arguments: [any SyntaxProtocol] = []
+	var LLVMname: String
+	var arguments: [any buildType] = []
 	var returnType: any buildType = buildTypeSimple("null")
 	
 	var instructionCount: Int = 0
 	
 	var hasReturned: Bool = false
 	
-	init(_ arguments: [any SyntaxProtocol], _ returnType: any buildType) {
+	init(_ LLVMname: String, _ arguments: [any buildType], _ returnType: any buildType) {
+		self.LLVMname = LLVMname
 		self.arguments = arguments
 		self.returnType = returnType
 	}

@@ -4,6 +4,8 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 	
 	if let typeList {
 		if (AST.count > typeList.count) {
+			compileError("too many arguments")
+		} else if (AST.count < typeList.count) {
 			compileError("not enough arguments")
 		}
 	}
@@ -25,7 +27,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 		let node = AST[index]
 
 		if let node = node as? SyntaxFunction {
-			let data = functionData(node.arguments, node.returnType)
+			let data = functionData(node.name, node.arguments, node.returnType)
 			
 			builderContext.variables[builderContext.level][node.name] = data
 		}
@@ -37,6 +39,9 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 						if (externalFunction.hasBeenDefined) {
 							compileErrorWithHasLocation("external function \(name.value) has already been defined", name)
 						}
+						
+						builderContext.variables[0][name.value] = externalFunction.data
+						
 						toplevelLLVM += externalFunction.LLVM + "\n"
 						externalFunction.hasBeenDefined = true
 					} else {
@@ -91,10 +96,14 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 		
 		else if let node = node as? SyntaxCall {
 			if let inside = inside as? functionData {
-				let string: String = buildLLVM(builderContext, inside, node.arguments, [], false)
-				
-				LLVMSource.append("\n\t%\(inside.instructionCount) = call i32 @\(node.name)(\(string))")
-				inside.instructionCount += 1
+				if let function = builderContext.variables[0][node.name] as? functionData {
+					let string: String = buildLLVM(builderContext, inside, node.arguments, function.arguments, false)
+					
+					LLVMSource.append("\n\t%\(inside.instructionCount) = call i32 @\(node.name)(\(string))")
+					inside.instructionCount += 1
+				} else {
+					compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
+				}
 			} else {
 				compileErrorWithHasLocation("call outside of a function", node)
 			}
@@ -122,6 +131,19 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 	if (newLevel) {
 		builderContext.level -= 1
 		let _ = builderContext.variables.popLast()
+	}
+	
+	func getVariable(_ name: String) -> (any buildVariable)? {
+		var i = builderContext.variables.count - 1
+		while i >= 0 {
+			if (builderContext.variables[i][name] != nil) {
+				return builderContext.variables[i][name]!
+			}
+			
+			i -= 1
+		}
+		
+		return nil
 	}
 	
 	return LLVMSource
