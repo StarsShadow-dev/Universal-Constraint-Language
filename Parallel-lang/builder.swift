@@ -1,6 +1,6 @@
 import Foundation
 
-func buildLLVM(_ builderContext: BuilderContext, _ inside: (any SyntaxProtocol)?, _ AST: [any SyntaxProtocol], _ typeList: [any buildType]?, _ newLevel: Bool) -> String {
+func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST: [any SyntaxProtocol], _ typeList: [any buildType]?, _ newLevel: Bool) -> String {
 	
 	if let typeList {
 		if (AST.count > typeList.count) {
@@ -27,7 +27,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any SyntaxProtocol)?
 		let node = AST[index]
 
 		if let node = node as? SyntaxFunction {
-			let data = functionData(node.name, node.arguments, node.returnType)
+			let data = functionData(node.name, node.name, node.arguments, node.returnType)
 			
 			if let returnType = node.returnType as? buildTypeSimple {
 				if (returnType.name != "Int32") {
@@ -81,7 +81,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any SyntaxProtocol)?
 		
 		if let node = node as? SyntaxFunction {
 			if let function = builderContext.variables[builderContext.level][node.name] as? functionData {
-				let build = buildLLVM(builderContext, node, node.codeBlock, nil, true)
+				let build = buildLLVM(builderContext, function, node.codeBlock, nil, true)
 				
 				if (!function.hasReturned) {
 					compileErrorWithHasLocation("function `\(node.name)` never returned", node)
@@ -89,7 +89,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any SyntaxProtocol)?
 				
 				LLVMSource.append("\ndefine i32 @\(node.name)() {\nentry:")
 				
-				LLVMSource.append(build)
+				LLVMSource.append(function.LLVMString)
 				
 				LLVMSource.append("\n}")
 			} else {
@@ -102,50 +102,35 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any SyntaxProtocol)?
 		}
 		
 		else if let node = node as? SyntaxReturn {
-			if let inside = inside as? SyntaxFunction {
-				LLVMSource.append("\n\tret \(buildLLVM(builderContext, node, [node.value], [inside.returnType], false))")
-				
-				(getVariable(inside.name) as! functionData).hasReturned = true
-			} else {
-				compileErrorWithHasLocation("return outside of a function", node)
+			guard let inside else {
+				compileErrorWithHasLocation("return statement is outside of a function", node)
 			}
+			
+			inside.LLVMString.append("\n\tret \(buildLLVM(builderContext, inside, [node.value], [inside.returnType], false))")
+			
+			(getVariable(inside.name) as! functionData).hasReturned = true
 		}
 		
 		else if let node = node as? SyntaxCall {
-		guard let inside = inside as? SyntaxFunction else {
-			compileErrorWithHasLocation("call outside of a function", node)
-		}
-		
-		guard let function = getVariable(inside.name) as? functionData else {
-			abort()
-		}
-		
-		guard let functionToCall = getVariable(node.name) as? functionData else {
-			compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
-		}
-		
-		let string: String = buildLLVM(builderContext, node, node.arguments, functionToCall.arguments, false)
-		
-		LLVMSource.append("\n\t%\(function.instructionCount) = call i32 @\(node.name)(\(string))")
-		function.instructionCount += 1
-	}
-		
-		else if let node = node as? SyntaxCall {
-			guard let inside = inside as? SyntaxFunction else {
+			guard let inside else {
 				compileErrorWithHasLocation("call outside of a function", node)
 			}
 			
 			guard let function = getVariable(inside.name) as? functionData else {
-				compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
+				abort()
 			}
 			
 			guard let functionToCall = getVariable(node.name) as? functionData else {
 				compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
 			}
 			
-			let string: String = buildLLVM(builderContext, node, node.arguments, functionToCall.arguments, false)
+			let string: String = buildLLVM(builderContext, inside, node.arguments, functionToCall.arguments, false)
 			
-			LLVMSource.append("\n\t%\(function.instructionCount) = call i32 @\(node.name)(\(string))")
+			function.LLVMString.append("\n\t%\(function.instructionCount) = call i32 @\(node.name)(\(string))")
+			
+			#warning("i32 should not be hard coded")
+			LLVMSource.append("i32 %\(function.instructionCount)")
+			
 			function.instructionCount += 1
 		}
 		

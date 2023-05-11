@@ -16,7 +16,7 @@ var optimize: Bool = false
 var toplevelLLVM = ""
 
 var externalFunctions: [String:ExternalFunction] = [
-	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", [buildTypeSimple("Int32")], buildTypeSimple("Void")))
+	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", "putchar", [buildTypeSimple("Int32")], buildTypeSimple("Void")))
 ]
 
 var sourceCode: String = """
@@ -29,11 +29,15 @@ function abc(): Int32 {
 	return 0
 }
 
+function getReturnInt(): Int32 {
+	return 0
+}
+
 function main(): Int32 {
 	abc()
 	
 	// return with exit code 0
-	return 0
+	return getReturnInt()
 }
 """
 
@@ -110,7 +114,7 @@ func compile() throws {
 	}
 	
 	let builderContext = BuilderContext(level: -1, variables: [])
-	let inside: (any SyntaxProtocol)? = nil
+	let inside: functionData? = nil
 	
 	var LLVMSource = buildLLVM(builderContext, inside, abstractSyntaxTree, nil, true)
 	

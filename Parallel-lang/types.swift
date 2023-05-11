@@ -138,6 +138,7 @@ struct SyntaxCall: SyntaxProtocol {
 protocol buildVariable: AnyObject {}
 
 class functionData: buildVariable {
+	var name: String
 	var LLVMname: String
 	var arguments: [any buildType] = []
 	var returnType: any buildType = buildTypeSimple("null")
@@ -146,7 +147,10 @@ class functionData: buildVariable {
 	
 	var hasReturned: Bool = false
 	
-	init(_ LLVMname: String, _ arguments: [any buildType], _ returnType: any buildType) {
+	var LLVMString: String = ""
+	
+	init(_ name: String, _ LLVMname: String, _ arguments: [any buildType], _ returnType: any buildType) {
+		self.name = name
 		self.LLVMname = LLVMname
 		self.arguments = arguments
 		self.returnType = returnType
