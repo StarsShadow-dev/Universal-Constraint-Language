@@ -1,3 +1,7 @@
+#if !os(macOS)
+	#error("the compiler can only be built on macOS (currently)")
+#endif
+
 import Foundation
 
 // mode can be:
