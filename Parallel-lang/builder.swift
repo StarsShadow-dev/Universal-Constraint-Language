@@ -1,6 +1,6 @@
 import Foundation
 
-func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?, _ AST: [any SyntaxProtocol], _ typeList: [any buildType]?, _ newLevel: Bool) -> String {
+func buildLLVM(_ builderContext: BuilderContext, _ inside: (any SyntaxProtocol)?, _ AST: [any SyntaxProtocol], _ typeList: [any buildType]?, _ newLevel: Bool) -> String {
 	
 	if let typeList {
 		if (AST.count > typeList.count) {
@@ -28,6 +28,14 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 
 		if let node = node as? SyntaxFunction {
 			let data = functionData(node.name, node.arguments, node.returnType)
+			
+			if let returnType = node.returnType as? buildTypeSimple {
+				if (returnType.name != "Int32") {
+					compileErrorWithHasLocation("functions can only return Int32 right now", node)
+				}
+			} else {
+				abort()
+			}
 			
 			builderContext.variables[builderContext.level][node.name] = data
 		}
@@ -72,14 +80,21 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 		let node = AST[index]
 		
 		if let node = node as? SyntaxFunction {
-			let function = builderContext.variables[builderContext.level][node.name]
-			let build = buildLLVM(builderContext, function, node.codeBlock, nil, true)
-			
-			LLVMSource.append("\ndefine i32 @\(node.name)() {\nentry:")
-			
-			LLVMSource.append(build)
-			
-			LLVMSource.append("\n}")
+			if let function = builderContext.variables[builderContext.level][node.name] as? functionData {
+				let build = buildLLVM(builderContext, node, node.codeBlock, nil, true)
+				
+				if (!function.hasReturned) {
+					compileErrorWithHasLocation("function `\(node.name)` never returned", node)
+				}
+				
+				LLVMSource.append("\ndefine i32 @\(node.name)() {\nentry:")
+				
+				LLVMSource.append(build)
+				
+				LLVMSource.append("\n}")
+			} else {
+				abort()
+			}
 		}
 		
 		else if let _ = node as? SyntaxInclude {
@@ -87,26 +102,51 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 		}
 		
 		else if let node = node as? SyntaxReturn {
-			if let inside = inside as? functionData {
-				LLVMSource.append("\n\tret \(buildLLVM(builderContext, inside, [node.value], [inside.returnType], false))")
+			if let inside = inside as? SyntaxFunction {
+				LLVMSource.append("\n\tret \(buildLLVM(builderContext, node, [node.value], [inside.returnType], false))")
+				
+				(getVariable(inside.name) as! functionData).hasReturned = true
 			} else {
 				compileErrorWithHasLocation("return outside of a function", node)
 			}
 		}
 		
 		else if let node = node as? SyntaxCall {
-			if let inside = inside as? functionData {
-				if let function = builderContext.variables[0][node.name] as? functionData {
-					let string: String = buildLLVM(builderContext, inside, node.arguments, function.arguments, false)
-					
-					LLVMSource.append("\n\t%\(inside.instructionCount) = call i32 @\(node.name)(\(string))")
-					inside.instructionCount += 1
-				} else {
-					compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
-				}
-			} else {
+		guard let inside = inside as? SyntaxFunction else {
+			compileErrorWithHasLocation("call outside of a function", node)
+		}
+		
+		guard let function = getVariable(inside.name) as? functionData else {
+			abort()
+		}
+		
+		guard let functionToCall = getVariable(node.name) as? functionData else {
+			compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
+		}
+		
+		let string: String = buildLLVM(builderContext, node, node.arguments, functionToCall.arguments, false)
+		
+		LLVMSource.append("\n\t%\(function.instructionCount) = call i32 @\(node.name)(\(string))")
+		function.instructionCount += 1
+	}
+		
+		else if let node = node as? SyntaxCall {
+			guard let inside = inside as? SyntaxFunction else {
 				compileErrorWithHasLocation("call outside of a function", node)
 			}
+			
+			guard let function = getVariable(inside.name) as? functionData else {
+				compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
+			}
+			
+			guard let functionToCall = getVariable(node.name) as? functionData else {
+				compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
+			}
+			
+			let string: String = buildLLVM(builderContext, node, node.arguments, functionToCall.arguments, false)
+			
+			LLVMSource.append("\n\t%\(function.instructionCount) = call i32 @\(node.name)(\(string))")
+			function.instructionCount += 1
 		}
 		
 		else if let node = node as? SyntaxNumber {
@@ -133,6 +173,8 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 		let _ = builderContext.variables.popLast()
 	}
 	
+	return LLVMSource
+	
 	func getVariable(_ name: String) -> (any buildVariable)? {
 		var i = builderContext.variables.count - 1
 		while i >= 0 {
@@ -145,6 +187,4 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: (any buildVariable)?,
 		
 		return nil
 	}
-	
-	return LLVMSource
 }

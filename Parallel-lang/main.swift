@@ -22,10 +22,15 @@ var externalFunctions: [String:ExternalFunction] = [
 var sourceCode: String = """
 include { putchar }
 
-function main(): Int32 {
+function abc(): Int32 {
 	putchar(97)
 	putchar(98)
 	putchar(99)
+	return 0
+}
+
+function main(): Int32 {
+	abc()
 	
 	// return with exit code 0
 	return 0
@@ -48,7 +53,7 @@ func progressLog(_ string: String) {
 	}
 }
 
-func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int? = nil, _ columnEnd:Int? = nil) {
+func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int? = nil, _ columnEnd:Int? = nil) -> Never {
 	print("Compile Error:")
 	print("\(message)")
 	
@@ -81,7 +86,7 @@ func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int?
 }
 
 /// this function takes a message and something that conforms to hasLocation
-func compileErrorWithHasLocation(_ message: String, _ location: any hasLocation) {
+func compileErrorWithHasLocation(_ message: String, _ location: any hasLocation) -> Never {
 	compileError(message, location.lineNumber, location.start, location.end)
 }
 
@@ -105,9 +110,8 @@ func compile() throws {
 	}
 	
 	let builderContext = BuilderContext(level: -1, variables: [])
-	let inside: (any buildVariable)? = nil
+	let inside: (any SyntaxProtocol)? = nil
 	
-	print("topLevelLLVM", toplevelLLVM)
 	var LLVMSource = buildLLVM(builderContext, inside, abstractSyntaxTree, nil, true)
 	
 	LLVMSource = toplevelLLVM + "\n" + LLVMSource
