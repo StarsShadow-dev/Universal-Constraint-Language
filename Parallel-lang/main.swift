@@ -7,26 +7,32 @@ import Foundation
 // mode can be:
 // build - build as executable
 // run - build and then run
-var mode: String = "run"
-var outputFileName: String = "test"
-var logEverything: Bool = true
-var printProgress: Bool = true
-var optimize: Bool = false
+let mode: String = "run"
+let outputFileName: String = "test"
+let logEverything: Bool = true
+let printProgress: Bool = true
+let optimize: Bool = false
 
 var toplevelLLVM = ""
 
+var LLVMTypeMap: [String:String] = [
+	"Void":"void",
+	"Int32":"i32"
+]
+
 var externalFunctions: [String:ExternalFunction] = [
-	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", "putchar", [buildTypeSimple("Int32")], buildTypeSimple("Void")))
+	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", "putchar", [buildTypeSimple("Int32")], buildTypeSimple("Int32")))
 ]
 
 var sourceCode: String = """
 include { putchar }
 
-function abc(): Int32 {
+function abc(): Void {
 	putchar(97)
 	putchar(98)
 	putchar(99)
-	return 0
+	
+	return Void
 }
 
 function getReturnInt(): Int32 {

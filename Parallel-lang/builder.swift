@@ -29,14 +29,6 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST:
 		if let node = node as? SyntaxFunction {
 			let data = functionData(node.name, node.name, node.arguments, node.returnType)
 			
-			if let returnType = node.returnType as? buildTypeSimple {
-				if (returnType.name != "Int32") {
-					compileErrorWithHasLocation("functions can only return Int32 right now", node)
-				}
-			} else {
-				abort()
-			}
-			
 			builderContext.variables[builderContext.level][node.name] = data
 		}
 		
@@ -81,17 +73,25 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST:
 		
 		if let node = node as? SyntaxFunction {
 			if let function = builderContext.variables[builderContext.level][node.name] as? functionData {
-				let build = buildLLVM(builderContext, function, node.codeBlock, nil, true)
+				let _ = buildLLVM(builderContext, function, node.codeBlock, nil, true)
 				
 				if (!function.hasReturned) {
 					compileErrorWithHasLocation("function `\(node.name)` never returned", node)
 				}
 				
-				LLVMSource.append("\ndefine i32 @\(node.name)() {\nentry:")
-				
-				LLVMSource.append(function.LLVMString)
-				
-				LLVMSource.append("\n}")
+				if let returnType = function.returnType as? buildTypeSimple {
+					guard let LLVMType = LLVMTypeMap[returnType.name] else {
+						compileErrorWithHasLocation("no type called \(returnType.name)", node)
+					}
+					
+					LLVMSource.append("\ndefine \(LLVMType) @\(node.name)() {\nentry:")
+					
+					LLVMSource.append(function.LLVMString)
+					
+					LLVMSource.append("\n}")
+				} else {
+					abort()
+				}
 			} else {
 				abort()
 			}
@@ -124,14 +124,39 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST:
 				compileErrorWithHasLocation("call to unknown function \"\(node.name)\"", node)
 			}
 			
-			let string: String = buildLLVM(builderContext, inside, node.arguments, functionToCall.arguments, false)
-			
-			function.LLVMString.append("\n\t%\(function.instructionCount) = call i32 @\(node.name)(\(string))")
-			
-			#warning("i32 should not be hard coded")
-			LLVMSource.append("i32 %\(function.instructionCount)")
-			
-			function.instructionCount += 1
+			if let returnType = functionToCall.returnType as? buildTypeSimple {
+				guard let LLVMType = LLVMTypeMap[returnType.name] else {
+					compileErrorWithHasLocation("no type called \(returnType.name)", node)
+				}
+				
+				let argumentsString: String = buildLLVM(builderContext, inside, node.arguments, functionToCall.arguments, false)
+				
+				if (LLVMType == "void") {
+					function.LLVMString.append("\n\tcall \(LLVMType) @\(node.name)(\(argumentsString))")
+				} else {
+					function.LLVMString.append("\n\t%\(function.instructionCount) = call \(LLVMType) @\(node.name)(\(argumentsString))")
+					
+					LLVMSource.append("\(LLVMType) %\(function.instructionCount)")
+					
+					function.instructionCount += 1
+				}
+			} else {
+				abort()
+			}
+		}
+		
+		else if let node = node as? SyntaxWord {
+			if (node.value == "Void") {
+				guard let type = typeList![index] as? buildTypeSimple else {
+					compileErrorWithHasLocation("not buildTypeSimple?", node)
+				}
+				
+				if (type.name == "Void") {
+					LLVMSource.append("void")
+				} else {
+					compileErrorWithHasLocation("expected type `\(type.name)` but got type `Void`", node)
+				}
+			}
 		}
 		
 		else if let node = node as? SyntaxNumber {
@@ -139,7 +164,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST:
 				if (type.name == "Int32") {
 					LLVMSource.append("i32 \(node.value)")
 				} else {
-					compileErrorWithHasLocation("expected type Int32 but got type \(type.name)", node)
+					compileErrorWithHasLocation("expected type `\(type.name)` but got type `Int32`", node)
 				}
 			} else {
 				compileErrorWithHasLocation("not buildTypeSimple?", node)
