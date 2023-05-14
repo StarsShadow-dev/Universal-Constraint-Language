@@ -177,3 +177,19 @@ class buildTypeSimple: buildType {
 		self.name = name
 	}
 }
+
+//
+// JSON
+//
+
+struct GlobalConfig: Decodable {
+	var LLC_path: String = ""
+	var clang_path: String = ""
+}
+
+struct Config: Decodable {
+	var name: String = ""
+	
+	var entry_path: String = ""
+	var build_directory: String = ""
+}

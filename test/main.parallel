@@ -1,0 +1,20 @@
+include { putchar }
+
+function abc(): Void {
+	putchar(97)
+	putchar(98)
+	putchar(99)
+	
+	return Void
+}
+
+function getReturnInt(): Int32 {
+	return 0
+}
+
+function main(): Int32 {
+	abc()
+	
+	// return with exit code 0
+	return getReturnInt()
+}

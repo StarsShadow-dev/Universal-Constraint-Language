@@ -4,11 +4,13 @@
 
 import Foundation
 
+var globalConfig: GlobalConfig = GlobalConfig()
+var config: Config = Config()
+
 // mode can be:
 // build - build as executable
 // run - build and then run
 let mode: String = "run"
-let outputFileName: String = "test"
 let logEverything: Bool = true
 let printProgress: Bool = true
 let optimize: Bool = false
@@ -24,38 +26,7 @@ var externalFunctions: [String:ExternalFunction] = [
 	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", "putchar", [buildTypeSimple("Int32")], buildTypeSimple("Int32")))
 ]
 
-var sourceCode: String = """
-include { putchar }
-
-function abc(): Void {
-	putchar(97)
-	putchar(98)
-	putchar(99)
-	
-	return Void
-}
-
-function getReturnInt(): Int32 {
-	return 0
-}
-
-function main(): Int32 {
-	abc()
-	
-	// return with exit code 0
-	return getReturnInt()
-}
-"""
-
-// these functions assume that ~/.zshrc exists and that it defines: llc and clang
-func findLLCPath() throws -> String {
-	let output = try Shell.exec("/bin/sh", with: ["-l", "-c", "source ~/.zshrc && which llc"])
-	return output.stdout.components(separatedBy: "\n").first!
-}
-func findclangPath() throws -> String {
-	let output = try Shell.exec("/bin/sh", with: ["-l", "-c", "source ~/.zshrc && which clang"])
-	return output.stdout.components(separatedBy: "\n").first!
-}
+var sourceCode: String = ""
 
 func progressLog(_ string: String) {
 	if (printProgress) {
@@ -100,8 +71,106 @@ func compileErrorWithHasLocation(_ message: String, _ location: any hasLocation)
 	compileError(message, location.lineNumber, location.start, location.end)
 }
 
+func setUpFolder() throws {
+	let currentDirectoryURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+	let rolderURL = URL.homeDirectory.appending(path: ".Parallel_Lang")
+
+	if !FileManager.default.fileExists(atPath: rolderURL.path()) {
+		if (logEverything) {
+			print("no folder at \(rolderURL.path()), creating folder...")
+		}
+		do {
+			try FileManager.default.createDirectory(atPath: rolderURL.path(), withIntermediateDirectories: false, attributes: nil)
+		} catch {
+			print(error.localizedDescription)
+			abort()
+		}
+		if (logEverything) {
+			print("folder created!")
+		}
+	} else {
+		if (logEverything) {
+			print("folder at \(rolderURL.path()) already exists")
+		}
+	}
+	
+	var globalConfigJSON_data = Data()
+	
+	if !FileManager.default.fileExists(atPath: rolderURL.appending(path: "config.json").path()) {
+		globalConfigJSON_data = """
+{
+	"LLC_path": "",
+	"clang_path": ""
+}
+""".data(using: .utf8)!
+		FileManager.default.createFile(atPath: rolderURL.appending(path: "config.json").path(), contents: globalConfigJSON_data)
+	} else {
+		globalConfigJSON_data = try Data(contentsOf: rolderURL.appending(path: "config.json"))
+	}
+	
+	if (logEverything) {
+		print("globalConfig: \(String(decoding: globalConfigJSON_data, as: UTF8.self))")
+	}
+	
+	globalConfig = try JSONDecoder().decode(GlobalConfig.self, from: globalConfigJSON_data)
+	
+	if (globalConfig.LLC_path.count == 0) {
+		print("globalConfig LLVM_path is empty")
+		exit(1)
+	}
+	
+	if (globalConfig.clang_path.count == 0) {
+		print("globalConfig clang_path is empty")
+		exit(1)
+	}
+	
+	var configJSON_data: Data
+	
+	do {
+		configJSON_data = try Data(contentsOf: currentDirectoryURL.appending(path: "config.json"))
+	} catch {
+		print("\(error.localizedDescription)")
+		exit(1)
+	}
+	
+	if (logEverything) {
+		print("config: \(String(decoding: configJSON_data, as: UTF8.self))")
+	}
+	
+	do {
+		config = try JSONDecoder().decode(Config.self, from: configJSON_data)
+	} catch {
+		print("\(error.localizedDescription)")
+		exit(1)
+	}
+	
+	if (config.name.count == 0) {
+		print("config name is empty")
+		exit(1)
+	}
+	
+	if (config.entry_path.count == 0) {
+		print("config entry_path is empty")
+		exit(1)
+	}
+	
+	if (config.build_directory.count == 0) {
+		print("config build_directory is empty")
+		exit(1)
+	}
+	
+	do {
+		sourceCode = try String(contentsOf: currentDirectoryURL.appending(path: config.entry_path))
+	} catch {
+		print("\(error.localizedDescription)")
+		exit(1)
+	}
+}
+
 func compile() throws {
-	print("Current directory: \(FileManager.default.currentDirectoryPath)")
+	if (logEverything) {
+		print("Current directory: \(FileManager.default.currentDirectoryPath)")
+	}
 	
 	progressLog("building...")
 	
@@ -133,11 +202,11 @@ func compile() throws {
 	progressLog("build complete!")
 	
 	progressLog("creating object file...")
-	let LLVMOutput = try Shell.exec(findLLCPath(), with: [
+	let LLVMOutput = try Shell.exec(globalConfig.LLC_path, with: [
 		// set the output type to be an object file ready for linking.
 		"-filetype=obj",
 		// write the output to the given file.
-		"-o", outputFileName + ".o"
+		"-o", config.build_directory + "/" + "objectFile.o"
 	], input: LLVMSource)
 	
 	if !LLVMOutput.stderr.isEmpty {
@@ -150,10 +219,10 @@ func compile() throws {
 	progressLog("object file created!")
 	
 	progressLog("linking...")
-	let clangOutput = try Shell.exec(findclangPath(), with: [
-		outputFileName + ".o", "-o",
+	let clangOutput = try Shell.exec(globalConfig.clang_path, with: [
+		config.build_directory + "/" + "objectFile.o", "-o",
 		// write the output to the given file.
-		outputFileName
+		config.build_directory + "/" + config.name
 	], input: nil)
 	
 	if !clangOutput.stderr.isEmpty {
@@ -165,10 +234,11 @@ func compile() throws {
 	
 	progressLog("linking complete!")
 	
+	let runPath = FileManager.default.currentDirectoryPath + "/" + config.build_directory + "/" + config.name
+	
 	if (mode == "build") {
-		progressLog("executable at \(FileManager.default.currentDirectoryPath + "/" + outputFileName)")
+		progressLog("executable at \(runPath)")
 	} else if (mode == "run") {
-		let runPath = FileManager.default.currentDirectoryPath + "/" + outputFileName
 		progressLog("running program at \(runPath)\n")
 		
 		let run = try Shell.exec(runPath, with: [], input: nil)
@@ -180,5 +250,9 @@ func compile() throws {
 		print("run exitCode: \(run.exitCode)")
 	}
 }
+
+//print(CommandLine.arguments)
+
+try setUpFolder()
 
 try compile()
