@@ -1,7 +1,7 @@
 include { putchar printf }
 
 function main(): Int32 {
-	//printf()
+	printf()
 	
 	// return with exit code 0
 	return 0

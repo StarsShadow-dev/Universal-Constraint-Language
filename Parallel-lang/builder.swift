@@ -4,9 +4,9 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 	
 	if let typeList {
 		if (AST.count > typeList.count) {
-			compileErrorWithHasLocation("too many arguments", insideNode!)
+			compileErrorWithHasLocation("too many arguments expected \(typeList.count) but got \(AST.count)", insideNode!)
 		} else if (AST.count < typeList.count) {
-			compileErrorWithHasLocation("not enough arguments", insideNode!)
+			compileErrorWithHasLocation("not enough arguments expected \(typeList.count) but got \(AST.count)", insideNode!)
 		}
 	}
 	
