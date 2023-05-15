@@ -1,20 +1,8 @@
-include { putchar }
-
-function abc(): Void {
-	putchar(97)
-	putchar(98)
-	putchar(99)
-	
-	return Void
-}
-
-function getReturnInt(): Int32 {
-	return 0
-}
+include { putchar printf }
 
 function main(): Int32 {
-	abc()
+	//printf()
 	
 	// return with exit code 0
-	return getReturnInt()
+	return 0
 }

@@ -1,12 +1,12 @@
 import Foundation
 
-func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST: [any SyntaxProtocol], _ typeList: [any buildType]?, _ newLevel: Bool) -> String {
+func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?, _ insideNode: SyntaxProtocol?, _ AST: [any SyntaxProtocol], _ typeList: [any buildType]?, _ newLevel: Bool) -> String {
 	
 	if let typeList {
 		if (AST.count > typeList.count) {
-			compileError("too many arguments")
+			compileErrorWithHasLocation("too many arguments", insideNode!)
 		} else if (AST.count < typeList.count) {
-			compileError("not enough arguments")
+			compileErrorWithHasLocation("not enough arguments", insideNode!)
 		}
 	}
 	
@@ -73,7 +73,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST:
 		
 		if let node = node as? SyntaxFunction {
 			if let function = builderContext.variables[builderContext.level][node.name] as? functionData {
-				let _ = buildLLVM(builderContext, function, node.codeBlock, nil, true)
+				let _ = buildLLVM(builderContext, function, node, node.codeBlock, nil, true)
 				
 				if (!function.hasReturned) {
 					compileErrorWithHasLocation("function `\(node.name)` never returned", node)
@@ -102,21 +102,21 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST:
 		}
 		
 		else if let node = node as? SyntaxReturn {
-			guard let inside else {
+			guard let insideFunction else {
 				compileErrorWithHasLocation("return statement is outside of a function", node)
 			}
 			
-			inside.LLVMString.append("\n\tret \(buildLLVM(builderContext, inside, [node.value], [inside.returnType], false))")
+			insideFunction.LLVMString.append("\n\tret \(buildLLVM(builderContext, insideFunction, node, [node.value], [insideFunction.returnType], false))")
 			
-			(getVariable(inside.name) as! functionData).hasReturned = true
+			(getVariable(insideFunction.name) as! functionData).hasReturned = true
 		}
 		
 		else if let node = node as? SyntaxCall {
-			guard let inside else {
+			guard let insideFunction else {
 				compileErrorWithHasLocation("call outside of a function", node)
 			}
 			
-			guard let function = getVariable(inside.name) as? functionData else {
+			guard let function = getVariable(insideFunction.name) as? functionData else {
 				abort()
 			}
 			
@@ -129,7 +129,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ inside: functionData?, _ AST:
 					compileErrorWithHasLocation("no type called \(returnType.name)", node)
 				}
 				
-				let argumentsString: String = buildLLVM(builderContext, inside, node.arguments, functionToCall.arguments, false)
+				let argumentsString: String = buildLLVM(builderContext, insideFunction, node, node.arguments, functionToCall.arguments, false)
 				
 				if (LLVMType == "void") {
 					function.LLVMString.append("\n\tcall \(LLVMType) @\(node.name)(\(argumentsString))")

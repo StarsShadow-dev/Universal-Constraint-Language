@@ -23,7 +23,8 @@ var LLVMTypeMap: [String:String] = [
 ]
 
 var externalFunctions: [String:ExternalFunction] = [
-	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", "putchar", [buildTypeSimple("Int32")], buildTypeSimple("Int32")))
+	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", "putchar", [buildTypeSimple("Int32")], buildTypeSimple("Int32"))),
+	"printf":ExternalFunction("declare i32 @printf(ptr noundef, ...) #1", functionData("printf", "printf", [buildTypeSimple("String")], buildTypeSimple("Int32"))),
 ]
 
 var sourceCode: String = ""
@@ -191,7 +192,7 @@ func compile() throws {
 	let builderContext = BuilderContext(level: -1, variables: [])
 	let inside: functionData? = nil
 	
-	var LLVMSource = buildLLVM(builderContext, inside, abstractSyntaxTree, nil, true)
+	var LLVMSource = buildLLVM(builderContext, inside, nil, abstractSyntaxTree, nil, true)
 	
 	LLVMSource = toplevelLLVM + "\n" + LLVMSource
 	
