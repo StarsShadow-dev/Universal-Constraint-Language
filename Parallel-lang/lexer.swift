@@ -51,9 +51,53 @@ func lex() -> [token] {
 			column += 1
 			index += 1
 			
-			let value = readWhile({ char in
-				return char != "\""
-			})
+			var value = ""
+			
+			var escaped = false
+			var continueLoop = true
+			
+			while (continueLoop) {
+				if (sourceCode.count <= index) {
+					column -= 1
+					index -= 1
+					continueLoop = false
+				} else {
+					let char = sourceCode[sourceCode.index(sourceCode.startIndex, offsetBy: index)]
+					
+					if (escaped) {
+						escaped = false
+						
+						column += 1
+						index += 1
+						
+						if (char == "n") {
+							value.append("\n")
+							continue
+						} else if (char == "\"") {
+							continue
+						}
+					}
+					
+					if (char == "\\") {
+						escaped = true
+						column += 1
+						index += 1
+					} else if (char != "\"") {
+						value.append(char)
+						if (char == "\n") {
+							line += 1
+							column = 0
+						} else {
+							column += 1
+							index += 1
+						}
+					} else {
+						column -= 1
+						index -= 1
+						continueLoop = false
+					}
+				}
+			}
 			
 			tokens.append(token(name: "string",
 				lineNumber: line,

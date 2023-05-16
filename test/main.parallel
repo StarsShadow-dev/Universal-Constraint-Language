@@ -1,7 +1,9 @@
 include { putchar printf }
 
 function main(): Int32 {
-	printf()
+	printf("testing\n")
+	printf("Hello, World\n")
+	printf("strings are working!\n")
 	
 	// return with exit code 0
 	return 0

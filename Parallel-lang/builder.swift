@@ -171,6 +171,18 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 			}
 		}
 		
+		else if let node = node as? SyntaxString {
+			let index = constants.lastIndex(of: node.value)
+			
+			if (index != nil) {
+				LLVMSource.append("ptr @.const.\(String(describing: index))")
+			} else {
+				// if the constant does exist yet
+				LLVMSource.append("ptr @.const.\(constants.count)")
+				constants.append(node.value)
+			}
+		}
+		
 		else {
 			compileErrorWithHasLocation("unexpected node type \(node)", node)
 		}

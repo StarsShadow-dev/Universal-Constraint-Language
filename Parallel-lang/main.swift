@@ -22,6 +22,8 @@ var LLVMTypeMap: [String:String] = [
 	"Int32":"i32"
 ]
 
+var constants: [String] = []
+
 var externalFunctions: [String:ExternalFunction] = [
 	"putchar":ExternalFunction("declare i32 @putchar(i32 noundef) #1", functionData("putchar", "putchar", [buildTypeSimple("Int32")], buildTypeSimple("Int32"))),
 	"printf":ExternalFunction("declare i32 @printf(ptr noundef, ...) #1", functionData("printf", "printf", [buildTypeSimple("String")], buildTypeSimple("Int32"))),
@@ -194,7 +196,14 @@ func compile() throws {
 	
 	var LLVMSource = buildLLVM(builderContext, inside, nil, abstractSyntaxTree, nil, true)
 	
-	LLVMSource = toplevelLLVM + "\n" + LLVMSource
+	var constantsString = ""
+	
+	for (index, constant) in zip(constants.indices, constants) {
+		// constant.count + 1 because we are adding a null bite at the end of the constant
+		constantsString += "@.const.\(index) = private unnamed_addr constant [\(constant.count + 1) x i8] c\"\(constant)\\00\", align 1\n"
+	}
+	
+	LLVMSource = constantsString + toplevelLLVM + "\n" + LLVMSource
 	
 	if (logEverything) {
 		print("LLVMSource:\n\(LLVMSource)")
