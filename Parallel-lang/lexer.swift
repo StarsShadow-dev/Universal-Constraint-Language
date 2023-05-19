@@ -196,8 +196,8 @@ func lex() -> [token] {
 						column = 0
 					} else {
 						column += 1
-						index += 1
 					}
+					index += 1
 				} else {
 					column -= 1
 					index -= 1

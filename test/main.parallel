@@ -5,9 +5,16 @@ function main(): Int32 {
 	printf("Hello, World\n")
 	printf("strings are working!\n")
 
+	//print2x("in print2x")
+
 	var test: Int32
-	//test = 0
+	test = 0
 	
 	// return with exit code 0
 	return test
 }
+
+/*function print2x(string: String): Void {
+	printf(string)
+	printf(string)
+}*/
