@@ -45,14 +45,14 @@ func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int?
 	let lines = sourceCode.components(separatedBy: "\n")
 	
 	if let lineNumber {
-		if (lineNumber-2 > lines.count) {
-			print("\(lineNumber-2) | \(lines[lineNumber-2])")
+		if (lineNumber-2 < lines.count) {
+			print("\(lineNumber-1) | \(lines[lineNumber-2])")
 		}
-		if (lineNumber-1 > lines.count) {
-			print("\(lineNumber-1) | \(lines[lineNumber-1])")
+		if (lineNumber-1 < lines.count) {
+			print("\(lineNumber) | \(lines[lineNumber-1])")
 		}
 		
-		print("\(lineNumber) | \(lines[lineNumber].replacingOccurrences(of: "\t", with: " "))")
+		print("\(lineNumber+1) | \(lines[lineNumber].replacingOccurrences(of: "\t", with: " "))")
 		if let columnStart, let columnEnd {
 			print("\(String(repeating: "-", count: "\(lineNumber)".count))---\(String(repeating: "-", count: columnStart))\(String(repeating: "^", count: columnEnd - columnStart + 1))")
 		} else {
@@ -60,10 +60,10 @@ func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int?
 		}
 		
 		if (lineNumber+1 < lines.count) {
-			print("\(lineNumber+1) | \(lines[lineNumber+1])")
+			print("\(lineNumber+2) | \(lines[lineNumber+1])")
 		}
 		if (lineNumber+2 < lines.count) {
-			print("\(lineNumber+2) | \(lines[lineNumber+2])")
+			print("\(lineNumber+3) | \(lines[lineNumber+2])")
 		}
 	}
 	
