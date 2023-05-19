@@ -177,10 +177,12 @@ class variableData: buildVariable {
 //	var name: String
 	var type: any buildType
 	var index: Int
+	var initialized: Bool
 	
-	init(_ type: any buildType, _ index: Int) {
+	init(_ type: any buildType, _ index: Int, _ initialized: Bool) {
 		self.type = type
 		self.index = index
+		self.initialized = initialized
 	}
 }
 

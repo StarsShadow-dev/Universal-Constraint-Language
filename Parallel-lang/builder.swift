@@ -131,7 +131,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 					compileErrorWithHasLocation("Invalid redeclaration of '\(node.name)'", node)
 				}
 				
-				builderContext.variables[builderContext.level][node.name] = variableData(node.type, insideFunction.instructionCount)
+				builderContext.variables[builderContext.level][node.name] = variableData(node.type, insideFunction.instructionCount, false)
 				
 				insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = alloca \(LLVMType.0)")
 				
@@ -151,6 +151,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 			}
 			
 			if let variable = variable as? variableData {
+				variable.initialized = true
 				insideFunction.LLVMString.append("\n\tstore \(buildLLVM(builderContext, insideFunction, node, node.expression, [insideFunction.returnType], false)), ptr %\(variable.index)")
 			} else {
 				abort()
@@ -215,6 +216,10 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 					if let variableType = variable.type as? buildTypeSimple {
 						guard let LLVMType = LLVMTypeMap[variableType.name] else {
 							abort()
+						}
+						
+						if (!variable.initialized) {
+							compileErrorWithHasLocation("variable '\(node.value)' has not been initialized", node)
 						}
 						
 						insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = load \(LLVMType.0), ptr %\(variable.index)")
