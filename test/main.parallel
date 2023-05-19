@@ -4,7 +4,12 @@ function main(): Int32 {
 	printf("testing\n")
 	printf("Hello, World\n")
 	printf("strings are working!\n")
+
+	var test: Int32
+	test = 123
+
+	test = 0
 	
 	// return with exit code 0
-	return 0
+	return test
 }

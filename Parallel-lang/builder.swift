@@ -84,7 +84,13 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 						compileErrorWithHasLocation("no type called \(returnType.name)", node)
 					}
 					
-					LLVMSource.append("\ndefine \(LLVMType) @\(node.name)() {\nentry:")
+					// if the function is not named main make it private
+					// https://llvm.org/docs/LangRef.html#linkage-types
+					if (node.name == "main") {
+						LLVMSource.append("\ndefine \(LLVMType.0) @\(node.name)() {\nentry:")
+					} else {
+						LLVMSource.append("\ndefine private \(LLVMType.0) @\(node.name)() {\nentry:")
+					}
 					
 					LLVMSource.append(function.LLVMString)
 					
@@ -111,6 +117,46 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 			(getVariable(insideFunction.name) as! functionData).hasReturned = true
 		}
 		
+		else if let node = node as? SyntaxDefinition {
+			guard let insideFunction else {
+				compileErrorWithHasLocation("variable definition outside of a function", node)
+			}
+			
+			if let variableType = node.type as? buildTypeSimple {
+				guard let LLVMType = LLVMTypeMap[variableType.name] else {
+					compileErrorWithHasLocation("no type called \(variableType.name)", node)
+				}
+				
+				if (getVariable(node.name) != nil) {
+					compileErrorWithHasLocation("Invalid redeclaration of '\(node.name)'", node)
+				}
+				
+				builderContext.variables[builderContext.level][node.name] = variableData(node.type, insideFunction.instructionCount)
+				
+				insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = alloca \(LLVMType.0)")
+				
+				insideFunction.instructionCount += 1
+			} else {
+				abort()
+			}
+		}
+		
+		else if let node = node as? SyntaxAssignment {
+			guard let insideFunction else {
+				compileErrorWithHasLocation("variable assignment outside of a function", node)
+			}
+			
+			guard let variable = getVariable(node.name) else {
+				compileErrorWithHasLocation("variable not found", node)
+			}
+			
+			if let variable = variable as? variableData {
+				insideFunction.LLVMString.append("\n\tstore \(buildLLVM(builderContext, insideFunction, node, node.expression, [insideFunction.returnType], false)), ptr %\(variable.index)")
+			} else {
+				abort()
+			}
+		}
+		
 		else if let node = node as? SyntaxCall {
 			guard let insideFunction else {
 				compileErrorWithHasLocation("call outside of a function", node)
@@ -131,12 +177,12 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 				
 				let argumentsString: String = buildLLVM(builderContext, insideFunction, node, node.arguments, functionToCall.arguments, false)
 				
-				if (LLVMType == "void") {
-					function.LLVMString.append("\n\tcall \(LLVMType) @\(node.name)(\(argumentsString))")
+				if (LLVMType.0 == "void") {
+					function.LLVMString.append("\n\tcall \(LLVMType.0) @\(node.name)(\(argumentsString))")
 				} else {
-					function.LLVMString.append("\n\t%\(function.instructionCount) = call \(LLVMType) @\(node.name)(\(argumentsString))")
+					function.LLVMString.append("\n\t%\(function.instructionCount) = call \(LLVMType.0) @\(node.name)(\(argumentsString))")
 					
-					LLVMSource.append("\(LLVMType) %\(function.instructionCount)")
+					LLVMSource.append("\(LLVMType.0) %\(function.instructionCount)")
 					
 					function.instructionCount += 1
 				}
@@ -155,6 +201,32 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 					LLVMSource.append("void")
 				} else {
 					compileErrorWithHasLocation("expected type `\(type.name)` but got type `Void`", node)
+				}
+			} else {
+				guard let insideFunction else {
+					compileErrorWithHasLocation("variable outside of a function", node)
+				}
+				
+				guard let variable = getVariable(node.value) else {
+					compileErrorWithHasLocation("variable not found", node)
+				}
+				
+				if let variable = variable as? variableData {
+					if let variableType = variable.type as? buildTypeSimple {
+						guard let LLVMType = LLVMTypeMap[variableType.name] else {
+							abort()
+						}
+						
+						insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = load \(LLVMType.0), ptr %\(variable.index)")
+						
+						LLVMSource.append("\(LLVMType.0) %\(insideFunction.instructionCount)")
+						
+						insideFunction.instructionCount += 1
+					} else {
+						abort()
+					}
+				} else {
+					abort()
 				}
 			}
 		}

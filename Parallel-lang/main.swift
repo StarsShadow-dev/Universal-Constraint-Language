@@ -17,9 +17,10 @@ let optimize: Bool = false
 
 var toplevelLLVM = ""
 
-var LLVMTypeMap: [String:String] = [
-	"Void":"void",
-	"Int32":"i32"
+// this stores the LLVM name and the size (in bites)
+var LLVMTypeMap: [String:(String, Int)] = [
+	"Void": ("void", 0),
+	"Int32": ("i32", 4)
 ]
 
 var constants: [String] = []
@@ -69,7 +70,7 @@ func compileError(_ message: String, _ lineNumber:Int? = nil, _ columnStart:Int?
 	abort()
 }
 
-/// this function takes a message and something that conforms to hasLocation
+/// this function takes a message and something that conforms to hasLocation, then calls compileError
 func compileErrorWithHasLocation(_ message: String, _ location: any hasLocation) -> Never {
 	compileError(message, location.lineNumber, location.start, location.end)
 }

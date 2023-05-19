@@ -37,7 +37,8 @@ func lex() -> [token] {
 				return char.isLetter || char == "_" || char.isNumber
 			})
 			
-			tokens.append(token(name: "word",
+			tokens.append(token(
+				name: "word",
 				lineNumber: line,
 				start: startColumn,
 				end: column,
@@ -99,7 +100,8 @@ func lex() -> [token] {
 				}
 			}
 			
-			tokens.append(token(name: "string",
+			tokens.append(token(
+				name: "string",
 				lineNumber: line,
 				start: startColumn,
 				end: column,
@@ -112,7 +114,8 @@ func lex() -> [token] {
 		}
 		
 		else if (char.isNumber) {
-			tokens.append(token(name: "number",
+			tokens.append(token(
+				name: "number",
 				lineNumber: line,
 				start: startColumn,
 				end: column,
@@ -123,7 +126,18 @@ func lex() -> [token] {
 		}
 		
 		else if (char == "(" || char == ")" || char == "{" || char == "}" || char == ":") {
-			tokens.append(token(name: "separator",
+			tokens.append(token(
+				name: "separator",
+				lineNumber: line,
+				start: startColumn,
+				end: column,
+				value: String(char)
+			))
+		}
+		
+		else if (char == "=") {
+			tokens.append(token(
+				name: "operator",
 				lineNumber: line,
 				start: startColumn,
 				end: column,

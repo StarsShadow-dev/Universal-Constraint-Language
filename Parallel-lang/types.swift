@@ -86,6 +86,24 @@ struct SyntaxReturn: SyntaxProtocol {
 	var value: any SyntaxProtocol
 }
 
+struct SyntaxDefinition: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
+	var name: String
+	var type: any buildType
+}
+
+struct SyntaxAssignment: SyntaxProtocol {
+	var lineNumber: Int?
+	var start: Int?
+	var end: Int?
+	
+	var name: String
+	var expression: [any SyntaxProtocol]
+}
+
 //struct SyntaxType: SyntaxProtocol {
 //	var value: any SyntaxProtocol
 //}
@@ -140,13 +158,11 @@ protocol buildVariable: AnyObject {}
 class functionData: buildVariable {
 	var name: String
 	var LLVMname: String
-	var arguments: [any buildType] = []
-	var returnType: any buildType = buildTypeSimple("null")
+	var arguments: [any buildType]
+	var returnType: any buildType
 	
 	var instructionCount: Int = 0
-	
 	var hasReturned: Bool = false
-	
 	var LLVMString: String = ""
 	
 	init(_ name: String, _ LLVMname: String, _ arguments: [any buildType], _ returnType: any buildType) {
@@ -159,7 +175,13 @@ class functionData: buildVariable {
 
 class variableData: buildVariable {
 //	var name: String
-	var type: String = ""
+	var type: any buildType
+	var index: Int
+	
+	init(_ type: any buildType, _ index: Int) {
+		self.type = type
+		self.index = index
+	}
 }
 
 //

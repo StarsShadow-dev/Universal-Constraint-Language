@@ -20,6 +20,8 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 				break
 			case "return": parse_return()
 				break
+			case "var": parse_variable_definition()
+				break
 			default:
 				if (tokens[parserContext.index+1].name == "separator" && tokens[parserContext.index+1].value == "(") {
 					// eat the word and separator
@@ -28,6 +30,13 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 					let arguments = parse(&parserContext, tokens)
 					
 					AST.append(SyntaxCall(lineNumber: token.lineNumber, start: token.start, end: token.end, name: token.value, arguments: arguments))
+				} else if (tokens[parserContext.index+1].name == "operator" && tokens[parserContext.index+1].value == "=") {
+					// eat the word and operator
+					parserContext.index += 2
+					
+					let expression = parse(&parserContext, tokens, true)
+					
+					AST.append(SyntaxAssignment(lineNumber: token.lineNumber, start: token.start, end: token.end, name: token.value, expression: expression))
 				} else {
 					AST.append(SyntaxWord(lineNumber: token.lineNumber, start: token.start, end: token.end, value: token.value))
 				}
@@ -123,6 +132,22 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 		let value = parse(&parserContext, tokens, true)
 		
 		AST.append(SyntaxReturn(lineNumber: token.lineNumber, start: token.start, end: token.end, value: value[0]))
+	}
+	
+	func parse_variable_definition() {
+		let nameToken = getNextToken()
+		if (nameToken.name != "word") {
+			compileError("variable definition expected a name`", token.lineNumber, token.start, token.end)
+		}
+		
+		let colonToken = getNextToken()
+		if (colonToken.name != "separator" || colonToken.value != ":") {
+			compileError("variable definition expected a colon", token.lineNumber, token.start, token.end)
+		}
+		
+		let variableType = parse_type()
+		
+		AST.append(SyntaxDefinition(lineNumber: token.lineNumber, start: token.start, end: token.end, name: nameToken.value, type: variableType))
 	}
 	
 	func parse_type() -> any buildType {
