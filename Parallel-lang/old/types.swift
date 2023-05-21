@@ -63,7 +63,7 @@ struct SyntaxFunction: SyntaxProtocol {
 	var end: Int?
 	
 	var name: String
-	var arguments: [any buildType]
+	var arguments: [(String, any buildType)]
 	
 	var codeBlock: [any SyntaxProtocol]
 	

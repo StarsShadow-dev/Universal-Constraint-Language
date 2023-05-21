@@ -87,9 +87,9 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 					// if the function is not named main make it private
 					// https://llvm.org/docs/LangRef.html#linkage-types
 					if (node.name == "main") {
-						LLVMSource.append("\ndefine \(LLVMType.0) @\(node.name)() {\nentry:")
+						LLVMSource.append("\ndefine \(LLVMType) @\(node.name)() {\nentry:")
 					} else {
-						LLVMSource.append("\ndefine private \(LLVMType.0) @\(node.name)() {\nentry:")
+						LLVMSource.append("\ndefine private \(LLVMType) @\(node.name)() {\nentry:")
 					}
 					
 					LLVMSource.append(function.LLVMString)
@@ -133,7 +133,7 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 				
 				builderContext.variables[builderContext.level][node.name] = variableData(node.type, insideFunction.instructionCount, false)
 				
-				insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = alloca \(LLVMType.0)")
+				insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = alloca \(LLVMType)")
 				
 				insideFunction.instructionCount += 1
 			} else {
@@ -178,12 +178,12 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 				
 				let argumentsString: String = buildLLVM(builderContext, insideFunction, node, node.arguments, functionToCall.arguments, false)
 				
-				if (LLVMType.0 == "void") {
-					function.LLVMString.append("\n\tcall \(LLVMType.0) @\(node.name)(\(argumentsString))")
+				if (LLVMType == "void") {
+					function.LLVMString.append("\n\tcall \(LLVMType) @\(node.name)(\(argumentsString))")
 				} else {
-					function.LLVMString.append("\n\t%\(function.instructionCount) = call \(LLVMType.0) @\(node.name)(\(argumentsString))")
+					function.LLVMString.append("\n\t%\(function.instructionCount) = call \(LLVMType) @\(node.name)(\(argumentsString))")
 					
-					LLVMSource.append("\(LLVMType.0) %\(function.instructionCount)")
+					LLVMSource.append("\(LLVMType) %\(function.instructionCount)")
 					
 					function.instructionCount += 1
 				}
@@ -212,27 +212,27 @@ func buildLLVM(_ builderContext: BuilderContext, _ insideFunction: functionData?
 					compileErrorWithHasLocation("variable not found", node)
 				}
 				
-				if let variable = variable as? variableData {
-					if let variableType = variable.type as? buildTypeSimple {
-						guard let LLVMType = LLVMTypeMap[variableType.name] else {
-							abort()
-						}
-						
-						if (!variable.initialized) {
-							compileErrorWithHasLocation("variable '\(node.value)' has not been initialized", node)
-						}
-						
-						insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = load \(LLVMType.0), ptr %\(variable.index)")
-						
-						LLVMSource.append("\(LLVMType.0) %\(insideFunction.instructionCount)")
-						
-						insideFunction.instructionCount += 1
-					} else {
-						abort()
-					}
-				} else {
+				guard let variable = variable as? variableData else {
 					abort()
 				}
+				
+				guard let variableType = variable.type as? buildTypeSimple else {
+					abort()
+				}
+				
+				guard let LLVMType = LLVMTypeMap[variableType.name] else {
+					abort()
+				}
+				
+				if (!variable.initialized) {
+					compileErrorWithHasLocation("variable '\(node.value)' has not been initialized", node)
+				}
+				
+				insideFunction.LLVMString.append("\n\t%\(insideFunction.instructionCount) = load \(LLVMType), ptr %\(variable.index)")
+				
+				LLVMSource.append("\(LLVMType) %\(insideFunction.instructionCount)")
+				
+				insideFunction.instructionCount += 1
 			}
 		}
 		

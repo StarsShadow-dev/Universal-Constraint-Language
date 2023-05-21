@@ -1,20 +1,4 @@
-include { putchar printf }
-
 function main(): Int32 {
-	printf("testing\n")
-	printf("Hello, World\n")
-	printf("strings are working!\n")
-
-	//print2x("in print2x")
-
-	var test: Int32
-	test = 0
-	
 	// return with exit code 0
-	return test
+	return 0
 }
-
-/*function print2x(string: String): Void {
-	printf(string)
-	printf(string)
-}*/

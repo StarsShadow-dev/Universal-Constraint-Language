@@ -18,9 +18,10 @@ let optimize: Bool = false
 var toplevelLLVM = ""
 
 // this stores the LLVM name and the size (in bites)
-var LLVMTypeMap: [String:(String, Int)] = [
-	"Void": ("void", 0),
-	"Int32": ("i32", 4)
+var LLVMTypeMap: [String:String] = [
+	"Void": "void",
+	"Int1": "i1",
+	"Int32": "i32"
 ]
 
 var constants: [String] = []

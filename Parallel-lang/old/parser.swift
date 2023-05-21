@@ -93,7 +93,7 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 			compileError("function definition expected an openingParentheses, example: `function main(): Int {}`", token.lineNumber, token.start, token.end)
 		}
 		parserContext.index += 1
-		let arguments = parse(&parserContext, tokens)
+		let arguments = parse_function_arguments()
 		
 		let colonToken = getNextToken()
 		if (colonToken.name != "separator" || colonToken.value != ":") {
@@ -109,11 +109,46 @@ func parse(_ parserContext: inout ParserContext, _ tokens: [token], _ endAfter1T
 		parserContext.index += 1
 		let codeBlock = parse(&parserContext, tokens)
 		
-		if (arguments.count != 0) {
-			compileError("function arguments are not available right now", token.lineNumber, token.start, token.end)
+		AST.append(SyntaxFunction(lineNumber: token.lineNumber, start: token.start, end: token.end, name: nameToken.value, arguments: arguments, codeBlock: codeBlock, returnType: returnType))
+	}
+	
+	func parse_function_arguments() -> [(String, any buildType)] {
+		var arguments: [(String, any buildType)] = []
+		
+		while true {
+			if (parserContext.index >= tokens.count) {
+				compileError("function arguments never ended", token.lineNumber, token.start, token.end)
+			}
+			
+			token = tokens[parserContext.index]
+			
+			print("token: \(token)")
+			
+			if (token.name == "word") {
+				let colon = tokens[parserContext.index]
+				if (colon.name != "separator" || colon.value != ":") {
+					compileError("expected colon after argument name", token.lineNumber, token.start, token.end)
+				}
+			}
+			
+			else if (token.name == "separator") {
+				if (token.value == ")") {
+					break
+				}
+				
+				else {
+					compileError("unexpected separator \(token)", token.lineNumber, token.start, token.end)
+				}
+			}
+			
+			else {
+				compileError("unknown token in function arguments \(token)", token.lineNumber, token.start, token.end)
+			}
+			
+			parserContext.index += 1
 		}
 		
-		AST.append(SyntaxFunction(lineNumber: token.lineNumber, start: token.start, end: token.end, name: nameToken.value, arguments: [], codeBlock: codeBlock, returnType: returnType))
+		return arguments
 	}
 	
 	func parse_include() {
