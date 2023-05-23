@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		020300182A1A7AD90082A063 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300172A1A7AD90082A063 /* main.c */; };
+		0203001B2A1AC0420082A063 /* globals.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203001A2A1AC0420082A063 /* globals.c */; };
+		0203001E2A1AD5C40082A063 /* types.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203001D2A1AD5C40082A063 /* types.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +30,10 @@
 		020300112A0C05730082A063 /* builder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = builder.swift; sourceTree = "<group>"; };
 		020300162A1A7AD90082A063 /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
 		020300172A1A7AD90082A063 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		020300192A1AC0420082A063 /* globals.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = globals.h; sourceTree = "<group>"; };
+		0203001A2A1AC0420082A063 /* globals.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = globals.c; sourceTree = "<group>"; };
+		0203001C2A1ACA210082A063 /* types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
+		0203001D2A1AD5C40082A063 /* types.c */ = {isa = PBXFileReference; indentWidth = 4; lastKnownFileType = sourcecode.c.c; path = types.c; sourceTree = "<group>"; };
 		02392DF52A04024600F1AE9C /* Parallel-lang */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Parallel-lang"; sourceTree = BUILT_PRODUCTS_DIR; };
 		02392DF82A04024600F1AE9C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
@@ -80,8 +86,12 @@
 			isa = PBXGroup;
 			children = (
 				020300152A1A7A940082A063 /* old */,
-				020300172A1A7AD90082A063 /* main.c */,
 				020300162A1A7AD90082A063 /* main.h */,
+				020300172A1A7AD90082A063 /* main.c */,
+				020300192A1AC0420082A063 /* globals.h */,
+				0203001A2A1AC0420082A063 /* globals.c */,
+				0203001C2A1ACA210082A063 /* types.h */,
+				0203001D2A1AD5C40082A063 /* types.c */,
 			);
 			path = "Parallel-lang";
 			sourceTree = "<group>";
@@ -144,6 +154,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0203001E2A1AD5C40082A063 /* types.c in Sources */,
+				0203001B2A1AC0420082A063 /* globals.c in Sources */,
 				020300182A1A7AD90082A063 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
