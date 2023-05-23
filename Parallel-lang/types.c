@@ -1,6 +1,7 @@
-#include "types.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "types.h"
 
 void *linkedList_addNode(linkedList_Node **head, unsigned long size) {
 	linkedList_Node* newNode = calloc(1, sizeof(linkedList_Node) + size);

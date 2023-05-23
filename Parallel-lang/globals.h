@@ -3,6 +3,10 @@
 
 #include "types.h"
 
+extern char *source;
+
+extern linkedList_Node *tokens;
+
 void allocateGlobals(void);
 
 void deallocateGlobals(void);
