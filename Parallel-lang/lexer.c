@@ -14,6 +14,7 @@ linkedList_Node *lex(void) {
 	linkedList_Node *tokens = 0;
 	
 	int i = 0;
+	
 	while (1) {
 		char character = source[i];
 		
@@ -69,13 +70,14 @@ linkedList_Node *lex(void) {
 		}
 		
 		else if (separator) {
-			token *data = linkedList_addNode(&tokens, sizeof(token) + 1);
+			token *data = linkedList_addNode(&tokens, sizeof(token) + 2);
 			
 			data->type = TokenType_separator;
 			
 			data->location = (SourceLocation){0, i, i};
 			
 			stpncpy(data->value, &source[i], 1);
+			data->value[1] = 0;
 		}
 		
 		else {
