@@ -10,15 +10,16 @@
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}' || character == ':'
 
-void lex(void) {
-	int i = 0;
+linkedList_Node *lex(void) {
+	linkedList_Node *tokens = 0;
 	
+	int i = 0;
 	while (1) {
 		char character = source[i];
 		
 		// if character is a NULL byte, then the string is over
 		if (character == 0) {
-			return;
+			break;
 		}
 		
 //		printf("character: %c\n", character);
@@ -84,4 +85,6 @@ void lex(void) {
 		
 		i += 1;
 	}
+	
+	return tokens;
 }

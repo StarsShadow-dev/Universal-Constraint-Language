@@ -7,10 +7,10 @@
 #include "lexer.h"
 
 /// print the tokens to standard out in a form resembling JSON
-void printTokens(void) {
+void printTokens(linkedList_Node *head) {
 	printf("tokens: [");
 	
-	linkedList_Node *current = tokens;
+	linkedList_Node *current = head;
 	while (1) {
 		printf("{type: %i, value: \"%s\"}", ((token *)(current->data))->type, ((token *)(current->data))->value);
 		
@@ -24,14 +24,10 @@ void printTokens(void) {
 }
 
 int main(int argc, char **argv) {
-	allocateGlobals();
-	
 	source = "function main() {}";
 	
-	lex();
+	linkedList_Node *tokens = lex();
+	printTokens(tokens);
 	
-	printTokens();
-	
-	deallocateGlobals();
 	return 0;
 }

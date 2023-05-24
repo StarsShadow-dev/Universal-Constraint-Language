@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-void lex(void);
+linkedList_Node *lex(void);
 
 #endif /* lexer_h */
