@@ -13,10 +13,12 @@
 linkedList_Node *lex(void) {
 	linkedList_Node *tokens = 0;
 	
-	int i = 0;
+	int index = 0;
+	int line = 1;
+	int column = 0;
 	
 	while (1) {
-		char character = source[i];
+		char character = source[index];
 		
 		// if character is a NULL byte, then the string is over
 		if (character == 0) {
@@ -25,34 +27,40 @@ linkedList_Node *lex(void) {
 		
 //		printf("character: %c\n", character);
 		
-		// ignore space and tab
-		if (character == ' ' || character == '\t') {
+		if (character == '\n') {
+			line += 1;
+			column = 0;
 			
+			index += 1;
+			continue;
 		}
+		
+		// ignore space and tab
+		else if (character == ' ' || character == '\t') {}
 		
 		// start of a word
 		else if (wordStart) {
-			int start = i;
+			int start = index;
 			int end = 0;
 			
 			while (1) {
-				char character = source[i];
+				char character = source[index];
 				
 				if (character == 0) {
-					end = i;
+					end = index;
 					
-					i -= 1;
+					index -= 1;
 					break;
 				}
 				
 				if (wordContinue) {
-					i += 1;
+					index += 1;
 					continue;
 				}
 				
-				end = i;
+				end = index;
 				
-				i -= 1;
+				index -= 1;
 				break;
 			}
 			
@@ -63,7 +71,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_word;
 			
-			data->location = (SourceLocation){0, start, end};
+			data->location = (SourceLocation){line, start, end};
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
 			data->value[valueSize] = 0;
@@ -74,9 +82,9 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_separator;
 			
-			data->location = (SourceLocation){0, i, i};
+			data->location = (SourceLocation){line, index, index};
 			
-			stpncpy(data->value, &source[i], 1);
+			stpncpy(data->value, &source[index], 1);
 			data->value[1] = 0;
 		}
 		
@@ -85,7 +93,7 @@ linkedList_Node *lex(void) {
 			compileError((SourceLocation){});
 		}
 		
-		i += 1;
+		index += 1;
 	}
 	
 	return tokens;

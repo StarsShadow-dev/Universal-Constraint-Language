@@ -8,23 +8,30 @@
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
-	printf("tokens: [");
+	printf("tokens: [\n");
 	
 	linkedList_Node *current = head;
 	while (1) {
-		printf("{type: %i, value: \"%s\"}", ((token *)(current->data))->type, ((token *)(current->data))->value);
+		printf(
+			"\t{type: %i, value: \"%s\", line: %i, start: %i, end: %i}",
+			((token *)(current->data))->type,
+			((token *)(current->data))->value,
+			((token *)(current->data))->location.line,
+			((token *)(current->data))->location.columnStart,
+			((token *)(current->data))->location.columnEnd
+		);
 		
 		if (current->next == NULL) break;
 		
-		printf(", ");
+		printf(",\n");
 		current = current->next;
 	}
 	
-	printf("]\n");
+	printf("\n]\n");
 }
 
 int main(int argc, char **argv) {
-	source = "function main() {}";
+	source = "function main()\n{}";
 	
 	linkedList_Node *tokens = lex();
 	printTokens(tokens);
