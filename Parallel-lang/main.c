@@ -6,26 +6,27 @@
 #include "globals.h"
 #include "lexer.h"
 
+/// print the tokens to standard out in a form resembling JSON
 void printTokens(void) {
+	printf("tokens: [");
+	
 	linkedList_Node *current = tokens;
 	while (1) {
-		printf("token(type: %i value: %s)", ((token *)(current->data))->type, ((token *)(current->data))->value);
+		printf("{type: %i, value: \"%s\"}", ((token *)(current->data))->type, ((token *)(current->data))->value);
 		
 		if (current->next == NULL) break;
 		
-		// space
-		putchar(32);
+		printf(", ");
 		current = current->next;
 	}
 	
-	// line break
-	putchar(10);
+	printf("]\n");
 }
 
 int main(int argc, char **argv) {
 	allocateGlobals();
 	
-	source = "function main";
+	source = "function main() {}";
 	
 	lex();
 	

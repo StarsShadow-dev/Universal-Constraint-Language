@@ -8,6 +8,8 @@
 #define wordStart (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || character == '_'
 #define wordContinue wordStart || (character >= '0' && character <= '9')
 
+#define separator character == '(' || character == ')' || character == '{' || character == '}' || character == ':'
+
 void lex(void) {
 	int i = 0;
 	
@@ -19,7 +21,7 @@ void lex(void) {
 			return;
 		}
 		
-		printf("character: %c\n", character);
+//		printf("character: %c\n", character);
 		
 		// ignore space and tab
 		if (character == ' ' || character == '\t') {
@@ -47,6 +49,8 @@ void lex(void) {
 				}
 				
 				end = i;
+				
+				i -= 1;
 				break;
 			}
 			
@@ -61,6 +65,16 @@ void lex(void) {
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
 			data->value[valueSize] = 0;
+		}
+		
+		else if (separator) {
+			token *data = linkedList_addNode(&tokens, sizeof(token) + 1);
+			
+			data->type = TokenType_separator;
+			
+			data->location = (SourceLocation){0, i, i};
+			
+			stpncpy(data->value, &source[i], 1);
 		}
 		
 		else {
