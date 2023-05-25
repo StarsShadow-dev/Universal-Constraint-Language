@@ -30,11 +30,46 @@ void printTokens(linkedList_Node *head) {
 	printf("\n]\n");
 }
 
-int main(int argc, char **argv) {
-	source = "function main()\n{}";
+char *readFile(const char *path) {
+	FILE* file = fopen(path, "r");
 	
-	linkedList_Node *tokens = lex();
-	printTokens(tokens);
+	if (file == 0) {
+		printf("could not find file %s\n", path);
+		exit(1);
+	}
+
+	// get the size of the file
+	fseek(file, 0L, SEEK_END);
+	size_t fileSize = ftell(file);
+	rewind(file);
+	
+	char *buffer = malloc(fileSize + 1);
+	
+	if (buffer == NULL) {
+		printf("malloc failed to get space for a file buffer\n");
+		exit(1);
+	}
+	
+	if (fread(buffer, sizeof(char), fileSize, file) != fileSize) {
+		printf("fread failed\n");
+		exit(1);
+	}
+	buffer[fileSize] = 0;
+	
+	fclose(file);
+	
+	return buffer;
+}
+
+int main(int argc, char **argv) {
+//	source = "function main()\n{}";
+//
+//	linkedList_Node *tokens = lex();
+//	printTokens(tokens);
+	
+	char *buffer = readFile("config.json");
+	printf("buffer: %s", buffer);
+	free(buffer);
 	
 	return 0;
 }
