@@ -5,10 +5,16 @@
 #include "types.h"
 #include "globals.h"
 #include "lexer.h"
+#include "parser.h"
 #include "jsmn.h"
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
+	if (head == 0) {
+		printf("tokens: []\n");
+		return;
+	}
+	
 	printf("tokens: [\n");
 	
 	linkedList_Node *current = head;
@@ -106,43 +112,45 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 }
 
 int main(int argc, char **argv) {
-//	source = "function main()\n{}";
+	source = "function main()\n{}";
+
+	linkedList_Node *tokens = lex();
+	printTokens(tokens);
+	
+//	linkedList_Node *AST = parse(tokens);
+	
+//	char *homePath = getenv("HOME");
+//	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
+//	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath));
+//	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
 //
-//	linkedList_Node *tokens = lex();
-//	printTokens(tokens);
-	
-	char *homePath = getenv("HOME");
-	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
-	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath));
-	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
-	
-	char *globalConfigJSON = readFile(globalConfigPath);
-	printf("globalConfigJSON: %s\n", globalConfigJSON);
-	
-	jsmn_parser p;
-	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
-	jsmn_init(&p);
-	int count = jsmn_parse(&p, globalConfigJSON, strlen(globalConfigJSON), t, 128);
-	
-	char *LLC_path = getJsmnString(globalConfigJSON, t, count, "LLC_path");
-	if (LLC_path == 0 || LLC_path[0] == 0) {
-		printf("no LLC_path in file at: %s\n", globalConfigPath);
-		exit(1);
-	}
-	printf("LLC_path: %s\n", LLC_path);
-	
-	char *clang_path = getJsmnString(globalConfigJSON, t, count, "clang_path");
-	if (clang_path == 0 || clang_path[0] == 0) {
-		printf("no clang_path in file at: %s\n", globalConfigPath);
-		exit(1);
-	}
-	printf("clang_path: %s\n", clang_path);
-	
-	free(globalConfigPath);
-	free(globalConfigJSON);
-	
-	free(LLC_path);
-	free(clang_path);
+//	char *globalConfigJSON = readFile(globalConfigPath);
+//	printf("globalConfigJSON: %s\n", globalConfigJSON);
+//
+//	jsmn_parser p;
+//	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
+//	jsmn_init(&p);
+//	int count = jsmn_parse(&p, globalConfigJSON, strlen(globalConfigJSON), t, 128);
+//
+//	char *LLC_path = getJsmnString(globalConfigJSON, t, count, "LLC_path");
+//	if (LLC_path == 0 || LLC_path[0] == 0) {
+//		printf("no LLC_path in file at: %s\n", globalConfigPath);
+//		exit(1);
+//	}
+//	printf("LLC_path: %s\n", LLC_path);
+//
+//	char *clang_path = getJsmnString(globalConfigJSON, t, count, "clang_path");
+//	if (clang_path == 0 || clang_path[0] == 0) {
+//		printf("no clang_path in file at: %s\n", globalConfigPath);
+//		exit(1);
+//	}
+//	printf("clang_path: %s\n", clang_path);
+//
+//	free(globalConfigPath);
+//	free(globalConfigJSON);
+//
+//	free(LLC_path);
+//	free(clang_path);
 	
 	return 0;
 }
