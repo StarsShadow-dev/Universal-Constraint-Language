@@ -43,6 +43,7 @@
 		020300232A1D0BB70082A063 /* error.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
 		020300252A1EBA4A0082A063 /* parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = parser.h; sourceTree = "<group>"; };
 		020300262A1EBA4A0082A063 /* parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = parser.c; sourceTree = "<group>"; };
+		0203002B2A2031CA0082A063 /* jsmn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jsmn.h; sourceTree = "<group>"; };
 		02392DF52A04024600F1AE9C /* Parallel-lang */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Parallel-lang"; sourceTree = BUILT_PRODUCTS_DIR; };
 		02392DF82A04024600F1AE9C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
@@ -107,6 +108,7 @@
 				020300202A1D08840082A063 /* lexer.c */,
 				020300252A1EBA4A0082A063 /* parser.h */,
 				020300262A1EBA4A0082A063 /* parser.c */,
+				0203002B2A2031CA0082A063 /* jsmn.h */,
 			);
 			path = "Parallel-lang";
 			sourceTree = "<group>";

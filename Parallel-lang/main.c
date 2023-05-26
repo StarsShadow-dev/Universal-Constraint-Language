@@ -5,6 +5,7 @@
 #include "types.h"
 #include "globals.h"
 #include "lexer.h"
+#include "jsmn.h"
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
@@ -61,15 +62,78 @@ char *readFile(const char *path) {
 	return buffer;
 }
 
+/// this function only works if the JSON has only strings
+char *jsmn_getString(char *buffer, jsmntok_t *t, int count, char * key) {
+	if (count < 0) { return NULL; }
+	
+	if (t[0].type != JSMN_OBJECT) { return NULL; }
+	
+	unsigned long keyLen = strlen(key);
+	
+	int i = 1;
+	
+	while (i < count) {
+		// now look for key/value pairs.
+		
+		jsmntok_t keyToken = t[i];
+		if (keyToken.type != JSMN_STRING) {
+			// the "key" is not a string.
+			return NULL;
+		}
+		if (keyToken.size != 1) {
+			// keys should have a single value.
+			return NULL;
+		}
+
+		jsmntok_t valueToken = t[i+1];
+		if (valueToken.type != JSMN_STRING) {
+			return NULL;
+		}
+
+		char *keyValue = buffer + keyToken.start;
+		if (memcmp(keyValue, key, keyLen) == 0) {
+			unsigned long stringLen = valueToken.end - valueToken.start;
+			char *stringValue = buffer + valueToken.start;
+			
+			char *result = malloc(stringLen);
+			memcpy(result, stringValue, stringLen);
+			return result;
+		}
+		
+		i+=2;
+	}
+	return NULL;
+}
+
 int main(int argc, char **argv) {
 //	source = "function main()\n{}";
 //
 //	linkedList_Node *tokens = lex();
 //	printTokens(tokens);
 	
-	char *buffer = readFile("config.json");
-	printf("buffer: %s", buffer);
-	free(buffer);
+	char *homePath = getenv("HOME");
+	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
+	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath));
+	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
+	
+	char *globalConfigJSON = readFile(globalConfigPath);
+	free(globalConfigPath);
+	printf("globalConfigJSON: %s\n", globalConfigJSON);
+	
+	jsmn_parser p;
+	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
+	jsmn_init(&p);
+	int count = jsmn_parse(&p, globalConfigJSON, strlen(globalConfigJSON), t, 128);
+	
+	char *LLC_path = jsmn_getString(globalConfigJSON, t, count, "LLC_path");
+	printf("LLC_path: %s\n", LLC_path);
+	free(LLC_path);
+	
+	char *clang_path = jsmn_getString(globalConfigJSON, t, count, "clang_path");
+	printf("clang_path: %s\n", clang_path);
+	free(clang_path);
+	
+	free(globalConfigJSON);
 	
 	return 0;
 }
