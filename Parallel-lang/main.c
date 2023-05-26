@@ -35,7 +35,7 @@ char *readFile(const char *path) {
 	FILE* file = fopen(path, "r");
 	
 	if (file == 0) {
-		printf("could not find file %s\n", path);
+		printf("could not find file at: %s\n", path);
 		exit(1);
 	}
 
@@ -63,7 +63,7 @@ char *readFile(const char *path) {
 }
 
 /// this function only works if the JSON has only strings
-char *jsmn_getString(char *buffer, jsmntok_t *t, int count, char * key) {
+char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 	if (count < 0) { return NULL; }
 	
 	if (t[0].type != JSMN_OBJECT) { return NULL; }
@@ -117,7 +117,6 @@ int main(int argc, char **argv) {
 	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
 	
 	char *globalConfigJSON = readFile(globalConfigPath);
-	free(globalConfigPath);
 	printf("globalConfigJSON: %s\n", globalConfigJSON);
 	
 	jsmn_parser p;
@@ -125,15 +124,25 @@ int main(int argc, char **argv) {
 	jsmn_init(&p);
 	int count = jsmn_parse(&p, globalConfigJSON, strlen(globalConfigJSON), t, 128);
 	
-	char *LLC_path = jsmn_getString(globalConfigJSON, t, count, "LLC_path");
+	char *LLC_path = getJsmnString(globalConfigJSON, t, count, "LLC_path");
+	if (LLC_path == 0 || LLC_path[0] == 0) {
+		printf("no LLC_path in file at: %s\n", globalConfigPath);
+		exit(1);
+	}
 	printf("LLC_path: %s\n", LLC_path);
-	free(LLC_path);
 	
-	char *clang_path = jsmn_getString(globalConfigJSON, t, count, "clang_path");
+	char *clang_path = getJsmnString(globalConfigJSON, t, count, "clang_path");
+	if (clang_path == 0 || clang_path[0] == 0) {
+		printf("no clang_path in file at: %s\n", globalConfigPath);
+		exit(1);
+	}
 	printf("clang_path: %s\n", clang_path);
-	free(clang_path);
 	
+	free(globalConfigPath);
 	free(globalConfigJSON);
+	
+	free(LLC_path);
+	free(clang_path);
 	
 	return 0;
 }
