@@ -21,11 +21,11 @@ void printTokens(linkedList_Node *head) {
 	while (1) {
 		printf(
 			"\t{type: %i, value: \"%s\", line: %i, start: %i, end: %i}",
-			((token *)(current->data))->type,
-			((token *)(current->data))->value,
-			((token *)(current->data))->location.line,
-			((token *)(current->data))->location.columnStart,
-			((token *)(current->data))->location.columnEnd
+			((Token *)(current->data))->type,
+			((Token *)(current->data))->value,
+			((Token *)(current->data))->location.line,
+			((Token *)(current->data))->location.columnStart,
+			((Token *)(current->data))->location.columnEnd
 		);
 		
 		if (current->next == NULL) break;
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
 	linkedList_Node *tokens = lex();
 	printTokens(tokens);
 	
-//	linkedList_Node *AST = parse(tokens);
+	linkedList_Node *AST = parse(tokens);
 	
 //	char *homePath = getenv("HOME");
 //	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";

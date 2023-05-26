@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "globals.h"
 #include "lexer.h"
+#include "globals.h"
 #include "error.h"
 
 #define wordStart (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || character == '_'
@@ -67,7 +67,7 @@ linkedList_Node *lex(void) {
 			// plus one because of the NULL bite
 			int valueSize = end - start + 1;
 			
-			token *data = linkedList_addNode(&tokens, sizeof(token) + valueSize);
+			Token *data = linkedList_addNode(&tokens, sizeof(Token) + valueSize);
 			
 			data->type = TokenType_word;
 			
@@ -78,7 +78,7 @@ linkedList_Node *lex(void) {
 		}
 		
 		else if (separator) {
-			token *data = linkedList_addNode(&tokens, sizeof(token) + 2);
+			Token *data = linkedList_addNode(&tokens, sizeof(Token) + 2);
 			
 			data->type = TokenType_separator;
 			

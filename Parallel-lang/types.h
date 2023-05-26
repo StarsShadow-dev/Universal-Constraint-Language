@@ -19,7 +19,7 @@ typedef struct {
 	TokenType type;
 	SourceLocation location;
 	char value[];
-} token;
+} Token;
 
 struct linkedList_Node {
 	struct linkedList_Node *next;
