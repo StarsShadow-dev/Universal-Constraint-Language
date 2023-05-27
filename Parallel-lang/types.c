@@ -27,6 +27,10 @@ void *linkedList_addNode(linkedList_Node **head, unsigned long size) {
 }
 
 void linkedList_freeList(linkedList_Node **head) {
+	if (head == NULL) {
+		return;
+	}
+	
 	linkedList_Node *current = *head;
 	while (current != NULL) {
 		linkedList_Node *next = current->next;

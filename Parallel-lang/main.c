@@ -119,6 +119,10 @@ int main(int argc, char **argv) {
 	
 	linkedList_Node *AST = parse(tokens);
 	
+	// clean up
+	linkedList_freeList(&tokens);
+	linkedList_freeList(&AST);
+	
 //	char *homePath = getenv("HOME");
 //	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
 //	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath));
