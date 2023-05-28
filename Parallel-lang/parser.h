@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-linkedList_Node *parse(linkedList_Node *tokens);
+linkedList_Node *parse(linkedList_Node **token);
 
 #endif /* parser_h */

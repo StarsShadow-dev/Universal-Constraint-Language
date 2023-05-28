@@ -111,17 +111,23 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 	return NULL;
 }
 
+//void free_AST(linkedList_Node **head) {
+//
+//}
+
 int main(int argc, char **argv) {
-	source = "function main()\n{}";
+	source = "function main(): Int32\n{}";
 
 	linkedList_Node *tokens = lex();
 	printTokens(tokens);
 	
-	linkedList_Node *AST = parse(tokens);
+	linkedList_Node *currentToken = tokens;
+	
+	linkedList_Node *AST = parse(&currentToken);
 	
 	// clean up
 	linkedList_freeList(&tokens);
-	linkedList_freeList(&AST);
+//	free_AST(&AST);
 	
 //	char *homePath = getenv("HOME");
 //	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";

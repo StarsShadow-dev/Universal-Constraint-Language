@@ -3,6 +3,16 @@
 
 #include <stdlib.h>
 
+struct linkedList_Node {
+	struct linkedList_Node *next;
+	uint8_t data[];
+};
+typedef struct linkedList_Node linkedList_Node;
+
+void *linkedList_addNode(linkedList_Node **head, unsigned long size);
+
+void linkedList_freeList(linkedList_Node **head);
+
 typedef struct {
 	int line;
 	int columnStart;
@@ -21,14 +31,31 @@ typedef struct {
 	char value[];
 } Token;
 
-struct linkedList_Node {
-	struct linkedList_Node *next;
-	uint8_t data[];
-};
-typedef struct linkedList_Node linkedList_Node;
+typedef enum {
+	ASTnodeType_type,
+	ASTnodeType_function,
+	ASTnodeType_number
+} ASTnodeType;
 
-void *linkedList_addNode(linkedList_Node **head, unsigned long size);
+typedef struct {
+	char *name;
+} ASTnode_type;
 
-void linkedList_freeList(linkedList_Node **head);
+typedef struct {
+	char *name;
+	ASTnode_type returnType;
+	linkedList_Node *arguments;
+	linkedList_Node *codeBlock;
+} ASTnode_function;
+
+typedef struct {
+	int64_t *value;
+} ASTnode_number;
+
+typedef struct {
+	ASTnodeType type;
+	SourceLocation location;
+	char value[];
+} ASTnode;
 
 #endif /* types_h */
