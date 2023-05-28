@@ -1,4 +1,3 @@
 function main(): Int32 {
-	// return with exit code 0
-	return 0
+	
 }

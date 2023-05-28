@@ -116,18 +116,8 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 //}
 
 int main(int argc, char **argv) {
-	source = "function main(): Int32\n{}";
-
-	linkedList_Node *tokens = lex();
-	printTokens(tokens);
-	
-	linkedList_Node *currentToken = tokens;
-	
-	linkedList_Node *AST = parse(&currentToken);
-	
-	// clean up
-	linkedList_freeList(&tokens);
-//	free_AST(&AST);
+	jsmn_parser p;
+	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
 	
 //	char *homePath = getenv("HOME");
 //	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
@@ -161,6 +151,38 @@ int main(int argc, char **argv) {
 //
 //	free(LLC_path);
 //	free(clang_path);
+	
+	char *configJSON = readFile("config.json");
+	printf("configJSON: %s\n", configJSON);
+	
+	jsmn_init(&p);
+	int count = jsmn_parse(&p, configJSON, strlen(configJSON), t, 128);
+	
+	char *entry_path = getJsmnString(configJSON, t, count, "entry_path");
+	if (entry_path == 0 || entry_path[0] == 0) {
+		printf("no entry_path in file at: ./config.json\n");
+		exit(1);
+	}
+	printf("entry_path: %s\n", entry_path);
+	
+	source = readFile(entry_path);
+	printf("source: %s\n", source);
+
+	linkedList_Node *tokens = lex();
+	printTokens(tokens);
+	
+	linkedList_Node *currentToken = tokens;
+	
+	linkedList_Node *AST = parse(&currentToken);
+	
+	// clean up
+	free(configJSON);
+	free(entry_path);
+	
+	free(source);
+	
+	linkedList_freeList(&tokens);
+//	free_AST(&AST);
 	
 	return 0;
 }
