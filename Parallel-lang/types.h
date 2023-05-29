@@ -21,6 +21,7 @@ typedef struct {
 
 typedef enum {
 	TokenType_word,
+	TokenType_number,
 	TokenType_string,
 	TokenType_separator
 } TokenType;

@@ -8,6 +8,9 @@
 #define wordStart (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || character == '_'
 #define wordContinue wordStart || (character >= '0' && character <= '9')
 
+#define numberStart (character >= '0' && character <= '9')
+#define numberContinue (character >= '0' && character <= '9')
+
 #define separator character == '(' || character == ')' || character == '{' || character == '}' || character == ':'
 
 linkedList_Node *lex(void) {
@@ -70,6 +73,44 @@ linkedList_Node *lex(void) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token) + valueSize);
 			
 			data->type = TokenType_word;
+			
+			data->location = (SourceLocation){line, start, end};
+			
+			stpncpy(data->value, &source[start], valueSize - 1);
+			data->value[valueSize] = 0;
+		}
+		
+		else if (numberStart) {
+			int start = index;
+			int end = 0;
+			
+			while (1) {
+				char character = source[index];
+				
+				if (character == 0) {
+					end = index;
+					
+					index -= 1;
+					break;
+				}
+				
+				if (numberContinue) {
+					index += 1;
+					continue;
+				}
+				
+				end = index;
+				
+				index -= 1;
+				break;
+			}
+			
+			// plus one because of the NULL bite
+			int valueSize = end - start + 1;
+			
+			Token *data = linkedList_addNode(&tokens, sizeof(Token) + valueSize);
+			
+			data->type = TokenType_number;
 			
 			data->location = (SourceLocation){line, start, end};
 			
