@@ -4,9 +4,10 @@
 #include "main.h"
 #include "types.h"
 #include "globals.h"
+#include "jsmn.h"
 #include "lexer.h"
 #include "parser.h"
-#include "jsmn.h"
+#include "builder.h"
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
@@ -116,6 +117,11 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 //}
 
 int main(int argc, char **argv) {
+	
+	buildLLVM();
+	
+	exit(0);
+	
 	jsmn_parser p;
 	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
 	

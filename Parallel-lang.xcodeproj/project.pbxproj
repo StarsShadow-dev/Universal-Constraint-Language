@@ -13,6 +13,7 @@
 		020300212A1D08840082A063 /* lexer.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300202A1D08840082A063 /* lexer.c */; };
 		020300242A1D0BB70082A063 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300232A1D0BB70082A063 /* error.c */; };
 		020300272A1EBA4A0082A063 /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300262A1EBA4A0082A063 /* parser.c */; };
+		0203002E2A24F49C0082A063 /* builder.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203002D2A24F49C0082A063 /* builder.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,6 +45,8 @@
 		020300252A1EBA4A0082A063 /* parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = parser.h; sourceTree = "<group>"; };
 		020300262A1EBA4A0082A063 /* parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = parser.c; sourceTree = "<group>"; };
 		0203002B2A2031CA0082A063 /* jsmn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jsmn.h; sourceTree = "<group>"; };
+		0203002C2A24F49C0082A063 /* builder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = builder.h; sourceTree = "<group>"; };
+		0203002D2A24F49C0082A063 /* builder.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = builder.c; sourceTree = "<group>"; };
 		02392DF52A04024600F1AE9C /* Parallel-lang */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Parallel-lang"; sourceTree = BUILT_PRODUCTS_DIR; };
 		02392DF82A04024600F1AE9C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
@@ -108,6 +111,8 @@
 				020300202A1D08840082A063 /* lexer.c */,
 				020300252A1EBA4A0082A063 /* parser.h */,
 				020300262A1EBA4A0082A063 /* parser.c */,
+				0203002C2A24F49C0082A063 /* builder.h */,
+				0203002D2A24F49C0082A063 /* builder.c */,
 				0203002B2A2031CA0082A063 /* jsmn.h */,
 			);
 			path = "Parallel-lang";
@@ -173,6 +178,7 @@
 			files = (
 				020300212A1D08840082A063 /* lexer.c in Sources */,
 				0203001E2A1AD5C40082A063 /* types.c in Sources */,
+				0203002E2A24F49C0082A063 /* builder.c in Sources */,
 				0203001B2A1AC0420082A063 /* globals.c in Sources */,
 				020300182A1A7AD90082A063 /* main.c in Sources */,
 				020300272A1EBA4A0082A063 /* parser.c in Sources */,

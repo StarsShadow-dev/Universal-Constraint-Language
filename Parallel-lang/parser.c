@@ -113,9 +113,9 @@ linkedList_Node *parse(linkedList_Node **current) {
 				break;
 			}
 				
-			case TokenType_string: {
-				break;
-			}
+//			case TokenType_string: {
+//				break;
+//			}
 				
 			case TokenType_separator: {
 				if (strcmp(token->value, ")") == 0) {
