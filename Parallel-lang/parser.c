@@ -153,6 +153,7 @@ linkedList_Node *parse(linkedList_Node **current) {
 				
 				data->location = token->location;
 				
+				((ASTnode_number *)data->value)->string = token->value;
 				((ASTnode_number *)data->value)->value = parseInt(current).value;
 				break;
 			}

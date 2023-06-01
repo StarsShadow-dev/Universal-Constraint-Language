@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-char *buildLLVM(linkedList_Node **current);
+char *buildLLVM(String *outerSource, linkedList_Node *current);
 
 #endif /* builder_h */

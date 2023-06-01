@@ -50,6 +50,7 @@ typedef struct {
 } ASTnode_function;
 
 typedef struct {
+	char *string;
 	int64_t value;
 } ASTnode_number;
 
@@ -58,5 +59,23 @@ typedef struct {
 	SourceLocation location;
 	char value[];
 } ASTnode;
+
+//
+// String
+//
+
+typedef struct {
+	int maxSize;
+	int size;
+	char *data;
+} String;
+
+void String_initialize(String *string);
+
+void String_appendCharsCount(String *string, char *chars, unsigned long count);
+
+#define String_appendChars(string, chars) String_appendCharsCount(string, chars, strlen(chars))
+
+void String_free(String *string);
 
 #endif /* types_h */

@@ -4,70 +4,41 @@
 #include "builder.h"
 #include "error.h"
 
-typedef struct {
-	int maxSize;
-	int size;
-	char *data;
-} String;
-
-void String_initialize(String *string) {
-	string->data = malloc(string->maxSize);
-	if (string->data == NULL) {
-		abort();
-	}
-}
-
-void String_appendCharsCount(String *string, char *chars, unsigned long count) {
-	if (string->size + count >= string->maxSize) {
-		// double the size of the string
-		string->maxSize = string->maxSize * 2;
-		
-		// reallocate
-		char *oldData = string->data;
-		
-		string->data = malloc(string->maxSize);
-		if (string->data == NULL) {
-			abort();
-		}
-		
-		stpncpy(string->data, oldData, string->size);
-		
-		free(oldData);
-	}
-	
-	stpncpy(string->data + string->size, chars, count);
-	
-	string->size += count;
-	
-	string->data[string->size] = 0;
-}
-
-#define String_appendChars(string, chars) String_appendCharsCount(string, chars, strlen(chars))
-
-void String_free(String *string) {
-	free(string->data);
-}
-
-char *buildLLVM(linkedList_Node **current) {
+char *buildLLVM(String *outerSource, linkedList_Node *current) {
 	String LLVMsource = {100, 0, 0};
 	String_initialize(&LLVMsource);
 	
 	while (1) {
-		if (*current == NULL) {
+		if (current == NULL) {
 			break;
 		}
 		
-		ASTnode *node = ((ASTnode *)((*current)->data));
+		ASTnode *node = ((ASTnode *)((current)->data));
 		
 		printf("node type: %u\n", node->type);
 		
 		switch (node->type) {
 			case ASTnodeType_function: {
+				if (outerSource != NULL) {
+					printf("function definitions are only allowed at top level\n");
+					compileError(node->location);
+				}
 				ASTnode_function *function = (ASTnode_function *)node->value;
 				
-				String_appendChars(&LLVMsource, "define i32 @");
+				String_appendChars(&LLVMsource, "\ndefine i32 @");
 				String_appendChars(&LLVMsource, function->name);
-				String_appendChars(&LLVMsource, "() {\n\tret i32 0\n}");
+				String_appendChars(&LLVMsource, "() {");
+				
+				String newOuterSource = {100, 0, 0};
+				String_initialize(&newOuterSource);
+				
+				buildLLVM(&newOuterSource, function->codeBlock);
+				
+				String_appendChars(&LLVMsource, newOuterSource.data);
+				
+				String_free(&newOuterSource);
+				
+				String_appendChars(&LLVMsource, "\n}");
 				
 				break;
 			}
@@ -75,10 +46,14 @@ char *buildLLVM(linkedList_Node **current) {
 //			case ASTnodeType_type: {
 //				break;
 //			}
-//
-//			case ASTnodeType_number: {
-//				break;
-//			}
+			
+			case ASTnodeType_number: {
+				ASTnode_number *number = (ASTnode_number *)node->value;
+				
+				String_appendChars(outerSource, "\n\tret i32 ");
+				String_appendChars(outerSource, number->string);
+				break;
+			}
 				
 			default: {
 				printf("unknown node type: %u\n", node->type);
@@ -87,7 +62,7 @@ char *buildLLVM(linkedList_Node **current) {
 			}
 		}
 		
-		*current = (*current)->next;
+		current = current->next;
 	}
 	
 	return LLVMsource.data;

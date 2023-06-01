@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
 	
 	linkedList_Node *AST = parse(&currentToken);
 	
-	char *LLVMsource = buildLLVM(&AST);
+	char *LLVMsource = buildLLVM(NULL, AST);
 	
 	printf("LLVMsource: %s\n", LLVMsource);
 	
