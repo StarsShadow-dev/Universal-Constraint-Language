@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "main.h"
 #include "types.h"
@@ -116,7 +117,32 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 //
 //}
 
+typedef enum {
+	CompilerMode_build,
+	CompilerMode_run
+} CompilerMode;
+
 int main(int argc, char **argv) {
+	CompilerMode compilerMode;
+	
+	if (argc != 2) {
+		printf("unexpected amount of arguments, expected: 1");
+		exit(1);
+	}
+	
+	if (strcmp(argv[1], "build") == 0) {
+		compilerMode = CompilerMode_build;
+	}
+	
+//	else if (strcmp(argv[1], "run") == 0) {
+//		compilerMode = CompilerMode_run;
+//	}
+	
+	else {
+		printf("unexpected compiler mode: %s", argv[1]);
+		exit(1);
+	}
+	
 	jsmn_parser p;
 	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
 	
@@ -151,12 +177,26 @@ int main(int argc, char **argv) {
 	jsmn_init(&p);
 	int configJSONcount = jsmn_parse(&p, configJSON, strlen(configJSON), t, 128);
 	
+	char *name = getJsmnString(configJSON, t, configJSONcount, "name");
+	if (name == 0 || name[0] == 0) {
+		printf("no name in file at: ./config.json\n");
+		exit(1);
+	}
+	printf("name: %s\n", name);
+	
 	char *entry_path = getJsmnString(configJSON, t, configJSONcount, "entry_path");
 	if (entry_path == 0 || entry_path[0] == 0) {
 		printf("no entry_path in file at: ./config.json\n");
 		exit(1);
 	}
 	printf("entry_path: %s\n", entry_path);
+	
+	char *build_directory = getJsmnString(configJSON, t, configJSONcount, "build_directory");
+	if (build_directory == 0 || build_directory[0] == 0) {
+		printf("no build_directory in file at: ./config.json\n");
+		exit(1);
+	}
+	printf("build_directory: %s\n", build_directory);
 	
 	source = readFile(entry_path);
 	printf("source: %s\n", source);
@@ -166,24 +206,61 @@ int main(int argc, char **argv) {
 	
 	linkedList_Node *currentToken = tokens;
 	
-	linkedList_Node *AST = parse(&currentToken);
+	linkedList_Node *AST = parse(&currentToken, 0);
 	
 	char *LLVMsource = buildLLVM(NULL, AST);
 	
 	printf("LLVMsource: %s\n", LLVMsource);
 	
-	FILE * fp = popen(LLC_path, "w"); //  -filetype=obj -o objectFile.o
+	FILE * fp;
+	
+	String LLC_command = {100, 0, 0};
+	String_initialize(&LLC_command);
+	String_appendChars(&LLC_command, LLC_path);
+	String_appendChars(&LLC_command, " -filetype=obj -o ");
+	String_appendChars(&LLC_command, build_directory);
+	String_appendChars(&LLC_command, "/objectFile.o");
+	fp = popen(LLC_command.data, "w");
 	fprintf(fp, "%s", LLVMsource);
 	pclose(fp);
+	String_free(&LLC_command);
+	
+	char getcwdBuffer[1000];
+	
+	if (getcwd(getcwdBuffer, sizeof(getcwdBuffer)) == NULL) {
+		printf("getcwd error");
+		exit(1);
+	}
+	
+	// now I understand why swift and JavaScript have built-in string formatting
+	String clang_command = {100, 0, 0};
+	String_initialize(&clang_command);
+	String_appendChars(&clang_command, clang_path);
+	String_appendChars(&clang_command, " ");
+	String_appendChars(&clang_command, getcwdBuffer);
+	String_appendChars(&clang_command, "/");
+	String_appendChars(&clang_command, build_directory);
+	String_appendChars(&clang_command, "/objectFile.o -o ");
+	String_appendChars(&clang_command, getcwdBuffer);
+	String_appendChars(&clang_command, "/");
+	String_appendChars(&clang_command, build_directory);
+	String_appendChars(&clang_command, "/");
+	String_appendChars(&clang_command, name);
+	
+	printf("clang_command: %s\n", clang_command.data);
+	
+	system(clang_command.data);
+	String_free(&clang_command);
 	
 	// clean up
 	free(globalConfigPath);
 	free(globalConfigJSON);
-
 	free(LLC_path);
 	free(clang_path);
 	
 	free(configJSON);
+	free(name);
+	free(build_directory);
 	free(entry_path);
 	
 	free(source);

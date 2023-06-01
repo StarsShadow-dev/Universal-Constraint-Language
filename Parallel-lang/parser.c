@@ -61,7 +61,7 @@ ASTnode_number parseInt(linkedList_Node **current) {
 	return node;
 }
 
-linkedList_Node *parse(linkedList_Node **current) {
+linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 	linkedList_Node *AST = NULL;
 	
 	while (1) {
@@ -99,7 +99,7 @@ linkedList_Node *parse(linkedList_Node **current) {
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node *arguments = parse(current);
+					linkedList_Node *arguments = parse(current, 0);
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -127,7 +127,7 @@ linkedList_Node *parse(linkedList_Node **current) {
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node * codeBlock = parse(current);
+					linkedList_Node * codeBlock = parse(current, 0);
 					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 					
@@ -139,6 +139,17 @@ linkedList_Node *parse(linkedList_Node **current) {
 					((ASTnode_function *)data->value)->returnType = returnType;
 					((ASTnode_function *)data->value)->arguments = arguments;
 					((ASTnode_function *)data->value)->codeBlock = codeBlock;
+				} else if (strcmp(token->value, "return") == 0) {
+					*current = (*current)->next;
+					linkedList_Node *expression = parse(current, 1);
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
+					
+					data->type = ASTnodeType_return;
+					
+					data->location = token->location;
+					
+					((ASTnode_return *)data->value)->expression = expression;
 				} else {
 					printf("unexpected word: %s\n", token->value);
 					compileError(token->location);
@@ -179,6 +190,10 @@ linkedList_Node *parse(linkedList_Node **current) {
 				compileError(token->location);
 				break;
 			}
+		}
+		
+		if (endAfterOneToken) {
+			return AST;
 		}
 		
 		*current = (*current)->next;

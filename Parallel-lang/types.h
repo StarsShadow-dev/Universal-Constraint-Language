@@ -35,6 +35,7 @@ typedef struct {
 typedef enum {
 	ASTnodeType_type,
 	ASTnodeType_function,
+	ASTnodeType_return,
 	ASTnodeType_number
 } ASTnodeType;
 
@@ -48,6 +49,10 @@ typedef struct {
 	linkedList_Node *arguments;
 	linkedList_Node *codeBlock;
 } ASTnode_function;
+
+typedef struct {
+	linkedList_Node *expression;
+} ASTnode_return;
 
 typedef struct {
 	char *string;
