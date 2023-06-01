@@ -137,12 +137,12 @@ int main(int argc, char **argv) {
 		compilerMode = CompilerMode_build;
 	}
 	
-//	else if (strcmp(argv[1], "run") == 0) {
-//		compilerMode = CompilerMode_run;
-//	}
+	else if (strcmp(argv[1], "run") == 0) {
+		compilerMode = CompilerMode_run;
+	}
 	
 	else {
-		printf("unexpected compiler mode: %s", argv[1]);
+		printf("unexpected compiler mode: %s\n", argv[1]);
 		exit(1);
 	}
 	
@@ -258,6 +258,17 @@ int main(int argc, char **argv) {
 	
 	system(clang_command.data);
 	String_free(&clang_command);
+	
+	if (compilerMode == CompilerMode_run) {
+		String run_path = {100, 0, 0};
+		String_initialize(&run_path);
+		String_appendChars(&run_path, build_directory);
+		String_appendChars(&run_path, "/");
+		String_appendChars(&run_path, name);
+		printf("running program at %s\n", run_path.data);
+		system(run_path.data);
+		String_free(&run_path);
+	}
 	
 	// clean up
 	free(globalConfigPath);

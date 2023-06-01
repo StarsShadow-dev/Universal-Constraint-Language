@@ -15,8 +15,6 @@ char *buildLLVM(String *outerSource, linkedList_Node *current) {
 		
 		ASTnode *node = ((ASTnode *)((current)->data));
 		
-		printf("node type: %u\n", node->type);
-		
 		switch (node->type) {
 			case ASTnodeType_function: {
 				if (outerSource != NULL) {
