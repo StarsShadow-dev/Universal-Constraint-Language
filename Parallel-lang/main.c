@@ -53,10 +53,9 @@ char *readFile(const char *path) {
 	rewind(file);
 	
 	char *buffer = malloc(fileSize + 1);
-	
 	if (buffer == NULL) {
-		printf("malloc failed to get space for a file buffer\n");
-		exit(1);
+		printf("malloc failed\n");
+		abort();
 	}
 	
 	if (fread(buffer, sizeof(char), fileSize, file) != fileSize) {
@@ -104,6 +103,10 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 			char *stringValue = buffer + valueToken.start;
 			
 			char *result = malloc(stringLen);
+			if (result == NULL) {
+				printf("malloc failed\n");
+				abort();
+			}
 			memcpy(result, stringValue, stringLen);
 			return result;
 		}
@@ -149,6 +152,10 @@ int main(int argc, char **argv) {
 	char *homePath = getenv("HOME");
 	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
 	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath));
+	if (globalConfigPath == NULL) {
+		printf("malloc failed\n");
+		abort();
+	}
 	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
 
 	char *globalConfigJSON = readFile(globalConfigPath);

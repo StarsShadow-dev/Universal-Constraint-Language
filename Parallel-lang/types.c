@@ -47,6 +47,7 @@ void linkedList_freeList(linkedList_Node **head) {
 void String_initialize(String *string) {
 	string->data = malloc(string->maxSize);
 	if (string->data == NULL) {
+		printf("malloc failed\n");
 		abort();
 	}
 }
@@ -61,6 +62,7 @@ void String_appendCharsCount(String *string, char *chars, unsigned long count) {
 		
 		string->data = malloc(string->maxSize);
 		if (string->data == NULL) {
+			printf("malloc failed\n");
 			abort();
 		}
 		
