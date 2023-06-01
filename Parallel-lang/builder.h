@@ -1,6 +1,8 @@
 #ifndef builder_h
 #define builder_h
 
-void buildLLVM(void);
+#include "types.h"
+
+char *buildLLVM(linkedList_Node **current);
 
 #endif /* builder_h */

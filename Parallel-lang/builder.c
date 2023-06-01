@@ -17,12 +17,10 @@ void String_initialize(String *string) {
 	}
 }
 
-void String_appendCharsCount(String *string, char *chars, int count) {
+void String_appendCharsCount(String *string, char *chars, unsigned long count) {
 	if (string->size + count >= string->maxSize) {
 		// double the size of the string
 		string->maxSize = string->maxSize * 2;
-		
-		printf("reallocating to %i\n", string->maxSize);
 		
 		// reallocate
 		char *oldData = string->data;
@@ -50,13 +48,47 @@ void String_free(String *string) {
 	free(string->data);
 }
 
-void buildLLVM(void) {
-	String source = {5, 0, 0};
-	String_initialize(&source);
+char *buildLLVM(linkedList_Node **current) {
+	String LLVMsource = {100, 0, 0};
+	String_initialize(&LLVMsource);
 	
-	String_appendChars(&source, "test");
+	while (1) {
+		if (*current == NULL) {
+			break;
+		}
+		
+		ASTnode *node = ((ASTnode *)((*current)->data));
+		
+		printf("node type: %u\n", node->type);
+		
+		switch (node->type) {
+			case ASTnodeType_function: {
+				ASTnode_function *function = (ASTnode_function *)node->value;
+				
+				String_appendChars(&LLVMsource, "define i32 @");
+				String_appendChars(&LLVMsource, function->name);
+				String_appendChars(&LLVMsource, "() {\n\tret i32 0\n}");
+				
+				break;
+			}
+				
+//			case ASTnodeType_type: {
+//				break;
+//			}
+//
+//			case ASTnodeType_number: {
+//				break;
+//			}
+				
+			default: {
+				printf("unknown node type: %u\n", node->type);
+				compileError(node->location);
+				break;
+			}
+		}
+		
+		*current = (*current)->next;
+	}
 	
-	String_appendChars(&source, "test2");
-	
-	String_free(&source);
+	return LLVMsource.data;
 }

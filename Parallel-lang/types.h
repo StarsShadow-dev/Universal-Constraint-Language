@@ -50,7 +50,7 @@ typedef struct {
 } ASTnode_function;
 
 typedef struct {
-	int64_t *value;
+	int64_t value;
 } ASTnode_number;
 
 typedef struct {

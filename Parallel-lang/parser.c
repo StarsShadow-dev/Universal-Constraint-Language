@@ -16,8 +16,6 @@ ASTnode_type parseType(linkedList_Node **current) {
 	Token *token = ((Token *)((*current)->data));
 	endIfCurrentIsEmpty()
 	
-	printf("token: %u %s\n", token->type, token->value);
-	
 	if (token->type != TokenType_word) {
 		printf("not a word in a type expression\n");
 		compileError(token->location);
@@ -26,6 +24,41 @@ ASTnode_type parseType(linkedList_Node **current) {
 	type.name = token->value;
 	
 	return type;
+}
+
+int64_t intPow(int64_t base, int64_t exponent) {
+	if (exponent == 0) {
+		return 1;
+	}
+	int64_t result = base;
+	for (int i = 1; i < exponent; i++) {
+		result *= base;
+	}
+	return result;
+}
+
+ASTnode_number parseInt(linkedList_Node **current) {
+	ASTnode_number node = {};
+	
+	Token *token = ((Token *)((*current)->data));
+	endIfCurrentIsEmpty()
+	
+	if (token->type != TokenType_number) abort();
+	
+	int64_t accumulator = 0;
+	
+	long stringLength = strlen(token->value);
+	
+	for (int index = 0; index < stringLength; index++) {
+		char character = token->value[index];
+		int number = character - '0';
+		
+		accumulator += intPow(10, stringLength-index-1) * number;
+	}
+	
+	node.value = accumulator;
+	
+	return node;
 }
 
 linkedList_Node *parse(linkedList_Node **current) {
@@ -110,6 +143,17 @@ linkedList_Node *parse(linkedList_Node **current) {
 					printf("unexpected word: %s\n", token->value);
 					compileError(token->location);
 				}
+				break;
+			}
+				
+			case TokenType_number: {
+				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_number));
+				
+				data->type = ASTnodeType_number;
+				
+				data->location = token->location;
+				
+				((ASTnode_number *)data->value)->value = parseInt(current).value;
 				break;
 			}
 				
