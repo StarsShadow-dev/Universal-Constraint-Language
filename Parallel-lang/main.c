@@ -215,7 +215,10 @@ int main(int argc, char **argv) {
 	
 	linkedList_Node *AST = parse(&currentToken, 0);
 	
-	char *LLVMsource = buildLLVM(NULL, AST);
+	linkedList_Node *variables[maxBuilderLevel] = {0};
+	addBuilderVariable(&variables[0], "Int32", "i32");
+	// level is -1 so that it starts at 0 for the first iteration
+	char *LLVMsource = buildLLVM((linkedList_Node **)&variables, -1, NULL, AST);
 	
 	printf("LLVMsource: %s\n", LLVMsource);
 	

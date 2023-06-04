@@ -10,20 +10,22 @@ if (current == NULL) {\
 	compileError(token->location);\
 }
 
-ASTnode_type parseType(linkedList_Node **current) {
-	ASTnode_type type = {};
+linkedList_Node *parseType(linkedList_Node **current) {
+	linkedList_Node *AST = NULL;
 	
 	Token *token = ((Token *)((*current)->data));
 	endIfCurrentIsEmpty()
-	
 	if (token->type != TokenType_word) {
 		printf("not a word in a type expression\n");
 		compileError(token->location);
 	}
 	
-	type.name = token->value;
+	ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_type));
+	data->type = ASTnodeType_type;
+	data->location = token->location;
+	((ASTnode_type *)data->value)->name = token->value;
 	
-	return type;
+	return AST;
 }
 
 int64_t intPow(int64_t base, int64_t exponent) {
@@ -113,7 +115,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					}
 					
 					*current = (*current)->next;
-					ASTnode_type returnType = parseType(current);
+					linkedList_Node *returnType = parseType(current);
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()

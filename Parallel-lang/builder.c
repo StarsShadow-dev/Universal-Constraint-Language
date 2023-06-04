@@ -4,7 +4,51 @@
 #include "builder.h"
 #include "error.h"
 
-char *buildLLVM(String *outerSource, linkedList_Node *current) {
+void addBuilderVariable(linkedList_Node **variables, char *key, char *LLVMname) {
+	Variable *data = linkedList_addNode(variables, sizeof(Variable) + sizeof(Variable_type));
+	
+	data->key = key;
+	
+	data->type = VariableType_type;
+	
+	((Variable_type *)data->value)->LLVMname = LLVMname;
+}
+
+char *getBuilderType(linkedList_Node **variables, int level, char *key) {
+	int index = level;
+	while (index >= 0) {
+		linkedList_Node *current = variables[index];
+		
+		while (current != NULL) {
+			Variable *variable = ((Variable *)current->data);
+			
+			if (variable->type != VariableType_type) {
+				abort();
+			}
+			
+			if (strcmp(variable->key, key) != 0) {
+				current = current->next;
+				continue;
+			}
+			
+			Variable_type *data = (Variable_type *)variable->value;
+			
+			return data->LLVMname;
+		}
+		
+		index--;
+	}
+	
+	return NULL;
+}
+
+char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, linkedList_Node *current) {
+	level++;
+	if (level > maxBuilderLevel) {
+		printf("level (%i) > maxBuilderLevel (%i)\n", level, maxBuilderLevel);
+		abort();
+	}
+	
 	String LLVMsource = {100, 0, 0};
 	String_initialize(&LLVMsource);
 	
@@ -13,7 +57,7 @@ char *buildLLVM(String *outerSource, linkedList_Node *current) {
 			break;
 		}
 		
-		ASTnode *node = ((ASTnode *)((current)->data));
+		ASTnode *node = ((ASTnode *)current->data);
 		
 		switch (node->type) {
 			case ASTnodeType_function: {
@@ -23,14 +67,21 @@ char *buildLLVM(String *outerSource, linkedList_Node *current) {
 				}
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
-				String_appendChars(&LLVMsource, "\ndefine i32 @");
-				String_appendChars(&LLVMsource, data->name);
-				String_appendChars(&LLVMsource, "() {");
-				
 				String newOuterSource = {100, 0, 0};
 				String_initialize(&newOuterSource);
 				
-				buildLLVM(&newOuterSource, data->codeBlock);
+				String_appendChars(&LLVMsource, "\ndefine ");
+				char *LLVMtype = getBuilderType(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
+				if (LLVMtype == NULL) {
+					printf("unknown type\n");
+					compileError(((ASTnode *)data->returnType->data)->location);
+				}
+				String_appendChars(&LLVMsource, LLVMtype);
+				String_appendChars(&LLVMsource, " @");
+				String_appendChars(&LLVMsource, data->name);
+				String_appendChars(&LLVMsource, "() {");
+				
+				buildLLVM(variables, level, &newOuterSource, data->codeBlock);
 				
 				String_appendChars(&LLVMsource, newOuterSource.data);
 				
@@ -48,9 +99,9 @@ char *buildLLVM(String *outerSource, linkedList_Node *current) {
 				}
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
-				String_appendChars(outerSource, "\n\tret i32 ");
+				String_appendChars(outerSource, "\n\tret ");
 				
-				String_appendChars(outerSource, buildLLVM(outerSource, data->expression));
+				String_appendChars(outerSource, buildLLVM(variables, level, outerSource, data->expression));
 				
 				break;
 			}
@@ -60,9 +111,10 @@ char *buildLLVM(String *outerSource, linkedList_Node *current) {
 //			}
 			
 			case ASTnodeType_number: {
-				ASTnode_number *number = (ASTnode_number *)node->value;
+				ASTnode_number *data = (ASTnode_number *)node->value;
 				
-				String_appendChars(&LLVMsource, number->string);
+				String_appendChars(&LLVMsource, "i32 ");
+				String_appendChars(&LLVMsource, data->string);
 				break;
 			}
 				

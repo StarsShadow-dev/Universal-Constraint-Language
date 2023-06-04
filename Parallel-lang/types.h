@@ -3,6 +3,10 @@
 
 #include <stdlib.h>
 
+//
+// linkedList
+//
+
 struct linkedList_Node {
 	struct linkedList_Node *next;
 	uint8_t data[];
@@ -12,6 +16,10 @@ typedef struct linkedList_Node linkedList_Node;
 void *linkedList_addNode(linkedList_Node **head, unsigned long size);
 
 void linkedList_freeList(linkedList_Node **head);
+
+//
+// lexer, parser and builder
+//
 
 typedef struct {
 	int line;
@@ -45,7 +53,7 @@ typedef struct {
 
 typedef struct {
 	char *name;
-	ASTnode_type returnType;
+	linkedList_Node *returnType;
 	linkedList_Node *arguments;
 	linkedList_Node *codeBlock;
 } ASTnode_function;
@@ -64,6 +72,24 @@ typedef struct {
 	SourceLocation location;
 	char value[];
 } ASTnode;
+
+//
+// variables
+//
+
+typedef enum {
+	VariableType_type
+} VariableType;
+
+typedef struct {
+	char *LLVMname;
+} Variable_type;
+
+typedef struct {
+	char *key;
+	VariableType type;
+	char value[];
+} Variable;
 
 //
 // String

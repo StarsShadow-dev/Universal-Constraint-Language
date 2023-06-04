@@ -3,6 +3,10 @@
 
 #include "types.h"
 
-char *buildLLVM(String *outerSource, linkedList_Node *current);
+#define maxBuilderLevel 10
+
+void addBuilderVariable(linkedList_Node **variables, char *key, char *LLVMname);
+
+char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, linkedList_Node *current);
 
 #endif /* builder_h */

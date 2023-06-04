@@ -305,6 +305,7 @@
 		02392DFD2A04024600F1AE9C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 97H32P7425;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -316,6 +317,7 @@
 		02392DFE2A04024600F1AE9C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 97H32P7425;
 				ENABLE_HARDENED_RUNTIME = YES;
