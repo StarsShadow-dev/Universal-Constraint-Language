@@ -9,3 +9,4 @@ DerivedData/
 .netrc
 
 test/build/*
+Parallel-lang/old/*
