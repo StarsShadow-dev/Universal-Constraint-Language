@@ -222,15 +222,13 @@ int main(int argc, char **argv) {
 	
 	printf("LLVMsource: %s\n", LLVMsource);
 	
-	FILE * fp;
-	
 	String LLC_command = {100, 0, 0};
 	String_initialize(&LLC_command);
 	String_appendChars(&LLC_command, LLC_path);
 	String_appendChars(&LLC_command, " -filetype=obj -o ");
 	String_appendChars(&LLC_command, build_directory);
 	String_appendChars(&LLC_command, "/objectFile.o");
-	fp = popen(LLC_command.data, "w");
+	FILE *fp = popen(LLC_command.data, "w");
 	fprintf(fp, "%s", LLVMsource);
 	pclose(fp);
 	String_free(&LLC_command);
