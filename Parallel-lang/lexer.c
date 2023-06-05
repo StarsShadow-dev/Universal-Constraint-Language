@@ -131,7 +131,7 @@ linkedList_Node *lex(void) {
 		
 		else {
 			printf("unexpected character '%c'\n", character);
-			compileError((SourceLocation){});
+			compileError((SourceLocation){line, index, index});
 		}
 		
 		index += 1;
