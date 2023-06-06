@@ -1,4 +1,3 @@
-function main(): Int32 {
-	*
+function notMain(): Int32 {
 	return 1234
 }

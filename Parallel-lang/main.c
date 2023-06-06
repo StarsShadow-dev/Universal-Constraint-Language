@@ -230,13 +230,19 @@ int main(int argc, char **argv) {
 	String_appendChars(&LLC_command, "/objectFile.o");
 	FILE *fp = popen(LLC_command.data, "w");
 	fprintf(fp, "%s", LLVMsource);
-	pclose(fp);
+	int LLC_status = pclose(fp);
+	int LLC_exitCode = WEXITSTATUS(LLC_status);
 	String_free(&LLC_command);
+	
+	if (LLC_exitCode != 0) {
+		printf("LLVM error\n");
+		exit(1);
+	}
 	
 	char getcwdBuffer[1000];
 	
 	if (getcwd(getcwdBuffer, sizeof(getcwdBuffer)) == NULL) {
-		printf("getcwd error");
+		printf("getcwd error\n");
 		exit(1);
 	}
 	
@@ -257,7 +263,15 @@ int main(int argc, char **argv) {
 	
 	printf("clang_command: %s\n", clang_command.data);
 	
-	system(clang_command.data);
+	int clang_status = system(clang_command.data);
+	
+	int clang_exitCode = WEXITSTATUS(clang_status);
+	
+	if (clang_exitCode != 0) {
+		printf("clang error\n");
+		exit(1);
+	}
+	
 	String_free(&clang_command);
 	
 	if (compilerMode == CompilerMode_run) {
