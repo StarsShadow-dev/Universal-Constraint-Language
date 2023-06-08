@@ -2,6 +2,7 @@
 #define types_h
 
 #include <stdlib.h>
+#include <string.h>
 
 //
 // linkedList

@@ -44,19 +44,13 @@ linkedList_Node *lex(void) {
 		// start of a word
 		else if (wordStart) {
 			int start = index;
+			int columnStart = column;
 			int end = 0;
 			
 			while (1) {
 				char character = source[index];
 				
-				if (character == 0) {
-					end = index;
-					
-					index -= 1;
-					break;
-				}
-				
-				if (wordContinue) {
+				if (character != 0 && wordContinue) {
 					index += 1;
 					continue;
 				}
@@ -74,7 +68,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_word;
 			
-			data->location = (SourceLocation){line, start, end};
+			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
 			data->value[valueSize] = 0;
@@ -82,19 +76,13 @@ linkedList_Node *lex(void) {
 		
 		else if (numberStart) {
 			int start = index;
+			int columnStart = column;
 			int end = 0;
 			
 			while (1) {
 				char character = source[index];
 				
-				if (character == 0) {
-					end = index;
-					
-					index -= 1;
-					break;
-				}
-				
-				if (numberContinue) {
+				if (character != 0 && numberContinue) {
 					index += 1;
 					continue;
 				}
@@ -112,7 +100,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_number;
 			
-			data->location = (SourceLocation){line, start, end};
+			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
 			data->value[valueSize] = 0;
@@ -123,7 +111,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_separator;
 			
-			data->location = (SourceLocation){line, index, index};
+			data->location = (SourceLocation){line, column, column + 1};
 			
 			stpncpy(data->value, &source[index], 1);
 			data->value[1] = 0;
@@ -131,7 +119,7 @@ linkedList_Node *lex(void) {
 		
 		else {
 			printf("unexpected character '%c'\n", character);
-			compileError((SourceLocation){line, index, index});
+			compileError((SourceLocation){line, column, column + 1});
 		}
 		
 		index += 1;
