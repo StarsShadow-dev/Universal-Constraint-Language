@@ -4,6 +4,19 @@
 #include "error.h"
 #include "globals.h"
 
+// there might be a simpler way of doing this
+// But this works!
+int getSizeOfUint(unsigned int number) {
+	int size = 1;
+	
+	while (number > 9) {
+		number /= 10;
+		size++;
+	}
+	
+	return size;
+}
+
 void printLine(int *index) {
 	while (1) {
 		char character = source[*index];
@@ -22,9 +35,13 @@ void printLine(int *index) {
 	}
 }
 
-void printLineWithIndicator(int *index, int columnStart, int columnEnd) {
+void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indicatorOffset) {
 	String indicator = {100, 0, 0};
 	String_initialize(&indicator);
+	
+	for (int i = 0; i < indicatorOffset; i++) {
+		String_appendChars(&indicator, "⎽");
+	}
 	
 	int i = 0;
 	while (1) {
@@ -39,23 +56,23 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd) {
 			// even if the size of tabs is changed.
 			printf("    ");
 			
+			i++;
+			
 			if (i > columnStart && i < columnEnd) {
 				String_appendChars(&indicator, "↑↑↑↑");
 			} else {
 				String_appendChars(&indicator, "⎽⎽⎽⎽");
 			}
-			
-			i++;
 		} else {
 			putchar(character);
+			
+			i++;
 			
 			if (i > columnStart && i <= columnEnd) {
 				String_appendChars(&indicator, "↑");
 			} else {
 				String_appendChars(&indicator, "⎽");
 			}
-			
-			i++;
 		}
 		
 		(*index) += 1;
@@ -67,6 +84,8 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd) {
 }
 
 void compileError(SourceLocation location) {
+	int maxLineSize = getSizeOfUint(location.line + 1);
+	
 	int index = 0;
 	int line = 1;
 	while (1) {
@@ -75,19 +94,22 @@ void compileError(SourceLocation location) {
 		if (character == 0) {
 			putchar('\n');
 			exit(1);
-		} else if (character == '\n') {
-			line++;
 		}
 		
 		if (line == location.line - 1) {
-			line++;
+			printf("%d |", location.line - 1);
 			printLine(&index);
-		} else if (line == location.line) {
 			line++;
-			printLineWithIndicator(&index, location.columnStart, location.columnEnd);
+		} else if (line == location.line) {
+			printf("%d |", location.line);
+			printLineWithIndicator(&index, location.columnStart, location.columnEnd, maxLineSize + 2);
+			line++;
 		} else if (line == location.line + 1) {
+			printf("%d |", location.line + 1);
 			printLine(&index);
 			exit(1);
+		} else if (character == '\n') {
+			line++;
 		}
 		
 		index++;

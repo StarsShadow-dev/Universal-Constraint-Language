@@ -122,7 +122,8 @@ linkedList_Node *lex(void) {
 			compileError((SourceLocation){line, column, column + 1});
 		}
 		
-		index += 1;
+		index++;
+		column++;
 	}
 	
 	return tokens;
