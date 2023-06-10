@@ -31,10 +31,10 @@ linkedList_Node *lex(void) {
 //		printf("character: %c\n", character);
 		
 		if (character == '\n') {
-			line += 1;
+			line++;
 			column = 0;
 			
-			index += 1;
+			index++;
 			continue;
 		}
 		
@@ -51,13 +51,15 @@ linkedList_Node *lex(void) {
 				char character = source[index];
 				
 				if (character != 0 && wordContinue) {
-					index += 1;
+					index++;
+					column++;
 					continue;
 				}
 				
 				end = index;
 				
-				index -= 1;
+				index--;
+				column--;
 				break;
 			}
 			
@@ -83,13 +85,15 @@ linkedList_Node *lex(void) {
 				char character = source[index];
 				
 				if (character != 0 && numberContinue) {
-					index += 1;
+					index++;
+					column++;
 					continue;
 				}
 				
 				end = index;
 				
-				index -= 1;
+				index--;
+				column--;
 				break;
 			}
 			
