@@ -40,7 +40,7 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 	String_initialize(&indicator);
 	
 	for (int i = 0; i < indicatorOffset; i++) {
-		String_appendChars(&indicator, "⎽");
+		String_appendChars(&indicator, "_");
 	}
 	
 	int i = 0;
@@ -59,9 +59,9 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 			i++;
 			
 			if (i > columnStart && i < columnEnd) {
-				String_appendChars(&indicator, "↑↑↑↑");
+				String_appendChars(&indicator, "^^^^");
 			} else {
-				String_appendChars(&indicator, "⎽⎽⎽⎽");
+				String_appendChars(&indicator, "____");
 			}
 		} else {
 			putchar(character);
@@ -69,9 +69,9 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 			i++;
 			
 			if (i > columnStart && i <= columnEnd) {
-				String_appendChars(&indicator, "↑");
+				String_appendChars(&indicator, "^");
 			} else {
-				String_appendChars(&indicator, "⎽");
+				String_appendChars(&indicator, "_");
 			}
 		}
 		
