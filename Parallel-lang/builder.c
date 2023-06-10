@@ -81,7 +81,7 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, lin
 				String_appendChars(&LLVMsource, data->name);
 				String_appendChars(&LLVMsource, "() {");
 				
-				buildLLVM(variables, level, &newOuterSource, data->codeBlock);
+				free(buildLLVM(variables, level, &newOuterSource, data->codeBlock));
 				
 				String_appendChars(&LLVMsource, newOuterSource.data);
 				
@@ -101,7 +101,11 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, lin
 				
 				String_appendChars(outerSource, "\n\tret ");
 				
-				String_appendChars(outerSource, buildLLVM(variables, level, outerSource, data->expression));
+				char *newSource = buildLLVM(variables, level, outerSource, data->expression);
+				
+				String_appendChars(outerSource, newSource);
+				
+				free(newSource);
 				
 				break;
 			}
