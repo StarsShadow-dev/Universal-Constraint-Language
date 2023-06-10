@@ -4,7 +4,7 @@
 #include "builder.h"
 #include "error.h"
 
-void addBuilderVariable(linkedList_Node **variables, char *key, char *LLVMname) {
+void addBuilderVariable_type(linkedList_Node **variables, char *key, char *LLVMname) {
 	Variable *data = linkedList_addNode(variables, sizeof(Variable) + sizeof(Variable_type));
 	
 	data->key = key;
@@ -14,7 +14,7 @@ void addBuilderVariable(linkedList_Node **variables, char *key, char *LLVMname) 
 	((Variable_type *)data->value)->LLVMname = LLVMname;
 }
 
-char *getBuilderType(linkedList_Node **variables, int level, char *key) {
+Variable *getBuilderVariable(linkedList_Node **variables, int level, char *key) {
 	int index = level;
 	while (index >= 0) {
 		linkedList_Node *current = variables[index];
@@ -22,18 +22,12 @@ char *getBuilderType(linkedList_Node **variables, int level, char *key) {
 		while (current != NULL) {
 			Variable *variable = ((Variable *)current->data);
 			
-			if (variable->type != VariableType_type) {
-				abort();
-			}
-			
 			if (strcmp(variable->key, key) != 0) {
 				current = current->next;
 				continue;
 			}
 			
-			Variable_type *data = (Variable_type *)variable->value;
-			
-			return data->LLVMname;
+			return variable;
 		}
 		
 		index--;
@@ -42,7 +36,7 @@ char *getBuilderType(linkedList_Node **variables, int level, char *key) {
 	return NULL;
 }
 
-char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, linkedList_Node *current) {
+char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *current) {
 	level++;
 	if (level > maxBuilderLevel) {
 		printf("level (%i) > maxBuilderLevel (%i)\n", level, maxBuilderLevel);
@@ -61,7 +55,7 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, lin
 		
 		switch (node->type) {
 			case ASTnodeType_function: {
-				if (outerSource != NULL) {
+				if (level != 0 || outerSource != NULL) {
 					printf("function definitions are only allowed at top level\n");
 					compileError(node->location);
 				}
@@ -71,38 +65,64 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, lin
 				String_initialize(&newOuterSource);
 				
 				String_appendChars(&LLVMsource, "\ndefine ");
-				char *LLVMtype = getBuilderType(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
-				if (LLVMtype == NULL) {
-					printf("unknown type\n");
+				Variable *type = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
+				
+				if (type == NULL) {
+					printf("unknown type: '%s'\n", ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
 					compileError(((ASTnode *)data->returnType->data)->location);
 				}
+				
+				if (type->type != VariableType_type) {
+					abort();
+				}
+				
+				Variable *function = linkedList_addNode(&variables[0], sizeof(Variable) + sizeof(Variable_type));
+				
+				function->key = data->name;
+				
+				function->type = VariableType_function;
+				
+				((Variable_function *)function->value)->LLVMname = data->name;
+				((Variable_function *)function->value)->returnType = data->returnType;
+				
+				free(buildLLVM(variables, level, &newOuterSource, data->name, data->codeBlock));
+				
+				char *LLVMtype = ((Variable_type *)type->value)->LLVMname;
 				String_appendChars(&LLVMsource, LLVMtype);
 				String_appendChars(&LLVMsource, " @");
 				String_appendChars(&LLVMsource, data->name);
 				String_appendChars(&LLVMsource, "() {");
-				
-				free(buildLLVM(variables, level, &newOuterSource, data->codeBlock));
-				
 				String_appendChars(&LLVMsource, newOuterSource.data);
+				String_appendChars(&LLVMsource, "\n}");
 				
 				String_free(&newOuterSource);
-				
-				String_appendChars(&LLVMsource, "\n}");
 				
 				break;
 			}
 				
 			case ASTnodeType_return: {
-				if (outerSource == NULL) {
+				if (outerSource == NULL || outerName == NULL) {
 					printf("return in a weird spot\n");
 					compileError(node->location);
 				}
+				
+				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
+				
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) {
+					abort();
+				}
+				
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				ASTnode *returnTypeNode = (ASTnode *)outerFunction->returnType->data;
+				
+				ASTnode_type *expectedReturnType = (ASTnode_type *)returnTypeNode->value;
+				
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
+				char *newSource = buildLLVM(variables, level, outerSource, outerName, data->expression);
+				
 				String_appendChars(outerSource, "\n\tret ");
-				
-				char *newSource = buildLLVM(variables, level, outerSource, data->expression);
-				
 				String_appendChars(outerSource, newSource);
 				
 				free(newSource);

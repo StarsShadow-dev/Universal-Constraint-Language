@@ -79,12 +79,18 @@ typedef struct {
 //
 
 typedef enum {
-	VariableType_type
+	VariableType_type,
+	VariableType_function
 } VariableType;
 
 typedef struct {
 	char *LLVMname;
 } Variable_type;
+
+typedef struct {
+	char *LLVMname;
+	linkedList_Node *returnType;
+} Variable_function;
 
 typedef struct {
 	char *key;
