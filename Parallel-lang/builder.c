@@ -142,12 +142,15 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 					abort();
 				}
 				
-				if (strcmp(((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name, "Int32")) {
+				if (strcmp(((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name, "Int32") == 0) {
+					String_appendChars(&LLVMsource, "i32 ");
+				} else if (strcmp(((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name, "Int8") == 0) {
+					String_appendChars(&LLVMsource, "i8 ");
+				} else {
 					printf("expected type '%s' but got type 'Int32'\n", ((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name);
 					compileError(node->location);
 				}
 				
-				String_appendChars(&LLVMsource, "i32 ");
 				String_appendChars(&LLVMsource, data->string);
 				break;
 			}
