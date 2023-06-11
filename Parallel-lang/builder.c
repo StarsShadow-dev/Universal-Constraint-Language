@@ -36,7 +36,7 @@ Variable *getBuilderVariable(linkedList_Node **variables, int level, char *key) 
 	return NULL;
 }
 
-char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *current) {
+char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *expectedType, linkedList_Node *current) {
 	level++;
 	if (level > maxBuilderLevel) {
 		printf("level (%i) > maxBuilderLevel (%i)\n", level, maxBuilderLevel);
@@ -85,7 +85,7 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				((Variable_function *)function->value)->LLVMname = data->name;
 				((Variable_function *)function->value)->returnType = data->returnType;
 				
-				free(buildLLVM(variables, level, &newOuterSource, data->name, data->codeBlock));
+				free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
 				
 				char *LLVMtype = ((Variable_type *)type->value)->LLVMname;
 				String_appendChars(&LLVMsource, LLVMtype);
@@ -114,13 +114,9 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				
 				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
 				
-				ASTnode *returnTypeNode = (ASTnode *)outerFunction->returnType->data;
-				
-				ASTnode_type *expectedReturnType = (ASTnode_type *)returnTypeNode->value;
-				
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
-				char *newSource = buildLLVM(variables, level, outerSource, outerName, data->expression);
+				char *newSource = buildLLVM(variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
 				
 				String_appendChars(outerSource, "\n\tret ");
 				String_appendChars(outerSource, newSource);
@@ -136,6 +132,20 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 			
 			case ASTnodeType_number: {
 				ASTnode_number *data = (ASTnode_number *)node->value;
+				
+				if (expectedType == NULL) {
+					printf("unexpected number\n");
+					compileError(node->location);
+				}
+				
+				if (((ASTnode *)expectedType->data)->type != ASTnodeType_type) {
+					abort();
+				}
+				
+				if (strcmp(((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name, "Int32")) {
+					printf("expected type '%s' but got type 'Int32'\n", ((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name);
+					compileError(node->location);
+				}
 				
 				String_appendChars(&LLVMsource, "i32 ");
 				String_appendChars(&LLVMsource, data->string);

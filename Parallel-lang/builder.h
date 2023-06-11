@@ -7,6 +7,6 @@
 
 void addBuilderVariable_type(linkedList_Node **variables, char *key, char *LLVMname);
 
-char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *current);
+char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *expectedType, linkedList_Node *current);
 
 #endif /* builder_h */
