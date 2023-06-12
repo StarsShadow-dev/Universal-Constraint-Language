@@ -76,6 +76,17 @@ linkedList_Node *lex(void) {
 			data->value[valueSize] = 0;
 		}
 		
+		else if (separator) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token) + 2);
+			
+			data->type = TokenType_separator;
+			
+			data->location = (SourceLocation){line, column, column + 1};
+			
+			stpncpy(data->value, &source[index], 1);
+			data->value[1] = 0;
+		}
+		
 		else if (numberStart) {
 			int start = index;
 			int columnStart = column;
@@ -110,15 +121,48 @@ linkedList_Node *lex(void) {
 			data->value[valueSize] = 0;
 		}
 		
-		else if (separator) {
-			Token *data = linkedList_addNode(&tokens, sizeof(Token) + 2);
+		else if (character == '"') {
+			// eat the starting quotation mark
+			index++;
+			column++;
 			
-			data->type = TokenType_separator;
+			int start = index;
+			int columnStart = column;
+			int end = 0;
 			
-			data->location = (SourceLocation){line, column, column + 1};
+			while (1) {
+				char character = source[index];
+				
+				if (character != 0 && character != '"') {
+					index++;
+					column++;
+					continue;
+				}
+				
+				end = index;
+				
+				index--;
+				column--;
+				
+				if (character == '"') {
+					// eat the ending quotation mark
+					index++;
+					column++;
+				}
+				break;
+			}
 			
-			stpncpy(data->value, &source[index], 1);
-			data->value[1] = 0;
+			// plus one because of the NULL bite
+			int valueSize = end - start + 1;
+			
+			Token *data = linkedList_addNode(&tokens, sizeof(Token) + valueSize);
+			
+			data->type = TokenType_string;
+			
+			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
+			
+			stpncpy(data->value, &source[start], valueSize - 1);
+			data->value[valueSize] = 0;
 		}
 		
 		else {

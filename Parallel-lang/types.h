@@ -30,9 +30,9 @@ typedef struct {
 
 typedef enum {
 	TokenType_word,
+	TokenType_separator,
 	TokenType_number,
-	TokenType_string,
-	TokenType_separator
+	TokenType_string
 } TokenType;
 
 typedef struct {
@@ -44,8 +44,10 @@ typedef struct {
 typedef enum {
 	ASTnodeType_type,
 	ASTnodeType_function,
+	ASTnodeType_argument,
 	ASTnodeType_return,
-	ASTnodeType_number
+	ASTnodeType_number,
+	ASTnodeType_string
 } ASTnodeType;
 
 typedef struct {
@@ -54,10 +56,16 @@ typedef struct {
 
 typedef struct {
 	char *name;
+	int external;
 	linkedList_Node *returnType;
 	linkedList_Node *arguments;
 	linkedList_Node *codeBlock;
 } ASTnode_function;
+
+typedef struct {
+	char *name;
+	linkedList_Node *type;
+} ASTnode_argument;
 
 typedef struct {
 	linkedList_Node *expression;
@@ -67,6 +75,10 @@ typedef struct {
 	char *string;
 	int64_t value;
 } ASTnode_number;
+
+typedef struct {
+	char *string;
+} ASTnode_string;
 
 typedef struct {
 	ASTnodeType type;

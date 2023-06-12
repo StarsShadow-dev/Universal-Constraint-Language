@@ -64,7 +64,6 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				String newOuterSource = {100, 0, 0};
 				String_initialize(&newOuterSource);
 				
-				String_appendChars(&LLVMsource, "\ndefine ");
 				Variable *type = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
 				
 				if (type == NULL) {
@@ -85,17 +84,22 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				((Variable_function *)function->value)->LLVMname = data->name;
 				((Variable_function *)function->value)->returnType = data->returnType;
 				
-				free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
-				
-				char *LLVMtype = ((Variable_type *)type->value)->LLVMname;
-				String_appendChars(&LLVMsource, LLVMtype);
-				String_appendChars(&LLVMsource, " @");
-				String_appendChars(&LLVMsource, data->name);
-				String_appendChars(&LLVMsource, "() {");
-				String_appendChars(&LLVMsource, newOuterSource.data);
-				String_appendChars(&LLVMsource, "\n}");
-				
-				String_free(&newOuterSource);
+				if (data->external) {
+					String_appendChars(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->string);
+				} else {
+					free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
+					
+					char *LLVMtype = ((Variable_type *)type->value)->LLVMname;
+					String_appendChars(&LLVMsource, "\ndefine ");
+					String_appendChars(&LLVMsource, LLVMtype);
+					String_appendChars(&LLVMsource, " @");
+					String_appendChars(&LLVMsource, data->name);
+					String_appendChars(&LLVMsource, "() {");
+					String_appendChars(&LLVMsource, newOuterSource.data);
+					String_appendChars(&LLVMsource, "\n}");
+					
+					String_free(&newOuterSource);
+				}
 				
 				break;
 			}

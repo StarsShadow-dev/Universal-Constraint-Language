@@ -10,6 +10,17 @@ if (current == NULL) {\
 	compileError(token->location);\
 }
 
+int64_t intPow(int64_t base, int64_t exponent) {
+	if (exponent == 0) {
+		return 1;
+	}
+	int64_t result = base;
+	for (int i = 1; i < exponent; i++) {
+		result *= base;
+	}
+	return result;
+}
+
 linkedList_Node *parseType(linkedList_Node **current) {
 	linkedList_Node *AST = NULL;
 	
@@ -26,17 +37,6 @@ linkedList_Node *parseType(linkedList_Node **current) {
 	((ASTnode_type *)data->value)->name = token->value;
 	
 	return AST;
-}
-
-int64_t intPow(int64_t base, int64_t exponent) {
-	if (exponent == 0) {
-		return 1;
-	}
-	int64_t result = base;
-	for (int i = 1; i < exponent; i++) {
-		result *= base;
-	}
-	return result;
 }
 
 ASTnode_number parseInt(linkedList_Node **current) {
@@ -61,6 +61,69 @@ ASTnode_number parseInt(linkedList_Node **current) {
 	node.value = accumulator;
 	
 	return node;
+}
+
+linkedList_Node *parseFunctionArguments(linkedList_Node **current) {
+	linkedList_Node *arguments = NULL;
+	
+	while (1) {
+		if (*current == NULL) {
+			printf("unexpected end of file at function arguments\n");
+			exit(1);
+		}
+		
+		Token *token = ((Token *)((*current)->data));
+		
+		printf("function arguments token: %u %s\n", token->type, token->value);
+		
+		switch (token->type) {
+			case TokenType_word: {
+				char *name = token->value;
+				
+				*current = (*current)->next;
+				endIfCurrentIsEmpty()
+				Token *colon = ((Token *)((*current)->data));
+				
+				printf("colon: %u %s\n", colon->type, colon->value);
+				
+				if (colon->type != TokenType_separator || strcmp(colon->value, ":") != 0) {
+					printf("function argument expected a colon\n");
+					compileError(colon->location);
+				}
+				
+				*current = (*current)->next;
+				linkedList_Node *type = parseType(current);
+				
+				ASTnode *data = linkedList_addNode(&arguments, sizeof(ASTnode) + sizeof(ASTnode_argument));
+				
+				data->type = ASTnodeType_argument;
+				
+				data->location = token->location;
+				
+				((ASTnode_argument *)data->value)->name = name;
+				((ASTnode_argument *)data->value)->type = type;
+				break;
+			}
+				
+			case TokenType_separator: {
+				if (strcmp(token->value, ")") == 0) {
+					return arguments;
+				} else {
+					printf("unexpected separator: '%s'\n", token->value);
+					compileError(token->location);
+				}
+				break;
+			}
+				
+			default: {
+				printf("unexpected token type: %u inside of function arguments\n", token->type);
+				compileError(token->location);
+				break;
+			}
+		}
+		
+		*current = (*current)->next;
+	}
 }
 
 linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
@@ -101,7 +164,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node *arguments = parse(current, 0);
+					linkedList_Node *arguments = parseFunctionArguments(current);
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -119,28 +182,45 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
-					Token *openingBracket = ((Token *)((*current)->data));
+					Token *codeStart = ((Token *)((*current)->data));
 					
-					printf("openingBracket: %u %s\n", openingBracket->type, openingBracket->value);
+					printf("codeStart: %u %s\n", codeStart->type, codeStart->value);
 					
-					if (openingBracket->type != TokenType_separator || strcmp(openingBracket->value, "{") != 0) {
-						printf("function definition expected an openingBracket\n");
-						compileError(openingBracket->location);
+					if (codeStart->type == TokenType_separator && strcmp(codeStart->value, "{") == 0) {
+						*current = (*current)->next;
+						linkedList_Node * codeBlock = parse(current, 0);
+						
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
+						
+						data->type = ASTnodeType_function;
+						
+						data->location = nameToken->location;
+						
+						((ASTnode_function *)data->value)->name = nameToken->value;
+						((ASTnode_function *)data->value)->external = 0;
+						((ASTnode_function *)data->value)->returnType = returnType;
+						((ASTnode_function *)data->value)->arguments = arguments;
+						((ASTnode_function *)data->value)->codeBlock = codeBlock;
+					} else if (codeStart->type == TokenType_string) {
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
+						
+						data->type = ASTnodeType_function;
+						
+						data->location = nameToken->location;
+						
+						((ASTnode_function *)data->value)->name = nameToken->value;
+						((ASTnode_function *)data->value)->external = 1;
+						((ASTnode_function *)data->value)->returnType = returnType;
+						((ASTnode_function *)data->value)->arguments = arguments;
+						
+						ASTnode *codeBlockData = linkedList_addNode(&(((ASTnode_function *)data->value)->codeBlock), sizeof(ASTnode) + sizeof(ASTnode_string));
+						codeBlockData->type = ASTnodeType_string;
+						codeBlockData->location = codeStart->location;
+						((ASTnode_string *)codeBlockData->value)->string = codeStart->value;
+					} else {
+						printf("function definition expected an openingBracket or a quotation mark\n");
+						compileError(codeStart->location);
 					}
-					
-					*current = (*current)->next;
-					linkedList_Node * codeBlock = parse(current, 0);
-					
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
-					
-					data->type = ASTnodeType_function;
-					
-					data->location = nameToken->location;
-					
-					((ASTnode_function *)data->value)->name = nameToken->value;
-					((ASTnode_function *)data->value)->returnType = returnType;
-					((ASTnode_function *)data->value)->arguments = arguments;
-					((ASTnode_function *)data->value)->codeBlock = codeBlock;
 				} else if (strcmp(token->value, "return") == 0) {
 					*current = (*current)->next;
 					linkedList_Node *expression = parse(current, 1);
