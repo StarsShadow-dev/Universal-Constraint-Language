@@ -101,6 +101,7 @@ typedef struct {
 
 typedef struct {
 	char *LLVMname;
+	int hasReturned;
 	linkedList_Node *returnType;
 } Variable_function;
 

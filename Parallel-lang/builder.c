@@ -82,12 +82,18 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				function->type = VariableType_function;
 				
 				((Variable_function *)function->value)->LLVMname = data->name;
+				((Variable_function *)function->value)->hasReturned = 0;
 				((Variable_function *)function->value)->returnType = data->returnType;
 				
 				if (data->external) {
 					String_appendChars(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->string);
 				} else {
 					free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
+					
+					if (!((Variable_function *)function->value)->hasReturned) {
+						printf("function did not return\n");
+						compileError(node->location);
+					}
 					
 					char *LLVMtype = ((Variable_type *)type->value)->LLVMname;
 					String_appendChars(&LLVMsource, "\ndefine ");
@@ -119,6 +125,8 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
 				
 				ASTnode_return *data = (ASTnode_return *)node->value;
+				
+				outerFunction->hasReturned = 1;
 				
 				char *newSource = buildLLVM(variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
 				
