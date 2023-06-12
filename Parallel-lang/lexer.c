@@ -136,6 +136,10 @@ linkedList_Node *lex(void) {
 				if (character != 0 && character != '"') {
 					index++;
 					column++;
+					if (character == '\n') {
+						line++;
+						column = 0;
+					}
 					continue;
 				}
 				
@@ -163,6 +167,25 @@ linkedList_Node *lex(void) {
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
 			data->value[valueSize] = 0;
+		}
+		
+		else if (character == '/' && source[index+1] == '/') {
+			index++;
+			column++;
+			
+			while (1) {
+				char character = source[index];
+				
+				if (character != 0 && character != '\n') {
+					index++;
+					column++;
+					continue;
+				}
+				
+				index--;
+				column--;
+				break;
+			}
 		}
 		
 		else {

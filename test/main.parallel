@@ -1,9 +1,14 @@
+// testing comments
+
 function putchar(char: Int32): Int32 "
+
+; even an LLVM comment
 
 declare i32 @putchar(i32 noundef)
 
 "
 
 function main(): Int32 {
-	return 0;
+	// in a function
+	return 0; // next to a return statement
 }
