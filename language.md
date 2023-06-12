@@ -1,6 +1,6 @@
 # Parallel Language Design
 
-**Note, that not all of these features are finished/implemented.**
+**Note, that not all of these features are implemented.**
 
 ## Functions
 
@@ -14,9 +14,17 @@ function main(): Int32 {
 external function:
 ```
 // when the external keyword is used before a function the contents of the function is a string that is placed into the LLVM input
-external function putchar(int: Int32): Int32 "
+external function putchar(char: Int32): Int32 "
 	declare i32 @putchar(i32 noundef) #1
 "
+```
+
+## Variables
+
+the Syntax for defining a variable:
+
+```
+var myVariable: Int32 = 5;
 ```
 
 ## Types
@@ -31,7 +39,7 @@ Int64
 
 ## Attributes
 
-The attribute syntax is based on [rust](https://doc.rust-lang.org/rust-by-example/attribute.html).
+The attribute syntax is inspired by [rust](https://doc.rust-lang.org/rust-by-example/attribute.html).
 
 ```
 #[attribute]
