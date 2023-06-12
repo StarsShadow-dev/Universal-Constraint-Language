@@ -11,7 +11,7 @@
 #define numberStart (character >= '0' && character <= '9')
 #define numberContinue (character >= '0' && character <= '9')
 
-#define separator character == '(' || character == ')' || character == '{' || character == '}' || character == ':'
+#define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';'
 
 linkedList_Node *lex(void) {
 	linkedList_Node *tokens = 0;

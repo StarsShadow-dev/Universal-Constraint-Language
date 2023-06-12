@@ -145,6 +145,13 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					*current = (*current)->next;
 					linkedList_Node *expression = parse(current, 1);
 					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					if (((Token *)((*current)->data))->type != TokenType_separator || strcmp(((Token *)((*current)->data))->value, ";") != 0) {
+						printf("expected ';' after return statement\n");
+						compileError(token->location);
+					}
+					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
 					
 					data->type = ASTnodeType_return;
@@ -181,7 +188,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 				} else if (strcmp(token->value, "}") == 0) {
 					return AST;
 				} else {
-					printf("unexpected separator: %s\n", token->value);
+					printf("unexpected separator: '%s'\n", token->value);
 					compileError(token->location);
 				}
 				break;
