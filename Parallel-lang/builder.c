@@ -75,15 +75,22 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 					abort();
 				}
 				
-				Variable *function = linkedList_addNode(&variables[0], sizeof(Variable) + sizeof(Variable_type));
+				Variable *LLVMreturnTypeVariable = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
+				
+				Variable_type *LLVMreturnType = (Variable_type *)LLVMreturnTypeVariable->value;
+				
+				Variable *function = linkedList_addNode(&variables[0], sizeof(Variable) + sizeof(Variable_function));
 				
 				function->key = data->name;
 				
 				function->type = VariableType_function;
 				
 				((Variable_function *)function->value)->LLVMname = data->name;
-				((Variable_function *)function->value)->hasReturned = 0;
+				((Variable_function *)function->value)->LLVMreturnType = LLVMreturnType->LLVMname;
+				((Variable_function *)function->value)->argumentTypes = data->argumentTypes;
 				((Variable_function *)function->value)->returnType = data->returnType;
+				((Variable_function *)function->value)->hasReturned = 0;
+				((Variable_function *)function->value)->registerCount = 1;
 				
 				if (data->external) {
 					String_appendChars(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->string);
@@ -106,6 +113,41 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 					
 					String_free(&newOuterSource);
 				}
+				
+				break;
+			}
+				
+			case ASTnodeType_call: {
+				ASTnode_call *data = (ASTnode_call *)node->value;
+				
+				if (outerSource == NULL || outerName == NULL) {
+					printf("call in a weird spot\n");
+					compileError(node->location);
+				}
+				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				Variable *functionToCallVariable = getBuilderVariable(variables, level, data->name);
+				if (functionToCallVariable == NULL || functionToCallVariable->type != VariableType_function) abort();
+				Variable_function *functionToCall = (Variable_function *)functionToCallVariable->value;
+				
+				char *LLVMarguments = buildLLVM(variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
+				
+				String_appendChars(outerSource, "\n\tcall ");
+				String_appendChars(outerSource, functionToCall->LLVMreturnType);
+				String_appendChars(outerSource, " @");
+				String_appendChars(outerSource, functionToCall->LLVMname);
+				String_appendChars(outerSource, "(");
+				String_appendChars(outerSource, LLVMarguments);
+				String_appendChars(outerSource, ")");
+				
+//				String_appendChars(&LLVMsource, "%");
+//				String_appendUint(&LLVMsource, outerFunction->registerCount);
+				
+				outerFunction->registerCount++;
+				
+				free(LLVMarguments);
 				
 				break;
 			}
@@ -141,7 +183,7 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 //			case ASTnodeType_type: {
 //				break;
 //			}
-			
+				
 			case ASTnodeType_number: {
 				ASTnode_number *data = (ASTnode_number *)node->value;
 				
@@ -154,9 +196,11 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 					abort();
 				}
 				
-				if (strcmp(((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name, "Int32") == 0) {
+				char *typeName = ((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name;
+				
+				if (strcmp(typeName, "Int32") == 0) {
 					String_appendChars(&LLVMsource, "i32 ");
-				} else if (strcmp(((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name, "Int8") == 0) {
+				} else if (strcmp(typeName, "Int8") == 0) {
 					String_appendChars(&LLVMsource, "i8 ");
 				} else {
 					printf("expected type '%s' but got type 'Int32'\n", ((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name);
@@ -166,7 +210,7 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				String_appendChars(&LLVMsource, data->string);
 				break;
 			}
-				
+			
 			default: {
 				printf("unknown node type: %u\n", node->type);
 				compileError(node->location);

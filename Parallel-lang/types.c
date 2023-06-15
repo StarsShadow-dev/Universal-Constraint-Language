@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "types.h"
+#include "error.h"
 
 void *linkedList_addNode(linkedList_Node **head, unsigned long size) {
 	linkedList_Node* newNode = calloc(1, sizeof(linkedList_Node) + size);
@@ -24,6 +25,24 @@ void *linkedList_addNode(linkedList_Node **head, unsigned long size) {
 	}
 	
 	return newNode->data;
+}
+
+/// THIS FUNCTION HAS NOT BEEN THOROUGHLY TESTED
+void linkedList_join(linkedList_Node **head1, linkedList_Node **head2) {
+	if (head2 == NULL) return;
+	
+	if (*head1 == NULL) {
+		*head1 = *head2;
+	} else {
+		linkedList_Node *current = *head1;
+		while (1) {
+			if (current->next == NULL) {
+				current->next = *head2;
+				return;
+			}
+			current = current->next;
+		}
+	}
 }
 
 void linkedList_freeList(linkedList_Node **head) {
@@ -51,10 +70,10 @@ void String_initialize(String *string) {
 	}
 }
 
-void String_appendCharsCount(String *string, char *chars, unsigned long count) {
+void String_appendCharsCount(String *string, char *chars, size_t count) {
 	if (string->size + count >= string->maxSize) {
-		// double the size of the string
-		string->maxSize = string->maxSize * 2;
+		// more than double the size of the string
+		string->maxSize = (string->maxSize + string->size + count + 1) * 2;
 		
 		// reallocate
 		char *oldData = string->data;
@@ -76,6 +95,38 @@ void String_appendCharsCount(String *string, char *chars, unsigned long count) {
 	
 	string->data[string->size] = 0;
 }
+
+//void String_appendUint(String *string, const unsigned int number) {
+//	int n = number;
+//	int count = 1;
+//
+//	while (n > 9) {
+//		n /= 10;
+//		count++;
+//	}
+//
+//	if (string->size + count >= string->maxSize) {
+//		// double the size of the string
+//		string->maxSize = string->maxSize * 2;
+//
+//		// reallocate
+//		char *oldData = string->data;
+//
+//		string->data = malloc(string->maxSize);
+//		if (string->data == NULL) {
+//			printf("malloc failed\n");
+//			abort();
+//		}
+//
+//		stpncpy(string->data, oldData, string->size);
+//
+//		free(oldData);
+//	}
+//
+//	sprintf(string->data + string->size, "%u", number);
+//
+//	string->size += count;
+//}
 
 void String_free(String *string) {
 	free(string->data);

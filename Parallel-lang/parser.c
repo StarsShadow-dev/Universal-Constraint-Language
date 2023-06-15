@@ -34,7 +34,7 @@ linkedList_Node *parseType(linkedList_Node **current) {
 	ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_type));
 	data->type = ASTnodeType_type;
 	data->location = token->location;
-	((ASTnode_type *)data->value)->name = token->value;
+	((ASTnode_type *)data->value)->name = (char *)&token->value;
 	
 	return AST;
 }
@@ -63,8 +63,14 @@ ASTnode_number parseInt(linkedList_Node **current) {
 	return node;
 }
 
-linkedList_Node *parseFunctionArguments(linkedList_Node **current) {
-	linkedList_Node *arguments = NULL;
+typedef struct {
+	linkedList_Node *list1;
+	linkedList_Node *list2;
+} linkedList_Node_tuple;
+
+linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
+	linkedList_Node *argumentNames = NULL;
+	linkedList_Node *argumentTypes = NULL;
 	
 	while (1) {
 		if (*current == NULL) {
@@ -94,20 +100,18 @@ linkedList_Node *parseFunctionArguments(linkedList_Node **current) {
 				*current = (*current)->next;
 				linkedList_Node *type = parseType(current);
 				
-				ASTnode *data = linkedList_addNode(&arguments, sizeof(ASTnode) + sizeof(ASTnode_argument));
+				char **nameData = linkedList_addNode(&argumentNames, sizeof(void *));
+				*nameData = name;
 				
-				data->type = ASTnodeType_argument;
+				// join type to argumentTypes
+				linkedList_join(&argumentTypes, &type);
 				
-				data->location = token->location;
-				
-				((ASTnode_argument *)data->value)->name = name;
-				((ASTnode_argument *)data->value)->type = type;
 				break;
 			}
 				
 			case TokenType_separator: {
 				if (strcmp(token->value, ")") == 0) {
-					return arguments;
+					return (linkedList_Node_tuple){argumentNames, argumentTypes};
 				} else {
 					printf("unexpected separator: '%s'\n", token->value);
 					compileError(token->location);
@@ -164,7 +168,10 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node *arguments = parseFunctionArguments(current);
+					linkedList_Node_tuple argument_tuple = parseFunctionArguments(current);
+					
+					linkedList_Node *argumentNames = argument_tuple.list1;
+					linkedList_Node *argumentTypes = argument_tuple.list2;
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -193,25 +200,25 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
 						data->type = ASTnodeType_function;
-						
 						data->location = nameToken->location;
 						
 						((ASTnode_function *)data->value)->name = nameToken->value;
 						((ASTnode_function *)data->value)->external = 0;
 						((ASTnode_function *)data->value)->returnType = returnType;
-						((ASTnode_function *)data->value)->arguments = arguments;
+						((ASTnode_function *)data->value)->argumentNames = argumentNames;
+						((ASTnode_function *)data->value)->argumentTypes = argumentTypes;
 						((ASTnode_function *)data->value)->codeBlock = codeBlock;
 					} else if (codeStart->type == TokenType_string) {
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
 						data->type = ASTnodeType_function;
-						
 						data->location = nameToken->location;
 						
 						((ASTnode_function *)data->value)->name = nameToken->value;
 						((ASTnode_function *)data->value)->external = 1;
 						((ASTnode_function *)data->value)->returnType = returnType;
-						((ASTnode_function *)data->value)->arguments = arguments;
+						((ASTnode_function *)data->value)->argumentNames = argumentNames;
+						((ASTnode_function *)data->value)->argumentTypes = argumentTypes;
 						
 						ASTnode *codeBlockData = linkedList_addNode(&(((ASTnode_function *)data->value)->codeBlock), sizeof(ASTnode) + sizeof(ASTnode_string));
 						codeBlockData->type = ASTnodeType_string;
@@ -235,13 +242,29 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
 					
 					data->type = ASTnodeType_return;
-					
 					data->location = token->location;
 					
 					((ASTnode_return *)data->value)->expression = expression;
 				} else {
-					printf("unexpected word: %s\n", token->value);
-					compileError(token->location);
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *openingParentheses = ((Token *)((*current)->data));
+					
+					if (openingParentheses->type != TokenType_separator || strcmp(openingParentheses->value, "(") != 0) {
+						printf("unexpected word: %s\n", token->value);
+						compileError(token->location);
+					}
+					
+					*current = (*current)->next;
+					linkedList_Node *arguments = parse(current, 0);
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
+					
+					data->type = ASTnodeType_call;
+					data->location = token->location;
+					
+					((ASTnode_call *)data->value)->name = token->value;
+					((ASTnode_call *)data->value)->arguments = arguments;
 				}
 				break;
 			}

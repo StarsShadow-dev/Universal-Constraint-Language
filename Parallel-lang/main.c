@@ -102,12 +102,13 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 			unsigned long stringLen = valueToken.end - valueToken.start;
 			char *stringValue = buffer + valueToken.start;
 			
-			char *result = malloc(stringLen);
+			char *result = malloc(stringLen + 1);
 			if (result == NULL) {
 				printf("malloc failed\n");
 				abort();
 			}
 			memcpy(result, stringValue, stringLen);
+			result[stringLen] = 0;
 			return result;
 		}
 		
@@ -150,8 +151,12 @@ int main(int argc, char **argv) {
 	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
 	
 	char *homePath = getenv("HOME");
+	if (homePath == NULL) {
+		printf("no home (getenv('HOME')) failed");
+		exit(1);
+	}
 	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
-	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath));
+	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath) + 1);
 	if (globalConfigPath == NULL) {
 		printf("malloc failed\n");
 		abort();

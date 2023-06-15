@@ -3,6 +3,6 @@
 
 #include "types.h"
 
-void compileError(SourceLocation location);
+void compileError(SourceLocation location) __dead2;
 
 #endif /* error_h */

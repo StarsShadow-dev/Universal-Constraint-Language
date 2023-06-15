@@ -73,7 +73,7 @@ linkedList_Node *lex(void) {
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
-			data->value[valueSize] = 0;
+			data->value[valueSize - 1] = 0;
 		}
 		
 		else if (separator) {
@@ -118,7 +118,7 @@ linkedList_Node *lex(void) {
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
-			data->value[valueSize] = 0;
+			data->value[valueSize - 1] = 0;
 		}
 		
 		else if (character == '"') {
@@ -166,7 +166,7 @@ linkedList_Node *lex(void) {
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
 			
 			stpncpy(data->value, &source[start], valueSize - 1);
-			data->value[valueSize] = 0;
+			data->value[valueSize - 1] = 0;
 		}
 		
 		else if (character == '/' && source[index+1] == '/') {

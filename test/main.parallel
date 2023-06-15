@@ -5,5 +5,9 @@ declare i32 @putchar(i32 noundef)
 "
 
 function main(): Int32 {
-	//return 0;
+	putchar(97) // a
+	putchar(98) // b
+	putchar(99) // c
+	putchar(10) // \n
+	return 0;
 }
