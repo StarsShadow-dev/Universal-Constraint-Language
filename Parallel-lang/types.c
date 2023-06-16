@@ -45,6 +45,18 @@ void linkedList_join(linkedList_Node **head1, linkedList_Node **head2) {
 	}
 }
 
+int linkedList_getCount(linkedList_Node **head) {
+	int count = 0;
+	
+	linkedList_Node *current = *head;
+	while (current != NULL) {
+		count++;
+		current = current->next;
+	}
+	
+	return count;
+}
+
 void linkedList_freeList(linkedList_Node **head) {
 	if (head == NULL) {
 		return;

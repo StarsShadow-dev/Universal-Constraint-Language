@@ -21,6 +21,8 @@ void *linkedList_addNode(linkedList_Node **head, unsigned long size);
 /// THIS FUNCTION HAS NOT BEEN THOROUGHLY TESTED
 void linkedList_join(linkedList_Node **head1, linkedList_Node **head2);
 
+int linkedList_getCount(linkedList_Node **head);
+
 void linkedList_freeList(linkedList_Node **head);
 
 //

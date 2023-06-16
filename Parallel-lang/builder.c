@@ -121,7 +121,7 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				ASTnode_call *data = (ASTnode_call *)node->value;
 				
 				if (outerSource == NULL || outerName == NULL) {
-					printf("call in a weird spot\n");
+					printf("function call in a weird spot\n");
 					compileError(node->location);
 				}
 				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
@@ -131,6 +131,18 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				Variable *functionToCallVariable = getBuilderVariable(variables, level, data->name);
 				if (functionToCallVariable == NULL || functionToCallVariable->type != VariableType_function) abort();
 				Variable_function *functionToCall = (Variable_function *)functionToCallVariable->value;
+				
+				int expectedArgumentCount = linkedList_getCount(&functionToCall->argumentTypes);
+				int actualArgumentCount = linkedList_getCount(&data->arguments);
+				
+				if (expectedArgumentCount > actualArgumentCount) {
+					printf("%s did not get enough arguments (expected %d but got %d)\n", data->name, expectedArgumentCount, actualArgumentCount);
+					compileError(node->location);
+				}
+				if (expectedArgumentCount < actualArgumentCount) {
+					printf("%s got too many arguments (expected %d but got %d)\n", data->name, expectedArgumentCount, actualArgumentCount);
+					compileError(node->location);
+				}
 				
 				char *LLVMarguments = buildLLVM(variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
 				
