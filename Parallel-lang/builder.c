@@ -129,7 +129,10 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
 				
 				Variable *functionToCallVariable = getBuilderVariable(variables, level, data->name);
-				if (functionToCallVariable == NULL || functionToCallVariable->type != VariableType_function) abort();
+				if (functionToCallVariable == NULL || functionToCallVariable->type != VariableType_function) {
+					printf("no function named '%s'\n", data->name);
+					compileError(node->location);
+				}
 				Variable_function *functionToCall = (Variable_function *)functionToCallVariable->value;
 				
 				int expectedArgumentCount = linkedList_getCount(&functionToCall->argumentTypes);

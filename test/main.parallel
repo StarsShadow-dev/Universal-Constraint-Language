@@ -1,9 +1,3 @@
-function putchar(char: Int32): Int32 "
-
-declare i32 @putchar(i32 noundef)
-
-"
-
 function main(): Int32 {
 	putchar(97) // a
 	putchar(98) // b
@@ -12,3 +6,9 @@ function main(): Int32 {
 
 	return 0;
 }
+
+function putchar(char: Int32): Int32 "
+
+declare i32 @putchar(i32 noundef)
+
+"
