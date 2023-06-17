@@ -36,7 +36,7 @@ Variable *getBuilderVariable(linkedList_Node **variables, int level, char *key) 
 	return NULL;
 }
 
-char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *expectedType, linkedList_Node *current) {
+char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *expectedTypes, linkedList_Node *current) {
 	level++;
 	if (level > maxBuilderLevel) {
 		printf("level (%i) > maxBuilderLevel (%i)\n", level, maxBuilderLevel);
@@ -199,25 +199,33 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 			case ASTnodeType_number: {
 				ASTnode_number *data = (ASTnode_number *)node->value;
 				
-				if (expectedType == NULL) {
+				if (expectedTypes == NULL) {
 					printf("unexpected number\n");
 					compileError(node->location);
 				}
 				
-				if (((ASTnode *)expectedType->data)->type != ASTnodeType_type) {
+				if (((ASTnode *)expectedTypes->data)->type != ASTnodeType_type) {
 					abort();
 				}
 				
-				char *typeName = ((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name;
+				char *expectedTypeName = ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name;
 				
-				if (strcmp(typeName, "Int32") == 0) {
-					String_appendChars(&LLVMsource, "i32 ");
-				} else if (strcmp(typeName, "Int8") == 0) {
-					String_appendChars(&LLVMsource, "i8 ");
-				} else {
-					printf("expected type '%s' but got type 'Int32'\n", ((ASTnode_type *)((ASTnode *)expectedType->data)->value)->name);
+				if (
+					strcmp(expectedTypeName, "Int8") != 0 &&
+					strcmp(expectedTypeName, "Int32") != 0 &&
+					strcmp(expectedTypeName, "Int64") != 0)
+				{
+					printf("expected type '%s' but got a number\n", expectedTypeName);
 					compileError(node->location);
 				}
+				
+				Variable *expectedTypeVariable = getBuilderVariable(variables, level, expectedTypeName);
+				if (expectedTypeVariable == NULL || expectedTypeVariable->type != VariableType_type) abort();
+				Variable_type *expectedType = (Variable_type *)expectedTypeVariable->value;
+				
+				String_appendChars(&LLVMsource, expectedType->LLVMname);
+				
+				String_appendChars(&LLVMsource, " ");
 				
 				String_appendChars(&LLVMsource, data->string);
 				break;
