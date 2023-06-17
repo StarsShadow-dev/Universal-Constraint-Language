@@ -46,23 +46,21 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 	String LLVMsource = {100, 0, 0};
 	String_initialize(&LLVMsource);
 	
-	while (1) {
-		if (current == NULL) {
-			break;
-		}
-		
-		ASTnode *node = ((ASTnode *)current->data);
-		
-		switch (node->type) {
-			case ASTnodeType_function: {
-				if (level != 0 || outerSource != NULL) {
-					printf("function definitions are only allowed at top level\n");
-					compileError(node->location);
-				}
+	//
+	// pre-loop
+	//
+	
+	if (level == 0) {
+		linkedList_Node *preLoopCurrent = current;
+		while (1) {
+			if (preLoopCurrent == NULL) {
+				break;
+			}
+			
+			ASTnode *node = ((ASTnode *)preLoopCurrent->data);
+			
+			if (node->type == ASTnodeType_function) {
 				ASTnode_function *data = (ASTnode_function *)node->value;
-				
-				String newOuterSource = {100, 0, 0};
-				String_initialize(&newOuterSource);
 				
 				Variable *type = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
 				
@@ -91,13 +89,46 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				((Variable_function *)function->value)->returnType = data->returnType;
 				((Variable_function *)function->value)->hasReturned = 0;
 				((Variable_function *)function->value)->registerCount = 1;
+			}
+			
+			preLoopCurrent = preLoopCurrent->next;
+		}
+	}
+	
+	//
+	// main loop
+	//
+	
+	while (1) {
+		if (current == NULL) {
+			break;
+		}
+		
+		ASTnode *node = ((ASTnode *)current->data);
+		
+		switch (node->type) {
+			case ASTnodeType_function: {
+				if (level != 0 || outerSource != NULL) {
+					printf("function definitions are only allowed at top level\n");
+					compileError(node->location);
+				}
+				ASTnode_function *data = (ASTnode_function *)node->value;
+				
+				String newOuterSource = {100, 0, 0};
+				String_initialize(&newOuterSource);
+				
+				Variable *type = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
+				
+				Variable *functionVariable = getBuilderVariable(variables, level, data->name);
+				if (functionVariable == NULL || functionVariable->type != VariableType_function) abort();
+				Variable_function *function = (Variable_function *)functionVariable->value;
 				
 				if (data->external) {
 					String_appendChars(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->string);
 				} else {
 					free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
 					
-					if (!((Variable_function *)function->value)->hasReturned) {
+					if (!function->hasReturned) {
 						printf("function did not return\n");
 						compileError(node->location);
 					}
