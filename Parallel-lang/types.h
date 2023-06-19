@@ -126,23 +126,25 @@ typedef struct {
 } Variable;
 
 //
-// String
+// CharAccumulator
 //
 
 typedef struct {
 	size_t maxSize;
 	size_t size;
 	char *data;
-} String;
+} CharAccumulator;
 
-void String_initialize(String *string);
+void CharAccumulator_initialize(CharAccumulator *charAccumulator);
 
-void String_appendCharsCount(String *string, char *chars, unsigned long count);
+void CharAccumulator_appendChar(CharAccumulator *charAccumulator, char character);
 
-#define String_appendChars(string, chars) String_appendCharsCount(string, chars, strlen(chars))
+void CharAccumulator_appendCharsCount(CharAccumulator *charAccumulator, char *chars, unsigned long count);
 
-//void String_appendUint(String *string, const unsigned int number);
+#define CharAccumulator_appendChars(string, chars) String_appendCharsCount(string, chars, strlen(chars))
 
-void String_free(String *string);
+//void CharAccumulator_appendUint(String *string, const unsigned int number);
+
+void CharAccumulator_free(CharAccumulator *charAccumulator);
 
 #endif /* types_h */

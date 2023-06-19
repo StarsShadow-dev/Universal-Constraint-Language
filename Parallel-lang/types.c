@@ -71,44 +71,70 @@ void linkedList_freeList(linkedList_Node **head) {
 }
 
 //
-// String
+// CharAccumulator
 //
 
-void String_initialize(String *string) {
-	string->data = malloc(string->maxSize);
-	if (string->data == NULL) {
+void CharAccumulator_initialize(CharAccumulator *charAccumulator) {
+	charAccumulator->data = malloc(charAccumulator->maxSize);
+	if (charAccumulator->data == NULL) {
 		printf("malloc failed\n");
 		abort();
 	}
 }
 
-void String_appendCharsCount(String *string, char *chars, size_t count) {
-	if (string->size + count >= string->maxSize) {
+void CharAccumulator_appendChar(CharAccumulator *charAccumulator, char character) {
+	if (charAccumulator->size + 1 >= charAccumulator->maxSize) {
 		// more than double the size of the string
-		string->maxSize = (string->maxSize + string->size + count + 1) * 2;
+		charAccumulator->maxSize = (charAccumulator->maxSize + charAccumulator->size + 1 + 1) * 2;
 		
 		// reallocate
-		char *oldData = string->data;
+		char *oldData = charAccumulator->data;
 		
-		string->data = malloc(string->maxSize);
-		if (string->data == NULL) {
+		charAccumulator->data = malloc(charAccumulator->maxSize);
+		if (charAccumulator->data == NULL) {
 			printf("malloc failed\n");
 			abort();
 		}
 		
-		stpncpy(string->data, oldData, string->size);
+		stpncpy(charAccumulator->data, oldData, charAccumulator->size);
 		
 		free(oldData);
 	}
 	
-	stpncpy(string->data + string->size, chars, count);
+	charAccumulator->data[charAccumulator->size] = character;
 	
-	string->size += count;
+	charAccumulator->size += 1;
 	
-	string->data[string->size] = 0;
+	charAccumulator->data[charAccumulator->size] = 0;
 }
 
-//void String_appendUint(String *string, const unsigned int number) {
+void CharAccumulator_appendCharsCount(CharAccumulator *charAccumulator, char *chars, size_t count) {
+	if (charAccumulator->size + count >= charAccumulator->maxSize) {
+		// more than double the size of the string
+		charAccumulator->maxSize = (charAccumulator->maxSize + charAccumulator->size + count + 1) * 2;
+		
+		// reallocate
+		char *oldData = charAccumulator->data;
+		
+		charAccumulator->data = malloc(charAccumulator->maxSize);
+		if (charAccumulator->data == NULL) {
+			printf("malloc failed\n");
+			abort();
+		}
+		
+		stpncpy(charAccumulator->data, oldData, charAccumulator->size);
+		
+		free(oldData);
+	}
+	
+	stpncpy(charAccumulator->data + charAccumulator->size, chars, count);
+	
+	charAccumulator->size += count;
+	
+	charAccumulator->data[charAccumulator->size] = 0;
+}
+
+//void CharAccumulator_appendUint(CharAccumulator *charAccumulator, const unsigned int number) {
 //	int n = number;
 //	int count = 1;
 //
@@ -140,6 +166,6 @@ void String_appendCharsCount(String *string, char *chars, size_t count) {
 //	string->size += count;
 //}
 
-void String_free(String *string) {
-	free(string->data);
+void CharAccumulator_free(CharAccumulator *charAccumulator) {
+	free(charAccumulator->data);
 }
