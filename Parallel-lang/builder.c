@@ -36,15 +36,15 @@ Variable *getBuilderVariable(linkedList_Node **variables, int level, char *key) 
 	return NULL;
 }
 
-char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, char *outerName, linkedList_Node *expectedTypes, linkedList_Node *current) {
+char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSource, char *outerName, linkedList_Node *expectedTypes, linkedList_Node *current) {
 	level++;
 	if (level > maxBuilderLevel) {
 		printf("level (%i) > maxBuilderLevel (%i)\n", level, maxBuilderLevel);
 		abort();
 	}
 	
-	String LLVMsource = {100, 0, 0};
-	String_initialize(&LLVMsource);
+	CharAccumulator LLVMsource = {100, 0, 0};
+	CharAccumulator_initialize(&LLVMsource);
 	
 	//
 	// pre-loop
@@ -114,8 +114,8 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				}
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
-				String newOuterSource = {100, 0, 0};
-				String_initialize(&newOuterSource);
+				CharAccumulator newOuterSource = {100, 0, 0};
+				CharAccumulator_initialize(&newOuterSource);
 				
 				Variable *type = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
 				
@@ -124,7 +124,7 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				Variable_function *function = (Variable_function *)functionVariable->value;
 				
 				if (data->external) {
-					String_appendChars(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->string);
+					CharAccumulator_appendChars(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->string);
 				} else {
 					free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
 					
@@ -134,15 +134,15 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 					}
 					
 					char *LLVMtype = ((Variable_type *)type->value)->LLVMname;
-					String_appendChars(&LLVMsource, "\ndefine ");
-					String_appendChars(&LLVMsource, LLVMtype);
-					String_appendChars(&LLVMsource, " @");
-					String_appendChars(&LLVMsource, data->name);
-					String_appendChars(&LLVMsource, "() {");
-					String_appendChars(&LLVMsource, newOuterSource.data);
-					String_appendChars(&LLVMsource, "\n}");
+					CharAccumulator_appendChars(&LLVMsource, "\ndefine ");
+					CharAccumulator_appendChars(&LLVMsource, LLVMtype);
+					CharAccumulator_appendChars(&LLVMsource, " @");
+					CharAccumulator_appendChars(&LLVMsource, data->name);
+					CharAccumulator_appendChars(&LLVMsource, "() {");
+					CharAccumulator_appendChars(&LLVMsource, newOuterSource.data);
+					CharAccumulator_appendChars(&LLVMsource, "\n}");
 					
-					String_free(&newOuterSource);
+					CharAccumulator_free(&newOuterSource);
 				}
 				
 				break;
@@ -180,16 +180,16 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				
 				char *LLVMarguments = buildLLVM(variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
 				
-				String_appendChars(outerSource, "\n\tcall ");
-				String_appendChars(outerSource, functionToCall->LLVMreturnType);
-				String_appendChars(outerSource, " @");
-				String_appendChars(outerSource, functionToCall->LLVMname);
-				String_appendChars(outerSource, "(");
-				String_appendChars(outerSource, LLVMarguments);
-				String_appendChars(outerSource, ")");
+				CharAccumulator_appendChars(outerSource, "\n\tcall ");
+				CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
+				CharAccumulator_appendChars(outerSource, " @");
+				CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
+				CharAccumulator_appendChars(outerSource, "(");
+				CharAccumulator_appendChars(outerSource, LLVMarguments);
+				CharAccumulator_appendChars(outerSource, ")");
 				
-//				String_appendChars(&LLVMsource, "%");
-//				String_appendUint(&LLVMsource, outerFunction->registerCount);
+//				CharAccumulator_appendChars(&LLVMsource, "%");
+//				CharAccumulator_appendUint(&LLVMsource, outerFunction->registerCount);
 				
 				outerFunction->registerCount++;
 				
@@ -218,8 +218,8 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				
 				char *newSource = buildLLVM(variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
 				
-				String_appendChars(outerSource, "\n\tret ");
-				String_appendChars(outerSource, newSource);
+				CharAccumulator_appendChars(outerSource, "\n\tret ");
+				CharAccumulator_appendChars(outerSource, newSource);
 				
 				free(newSource);
 				
@@ -257,11 +257,9 @@ char *buildLLVM(linkedList_Node **variables, int level, String *outerSource, cha
 				if (expectedTypeVariable == NULL || expectedTypeVariable->type != VariableType_type) abort();
 				Variable_type *expectedType = (Variable_type *)expectedTypeVariable->value;
 				
-				String_appendChars(&LLVMsource, expectedType->LLVMname);
-				
-				String_appendChars(&LLVMsource, " ");
-				
-				String_appendChars(&LLVMsource, data->string);
+				CharAccumulator_appendChars(&LLVMsource, expectedType->LLVMname);
+				CharAccumulator_appendChars(&LLVMsource, " ");
+				CharAccumulator_appendChars(&LLVMsource, data->string);
 				break;
 			}
 			

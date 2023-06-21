@@ -36,11 +36,11 @@ void printLine(int *index) {
 }
 
 void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indicatorOffset) {
-	String indicator = {100, 0, 0};
-	String_initialize(&indicator);
+	CharAccumulator indicator = {100, 0, 0};
+	CharAccumulator_initialize(&indicator);
 	
 	for (int i = 0; i < indicatorOffset; i++) {
-		String_appendChars(&indicator, "_");
+		CharAccumulator_appendChars(&indicator, "_");
 	}
 	
 	int i = 0;
@@ -59,9 +59,9 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 			i++;
 			
 			if (i > columnStart && i < columnEnd) {
-				String_appendChars(&indicator, "^^^^");
+				CharAccumulator_appendChars(&indicator, "^^^^");
 			} else {
-				String_appendChars(&indicator, "____");
+				CharAccumulator_appendChars(&indicator, "____");
 			}
 		} else {
 			putchar(character);
@@ -69,9 +69,9 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 			i++;
 			
 			if (i > columnStart && i <= columnEnd) {
-				String_appendChars(&indicator, "^");
+				CharAccumulator_appendChars(&indicator, "^");
 			} else {
-				String_appendChars(&indicator, "_");
+				CharAccumulator_appendChars(&indicator, "_");
 			}
 		}
 		
@@ -80,7 +80,7 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 	
 	printf("%s\n", indicator.data);
 	
-	String_free(&indicator);
+	CharAccumulator_free(&indicator);
 }
 
 void compileError(SourceLocation location) {

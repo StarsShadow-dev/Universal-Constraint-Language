@@ -8,7 +8,7 @@ function main(): Int32 {
 }
 
 function putchar(char: Int32): Int32 "
-
 declare i32 @putchar(i32 noundef)
-
 "
+
+// function print(ptr: *[char]): Void "declare i32 @printf(ptr noundef, ...)"

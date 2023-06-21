@@ -231,17 +231,17 @@ int main(int argc, char **argv) {
 	
 	printf("LLVMsource: %s\n", LLVMsource);
 	
-	String LLC_command = {100, 0, 0};
-	String_initialize(&LLC_command);
-	String_appendChars(&LLC_command, LLC_path);
-	String_appendChars(&LLC_command, " -filetype=obj -o ");
-	String_appendChars(&LLC_command, build_directory);
-	String_appendChars(&LLC_command, "/objectFile.o");
+	CharAccumulator LLC_command = {100, 0, 0};
+	CharAccumulator_initialize(&LLC_command);
+	CharAccumulator_appendChars(&LLC_command, LLC_path);
+	CharAccumulator_appendChars(&LLC_command, " -filetype=obj -o ");
+	CharAccumulator_appendChars(&LLC_command, build_directory);
+	CharAccumulator_appendChars(&LLC_command, "/objectFile.o");
 	FILE *fp = popen(LLC_command.data, "w");
 	fprintf(fp, "%s", LLVMsource);
 	int LLC_status = pclose(fp);
 	int LLC_exitCode = WEXITSTATUS(LLC_status);
-	String_free(&LLC_command);
+	CharAccumulator_free(&LLC_command);
 	
 	if (LLC_exitCode != 0) {
 		printf("LLVM error\n");
@@ -256,19 +256,19 @@ int main(int argc, char **argv) {
 	}
 	
 	// now I understand why swift and JavaScript have built-in string formatting
-	String clang_command = {100, 0, 0};
-	String_initialize(&clang_command);
-	String_appendChars(&clang_command, clang_path);
-	String_appendChars(&clang_command, " ");
-	String_appendChars(&clang_command, getcwdBuffer);
-	String_appendChars(&clang_command, "/");
-	String_appendChars(&clang_command, build_directory);
-	String_appendChars(&clang_command, "/objectFile.o -o ");
-	String_appendChars(&clang_command, getcwdBuffer);
-	String_appendChars(&clang_command, "/");
-	String_appendChars(&clang_command, build_directory);
-	String_appendChars(&clang_command, "/");
-	String_appendChars(&clang_command, name);
+	CharAccumulator clang_command = {100, 0, 0};
+	CharAccumulator_initialize(&clang_command);
+	CharAccumulator_appendChars(&clang_command, clang_path);
+	CharAccumulator_appendChars(&clang_command, " ");
+	CharAccumulator_appendChars(&clang_command, getcwdBuffer);
+	CharAccumulator_appendChars(&clang_command, "/");
+	CharAccumulator_appendChars(&clang_command, build_directory);
+	CharAccumulator_appendChars(&clang_command, "/objectFile.o -o ");
+	CharAccumulator_appendChars(&clang_command, getcwdBuffer);
+	CharAccumulator_appendChars(&clang_command, "/");
+	CharAccumulator_appendChars(&clang_command, build_directory);
+	CharAccumulator_appendChars(&clang_command, "/");
+	CharAccumulator_appendChars(&clang_command, name);
 	
 	printf("clang_command: %s\n", clang_command.data);
 	
@@ -281,17 +281,17 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	String_free(&clang_command);
+	CharAccumulator_free(&clang_command);
 	
 	if (compilerMode == CompilerMode_run) {
-		String run_path = {100, 0, 0};
-		String_initialize(&run_path);
-		String_appendChars(&run_path, build_directory);
-		String_appendChars(&run_path, "/");
-		String_appendChars(&run_path, name);
+		CharAccumulator run_path = {100, 0, 0};
+		CharAccumulator_initialize(&run_path);
+		CharAccumulator_appendChars(&run_path, build_directory);
+		CharAccumulator_appendChars(&run_path, "/");
+		CharAccumulator_appendChars(&run_path, name);
 		printf("running program at %s\n", run_path.data);
 		system(run_path.data);
-		String_free(&run_path);
+		CharAccumulator_free(&run_path);
 	}
 	
 	// clean up
