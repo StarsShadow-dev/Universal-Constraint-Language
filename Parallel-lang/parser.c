@@ -80,8 +80,6 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 		
 		Token *token = ((Token *)((*current)->data));
 		
-		printf("function arguments token: %u %s\n", token->type, token->value);
-		
 		switch (token->type) {
 			case TokenType_word: {
 				char *name = token->value;
@@ -89,8 +87,6 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 				*current = (*current)->next;
 				endIfCurrentIsEmpty()
 				Token *colon = ((Token *)((*current)->data));
-				
-				printf("colon: %u %s\n", colon->type, colon->value);
 				
 				if (colon->type != TokenType_separator || strcmp(colon->value, ":") != 0) {
 					printf("function argument expected a colon\n");
@@ -140,16 +136,12 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 		
 		Token *token = ((Token *)((*current)->data));
 		
-		printf("token: %u %s\n", token->type, token->value);
-		
 		switch (token->type) {
 			case TokenType_word: {
 				if (strcmp(token->value, "function") == 0) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
 					Token *nameToken = ((Token *)((*current)->data));
-					
-					printf("nameToken: %u %s\n", nameToken->type, nameToken->value);
 					
 					if (nameToken->type != TokenType_word) {
 						printf("expected word after function keyword\n");
@@ -159,8 +151,6 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
 					Token *openingParentheses = ((Token *)((*current)->data));
-					
-					printf("openingParentheses: %u %s\n", openingParentheses->type, openingParentheses->value);
 					
 					if (openingParentheses->type != TokenType_separator || strcmp(openingParentheses->value, "(") != 0) {
 						printf("function definition expected an openingParentheses\n");
@@ -177,8 +167,6 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					endIfCurrentIsEmpty()
 					Token *colon = ((Token *)((*current)->data));
 					
-					printf("colon: %u %s\n", colon->type, colon->value);
-					
 					if (colon->type != TokenType_separator || strcmp(colon->value, ":") != 0) {
 						printf("function definition expected a colon\n");
 						compileError(colon->location);
@@ -190,8 +178,6 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
 					Token *codeStart = ((Token *)((*current)->data));
-					
-					printf("codeStart: %u %s\n", codeStart->type, codeStart->value);
 					
 					if (codeStart->type == TokenType_separator && strcmp(codeStart->value, "{") == 0) {
 						*current = (*current)->next;
