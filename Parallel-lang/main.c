@@ -10,6 +10,8 @@
 #include "parser.h"
 #include "builder.h"
 
+#define CURRENT_VERSION "beta.1"
+
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
 	if (head == 0) {
@@ -164,7 +166,6 @@ int main(int argc, char **argv) {
 	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
 
 	char *globalConfigJSON = readFile(globalConfigPath);
-	printf("globalConfigJSON: %s\n", globalConfigJSON);
 
 	jsmn_init(&p);
 	int globalConfigJSONcount = jsmn_parse(&p, globalConfigJSON, strlen(globalConfigJSON), t, 128);
@@ -174,17 +175,14 @@ int main(int argc, char **argv) {
 		printf("no LLC_path in file at: %s\n", globalConfigPath);
 		exit(1);
 	}
-	printf("LLC_path: %s\n", LLC_path);
 
 	char *clang_path = getJsmnString(globalConfigJSON, t, globalConfigJSONcount, "clang_path");
 	if (clang_path == 0 || clang_path[0] == 0) {
 		printf("no clang_path in file at: %s\n", globalConfigPath);
 		exit(1);
 	}
-	printf("clang_path: %s\n", clang_path);
 	
 	char *configJSON = readFile("config.json");
-	printf("configJSON: %s\n", configJSON);
 	
 	jsmn_init(&p);
 	int configJSONcount = jsmn_parse(&p, configJSON, strlen(configJSON), t, 128);
@@ -194,27 +192,26 @@ int main(int argc, char **argv) {
 		printf("no name in file at: ./config.json\n");
 		exit(1);
 	}
-	printf("name: %s\n", name);
 	
 	char *entry_path = getJsmnString(configJSON, t, configJSONcount, "entry_path");
 	if (entry_path == 0 || entry_path[0] == 0) {
 		printf("no entry_path in file at: ./config.json\n");
 		exit(1);
 	}
-	printf("entry_path: %s\n", entry_path);
 	
 	char *build_directory = getJsmnString(configJSON, t, configJSONcount, "build_directory");
 	if (build_directory == 0 || build_directory[0] == 0) {
 		printf("no build_directory in file at: ./config.json\n");
 		exit(1);
 	}
-	printf("build_directory: %s\n", build_directory);
+	
+	printf("compiler version: %s\n", CURRENT_VERSION);
 	
 	source = readFile(entry_path);
-	printf("source: %s\n", source);
+//	printf("source: %s\n", source);
 
 	linkedList_Node *tokens = lex();
-	printTokens(tokens);
+//	printTokens(tokens);
 	
 	linkedList_Node *currentToken = tokens;
 	
@@ -228,8 +225,7 @@ int main(int argc, char **argv) {
 	addBuilderVariable_type(&variables[0], "Int64", "i64");
 	// level is -1 so that it starts at 0 for the first iteration
 	char *LLVMsource = buildLLVM((linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST);
-	
-	printf("LLVMsource: %s\n", LLVMsource);
+//	printf("LLVMsource: %s\n", LLVMsource);
 	
 	CharAccumulator LLC_command = {100, 0, 0};
 	CharAccumulator_initialize(&LLC_command);
@@ -270,8 +266,6 @@ int main(int argc, char **argv) {
 	CharAccumulator_appendChars(&clang_command, "/");
 	CharAccumulator_appendChars(&clang_command, name);
 	
-	printf("clang_command: %s\n", clang_command.data);
-	
 	int clang_status = system(clang_command.data);
 	
 	int clang_exitCode = WEXITSTATUS(clang_status);
@@ -283,16 +277,20 @@ int main(int argc, char **argv) {
 	
 	CharAccumulator_free(&clang_command);
 	
+	CharAccumulator run_path = {100, 0, 0};
+	CharAccumulator_initialize(&run_path);
+	CharAccumulator_appendChars(&run_path, build_directory);
+	CharAccumulator_appendChars(&run_path, "/");
+	CharAccumulator_appendChars(&run_path, name);
+	
+	printf("program saved to %s\n", run_path.data);
+	
 	if (compilerMode == CompilerMode_run) {
-		CharAccumulator run_path = {100, 0, 0};
-		CharAccumulator_initialize(&run_path);
-		CharAccumulator_appendChars(&run_path, build_directory);
-		CharAccumulator_appendChars(&run_path, "/");
-		CharAccumulator_appendChars(&run_path, name);
 		printf("running program at %s\n", run_path.data);
 		system(run_path.data);
-		CharAccumulator_free(&run_path);
 	}
+	
+	CharAccumulator_free(&run_path);
 	
 	// clean up
 	free(globalConfigPath);
