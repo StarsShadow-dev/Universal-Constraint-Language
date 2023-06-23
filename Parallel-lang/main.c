@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
 //	printf("source: %s\n", source);
 
 	linkedList_Node *tokens = lex();
-	printTokens(tokens);
+//	printTokens(tokens);
 	
 	linkedList_Node *currentToken = tokens;
 	
@@ -287,7 +287,11 @@ int main(int argc, char **argv) {
 	
 	if (compilerMode == CompilerMode_run) {
 		printf("running program at %s\n", run_path.data);
-		system(run_path.data);
+		int program_status = system(run_path.data);
+		
+		int program_exitCode = WEXITSTATUS(program_status);
+		
+		printf("program ended with exit code: %d\n", program_exitCode);
 	}
 	
 	CharAccumulator_free(&run_path);
