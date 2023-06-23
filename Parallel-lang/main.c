@@ -10,8 +10,6 @@
 #include "parser.h"
 #include "builder.h"
 
-#define CURRENT_VERSION "beta.1"
-
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
 	if (head == 0) {
@@ -132,7 +130,7 @@ int main(int argc, char **argv) {
 	CompilerMode compilerMode;
 	
 	if (argc != 2) {
-		printf("unexpected amount of arguments, expected: 1");
+		printf("unexpected amount of arguments, expected: 1, but got: %d", argc - 1);
 		exit(1);
 	}
 	
@@ -154,9 +152,10 @@ int main(int argc, char **argv) {
 	
 	char *homePath = getenv("HOME");
 	if (homePath == NULL) {
-		printf("no home (getenv('HOME')) failed");
+		printf("no home (getenv(\"HOME\")) failed");
 		exit(1);
 	}
+	
 	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
 	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath) + 1);
 	if (globalConfigPath == NULL) {
@@ -208,10 +207,12 @@ int main(int argc, char **argv) {
 	printf("compiler version: %s\n", CURRENT_VERSION);
 	
 	source = readFile(entry_path);
-//	printf("source: %s\n", source);
+	printf("source: %s\n", source);
 
 	linkedList_Node *tokens = lex();
-//	printTokens(tokens);
+#ifdef COMPILER_DEBUG_MODE
+	printTokens(tokens);
+#endif
 	
 	linkedList_Node *currentToken = tokens;
 	
@@ -225,7 +226,9 @@ int main(int argc, char **argv) {
 	addBuilderVariable_type(&variables[0], "Int64", "i64");
 	// level is -1 so that it starts at 0 for the first iteration
 	char *LLVMsource = buildLLVM((linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST);
-//	printf("LLVMsource: %s\n", LLVMsource);
+#ifdef COMPILER_DEBUG_MODE
+	printf("LLVMsource: %s\n", LLVMsource);
+#endif
 	
 	CharAccumulator LLC_command = {100, 0, 0};
 	CharAccumulator_initialize(&LLC_command);

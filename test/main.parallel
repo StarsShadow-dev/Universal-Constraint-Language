@@ -4,7 +4,7 @@ function main(): Int8 {
 	putchar(99) // c
 	putchar(10) // \n
 
-	return 123;
+	return 0;
 }
 
 function putchar(char: Int32): Int32 "
