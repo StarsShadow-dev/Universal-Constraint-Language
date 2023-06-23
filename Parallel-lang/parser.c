@@ -86,7 +86,7 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 				endIfCurrentIsEmpty()
 				Token *colon = ((Token *)((*current)->data));
 				
-				if (colon->type != TokenType_separator || SubString_cmp(colon->subString, ":") != 0) {
+				if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
 					printf("function argument expected a colon\n");
 					compileError(colon->location);
 				}
@@ -105,11 +105,11 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 			}
 				
 			case TokenType_separator: {
-				if (SubString_cmp(token->subString, ")") == 0) {
+				if (SubString_string_cmp(&token->subString, ")") == 0) {
 					return (linkedList_Node_tuple){argumentNames, argumentTypes};
 				} else {
 					printf("unexpected separator: '");
-					SubString_print(token->subString);
+					SubString_print(&token->subString);
 					printf("'\n");
 					compileError(token->location);
 				}
@@ -139,7 +139,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 		
 		switch (token->type) {
 			case TokenType_word: {
-				if (SubString_cmp(token->subString, "function") == 0) {
+				if (SubString_string_cmp(&token->subString, "function") == 0) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
 					Token *nameToken = ((Token *)((*current)->data));
@@ -153,7 +153,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					endIfCurrentIsEmpty()
 					Token *openingParentheses = ((Token *)((*current)->data));
 					
-					if (openingParentheses->type != TokenType_separator || SubString_cmp(openingParentheses->subString, "(") != 0) {
+					if (openingParentheses->type != TokenType_separator || SubString_string_cmp(&openingParentheses->subString, "(") != 0) {
 						printf("function definition expected an openingParentheses\n");
 						compileError(openingParentheses->location);
 					}
@@ -168,7 +168,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					endIfCurrentIsEmpty()
 					Token *colon = ((Token *)((*current)->data));
 					
-					if (colon->type != TokenType_separator || SubString_cmp(colon->subString, ":") != 0) {
+					if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
 						printf("function definition expected a colon\n");
 						compileError(colon->location);
 					}
@@ -180,7 +180,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					endIfCurrentIsEmpty()
 					Token *codeStart = ((Token *)((*current)->data));
 					
-					if (codeStart->type == TokenType_separator && SubString_cmp(codeStart->subString, "{") == 0) {
+					if (codeStart->type == TokenType_separator && SubString_string_cmp(&codeStart->subString, "{") == 0) {
 						*current = (*current)->next;
 						linkedList_Node * codeBlock = parse(current, 0);
 						
@@ -215,13 +215,13 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 						printf("function definition expected an openingBracket or a quotation mark\n");
 						compileError(codeStart->location);
 					}
-				} else if (SubString_cmp(token->subString, "return") == 0) {
+				} else if (SubString_string_cmp(&token->subString, "return") == 0) {
 					*current = (*current)->next;
 					linkedList_Node *expression = parse(current, 1);
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
-					if (((Token *)((*current)->data))->type != TokenType_separator || SubString_cmp(((Token *)((*current)->data))->subString, ";") != 0) {
+					if (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0) {
 						printf("expected ';' after return statement\n");
 						compileError(token->location);
 					}
@@ -237,9 +237,9 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					endIfCurrentIsEmpty()
 					Token *openingParentheses = ((Token *)((*current)->data));
 					
-					if (openingParentheses->type != TokenType_separator || SubString_cmp(openingParentheses->subString, "(") != 0) {
+					if (openingParentheses->type != TokenType_separator || SubString_string_cmp(&openingParentheses->subString, "(") != 0) {
 						printf("unexpected word: ");
-						SubString_print(token->subString);
+						SubString_print(&token->subString);
 						printf("\n");
 						compileError(token->location);
 					}
@@ -275,13 +275,13 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 //			}
 				
 			case TokenType_separator: {
-				if (SubString_cmp(token->subString, ")") == 0) {
+				if (SubString_string_cmp(&token->subString, ")") == 0) {
 					return AST;
-				} else if (SubString_cmp(token->subString, "}") == 0) {
+				} else if (SubString_string_cmp(&token->subString, "}") == 0) {
 					return AST;
 				} else {
 					printf("unexpected separator: '");
-					SubString_print(token->subString);
+					SubString_print(&token->subString);
 					printf("'\n");
 					compileError(token->location);
 				}

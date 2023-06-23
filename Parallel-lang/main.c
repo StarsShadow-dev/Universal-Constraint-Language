@@ -24,8 +24,13 @@ void printTokens(linkedList_Node *head) {
 	linkedList_Node *current = head;
 	while (1) {
 		printf(
-			"\t{type: %i, line: %i, start: %i, end: %i}",
-			((Token *)(current->data))->type,
+			"\t{type: %i, value: \"",
+			((Token *)(current->data))->type
+		);
+		
+		SubString_print(&((Token *)(current->data))->subString);
+		
+		printf("\", line: %i, start: %i, end: %i}",
 			((Token *)(current->data))->location.line,
 			((Token *)(current->data))->location.columnStart,
 			((Token *)(current->data))->location.columnEnd
@@ -118,10 +123,6 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 	return NULL;
 }
 
-//void free_AST(linkedList_Node **head) {
-//
-//}
-
 typedef enum {
 	CompilerMode_build,
 	CompilerMode_run
@@ -210,7 +211,7 @@ int main(int argc, char **argv) {
 //	printf("source: %s\n", source);
 
 	linkedList_Node *tokens = lex();
-//	printTokens(tokens);
+	printTokens(tokens);
 	
 	linkedList_Node *currentToken = tokens;
 	

@@ -75,6 +75,18 @@ void linkedList_freeList(linkedList_Node **head) {
 }
 
 //
+// SubString
+//
+
+int SubString_SubString_cmp(SubString *subString1, SubString *subString2) {
+	if (subString1->length == subString2->length) {
+		return strncmp(subString1->start, subString2->start, subString1->length);;
+	} else {
+		return 1;
+	}
+}
+
+//
 // CharAccumulator
 //
 
