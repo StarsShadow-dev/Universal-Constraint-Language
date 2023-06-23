@@ -124,7 +124,11 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				Variable_function *function = (Variable_function *)functionVariable->value;
 				
 				if (data->external) {
-					CharAccumulator_appendChars(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->string);
+					// ???????????????????
+					// Member reference type 'SubString *' is a pointer; did you mean to use '->'?
+					// Replace 'CharAccumulator_appendSubString(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value)' with '->'
+					// ???????????????????
+					CharAccumulator_appendSubString(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
 				} else {
 					free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
 					

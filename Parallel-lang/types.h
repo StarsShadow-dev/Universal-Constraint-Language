@@ -26,6 +26,20 @@ int linkedList_getCount(linkedList_Node **head);
 void linkedList_freeList(linkedList_Node **head);
 
 //
+// SubString
+//
+
+typedef struct {
+	char *start;
+	int length;
+} SubString;
+
+// subString compare
+#define SubString_cmp(subString, string) strncmp(subString.start, string, subString.length)
+
+#define SubString_print(subString) printf("%.*s\n", subString.length, subString.start)
+
+//
 // lexer, parser and builder
 //
 
@@ -45,7 +59,7 @@ typedef enum {
 typedef struct {
 	TokenType type;
 	SourceLocation location;
-	char value[];
+	SubString subString;
 } Token;
 
 typedef enum {
@@ -58,11 +72,11 @@ typedef enum {
 } ASTnodeType;
 
 typedef struct {
-	char *name;
+	SubString *name;
 } ASTnode_type;
 
 typedef struct {
-	char *name;
+	SubString *name;
 	int external;
 	linkedList_Node *returnType;
 	linkedList_Node *argumentNames;
@@ -72,7 +86,7 @@ typedef struct {
 
 // a function call
 typedef struct {
-	char *name;
+	SubString *name;
 	linkedList_Node *arguments;
 } ASTnode_call;
 
@@ -81,12 +95,12 @@ typedef struct {
 } ASTnode_return;
 
 typedef struct {
-	char *string;
+	SubString *string;
 	int64_t value;
 } ASTnode_number;
 
 typedef struct {
-	char *string;
+	SubString *value;
 } ASTnode_string;
 
 typedef struct {
@@ -141,9 +155,9 @@ void CharAccumulator_appendChar(CharAccumulator *accumulator, char character);
 
 void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars, unsigned long count);
 
-#define CharAccumulator_appendChars(string, chars) CharAccumulator_appendCharsCount(string, chars, strlen(chars))
+#define CharAccumulator_appendChars(accumulator, chars) CharAccumulator_appendCharsCount(accumulator, chars, strlen(chars))
 
-//void CharAccumulator_appendUint(String *string, const unsigned int number);
+#define CharAccumulator_appendSubString(accumulator, subString) CharAccumulator_appendCharsCount(accumulator, subString.start, subString.length)
 
 void CharAccumulator_free(CharAccumulator *accumulator);
 

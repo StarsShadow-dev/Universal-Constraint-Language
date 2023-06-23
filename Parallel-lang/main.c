@@ -24,9 +24,8 @@ void printTokens(linkedList_Node *head) {
 	linkedList_Node *current = head;
 	while (1) {
 		printf(
-			"\t{type: %i, value: \"%s\", line: %i, start: %i, end: %i}",
+			"\t{type: %i, line: %i, start: %i, end: %i}",
 			((Token *)(current->data))->type,
-			((Token *)(current->data))->value,
 			((Token *)(current->data))->location.line,
 			((Token *)(current->data))->location.columnStart,
 			((Token *)(current->data))->location.columnEnd

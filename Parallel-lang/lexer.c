@@ -63,28 +63,21 @@ linkedList_Node *lex(void) {
 				break;
 			}
 			
-			// plus one because of the NULL bite
-			int valueSize = end - start + 1;
-			
-			Token *data = linkedList_addNode(&tokens, sizeof(Token) + valueSize);
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_word;
-			
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			
-			stpncpy(data->value, &source[start], valueSize - 1);
-			data->value[valueSize - 1] = 0;
+			data->subString.start = source + start;
+			data->subString.length = end - start;
 		}
 		
 		else if (separator) {
-			Token *data = linkedList_addNode(&tokens, sizeof(Token) + 2);
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_separator;
-			
 			data->location = (SourceLocation){line, column, column + 1};
-			
-			stpncpy(data->value, &source[index], 1);
-			data->value[1] = 0;
+			data->subString.start = source + index;
+			data->subString.length = 1;
 		}
 		
 		else if (numberStart) {
@@ -108,17 +101,12 @@ linkedList_Node *lex(void) {
 				break;
 			}
 			
-			// plus one because of the NULL bite
-			int valueSize = end - start + 1;
-			
-			Token *data = linkedList_addNode(&tokens, sizeof(Token) + valueSize);
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_number;
-			
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			
-			stpncpy(data->value, &source[start], valueSize - 1);
-			data->value[valueSize - 1] = 0;
+			data->subString.start = source + start;
+			data->subString.length = end - start;
 		}
 		
 		else if (character == '"') {
@@ -156,17 +144,12 @@ linkedList_Node *lex(void) {
 				break;
 			}
 			
-			// plus one because of the NULL bite
-			int valueSize = end - start + 1;
-			
-			Token *data = linkedList_addNode(&tokens, sizeof(Token) + valueSize);
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_string;
-			
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			
-			stpncpy(data->value, &source[start], valueSize - 1);
-			data->value[valueSize - 1] = 0;
+			data->subString.start = source + start;
+			data->subString.length = end - start;
 		}
 		
 		else if (character == '/' && source[index+1] == '/') {
