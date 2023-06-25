@@ -247,6 +247,13 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					*current = (*current)->next;
 					linkedList_Node *arguments = parse(current, 0);
 					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					if (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0) {
+						printf("expected ';' after function call\n");
+						compileError(token->location);
+					}
+					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
 					
 					data->type = ASTnodeType_call;
