@@ -202,7 +202,8 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				CharAccumulator_appendChars(outerSource, LLVMarguments);
 				CharAccumulator_appendChars(outerSource, ")");
 				
-				CharAccumulator_appendChars(&LLVMsource, "%");
+				CharAccumulator_appendChars(&LLVMsource, functionToCall->LLVMreturnType);
+				CharAccumulator_appendChars(&LLVMsource, " %");
 				CharAccumulator_appendUint(&LLVMsource, outerFunction->registerCount);
 				
 				outerFunction->registerCount++;

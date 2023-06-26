@@ -7,7 +7,8 @@ function main(): Int8 {
 		putchar(100); // d
 	}
 
-	if (false) {
+	// And yes, I need to do some thing about that ';'.
+	if (testBool();) {
 		putchar(101); // e
 		putchar(102); // f
 	}
@@ -15,6 +16,10 @@ function main(): Int8 {
 	putchar(10); // \n
 
 	return 0;
+}
+
+function testBool(): Bool {
+	return false;
 }
 
 function putchar(char: Int32): Int32 "
