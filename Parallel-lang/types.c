@@ -150,37 +150,37 @@ void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars,
 	accumulator->data[accumulator->size] = 0;
 }
 
-//void CharAccumulator_appendUint(CharAccumulator *accumulator, const unsigned int number) {
-//	int n = number;
-//	int count = 1;
-//
-//	while (n > 9) {
-//		n /= 10;
-//		count++;
-//	}
-//
-//	if (string->size + count >= string->maxSize) {
-//		// double the size of the string
-//		string->maxSize = string->maxSize * 2;
-//
-//		// reallocate
-//		char *oldData = string->data;
-//
-//		string->data = malloc(string->maxSize);
-//		if (string->data == NULL) {
-//			printf("malloc failed\n");
-//			abort();
-//		}
-//
-//		stpncpy(string->data, oldData, string->size);
-//
-//		free(oldData);
-//	}
-//
-//	sprintf(string->data + string->size, "%u", number);
-//
-//	string->size += count;
-//}
+void CharAccumulator_appendUint(CharAccumulator *accumulator, const unsigned int number) {
+	int n = number;
+	int count = 1;
+
+	while (n > 9) {
+		n /= 10;
+		count++;
+	}
+
+	if (accumulator->size + count >= accumulator->maxSize) {
+		// more than double the size of the string
+		accumulator->maxSize = (accumulator->maxSize + accumulator->size + count + 1) * 2;
+		
+		// reallocate
+		char *oldData = accumulator->data;
+		
+		accumulator->data = malloc(accumulator->maxSize);
+		if (accumulator->data == NULL) {
+			printf("malloc failed\n");
+			abort();
+		}
+		
+		stpncpy(accumulator->data, oldData, accumulator->size);
+		
+		free(oldData);
+	}
+
+	sprintf(accumulator->data + accumulator->size, "%u", number);
+
+	accumulator->size += count;
+}
 
 void CharAccumulator_free(CharAccumulator *accumulator) {
 	free(accumulator->data);

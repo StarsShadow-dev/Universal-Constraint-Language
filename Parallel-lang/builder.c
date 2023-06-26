@@ -121,9 +121,6 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				}
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
-				CharAccumulator newOuterSource = {100, 0, 0};
-				CharAccumulator_initialize(&newOuterSource);
-				
 				Variable *type = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
 				
 				Variable *functionVariable = getBuilderVariable(variables, level, data->name);
@@ -133,6 +130,9 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				if (data->external) {
 					CharAccumulator_appendSubString(&LLVMsource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
 				} else {
+					CharAccumulator newOuterSource = {100, 0, 0};
+					CharAccumulator_initialize(&newOuterSource);
+					
 					free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
 					
 					if (!function->hasReturned) {
@@ -191,7 +191,10 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				
 				char *LLVMarguments = buildLLVM(variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
 				
-				CharAccumulator_appendChars(outerSource, "\n\tcall ");
+				CharAccumulator_appendChars(outerSource, "\n\t");
+				CharAccumulator_appendChars(outerSource, "%");
+				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				CharAccumulator_appendChars(outerSource, " = call ");
 				CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
 				CharAccumulator_appendChars(outerSource, " @");
 				CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
@@ -199,12 +202,64 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				CharAccumulator_appendChars(outerSource, LLVMarguments);
 				CharAccumulator_appendChars(outerSource, ")");
 				
-//				CharAccumulator_appendChars(&LLVMsource, "%");
-//				CharAccumulator_appendUint(&LLVMsource, outerFunction->registerCount);
+				CharAccumulator_appendChars(&LLVMsource, "%");
+				CharAccumulator_appendUint(&LLVMsource, outerFunction->registerCount);
 				
 				outerFunction->registerCount++;
 				
 				free(LLVMarguments);
+				
+				break;
+			}
+				
+			case ASTnodeType_if: {
+				if (outerSource == NULL || outerName == NULL) {
+					printf("if statement in a weird spot\n");
+					compileError(node->location);
+				}
+				
+				ASTnode_if *data = (ASTnode_if *)node->value;
+				
+				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				linkedList_Node *expectedTypesForIf = NULL;
+				ASTnode *expectedTypesForIfData = linkedList_addNode(&expectedTypesForIf, sizeof(ASTnode) + sizeof(ASTnode_type));
+				expectedTypesForIfData->type = ASTnodeType_type;
+				expectedTypesForIfData->location = (SourceLocation){0, 0, 0};
+				((ASTnode_type *)expectedTypesForIfData->value)->name = &(SubString){"Bool", strlen("Bool")};
+				
+				char *newExpressionSource = buildLLVM(variables, level, outerSource, outerName, expectedTypesForIf, data->expression);
+				
+				int jump1 = outerFunction->registerCount;
+				outerFunction->registerCount++;
+				CharAccumulator newOuterSource = {100, 0, 0};
+				CharAccumulator_initialize(&newOuterSource);
+				free(buildLLVM(variables, level, &newOuterSource, outerName, expectedTypesForIf, data->codeBlock));
+				int jump2 = outerFunction->registerCount;
+				outerFunction->registerCount++;
+				
+				CharAccumulator_appendChars(outerSource, "\n\tbr ");
+				CharAccumulator_appendChars(outerSource, newExpressionSource);
+				CharAccumulator_appendChars(outerSource, ", label %");
+				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendChars(outerSource, ", label %");
+				CharAccumulator_appendUint(outerSource, jump2);
+				
+				CharAccumulator_appendChars(outerSource, "\n\n");
+				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendChars(outerSource, ":");
+				CharAccumulator_appendChars(outerSource, newOuterSource.data);
+				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
+				CharAccumulator_appendUint(outerSource, jump2);
+				
+				CharAccumulator_appendChars(outerSource, "\n\n");
+				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendChars(outerSource, ":");
+				
+				free(newExpressionSource);
+				CharAccumulator_free(&newOuterSource);
 				
 				break;
 			}
@@ -237,9 +292,45 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				break;
 			}
 				
-//			case ASTnodeType_type: {
-//				break;
-//			}
+			case ASTnodeType_true: {
+				// if no types are expected
+				if (expectedTypes == NULL) {
+					printf("unexpected bool\n");
+					compileError(node->location);
+				}
+				
+				SubString *expectedTypeName = ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name;
+				
+				if (SubString_string_cmp(expectedTypeName, "Bool") != 0) {
+					printf("expected type '");
+					SubString_print(expectedTypeName);
+					printf("' but got type 'Bool'\n");
+					compileError(node->location);
+				}
+				
+				CharAccumulator_appendChars(&LLVMsource, "i1 1");
+				break;
+			}
+
+			case ASTnodeType_false: {
+				// if no types are expected
+				if (expectedTypes == NULL) {
+					printf("unexpected bool\n");
+					compileError(node->location);
+				}
+				
+				SubString *expectedTypeName = ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name;
+				
+				if (SubString_string_cmp(expectedTypeName, "Bool") != 0) {
+					printf("expected type '");
+					SubString_print(expectedTypeName);
+					printf("' but got type 'Bool'\n");
+					compileError(node->location);
+				}
+				
+				CharAccumulator_appendChars(&LLVMsource, "i1 0");
+				break;
+			}
 				
 			case ASTnodeType_number: {
 				ASTnode_number *data = (ASTnode_number *)node->value;
@@ -249,10 +340,7 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 					compileError(node->location);
 				}
 				
-				if (((ASTnode *)expectedTypes->data)->type != ASTnodeType_type) {
-					abort();
-				}
-				
+				if (((ASTnode *)expectedTypes->data)->type != ASTnodeType_type) abort();
 				SubString *expectedTypeName = ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name;
 				
 				if (

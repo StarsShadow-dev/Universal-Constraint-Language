@@ -72,10 +72,22 @@ typedef enum {
 	ASTnodeType_type,
 	ASTnodeType_function,
 	ASTnodeType_call,
+	ASTnodeType_if,
 	ASTnodeType_return,
+	
+	// I do not really need an ASTnode_true or ASTnode_false because I would not be storing anything in them
+	ASTnodeType_true,
+	ASTnodeType_false,
+	
 	ASTnodeType_number,
 	ASTnodeType_string
 } ASTnodeType;
+
+typedef struct {
+	ASTnodeType type;
+	SourceLocation location;
+	uint8_t value[] WORD_ALIGNED;
+} ASTnode;
 
 typedef struct {
 	SubString *name;
@@ -98,6 +110,11 @@ typedef struct {
 
 typedef struct {
 	linkedList_Node *expression;
+	linkedList_Node *codeBlock;
+} ASTnode_if;
+
+typedef struct {
+	linkedList_Node *expression;
 } ASTnode_return;
 
 typedef struct {
@@ -108,12 +125,6 @@ typedef struct {
 typedef struct {
 	SubString *value;
 } ASTnode_string;
-
-typedef struct {
-	ASTnodeType type;
-	SourceLocation location;
-	uint8_t value[] WORD_ALIGNED;
-} ASTnode;
 
 //
 // variables
@@ -164,6 +175,8 @@ void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars,
 #define CharAccumulator_appendChars(accumulator, chars) CharAccumulator_appendCharsCount(accumulator, chars, strlen(chars))
 
 #define CharAccumulator_appendSubString(accumulator, subString) CharAccumulator_appendCharsCount(accumulator, (subString)->start, (subString)->length)
+
+void CharAccumulator_appendUint(CharAccumulator *accumulator, const unsigned int number);
 
 void CharAccumulator_free(CharAccumulator *accumulator);
 

@@ -182,7 +182,7 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					
 					if (codeStart->type == TokenType_separator && SubString_string_cmp(&codeStart->subString, "{") == 0) {
 						*current = (*current)->next;
-						linkedList_Node * codeBlock = parse(current, 0);
+						linkedList_Node *codeBlock = parse(current, 0);
 						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
@@ -232,6 +232,16 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					data->location = token->location;
 					
 					((ASTnode_return *)data->value)->expression = expression;
+				} else if (SubString_string_cmp(&token->subString, "true") == 0) {
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
+					
+					data->type = ASTnodeType_true;
+					data->location = token->location;
+				} else if (SubString_string_cmp(&token->subString, "false") == 0) {
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
+					
+					data->type = ASTnodeType_false;
+					data->location = token->location;
 				} else {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -244,23 +254,47 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 						compileError(token->location);
 					}
 					
-					*current = (*current)->next;
-					linkedList_Node *arguments = parse(current, 0);
-					
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					if (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0) {
-						printf("expected ';' after function call\n");
-						compileError(token->location);
+					if (SubString_string_cmp(&token->subString, "if") == 0) {
+						*current = (*current)->next;
+						linkedList_Node *expression = parse(current, 0);
+						
+						*current = (*current)->next;
+						endIfCurrentIsEmpty()
+						Token *openingBracket = ((Token *)((*current)->data));
+						if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
+							printf("if statement expected '{'\n");
+							compileError(openingBracket->location);
+						}
+						
+						*current = (*current)->next;
+						linkedList_Node *codeBlock = parse(current, 0);
+						
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_if));
+						
+						data->type = ASTnodeType_if;
+						data->location = token->location;
+						
+						((ASTnode_if *)data->value)->expression = expression;
+						((ASTnode_if *)data->value)->codeBlock = codeBlock;
+					} else {
+						*current = (*current)->next;
+						linkedList_Node *arguments = parse(current, 0);
+						
+						*current = (*current)->next;
+						endIfCurrentIsEmpty()
+						if (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0) {
+							printf("expected ';' after function call\n");
+							compileError(token->location);
+						}
+						
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
+						
+						data->type = ASTnodeType_call;
+						data->location = token->location;
+						
+						((ASTnode_call *)data->value)->name = &token->subString;
+						((ASTnode_call *)data->value)->arguments = arguments;
 					}
-					
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
-					
-					data->type = ASTnodeType_call;
-					data->location = token->location;
-					
-					((ASTnode_call *)data->value)->name = &token->subString;
-					((ASTnode_call *)data->value)->arguments = arguments;
 				}
 				break;
 			}
