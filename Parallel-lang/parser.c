@@ -10,6 +10,8 @@ if (current == NULL) {\
 	compileError(token->location);\
 }
 
+#define CURRENT_IS_NOT_SEMICOLON (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0)
+
 int64_t intPow(int64_t base, int64_t exponent) {
 	if (exponent == 0) {
 		return 1;
@@ -127,7 +129,7 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 	}
 }
 
-linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
+linkedList_Node *parse(linkedList_Node **current, int inExpression) {
 	linkedList_Node *AST = NULL;
 	
 	while (1) {
@@ -211,6 +213,8 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 						codeBlockData->type = ASTnodeType_string;
 						codeBlockData->location = codeStart->location;
 						((ASTnode_string *)codeBlockData->value)->value = &codeStart->subString;
+						
+						*current = (*current)->next;
 					} else {
 						printf("function definition expected an openingBracket or a quotation mark\n");
 						compileError(codeStart->location);
@@ -219,12 +223,12 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					*current = (*current)->next;
 					linkedList_Node *expression = parse(current, 1);
 					
-					*current = (*current)->next;
 					endIfCurrentIsEmpty()
-					if (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0) {
-						printf("expected ';' after return statement\n");
+					if (CURRENT_IS_NOT_SEMICOLON) {
+						printf("expected ';' after function call\n");
 						compileError(token->location);
 					}
+					*current = (*current)->next;
 					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
 					
@@ -237,11 +241,15 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					
 					data->type = ASTnodeType_true;
 					data->location = token->location;
+					
+					*current = (*current)->next;
 				} else if (SubString_string_cmp(&token->subString, "false") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 					
 					data->type = ASTnodeType_false;
 					data->location = token->location;
+					
+					*current = (*current)->next;
 				} else {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -256,7 +264,14 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 					
 					if (SubString_string_cmp(&token->subString, "if") == 0) {
 						*current = (*current)->next;
-						linkedList_Node *expression = parse(current, 0);
+						linkedList_Node *expression = parse(current, 1);
+						
+						endIfCurrentIsEmpty()
+						Token *closingParentheses = ((Token *)((*current)->data));
+						if (closingParentheses->type != TokenType_separator || SubString_string_cmp(&closingParentheses->subString, ")") != 0) {
+							printf("if statement expected ')'\n");
+							compileError(token->location);
+						}
 						
 						*current = (*current)->next;
 						endIfCurrentIsEmpty()
@@ -276,15 +291,17 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 						
 						((ASTnode_if *)data->value)->expression = expression;
 						((ASTnode_if *)data->value)->codeBlock = codeBlock;
-					} else {
+					} else { // function call
 						*current = (*current)->next;
 						linkedList_Node *arguments = parse(current, 0);
 						
-						*current = (*current)->next;
 						endIfCurrentIsEmpty()
-						if (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0) {
-							printf("expected ';' after function call\n");
-							compileError(token->location);
+						if (!inExpression) {
+							if (CURRENT_IS_NOT_SEMICOLON) {
+								printf("expected ';' after function call\n");
+								compileError(token->location);
+							}
+							*current = (*current)->next;
 						}
 						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
@@ -308,6 +325,8 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 				
 				((ASTnode_number *)data->value)->string = &token->subString;
 				((ASTnode_number *)data->value)->value = parseInt(current).value;
+				
+				*current = (*current)->next;
 				break;
 			}
 				
@@ -316,9 +335,8 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 //			}
 				
 			case TokenType_separator: {
-				if (SubString_string_cmp(&token->subString, ")") == 0) {
-					return AST;
-				} else if (SubString_string_cmp(&token->subString, "}") == 0) {
+				if (SubString_string_cmp(&token->subString, ")") == 0 || SubString_string_cmp(&token->subString, "}") == 0) {
+					*current = (*current)->next;
 					return AST;
 				} else {
 					printf("unexpected separator: '");
@@ -336,10 +354,8 @@ linkedList_Node *parse(linkedList_Node **current, int endAfterOneToken) {
 			}
 		}
 		
-		if (endAfterOneToken) {
+		if (inExpression) {
 			return AST;
 		}
-		
-		*current = (*current)->next;
 	}
 }

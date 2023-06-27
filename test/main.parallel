@@ -1,16 +1,12 @@
 function main(): Int8 {
 	putchar(97); // a
-	putchar(98); // b
-	putchar(99); // c
 
 	if (true) {
-		putchar(100); // d
+		putchar(98); // b
 	}
 
-	// And yes, I need to do some thing about that ';'.
-	if (testBool();) {
-		putchar(101); // e
-		putchar(102); // f
+	if (getTrue()) {
+		putchar(99); // c
 	}
 
 	putchar(10); // \n
@@ -18,8 +14,8 @@ function main(): Int8 {
 	return 0;
 }
 
-function testBool(): Bool {
-	return false;
+function getTrue(): Bool {
+	return true;
 }
 
 function putchar(char: Int32): Int32 "
