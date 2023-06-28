@@ -309,7 +309,7 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 					compileError(node->location);
 				}
 				
-				CharAccumulator_appendChars(&LLVMsource, "i1 1");
+				CharAccumulator_appendChars(&LLVMsource, "i1 true");
 				break;
 			}
 
@@ -329,7 +329,7 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 					compileError(node->location);
 				}
 				
-				CharAccumulator_appendChars(&LLVMsource, "i1 0");
+				CharAccumulator_appendChars(&LLVMsource, "i1 false");
 				break;
 			}
 				

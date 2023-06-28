@@ -9,6 +9,10 @@ function main(): Int8 {
 		putchar(99); // c
 	}
 
+	if (getFalse()) {
+		putchar(100); // d
+	}
+
 	putchar(10); // \n
 
 	return 0;
@@ -16,6 +20,10 @@ function main(): Int8 {
 
 function getTrue(): Bool {
 	return true;
+}
+
+function getFalse(): Bool {
+	return false;
 }
 
 function putchar(char: Int32): Int32 "
