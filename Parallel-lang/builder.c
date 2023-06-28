@@ -62,8 +62,8 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 			if (node->type == ASTnodeType_function) {
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
+				// make sure that the return type actually exists
 				Variable *type = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
-				
 				if (type == NULL) {
 					printf("unknown type: '");
 					SubString_print(((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
@@ -73,6 +73,22 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				
 				if (type->type != VariableType_type) {
 					abort();
+				}
+				
+				// make sure that the types of all arguments actually exist
+				linkedList_Node *currentArgument = data->argumentTypes;
+				while (currentArgument != NULL) {
+//					SubString_print(((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
+					
+					Variable *currentArgumentType = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
+					if (currentArgumentType == NULL) {
+						printf("unknown type: '");
+						SubString_print(((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
+						printf("'\n");
+						compileError(((ASTnode *)currentArgument->data)->location);
+					}
+					
+					currentArgument = currentArgument->next;
 				}
 				
 				Variable *LLVMreturnTypeVariable = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);

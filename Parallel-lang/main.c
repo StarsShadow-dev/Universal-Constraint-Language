@@ -226,6 +226,8 @@ int main(int argc, char **argv) {
 	addBuilderVariable_type(&variables[0], "Int64", "i64");
 	
 	addBuilderVariable_type(&variables[0], "Bool", "i1");
+	
+	addBuilderVariable_type(&variables[0], "Pointer", "ptr");
 	// level is -1 so that it starts at 0 for the first iteration
 	char *LLVMsource = buildLLVM((linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST);
 #ifdef COMPILER_DEBUG_MODE
