@@ -22,12 +22,11 @@ Variable *getBuilderVariable(linkedList_Node **variables, int level, SubString *
 		while (current != NULL) {
 			Variable *variable = ((Variable *)current->data);
 			
-			if (SubString_string_cmp(key, variable->key) != 0) {
-				current = current->next;
-				continue;
+			if (SubString_string_cmp(key, variable->key) == 0) {
+				return variable;
 			}
 			
-			return variable;
+			current = current->next;
 		}
 		
 		index--;
@@ -378,6 +377,12 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				CharAccumulator_appendChars(&LLVMsource, expectedType->LLVMname);
 				CharAccumulator_appendChars(&LLVMsource, " ");
 				CharAccumulator_appendSubString(&LLVMsource, data->string);
+				break;
+			}
+				
+			case ASTnodeType_string: {
+				
+				
 				break;
 			}
 			

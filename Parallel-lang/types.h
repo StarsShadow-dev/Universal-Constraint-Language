@@ -34,8 +34,8 @@ typedef struct {
 	int length;
 } SubString;
 
-// subString compare
-#define SubString_string_cmp(subString, string) strncmp((subString)->start, string, (subString)->length)
+/// returns 1, if the sub string and string have different lengths
+int SubString_string_cmp(SubString *subString, char *string);
 
 /// returns 1, if the sub strings have different lengths
 int SubString_SubString_cmp(SubString *subString1, SubString *subString2);

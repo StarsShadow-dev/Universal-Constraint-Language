@@ -320,9 +320,7 @@ linkedList_Node *parse(linkedList_Node **current, int inExpression) {
 				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_number));
 				
 				data->type = ASTnodeType_number;
-				
 				data->location = token->location;
-				
 				((ASTnode_number *)data->value)->string = &token->subString;
 				((ASTnode_number *)data->value)->value = parseInt(current).value;
 				
@@ -330,9 +328,16 @@ linkedList_Node *parse(linkedList_Node **current, int inExpression) {
 				break;
 			}
 				
-//			case TokenType_string: {
-//				break;
-//			}
+			case TokenType_string: {
+				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_string));
+				
+				data->type = ASTnodeType_string;
+				data->location = token->location;
+				((ASTnode_string *)data->value)->value = &token->subString;
+				
+				*current = (*current)->next;
+				break;
+			}
 				
 			case TokenType_separator: {
 				if (SubString_string_cmp(&token->subString, ")") == 0 || SubString_string_cmp(&token->subString, "}") == 0) {

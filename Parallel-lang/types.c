@@ -78,9 +78,17 @@ void linkedList_freeList(linkedList_Node **head) {
 // SubString
 //
 
+int SubString_string_cmp(SubString *subString, char *string) {
+	if (subString->length == strlen(string)) {
+		return strncmp(subString->start, string, subString->length);
+	} else {
+		return 1;
+	}
+}
+
 int SubString_SubString_cmp(SubString *subString1, SubString *subString2) {
 	if (subString1->length == subString2->length) {
-		return strncmp(subString1->start, subString2->start, subString1->length);;
+		return strncmp(subString1->start, subString2->start, subString1->length);
 	} else {
 		return 1;
 	}

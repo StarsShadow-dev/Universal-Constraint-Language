@@ -1,5 +1,5 @@
 function main(): Int8 {
-	putchar(97); // a
+	printf("Hello, World");
 
 	if (true) {
 		putchar(98); // b
@@ -30,4 +30,4 @@ function putchar(char: Int32): Int32 "
 declare i32 @putchar(i32 noundef)
 "
 
-function print(pointer: Pointer): Void "declare i32 @printf(ptr noundef, ...)"
+function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
