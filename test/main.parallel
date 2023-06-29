@@ -1,9 +1,11 @@
 function main(): Int8 {
 	if (true) {
-		printf("Hello, World");
+		printf("Hello, World\n");
 	}
 
-	putchar(10); // \n
+	printf("Strings are working!!!\n");
+
+	printf("A back slash is right here '\\'.\n");
 
 	return 0;
 }

@@ -388,18 +388,51 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				// + 1 for the NULL byte
 				int stringLength = (unsigned int)(data->value->length + 1);
 				
+				CharAccumulator string = {100, 0, 0};
+				CharAccumulator_initialize(&string);
+				
+				int i = 0;
+				int escaped = 0;
+				while (i < data->value->length) {
+					char character = data->value->start[i];
+					
+					if (escaped) {
+						if (character == '\\') {
+							CharAccumulator_appendChars(&string, "\\\\");
+							stringLength--;
+						} else if (character == 'n') {
+							CharAccumulator_appendChars(&string, "\\0A");
+							stringLength--;
+						} else {
+							printf("unexpected character in string after escape '%c'\n", character);
+							compileError(node->location);
+						}
+						escaped = 0;
+					} else {
+						if (character == '\\') {
+							escaped = 1;
+						} else {
+							CharAccumulator_appendChar(&string, character);
+						}
+					}
+					
+					i++;
+				}
+				
 				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, "@.str.");
 				CharAccumulator_appendUint(globalBuilderInformation->topLevelSource, globalBuilderInformation->stringCount);
 				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, " = private unnamed_addr constant [");
 				CharAccumulator_appendUint(globalBuilderInformation->topLevelSource, stringLength);
 				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, " x i8] c\"");
-				CharAccumulator_appendSubString(globalBuilderInformation->topLevelSource, data->value);
+				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, string.data);
 				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, "\\00\""); // the \00 is the NULL byte
 				
 				CharAccumulator_appendChars(&LLVMsource, "ptr @.str.");
 				CharAccumulator_appendUint(&LLVMsource, globalBuilderInformation->stringCount);
 				
 				globalBuilderInformation->stringCount++;
+				
+				CharAccumulator_free(&string);
 				
 				break;
 			}
