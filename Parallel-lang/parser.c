@@ -221,21 +221,32 @@ linkedList_Node *parse(linkedList_Node **current, int inExpression) {
 					}
 				} else if (SubString_string_cmp(&token->subString, "return") == 0) {
 					*current = (*current)->next;
-					linkedList_Node *expression = parse(current, 1);
-					
-					endIfCurrentIsEmpty()
 					if (CURRENT_IS_NOT_SEMICOLON) {
-						printf("expected ';' after function call\n");
-						compileError(token->location);
+						linkedList_Node *expression = parse(current, 1);
+						
+						endIfCurrentIsEmpty()
+						if (CURRENT_IS_NOT_SEMICOLON) {
+							printf("expected ';' after function call\n");
+							compileError(token->location);
+						}
+						*current = (*current)->next;
+						
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
+						
+						data->type = ASTnodeType_return;
+						data->location = token->location;
+						
+						((ASTnode_return *)data->value)->expression = expression;
+					} else {
+						*current = (*current)->next;
+						
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
+						
+						data->type = ASTnodeType_return;
+						data->location = token->location;
+						
+						((ASTnode_return *)data->value)->expression = NULL;
 					}
-					*current = (*current)->next;
-					
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
-					
-					data->type = ASTnodeType_return;
-					data->location = token->location;
-					
-					((ASTnode_return *)data->value)->expression = expression;
 				} else if (SubString_string_cmp(&token->subString, "true") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 					

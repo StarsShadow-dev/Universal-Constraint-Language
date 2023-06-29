@@ -190,6 +190,21 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				}
 				Variable_function *functionToCall = (Variable_function *)functionToCallVariable->value;
 				
+				if (expectedTypes != NULL) {
+					SubString *expectedTypeName = ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name;
+					
+					SubString *actualTypeName = ((ASTnode_type *)((ASTnode *)functionToCall->returnType->data)->value)->name;
+					
+					if (SubString_SubString_cmp(expectedTypeName, actualTypeName) != 0) {
+						printf("expected type '");
+						SubString_print(expectedTypeName);
+						printf("' but got type '");
+						SubString_print(actualTypeName);
+						printf("'\n");
+						compileError(node->location);
+					}
+				}
+				
 				int expectedArgumentCount = linkedList_getCount(&functionToCall->argumentTypes);
 				int actualArgumentCount = linkedList_getCount(&data->arguments);
 				
@@ -206,22 +221,25 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				
 				char *LLVMarguments = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
 				
-				CharAccumulator_appendChars(outerSource, "\n\t");
-				CharAccumulator_appendChars(outerSource, "%");
-				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(outerSource, " = call ");
+				if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendChars(outerSource, " = call ");
+					
+					CharAccumulator_appendChars(&LLVMsource, functionToCall->LLVMreturnType);
+					CharAccumulator_appendChars(&LLVMsource, " %");
+					CharAccumulator_appendUint(&LLVMsource, outerFunction->registerCount);
+					
+					outerFunction->registerCount++;
+				} else {
+					CharAccumulator_appendChars(outerSource, "\n\tcall ");
+				}
 				CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
 				CharAccumulator_appendChars(outerSource, " @");
 				CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
 				CharAccumulator_appendChars(outerSource, "(");
 				CharAccumulator_appendChars(outerSource, LLVMarguments);
 				CharAccumulator_appendChars(outerSource, ")");
-				
-				CharAccumulator_appendChars(&LLVMsource, functionToCall->LLVMreturnType);
-				CharAccumulator_appendChars(&LLVMsource, " %");
-				CharAccumulator_appendUint(&LLVMsource, outerFunction->registerCount);
-				
-				outerFunction->registerCount++;
 				
 				free(LLVMarguments);
 				
@@ -252,7 +270,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				outerFunction->registerCount++;
 				CharAccumulator newOuterSource = {100, 0, 0};
 				CharAccumulator_initialize(&newOuterSource);
-				free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, outerName, expectedTypesForIf, data->codeBlock));
+				free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, outerName, NULL, data->codeBlock));
 				int jump2 = outerFunction->registerCount;
 				outerFunction->registerCount++;
 				
@@ -298,12 +316,16 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				
 				outerFunction->hasReturned = 1;
 				
-				char *newSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
-				
-				CharAccumulator_appendChars(outerSource, "\n\tret ");
-				CharAccumulator_appendChars(outerSource, newSource);
-				
-				free(newSource);
+				if (data->expression == NULL) {
+					CharAccumulator_appendChars(outerSource, "\n\tret void");
+				} else {
+					char *newSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
+					
+					CharAccumulator_appendChars(outerSource, "\n\tret ");
+					CharAccumulator_appendChars(outerSource, newSource);
+					
+					free(newSource);
+				}
 				
 				break;
 			}
