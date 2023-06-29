@@ -35,7 +35,7 @@ Variable *getBuilderVariable(linkedList_Node **variables, int level, SubString *
 	return NULL;
 }
 
-char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSource, SubString *outerName, linkedList_Node *expectedTypes, linkedList_Node *current) {
+char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_Node **variables, int level, CharAccumulator *outerSource, SubString *outerName, linkedList_Node *expectedTypes, linkedList_Node *current) {
 	level++;
 	if (level > maxBuilderLevel) {
 		printf("level (%i) > maxBuilderLevel (%i)\n", level, maxBuilderLevel);
@@ -148,7 +148,7 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 					CharAccumulator newOuterSource = {100, 0, 0};
 					CharAccumulator_initialize(&newOuterSource);
 					
-					free(buildLLVM(variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
+					free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
 					
 					if (!function->hasReturned) {
 						printf("function did not return\n");
@@ -204,7 +204,7 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 					compileError(node->location);
 				}
 				
-				char *LLVMarguments = buildLLVM(variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
+				char *LLVMarguments = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
 				
 				CharAccumulator_appendChars(outerSource, "\n\t");
 				CharAccumulator_appendChars(outerSource, "%");
@@ -246,13 +246,13 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				expectedTypesForIfData->location = (SourceLocation){0, 0, 0};
 				((ASTnode_type *)expectedTypesForIfData->value)->name = &(SubString){"Bool", strlen("Bool")};
 				
-				char *newExpressionSource = buildLLVM(variables, level, outerSource, outerName, expectedTypesForIf, data->expression);
+				char *newExpressionSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, expectedTypesForIf, data->expression);
 				
 				int jump1 = outerFunction->registerCount;
 				outerFunction->registerCount++;
 				CharAccumulator newOuterSource = {100, 0, 0};
 				CharAccumulator_initialize(&newOuterSource);
-				free(buildLLVM(variables, level, &newOuterSource, outerName, expectedTypesForIf, data->codeBlock));
+				free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, outerName, expectedTypesForIf, data->codeBlock));
 				int jump2 = outerFunction->registerCount;
 				outerFunction->registerCount++;
 				
@@ -298,7 +298,7 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 				
 				outerFunction->hasReturned = 1;
 				
-				char *newSource = buildLLVM(variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
+				char *newSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
 				
 				CharAccumulator_appendChars(outerSource, "\n\tret ");
 				CharAccumulator_appendChars(outerSource, newSource);
@@ -381,7 +381,25 @@ char *buildLLVM(linkedList_Node **variables, int level, CharAccumulator *outerSo
 			}
 				
 			case ASTnodeType_string: {
+				ASTnode_string *data = (ASTnode_string *)node->value;
 				
+				// @.str = private unnamed_addr constant [13 x i8] c"hello world\0A\00"
+				
+				// + 1 for the NULL byte
+				int stringLength = (unsigned int)(data->value->length + 1);
+				
+				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, "@.str.");
+				CharAccumulator_appendUint(globalBuilderInformation->topLevelSource, globalBuilderInformation->stringCount);
+				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, " = private unnamed_addr constant [");
+				CharAccumulator_appendUint(globalBuilderInformation->topLevelSource, stringLength);
+				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, " x i8] c\"");
+				CharAccumulator_appendSubString(globalBuilderInformation->topLevelSource, data->value);
+				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, "\\00\""); // the \00 is the NULL byte
+				
+				CharAccumulator_appendChars(&LLVMsource, "ptr @.str.");
+				CharAccumulator_appendUint(&LLVMsource, globalBuilderInformation->stringCount);
+				
+				globalBuilderInformation->stringCount++;
 				
 				break;
 			}

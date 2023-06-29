@@ -172,7 +172,7 @@ void CharAccumulator_appendChar(CharAccumulator *accumulator, char character);
 
 void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars, unsigned long count);
 
-#define CharAccumulator_appendChars(accumulator, chars) CharAccumulator_appendCharsCount(accumulator, chars, strlen(chars))
+void CharAccumulator_appendChars(CharAccumulator *accumulator, char *chars);
 
 #define CharAccumulator_appendSubString(accumulator, subString) CharAccumulator_appendCharsCount(accumulator, (subString)->start, (subString)->length)
 

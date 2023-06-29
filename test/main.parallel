@@ -1,16 +1,6 @@
 function main(): Int8 {
-	printf("Hello, World");
-
 	if (true) {
-		putchar(98); // b
-	}
-
-	if (getTrue()) {
-		putchar(99); // c
-	}
-
-	if (getFalse()) {
-		putchar(100); // d
+		printf("Hello, World");
 	}
 
 	putchar(10); // \n
@@ -18,16 +8,6 @@ function main(): Int8 {
 	return 0;
 }
 
-function getTrue(): Bool {
-	return true;
-}
-
-function getFalse(): Bool {
-	return false;
-}
-
-function putchar(char: Int32): Int32 "
-declare i32 @putchar(i32 noundef)
-"
+function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
 
 function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"

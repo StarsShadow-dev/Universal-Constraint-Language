@@ -158,6 +158,10 @@ void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars,
 	accumulator->data[accumulator->size] = 0;
 }
 
+void CharAccumulator_appendChars(CharAccumulator *accumulator, char *chars) {
+	CharAccumulator_appendCharsCount(accumulator, chars, strlen(chars));
+}
+
 void CharAccumulator_appendUint(CharAccumulator *accumulator, const unsigned int number) {
 	int n = number;
 	int count = 1;

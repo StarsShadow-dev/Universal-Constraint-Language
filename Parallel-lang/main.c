@@ -218,20 +218,26 @@ int main(int argc, char **argv) {
 	
 	linkedList_Node *AST = parse(&currentToken, 0);
 	
+	CharAccumulator LLVMsource = {100, 0, 0};
+	CharAccumulator_initialize(&LLVMsource);
+	
+	GlobalBuilderInformation globalBuilderInformation = {
+		&LLVMsource,
+		0
+	};
+	
 	linkedList_Node *variables[maxBuilderLevel] = {0};
 	addBuilderVariable_type(&variables[0], "Void", "void");
-	
 	addBuilderVariable_type(&variables[0], "Int8", "i8");
 	addBuilderVariable_type(&variables[0], "Int32", "i32");
 	addBuilderVariable_type(&variables[0], "Int64", "i64");
-	
 	addBuilderVariable_type(&variables[0], "Bool", "i1");
-	
 	addBuilderVariable_type(&variables[0], "Pointer", "ptr");
 	// level is -1 so that it starts at 0 for the first iteration
-	char *LLVMsource = buildLLVM((linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST);
+	CharAccumulator_appendChars(&LLVMsource, buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST));
+	
 #ifdef COMPILER_DEBUG_MODE
-	printf("LLVMsource: %s\n", LLVMsource);
+	printf("LLVMsource: %s\n", LLVMsource.data);
 #endif
 	
 	CharAccumulator LLC_command = {100, 0, 0};
@@ -241,7 +247,7 @@ int main(int argc, char **argv) {
 	CharAccumulator_appendChars(&LLC_command, build_directory);
 	CharAccumulator_appendChars(&LLC_command, "/objectFile.o");
 	FILE *fp = popen(LLC_command.data, "w");
-	fprintf(fp, "%s", LLVMsource);
+	fprintf(fp, "%s", LLVMsource.data);
 	int LLC_status = pclose(fp);
 	int LLC_exitCode = WEXITSTATUS(LLC_status);
 	CharAccumulator_free(&LLC_command);
@@ -315,7 +321,8 @@ int main(int argc, char **argv) {
 	free(entry_path);
 	
 	free(source);
-	free(LLVMsource);
+	
+	CharAccumulator_free(&LLVMsource);
 	
 	linkedList_freeList(&tokens);
 //	free_AST(&AST);
