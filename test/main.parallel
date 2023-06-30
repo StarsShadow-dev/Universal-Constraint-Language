@@ -1,19 +1,12 @@
 function main(): Int8 {
-	if (true) {
-		printf("Hello, World\n");
-	}
-
-	printf("Strings are working!!!\n");
-
-	printf("A back slash is right here '\\'.\n");
-
-	test();
+	print("testing\n");
 
 	return 0;
 }
 
-function test(): Void {
-	printf("in test\n");
+function print(string: Pointer): Void {
+	printf(string);
+	// printf("in print");
 	return;
 }
 

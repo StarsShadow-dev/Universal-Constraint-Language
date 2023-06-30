@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
 	
 	linkedList_Node *currentToken = tokens;
 	
-	linkedList_Node *AST = parse(&currentToken, 0);
+	linkedList_Node *AST = parse(&currentToken, ParserMode_normal);
 	
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
@@ -227,12 +227,12 @@ int main(int argc, char **argv) {
 	};
 	
 	linkedList_Node *variables[maxBuilderLevel] = {0};
-	addBuilderVariable_type(&variables[0], "Void", "void");
-	addBuilderVariable_type(&variables[0], "Int8", "i8");
-	addBuilderVariable_type(&variables[0], "Int32", "i32");
-	addBuilderVariable_type(&variables[0], "Int64", "i64");
-	addBuilderVariable_type(&variables[0], "Bool", "i1");
-	addBuilderVariable_type(&variables[0], "Pointer", "ptr");
+	addBuilderVariable_type(&variables[0], &(SubString){"Void", (int)strlen("Void")}, "void");
+	addBuilderVariable_type(&variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8");
+	addBuilderVariable_type(&variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32");
+	addBuilderVariable_type(&variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64");
+	addBuilderVariable_type(&variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
+	addBuilderVariable_type(&variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
 	// level is -1 so that it starts at 0 for the first iteration
 	CharAccumulator_appendChars(&LLVMsource, buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST));
 	

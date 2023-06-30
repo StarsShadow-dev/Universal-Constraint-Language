@@ -3,6 +3,12 @@
 
 #include "types.h"
 
-linkedList_Node *parse(linkedList_Node **token, int endAfterOneToken);
+typedef enum {
+	ParserMode_normal,
+	ParserMode_expression,
+	ParserMode_arguments,
+} ParserMode;
+
+linkedList_Node *parse(linkedList_Node **token, ParserMode parserMode);
 
 #endif /* parser_h */

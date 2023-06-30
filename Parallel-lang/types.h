@@ -80,7 +80,9 @@ typedef enum {
 	ASTnodeType_false,
 	
 	ASTnodeType_number,
-	ASTnodeType_string
+	ASTnodeType_string,
+	
+	ASTnodeType_variable
 } ASTnodeType;
 
 typedef struct {
@@ -126,14 +128,26 @@ typedef struct {
 	SubString *value;
 } ASTnode_string;
 
+typedef struct {
+	SubString *name;
+} ASTnode_variable;
+
 //
 // variables
 //
 
 typedef enum {
 	VariableType_type,
-	VariableType_function
+	VariableType_function,
+	// TODO: "VariableType_variable" and "Variable_variable" I should probably name this something else
+	VariableType_variable
 } VariableType;
+
+typedef struct {
+	SubString *key;
+	VariableType type;
+	uint8_t value[] WORD_ALIGNED;
+} Variable;
 
 typedef struct {
 	char *LLVMname;
@@ -151,10 +165,9 @@ typedef struct {
 } Variable_function;
 
 typedef struct {
-	char *key;
-	VariableType type;
-	uint8_t value[] WORD_ALIGNED;
-} Variable;
+	char *LLVMtypeName;
+	linkedList_Node *type;
+} Variable_variable;
 
 //
 // CharAccumulator
