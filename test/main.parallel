@@ -1,3 +1,7 @@
+/*
+a block comment
+*/
+
 function main(): Int8 {
 	printLine("printLine test");
 

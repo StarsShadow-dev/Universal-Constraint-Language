@@ -152,6 +152,7 @@ linkedList_Node *lex(void) {
 			data->subString.length = end - start;
 		}
 		
+		// comment
 		else if (character == '/' && source[index+1] == '/') {
 			index++;
 			column++;
@@ -168,6 +169,31 @@ linkedList_Node *lex(void) {
 				index--;
 				column--;
 				break;
+			}
+		}
+		
+		// block comment
+		else if (character == '/' && source[index+1] == '*') {
+			index++;
+			column++;
+			
+			while (1) {
+				char character = source[index];
+				
+				if (character == 0) {
+					index--;
+					column--;
+					break;
+				}
+				
+				if (character == '*' && source[index+1] == '/') {
+					index++;
+					column++;
+					break;
+				}
+				
+				index++;
+				column++;
 			}
 		}
 		
