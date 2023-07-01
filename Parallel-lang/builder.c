@@ -4,8 +4,7 @@
 #include "builder.h"
 #include "error.h"
 
-void expectType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode) {
-	
+void expectType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode, SourceLocation location) {
 	if (expectedTypeNode->type != ASTnodeType_type || actualTypeNode->type != ASTnodeType_type) {
 		abort();
 	}
@@ -19,7 +18,7 @@ void expectType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode) {
 		printf("' but got type '");
 		SubString_print(actualType->name);
 		printf("'\n");
-		compileError(actualTypeNode->location);
+		compileError(location);
 	}
 }
 
@@ -571,7 +570,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				}
 				Variable_variable *variable = (Variable_variable *)variableVariable->value;
 				
-				expectType((ASTnode *)expectedTypes->data, (ASTnode *)variable->type->data);
+				expectType((ASTnode *)expectedTypes->data, (ASTnode *)variable->type->data, node->location);
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
 				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);

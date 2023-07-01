@@ -5,7 +5,7 @@ function main(): Int8 {
 	return 0;
 }
 
-function print(string: Pointer): Void {
+function print(string: Int32): Void {
 	printf("in print\n");
 	printf(string);
 	return;

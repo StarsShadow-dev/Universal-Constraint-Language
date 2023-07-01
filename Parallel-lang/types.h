@@ -136,10 +136,10 @@ typedef struct {
 // variables
 //
 
+// "VariableType_variable" and "Variable_variable" I should probably name this something else
 typedef enum {
 	VariableType_type,
 	VariableType_function,
-	// TODO: "VariableType_variable" and "Variable_variable" I should probably name this something else
 	VariableType_variable
 } VariableType;
 
