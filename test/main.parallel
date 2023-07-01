@@ -1,13 +1,12 @@
 function main(): Int8 {
-	printf("in main\n");
-	print("testing\n");
+	print2x("in string1\n", "in string2\n");
 
 	return 0;
 }
 
-function print(string: Int32): Void {
-	printf("in print\n");
-	printf(string);
+function print2x(string1: Pointer, string2: Pointer): Void {
+	printf(string1);
+	printf(string2);
 	return;
 }
 

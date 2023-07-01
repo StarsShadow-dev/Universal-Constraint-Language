@@ -392,5 +392,25 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 		if (parserMode == ParserMode_expression) {
 			return AST;
 		}
+		
+		if (parserMode == ParserMode_arguments) {
+			token = ((Token *)((*current)->data));
+			if (token->type != TokenType_separator || SubString_string_cmp(&token->subString, ",") != 0) {
+				if (token->type == TokenType_separator) {
+					if (SubString_string_cmp(&token->subString, ")") == 0) {
+						*current = (*current)->next;
+						return AST;
+					} else {
+						printf("unexpected separator: '");
+						SubString_print(&token->subString);
+						printf("'\n");
+						compileError(token->location);
+					}
+				}
+				printf("expected a comma\n");
+				compileError(token->location);
+			}
+			*current = (*current)->next;
+		}
 	}
 }

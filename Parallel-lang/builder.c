@@ -51,7 +51,7 @@ Variable *getBuilderVariable(linkedList_Node **variables, int level, SubString *
 	return NULL;
 }
 
-char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_Node **variables, int level, CharAccumulator *outerSource, SubString *outerName, linkedList_Node *expectedTypes, linkedList_Node *current) {
+char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_Node **variables, int level, CharAccumulator *outerSource, SubString *outerName, linkedList_Node *expectedTypes, linkedList_Node *current, int withCommas) {
 	level++;
 	if (level > maxBuilderLevel) {
 		printf("level (%i) > maxBuilderLevel (%i)\n", level, maxBuilderLevel);
@@ -216,19 +216,21 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 							((Variable_variable *)argumentVariableData->value)->LLVMtypeName = ((Variable_type *)currentArgumentType->value)->LLVMname;
 							((Variable_variable *)argumentVariableData->value)->type = currentArgument;
 							
-							function->registerCount += 3;
+							function->registerCount++;
 							
-							if (currentArgument->next != NULL) {
-								CharAccumulator_appendChar(&LLVMsource, ',');
-								currentArgument = currentArgument->next;
-								currentArgumentName = currentArgumentName->next;
+							if (currentArgument->next == NULL) {
+								break;
 							}
 							
-							break;
+							CharAccumulator_appendChars(&LLVMsource, ", ");
+							currentArgument = currentArgument->next;
+							currentArgumentName = currentArgumentName->next;
 						}
+						
+						function->registerCount += argumentCount + 1;
 					}
 					
-					free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, data->name, NULL, data->codeBlock));
+					free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, data->name, NULL, data->codeBlock, 0));
 					
 					if (!function->hasReturned) {
 						printf("function did not return\n");
@@ -294,7 +296,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 					compileError(node->location);
 				}
 				
-				char *LLVMarguments = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments);
+				char *LLVMarguments = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, functionToCall->argumentTypes, data->arguments, 1);
 				
 				if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
 					CharAccumulator_appendChars(outerSource, "\n\t%");
@@ -339,13 +341,13 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				expectedTypesForIfData->location = (SourceLocation){0, 0, 0};
 				((ASTnode_type *)expectedTypesForIfData->value)->name = &(SubString){"Bool", strlen("Bool")};
 				
-				char *newExpressionSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, expectedTypesForIf, data->expression);
+				char *newExpressionSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, expectedTypesForIf, data->expression, 0);
 				
 				int jump1 = outerFunction->registerCount;
 				outerFunction->registerCount++;
 				CharAccumulator newOuterSource = {100, 0, 0};
 				CharAccumulator_initialize(&newOuterSource);
-				free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, outerName, NULL, data->codeBlock));
+				free(buildLLVM(globalBuilderInformation, variables, level, &newOuterSource, outerName, NULL, data->codeBlock, 0));
 				int jump2 = outerFunction->registerCount;
 				outerFunction->registerCount++;
 				
@@ -394,7 +396,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				if (data->expression == NULL) {
 					CharAccumulator_appendChars(outerSource, "\n\tret void");
 				} else {
-					char *newSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, outerFunction->returnType, data->expression);
+					char *newSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, outerFunction->returnType, data->expression, 0);
 					
 					CharAccumulator_appendChars(outerSource, "\n\tret ");
 					CharAccumulator_appendChars(outerSource, newSource);
@@ -596,6 +598,10 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				compileError(node->location);
 				break;
 			}
+		}
+		
+		if (withCommas && current->next != NULL) {
+			CharAccumulator_appendChars(&LLVMsource, ",");
 		}
 		
 		current = current->next;
