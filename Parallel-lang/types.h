@@ -165,6 +165,7 @@ typedef struct {
 } Variable_function;
 
 typedef struct {
+	int LLVMRegister;
 	char *LLVMtypeName;
 	linkedList_Node *type;
 } Variable_variable;

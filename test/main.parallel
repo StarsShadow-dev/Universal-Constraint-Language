@@ -1,12 +1,13 @@
 function main(): Int8 {
+	printf("in main\n");
 	print("testing\n");
 
 	return 0;
 }
 
 function print(string: Pointer): Void {
+	printf("in print\n");
 	printf(string);
-	// printf("in print");
 	return;
 }
 
