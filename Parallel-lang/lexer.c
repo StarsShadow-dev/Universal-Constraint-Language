@@ -20,6 +20,10 @@ linkedList_Node *lex(void) {
 	int line = 1;
 	int column = 0;
 	
+	if (source == NULL) {
+		return NULL;
+	}
+	
 	while (1) {
 		char character = source[index];
 		
@@ -186,7 +190,9 @@ linkedList_Node *lex(void) {
 					break;
 				}
 				
-				if (character == '*' && source[index+1] == '/') {
+				if (character == '\n') {
+					line++;
+				} else if (character == '*' && source[index+1] == '/') {
 					index++;
 					column++;
 					break;
