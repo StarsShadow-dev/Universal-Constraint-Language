@@ -1,0 +1,13 @@
+/*
+no function named 'printLine'
+9 |function main(): Int8 {
+10 |    printLine("test");
+________^^^^^^^^^_________
+11 |
+*/
+
+function main(): Int8 {
+	printLine("test");
+
+	return 0;
+}

@@ -35,7 +35,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/minecraft/Documents/GitHub/Parallel-lang/test"
+      customWorkingDirectory = "/Users/minecraft/Documents/GitHub/Parallel-lang"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
@@ -54,6 +54,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "run"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "test/config.json"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
