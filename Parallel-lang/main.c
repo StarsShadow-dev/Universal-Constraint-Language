@@ -125,16 +125,18 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 }
 
 void printHelp(void) {
-	printf("parallel-lang <arguments>\n");
+	printf("usage: parallel-lang <command> [<args>]\n");
 	printf("\n");
-	printf("Usage:\n");
+	printf("commands:\n");
 	printf("\n");
-	printf("parallel-lang build <config_path>\n");
+	printf("parallel-lang build_objectFile <config_path>\n");
+	printf("parallel-lang build_binary <config_path>\n");
 	printf("parallel-lang run <config_path>\n");
 }
 
 typedef enum {
-	CompilerMode_build,
+	CompilerMode_build_objectFile,
+	CompilerMode_build_binary,
 	CompilerMode_run,
 	CompilerMode_compilerTesting
 } CompilerMode;
@@ -147,13 +149,12 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	if (argc != 3) {
-		printf("unexpected amount of arguments, expected: 2, but got: %d\n", argc - 1);
-		exit(1);
+	if (strcmp(argv[1], "build_objectFile") == 0) {
+		compilerMode = CompilerMode_build_objectFile;
 	}
 	
-	if (strcmp(argv[1], "build") == 0) {
-		compilerMode = CompilerMode_build;
+	else if (strcmp(argv[1], "build_binary") == 0) {
+		compilerMode = CompilerMode_build_binary;
 	}
 	
 	else if (strcmp(argv[1], "run") == 0) {
@@ -166,6 +167,11 @@ int main(int argc, char **argv) {
 	
 	else {
 		printf("unexpected compiler mode: %s\n", argv[1]);
+		exit(1);
+	}
+	
+	if (argc != 3) {
+		printf("unexpected amount of arguments, expected: 2, but got: %d\n", argc - 1);
 		exit(1);
 	}
 	
@@ -306,12 +312,18 @@ int main(int argc, char **argv) {
 		printf("LLVMsource: %s\n", LLVMsource.data);
 #endif
 		
+		CharAccumulator outputFilePath = {100, 0, 0};
+		CharAccumulator_initialize(&outputFilePath);
+		CharAccumulator_appendChars(&outputFilePath, actual_build_directory.data);
+		CharAccumulator_appendChars(&outputFilePath, "/");
+		CharAccumulator_appendChars(&outputFilePath, name);
+		
 		CharAccumulator LLC_command = {100, 0, 0};
 		CharAccumulator_initialize(&LLC_command);
 		CharAccumulator_appendChars(&LLC_command, LLC_path);
 		CharAccumulator_appendChars(&LLC_command, " -filetype=obj -o ");
-		CharAccumulator_appendChars(&LLC_command, actual_build_directory.data);
-		CharAccumulator_appendChars(&LLC_command, "/objectFile.o");
+		CharAccumulator_appendChars(&LLC_command, outputFilePath.data);
+		CharAccumulator_appendChars(&LLC_command, ".o");
 		FILE *fp = popen(LLC_command.data, "w");
 		fprintf(fp, "%s", LLVMsource.data);
 		int LLC_status = pclose(fp);
@@ -323,57 +335,54 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		
-		char getcwdBuffer[1000];
-		
-		if (getcwd(getcwdBuffer, sizeof(getcwdBuffer)) == NULL) {
-			printf("getcwd error\n");
-			exit(1);
-		}
-		
-		// now I understand why swift and JavaScript have built-in string formatting
-		CharAccumulator clang_command = {100, 0, 0};
-		CharAccumulator_initialize(&clang_command);
-		CharAccumulator_appendChars(&clang_command, clang_path);
-		CharAccumulator_appendChars(&clang_command, " ");
-		CharAccumulator_appendChars(&clang_command, getcwdBuffer);
-		CharAccumulator_appendChars(&clang_command, "/");
-		CharAccumulator_appendChars(&clang_command, actual_build_directory.data);
-		CharAccumulator_appendChars(&clang_command, "/objectFile.o -o ");
-		CharAccumulator_appendChars(&clang_command, getcwdBuffer);
-		CharAccumulator_appendChars(&clang_command, "/");
-		CharAccumulator_appendChars(&clang_command, actual_build_directory.data);
-		CharAccumulator_appendChars(&clang_command, "/");
-		CharAccumulator_appendChars(&clang_command, name);
-		
-		int clang_status = system(clang_command.data);
-		
-		int clang_exitCode = WEXITSTATUS(clang_status);
-		
-		if (clang_exitCode != 0) {
-			printf("clang error\n");
-			exit(1);
-		}
-		
-		CharAccumulator_free(&clang_command);
-		
-		CharAccumulator run_path = {100, 0, 0};
-		CharAccumulator_initialize(&run_path);
-		CharAccumulator_appendChars(&run_path, actual_build_directory.data);
-		CharAccumulator_appendChars(&run_path, "/");
-		CharAccumulator_appendChars(&run_path, name);
-		
-		printf("program saved to %s\n", run_path.data);
-		
-		if (compilerMode == CompilerMode_run) {
-			printf("running program at %s\n", run_path.data);
-			int program_status = system(run_path.data);
+		if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {
+			char getcwdBuffer[1000];
+			if (getcwd(getcwdBuffer, sizeof(getcwdBuffer)) == NULL) {
+				printf("getcwd error\n");
+				exit(1);
+			}
 			
-			int program_exitCode = WEXITSTATUS(program_status);
+			// now I understand why swift and JavaScript have built-in string formatting
+			CharAccumulator clang_command = {100, 0, 0};
+			CharAccumulator_initialize(&clang_command);
+			CharAccumulator_appendChars(&clang_command, clang_path);
+			CharAccumulator_appendChars(&clang_command, " ");
+			CharAccumulator_appendChars(&clang_command, getcwdBuffer);
+			CharAccumulator_appendChars(&clang_command, "/");
+			CharAccumulator_appendChars(&clang_command, actual_build_directory.data);
+			CharAccumulator_appendChars(&clang_command, "/objectFile.o -o ");
+			CharAccumulator_appendChars(&clang_command, getcwdBuffer);
+			CharAccumulator_appendChars(&clang_command, "/");
+			CharAccumulator_appendChars(&clang_command, actual_build_directory.data);
+			CharAccumulator_appendChars(&clang_command, "/");
+			CharAccumulator_appendChars(&clang_command, name);
 			
-			printf("program ended with exit code: %d\n", program_exitCode);
+			int clang_status = system(clang_command.data);
+			
+			int clang_exitCode = WEXITSTATUS(clang_status);
+			
+			if (clang_exitCode != 0) {
+				printf("clang error\n");
+				exit(1);
+			}
+			
+			CharAccumulator_free(&clang_command);
+			
+			printf("program saved to %s\n", outputFilePath.data);
+			
+			if (compilerMode == CompilerMode_run) {
+				printf("running program at %s\n", outputFilePath.data);
+				int program_status = system(outputFilePath.data);
+				
+				int program_exitCode = WEXITSTATUS(program_status);
+				
+				printf("program ended with exit code: %d\n", program_exitCode);
+			}
+		} else {
+			printf("object file saved to saved to %s.o\n", outputFilePath.data);
 		}
 		
-		CharAccumulator_free(&run_path);
+		CharAccumulator_free(&outputFilePath);
 		
 		CharAccumulator_free(&actual_build_directory);
 		
