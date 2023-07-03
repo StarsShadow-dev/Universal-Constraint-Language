@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "main.h"
 #include "types.h"
@@ -123,6 +124,15 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 	return NULL;
 }
 
+void printHelp(void) {
+	printf("parallel-lang <arguments>\n");
+	printf("\n");
+	printf("Usage:\n");
+	printf("\n");
+	printf("parallel-lang build <config_path>\n");
+	printf("parallel-lang run <config_path>\n");
+}
+
 typedef enum {
 	CompilerMode_build,
 	CompilerMode_run,
@@ -132,8 +142,13 @@ typedef enum {
 int main(int argc, char **argv) {
 	CompilerMode compilerMode;
 	
-	if (argc < 2) {
-		printf("no arguments\n");
+	if (argc == 1) {
+		printHelp();
+		exit(1);
+	}
+	
+	if (argc != 3) {
+		printf("unexpected amount of arguments, expected: 2, but got: %d\n", argc - 1);
 		exit(1);
 	}
 	
@@ -151,11 +166,6 @@ int main(int argc, char **argv) {
 	
 	else {
 		printf("unexpected compiler mode: %s\n", argv[1]);
-		exit(1);
-	}
-	
-	if (argc != 3) {
-		printf("unexpected amount of arguments, expected: 2, but got: %d\n", argc - 1);
 		exit(1);
 	}
 	
@@ -238,6 +248,17 @@ int main(int argc, char **argv) {
 		CharAccumulator_appendChars(&actual_build_directory, projectDirectoryPath);
 		CharAccumulator_appendChars(&actual_build_directory, "/");
 		CharAccumulator_appendChars(&actual_build_directory, build_directory);
+		
+		struct stat stat_buffer = {0};
+		if (stat(actual_build_directory.data, &stat_buffer) == -1) {
+			printf("the \"build_directory\" specified in the config file does not exist\n");
+			exit(1);
+		} else {
+			if (!S_ISDIR(stat_buffer.st_mode)) {
+				printf("the \"build_directory\" specified in the config file exists but is not a directory\n");
+				exit(1);
+			}
+		}
 		
 		source = readFile(actual_entry_path.data);
 //#ifdef COMPILER_DEBUG_MODE
