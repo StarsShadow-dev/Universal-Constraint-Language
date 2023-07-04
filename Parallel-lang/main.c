@@ -16,11 +16,11 @@
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
 	if (head == 0) {
-		printf("tokens: []\n");
+		printf("Tokens: []\n");
 		return;
 	}
 	
-	printf("tokens: [\n");
+	printf("Tokens: [\n");
 	
 	linkedList_Node *current = head;
 	while (1) {
@@ -50,7 +50,7 @@ char *readFile(const char *path) {
 	FILE* file = fopen(path, "r");
 	
 	if (file == 0) {
-		printf("could not find file at: %s\n", path);
+		printf("Could not find file at: %s\n", path);
 		exit(1);
 	}
 
@@ -125,11 +125,11 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 }
 
 void printHelp(void) {
-	printf("compiler version: %s\n", CURRENT_VERSION);
+	printf("Compiler version: %s\n", CURRENT_VERSION);
 	printf("\n");
-	printf("usage: parallel-lang <command> [<args>]\n");
+	printf("Usage: parallel-lang <command> [<args>]\n");
 	printf("\n");
-	printf("commands:\n");
+	printf("Commands:\n");
 	printf("\n");
 	printf("parallel-lang build_objectFile <config_path>\n");
 	printf("parallel-lang build_binary <config_path>\n");
@@ -168,12 +168,12 @@ int main(int argc, char **argv) {
 	}
 	
 	else {
-		printf("unexpected compiler mode: %s\n", argv[1]);
+		printf("Unexpected compiler mode: %s\n", argv[1]);
 		exit(1);
 	}
 	
 	if (argc != 3) {
-		printf("unexpected amount of arguments, expected: 2, but got: %d\n", argc - 1);
+		printf("Unexpected amount of arguments, expected: 2, but got: %d\n", argc - 1);
 		exit(1);
 	}
 	
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
 	
 	char *homePath = getenv("HOME");
 	if (homePath == NULL) {
-		printf("no home (getenv(\"HOME\")) failed");
+		printf("No home (getenv(\"HOME\")) failed");
 		exit(1);
 	}
 	
@@ -203,13 +203,13 @@ int main(int argc, char **argv) {
 
 	char *LLC_path = getJsmnString(globalConfigJSON, t, globalConfigJSONcount, "LLC_path");
 	if (LLC_path == 0 || LLC_path[0] == 0) {
-		printf("no LLC_path in file at: %s\n", globalConfigPath);
+		printf("No LLC_path in file at: %s\n", globalConfigPath);
 		exit(1);
 	}
 
 	char *clang_path = getJsmnString(globalConfigJSON, t, globalConfigJSONcount, "clang_path");
 	if (clang_path == 0 || clang_path[0] == 0) {
-		printf("no clang_path in file at: %s\n", globalConfigPath);
+		printf("No clang_path in file at: %s\n", globalConfigPath);
 		exit(1);
 	}
 	
@@ -228,23 +228,23 @@ int main(int argc, char **argv) {
 		
 		name = getJsmnString(configJSON, t, configJSONcount, "name");
 		if (name == 0 || name[0] == 0) {
-			printf("no name in file at: ./config.json\n");
+			printf("No name in file at: ./config.json\n");
 			exit(1);
 		}
 		
 		entry_path = getJsmnString(configJSON, t, configJSONcount, "entry_path");
 		if (entry_path == 0 || entry_path[0] == 0) {
-			printf("no entry_path in file at: ./config.json\n");
+			printf("No entry_path in file at: ./config.json\n");
 			exit(1);
 		}
 		
 		char *build_directory = getJsmnString(configJSON, t, configJSONcount, "build_directory");
 		if (build_directory == 0 || build_directory[0] == 0) {
-			printf("no build_directory in file at: ./config.json\n");
+			printf("No build_directory in file at: ./config.json\n");
 			exit(1);
 		}
 		
-		printf("compiler version: %s\n", CURRENT_VERSION);
+		printf("Compiler version: %s\n", CURRENT_VERSION);
 		
 		CharAccumulator actual_entry_path = {100, 0, 0};
 		CharAccumulator_initialize(&actual_entry_path);
@@ -259,18 +259,18 @@ int main(int argc, char **argv) {
 		
 		struct stat stat_buffer = {0};
 		if (stat(actual_build_directory.data, &stat_buffer) == -1) {
-			printf("the \"build_directory\" specified in the config file does not exist\n");
+			printf("The \"build_directory\" specified in the config file does not exist.\n");
 			exit(1);
 		} else {
 			if (!S_ISDIR(stat_buffer.st_mode)) {
-				printf("the \"build_directory\" specified in the config file exists but is not a directory\n");
+				printf("The \"build_directory\" specified in the config file exists but is not a directory.\n");
 				exit(1);
 			}
 		}
 		
 		source = readFile(actual_entry_path.data);
 #ifdef COMPILER_DEBUG_MODE
-		printf("source: %s\n", source);
+		printf("Source: %s\n", source);
 #endif
 		
 		free(configJSON);
@@ -370,18 +370,18 @@ int main(int argc, char **argv) {
 			
 			CharAccumulator_free(&clang_command);
 			
-			printf("program saved to %s\n", outputFilePath.data);
+			printf("Program saved to: %s\n", outputFilePath.data);
 			
 			if (compilerMode == CompilerMode_run) {
-				printf("running program at %s\n", outputFilePath.data);
+				printf("Running program at: %s\n", outputFilePath.data);
 				int program_status = system(outputFilePath.data);
 				
 				int program_exitCode = WEXITSTATUS(program_status);
 				
-				printf("program ended with exit code: %d\n", program_exitCode);
+				printf("Program ended with exit code: %d\n", program_exitCode);
 			}
 		} else {
-			printf("object file saved to saved to %s.o\n", outputFilePath.data);
+			printf("Object file saved to saved to %s.o\n", outputFilePath.data);
 		}
 		
 		CharAccumulator_free(&outputFilePath);
