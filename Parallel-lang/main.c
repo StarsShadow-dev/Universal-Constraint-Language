@@ -125,6 +125,8 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int count, char * key) {
 }
 
 void printHelp(void) {
+	printf("compiler version: %s\n", CURRENT_VERSION);
+	printf("\n");
 	printf("usage: parallel-lang <command> [<args>]\n");
 	printf("\n");
 	printf("commands:\n");
