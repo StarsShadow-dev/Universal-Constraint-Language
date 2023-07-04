@@ -267,9 +267,9 @@ int main(int argc, char **argv) {
 		}
 		
 		source = readFile(actual_entry_path.data);
-//#ifdef COMPILER_DEBUG_MODE
+#ifdef COMPILER_DEBUG_MODE
 		printf("source: %s\n", source);
-//#endif
+#endif
 		
 		free(configJSON);
 		free(build_directory);
