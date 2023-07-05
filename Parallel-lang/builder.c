@@ -622,7 +622,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 					i++;
 				}
 				
-				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, "@.str.");
+				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, "\n@.str.");
 				CharAccumulator_appendUint(globalBuilderInformation->topLevelSource, globalBuilderInformation->stringCount);
 				CharAccumulator_appendChars(globalBuilderInformation->topLevelSource, " = private unnamed_addr constant [");
 				CharAccumulator_appendUint(globalBuilderInformation->topLevelSource, stringLength);
