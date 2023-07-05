@@ -351,8 +351,8 @@ int main(int argc, char **argv) {
 			CharAccumulator_appendChars(&clang_command, " ");
 			CharAccumulator_appendChars(&clang_command, getcwdBuffer);
 			CharAccumulator_appendChars(&clang_command, "/");
-			CharAccumulator_appendChars(&clang_command, actual_build_directory.data);
-			CharAccumulator_appendChars(&clang_command, "/objectFile.o -o ");
+			CharAccumulator_appendChars(&clang_command, outputFilePath.data);
+			CharAccumulator_appendChars(&clang_command, ".o -o ");
 			CharAccumulator_appendChars(&clang_command, getcwdBuffer);
 			CharAccumulator_appendChars(&clang_command, "/");
 			CharAccumulator_appendChars(&clang_command, actual_build_directory.data);

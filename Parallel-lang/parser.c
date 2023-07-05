@@ -265,6 +265,58 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						
 						((ASTnode_return *)data->value)->expression = NULL;
 					}
+				} else if (SubString_string_cmp(&token->subString, "var") == 0) {
+					if (parserMode != ParserMode_normal) {
+						printf("variable definition in a weird spot\n");
+						compileError(token->location);
+					}
+					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *nameToken = ((Token *)((*current)->data));
+					if (nameToken->type != TokenType_word) {
+						printf("expected word after var keyword\n");
+						compileError(nameToken->location);
+					}
+					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *colon = ((Token *)((*current)->data));
+					if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
+						printf("variable definition expected a colon\n");
+						compileError(colon->location);
+					}
+					
+					*current = (*current)->next;
+					linkedList_Node *type = parseType(current);
+					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *equals = ((Token *)((*current)->data));
+					if (equals->type != TokenType_operator || SubString_string_cmp(&equals->subString, "=") != 0) {
+						printf("expected equals as part of variable definition\n");
+						compileError(equals->location);
+					}
+					
+					*current = (*current)->next;
+					linkedList_Node *expression = parse(current, ParserMode_expression);
+					
+					if (parserMode == ParserMode_normal) {
+						if (CURRENT_IS_NOT_SEMICOLON) {
+							printf("expected ';' after variable definition\n");
+							compileError(token->location);
+						}
+						*current = (*current)->next;
+					}
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variableDefinition));
+					
+					data->type = ASTnodeType_variableDefinition;
+					data->location = token->location;
+					
+					((ASTnode_variableDefinition *)data->value)->name = &nameToken->subString;
+					((ASTnode_variableDefinition *)data->value)->type = type;
+					((ASTnode_variableDefinition *)data->value)->expression = expression;
 				} else if (SubString_string_cmp(&token->subString, "true") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 					

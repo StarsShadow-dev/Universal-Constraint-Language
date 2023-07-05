@@ -58,6 +58,7 @@ typedef struct {
 typedef enum {
 	TokenType_word,
 	TokenType_separator,
+	TokenType_operator,
 	TokenType_number,
 	TokenType_string
 } TokenType;
@@ -74,6 +75,7 @@ typedef enum {
 	ASTnodeType_call,
 	ASTnodeType_if,
 	ASTnodeType_return,
+	ASTnodeType_variableDefinition,
 	
 	// I do not really need an ASTnode_true or ASTnode_false because I would not be storing anything in them
 	ASTnodeType_true,
@@ -120,6 +122,12 @@ typedef struct {
 } ASTnode_return;
 
 typedef struct {
+	SubString *name;
+	linkedList_Node *type;
+	linkedList_Node *expression;
+} ASTnode_variableDefinition;
+
+typedef struct {
 	SubString *string;
 	int64_t value;
 } ASTnode_number;
@@ -150,7 +158,7 @@ typedef struct {
 } Variable;
 
 typedef struct {
-	char *LLVMname;
+	char *LLVMtype;
 } Variable_type;
 
 typedef struct {
@@ -166,7 +174,7 @@ typedef struct {
 
 typedef struct {
 	int LLVMRegister;
-	char *LLVMtypeName;
+	char *LLVMtype;
 	linkedList_Node *type;
 } Variable_variable;
 

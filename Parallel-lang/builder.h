@@ -11,7 +11,7 @@ typedef struct {
 	int stringCount;
 } GlobalBuilderInformation;
 
-void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMname);
+void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMtype);
 
 char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_Node **variables, int level, CharAccumulator *outerSource, SubString *outerName, linkedList_Node *expectedType, linkedList_Node *current, int withCommas);
 

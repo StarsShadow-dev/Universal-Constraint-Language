@@ -1,5 +1,13 @@
 function main(): Int8 {
+	var number: Int32 = 97;
+
 	printLine("Hello, World!");
+
+	printLine("variables are working");
+
+	putchar(number);
+
+	putchar(10); // \n
 
 	return 0;
 }

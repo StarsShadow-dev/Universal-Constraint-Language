@@ -72,6 +72,8 @@ void linkedList_freeList(linkedList_Node **head) {
 		free(current);
 		current = next;
 	}
+	
+	*head = NULL;
 }
 
 //

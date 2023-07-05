@@ -13,6 +13,8 @@
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
+#define operator character == '='
+
 linkedList_Node *lex(void) {
 	linkedList_Node *tokens = 0;
 	
@@ -79,6 +81,15 @@ linkedList_Node *lex(void) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_separator;
+			data->location = (SourceLocation){line, column, column + 1};
+			data->subString.start = source + index;
+			data->subString.length = 1;
+		}
+		
+		else if (operator) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_operator;
 			data->location = (SourceLocation){line, column, column + 1};
 			data->subString.start = source + index;
 			data->subString.length = 1;
