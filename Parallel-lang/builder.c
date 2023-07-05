@@ -439,7 +439,6 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				}
 				
 				CharAccumulator_appendChars(outerSource, "\n\tstore ");
-				CharAccumulator_appendChars(outerSource, " ");
 				CharAccumulator_appendChars(outerSource, newExpressionSource);
 				CharAccumulator_appendChars(outerSource, ", ptr %");
 				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
@@ -460,6 +459,40 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				((Variable_variable *)variableData->value)->type = data->type;
 				
 				outerFunction->registerCount++;
+				
+				free(newExpressionSource);
+				
+				break;
+			}
+				
+			case ASTnodeType_variableAssignment: {
+				if (outerSource == NULL || outerName == NULL) {
+					printf("variable assignment in a weird spot\n");
+					compileError(node->location);
+				}
+				
+				ASTnode_variableAssignment *data = (ASTnode_variableAssignment *)node->value;
+				
+				Variable *variableVariable = getBuilderVariable(variables, level, data->name);
+				if (variableVariable == NULL || variableVariable->type != VariableType_variable) {
+					printf("variable does not exist\n");
+					compileError(node->location);
+				}
+				Variable_variable *variable = (Variable_variable *)variableVariable->value;
+				
+				char *newExpressionSource = buildLLVM(globalBuilderInformation, variables, level, outerSource, outerName, variable->type, data->expression, 0);
+				
+				CharAccumulator_appendChars(outerSource, "\n\tstore ");
+				CharAccumulator_appendChars(outerSource, newExpressionSource);
+				CharAccumulator_appendChars(outerSource, ", ptr %");
+				CharAccumulator_appendUint(outerSource, variable->LLVMRegister);
+				if (strcmp(variable->LLVMtype, "ptr") == 0) {
+					CharAccumulator_appendChars(outerSource, ", align 8");
+				} else {
+					CharAccumulator_appendChars(outerSource, ", align 4");
+				}
+				
+				free(newExpressionSource);
 				
 				break;
 			}

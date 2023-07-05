@@ -301,13 +301,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					*current = (*current)->next;
 					linkedList_Node *expression = parse(current, ParserMode_expression);
 					
-					if (parserMode == ParserMode_normal) {
-						if (CURRENT_IS_NOT_SEMICOLON) {
-							printf("expected ';' after variable definition\n");
-							compileError(token->location);
-						}
-						*current = (*current)->next;
+					if (CURRENT_IS_NOT_SEMICOLON) {
+						printf("expected ';' after variable definition\n");
+						compileError(token->location);
 					}
+					*current = (*current)->next;
 					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variableDefinition));
 					
@@ -334,9 +332,9 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 				} else {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
-					Token *openingParentheses = ((Token *)((*current)->data));
+					Token *nextToken = ((Token *)((*current)->data));
 					
-					if (openingParentheses->type == TokenType_separator && SubString_string_cmp(&openingParentheses->subString, "(") == 0) {
+					if (nextToken->type == TokenType_separator && SubString_string_cmp(&nextToken->subString, "(") == 0) {
 						if (SubString_string_cmp(&token->subString, "if") == 0) {
 							*current = (*current)->next;
 							linkedList_Node *expression = parse(current, ParserMode_expression);
@@ -387,6 +385,30 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							((ASTnode_call *)data->value)->name = &token->subString;
 							((ASTnode_call *)data->value)->arguments = arguments;
 						}
+					} else if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") == 0) {
+						if (parserMode != ParserMode_normal) {
+							printf("variable assignment in a weird spot\n");
+							compileError(token->location);
+						}
+						
+						*current = (*current)->next;
+						linkedList_Node *expression = parse(current, ParserMode_expression);
+						
+						if (parserMode == ParserMode_normal) {
+							if (CURRENT_IS_NOT_SEMICOLON) {
+								printf("expected ';' after variable assignment\n");
+								compileError(token->location);
+							}
+							*current = (*current)->next;
+						}
+						
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variableAssignment));
+						
+						data->type = ASTnodeType_variableAssignment;
+						data->location = token->location;
+						
+						((ASTnode_variableAssignment *)data->value)->name = &token->subString;
+						((ASTnode_variableAssignment *)data->value)->expression = expression;
 					} else {
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variable));
 						

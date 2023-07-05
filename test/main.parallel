@@ -1,13 +1,9 @@
 function main(): Int8 {
-	var number: Int32 = 97;
+	var string: Pointer = "Hello, World!";
+	printLine(string);
 
-	printLine("Hello, World!");
-
-	printLine("variables are working");
-
-	putchar(number);
-
-	putchar(10); // \n
+	string = "Variable assignments are working!";
+	printLine(string);
 
 	return 0;
 }
