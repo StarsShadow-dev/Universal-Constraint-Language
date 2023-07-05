@@ -406,7 +406,7 @@ int main(int argc, char **argv) {
 //	free_AST(&AST);
 	
 	if (compilerMode == CompilerMode_compilerTesting) {
-		printf("compiled without any errors\n");
+		printf("no errors\n");
 	}
 	
 	return 0;

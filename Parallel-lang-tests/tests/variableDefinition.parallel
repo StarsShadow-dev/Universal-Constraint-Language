@@ -1,0 +1,13 @@
+/*
+no errors
+*/
+
+function main(): Int8 {
+	var number: Int32 = 97;
+
+	putchar(number);
+
+	return 0;
+}
+
+function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
