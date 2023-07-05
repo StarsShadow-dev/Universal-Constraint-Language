@@ -2,7 +2,7 @@ function main(): Int8 {
 	var string: Pointer = "Hello, World!";
 	printLine(string);
 
-	string = "Variable assignments are working!";
+	var string: Pointer = "Variable assignments are working!";
 	printLine(string);
 
 	return 0;

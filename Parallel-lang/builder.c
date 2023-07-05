@@ -419,6 +419,14 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				
 				ASTnode_variableDefinition *data = (ASTnode_variableDefinition *)node->value;
 				
+				Variable *variableVariable = getBuilderVariable(variables, level, data->name);
+				if (variableVariable != NULL) {
+					printf("The name '");
+					SubString_print(data->name);
+					printf("' is already used.\n");
+					compileError(node->location);
+				}
+				
 				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
 				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
 				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
