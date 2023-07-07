@@ -1,9 +1,15 @@
 function main(): Int8 {
-	var string: Pointer = "Hello, World!";
-	printLine(string);
+	var i: Int32 = 97;
 
-	var string: Pointer = "Variable assignments are working!";
-	printLine(string);
+	putchar(i);
+	putchar(i + 1);
+	putchar(i + 2);
+	putchar(i + 3);
+	putchar(i + 4);
+	putchar(i + 5);
+	putchar(i + 6);
+
+	putchar(10); // \n
 
 	return 0;
 }

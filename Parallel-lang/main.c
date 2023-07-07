@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
 	addBuilderType(&variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
 	addBuilderType(&variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
 	// level is -1 so that it starts at 0 for the first iteration
-	CharAccumulator_appendChars(&LLVMsource, buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST, 0));
+	CharAccumulator_appendChars(&LLVMsource, buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST, 1, 0));
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		

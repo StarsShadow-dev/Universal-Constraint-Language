@@ -77,6 +77,7 @@ typedef enum {
 	ASTnodeType_return,
 	ASTnodeType_variableDefinition,
 	ASTnodeType_variableAssignment,
+	ASTnodeType_operator,
 	
 	// I do not really need an ASTnode_true or ASTnode_false because I would not be storing anything in them
 	ASTnodeType_true,
@@ -132,6 +133,12 @@ typedef struct {
 	SubString *name;
 	linkedList_Node *expression;
 } ASTnode_variableAssignment;
+
+typedef struct {
+	int type;
+	linkedList_Node *left;
+	linkedList_Node *right;
+} ASTnode_operator;
 
 typedef struct {
 	SubString *string;

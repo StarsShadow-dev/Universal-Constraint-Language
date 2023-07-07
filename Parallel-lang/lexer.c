@@ -13,7 +13,7 @@
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
-#define operator character == '='
+#define operator character == '=' || character == '+'
 
 linkedList_Node *lex(void) {
 	linkedList_Node *tokens = 0;
