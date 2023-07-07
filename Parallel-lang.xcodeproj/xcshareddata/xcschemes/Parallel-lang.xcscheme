@@ -53,7 +53,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "run"
+            argument = "build_binary"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

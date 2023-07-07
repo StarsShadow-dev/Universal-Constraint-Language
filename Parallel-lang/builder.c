@@ -252,12 +252,13 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 			}
 				
 			case ASTnodeType_call: {
-				ASTnode_call *data = (ASTnode_call *)node->value;
-				
 				if (outerSource == NULL || outerName == NULL) {
 					printf("function call in a weird spot\n");
 					compileError(node->location);
 				}
+				
+				ASTnode_call *data = (ASTnode_call *)node->value;
+				
 				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
 				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
 				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
@@ -330,6 +331,71 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				break;
 			}
 				
+			case ASTnodeType_while: {
+				if (outerSource == NULL || outerName == NULL) {
+					printf("while loop in a weird spot\n");
+					compileError(node->location);
+				}
+				
+				ASTnode_while *data = (ASTnode_while *)node->value;
+				
+				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				linkedList_Node *expectedTypesForWhile = NULL;
+				ASTnode *expectedTypesForWhileData = linkedList_addNode(&expectedTypesForWhile, sizeof(ASTnode) + sizeof(ASTnode_type));
+				expectedTypesForWhileData->type = ASTnodeType_type;
+				expectedTypesForWhileData->location = (SourceLocation){0, 0, 0};
+				((ASTnode_type *)expectedTypesForWhileData->value)->name = &(SubString){"Bool", strlen("Bool")};
+				
+				int jump1 = outerFunction->registerCount;
+				outerFunction->registerCount++;
+				CharAccumulator jump1_outerSource = {100, 0, 0};
+				CharAccumulator_initialize(&jump1_outerSource);
+				char *newExpressionSource = buildLLVM(globalBuilderInformation, variables, level, &jump1_outerSource, outerName, expectedTypesForWhile, data->expression, 1, 0);
+				
+				int jump2 = outerFunction->registerCount;
+				outerFunction->registerCount++;
+				CharAccumulator jump2_outerSource = {100, 0, 0};
+				CharAccumulator_initialize(&jump2_outerSource);
+				free(buildLLVM(globalBuilderInformation, variables, level, &jump2_outerSource, outerName, NULL, data->codeBlock, 1, 0));
+				
+				int endJump = outerFunction->registerCount;
+				outerFunction->registerCount++;
+				
+				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
+				CharAccumulator_appendUint(outerSource, jump1);
+				
+				CharAccumulator_appendChars(outerSource, "\n\n");
+				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendChars(outerSource, ":");
+				CharAccumulator_appendChars(outerSource, jump1_outerSource.data);
+				CharAccumulator_appendChars(outerSource, "\n\tbr ");
+				CharAccumulator_appendChars(outerSource, newExpressionSource);
+				CharAccumulator_appendChars(outerSource, ", label %");
+				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendChars(outerSource, ", label %");
+				CharAccumulator_appendUint(outerSource, endJump);
+				
+				CharAccumulator_appendChars(outerSource, "\n\n");
+				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendChars(outerSource, ":");
+				CharAccumulator_appendChars(outerSource, jump2_outerSource.data);
+				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
+				CharAccumulator_appendUint(outerSource, jump1);
+				// NOTE: no '!llvm.loop' or '!llvm.loop.mustprogress'
+				
+				CharAccumulator_appendChars(outerSource, "\n\n");
+				CharAccumulator_appendUint(outerSource, endJump);
+				CharAccumulator_appendChars(outerSource, ":");
+				
+				CharAccumulator_free(&jump1_outerSource);
+				CharAccumulator_free(&jump2_outerSource);
+				
+				break;
+			}
+				
 			case ASTnodeType_if: {
 				if (outerSource == NULL || outerName == NULL) {
 					printf("if statement in a weird spot\n");
@@ -389,11 +455,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				}
 				
 				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
-				
-				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) {
-					abort();
-				}
-				
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
 				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
 				
 				ASTnode_return *data = (ASTnode_return *)node->value;
@@ -410,6 +472,8 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 					
 					free(newSource);
 				}
+				
+				outerFunction->registerCount++;
 				
 				break;
 			}

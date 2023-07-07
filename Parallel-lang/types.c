@@ -101,6 +101,9 @@ int SubString_SubString_cmp(SubString *subString1, SubString *subString2) {
 //
 
 void CharAccumulator_initialize(CharAccumulator *accumulator) {
+	if (accumulator->data != NULL) {
+		free(accumulator->data);
+	}
 	accumulator->data = malloc(accumulator->maxSize);
 	if (accumulator->data == NULL) {
 		printf("malloc failed\n");

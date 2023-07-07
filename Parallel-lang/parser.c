@@ -172,7 +172,7 @@ linkedList_Node *parseOperators(linkedList_Node **current) {
 		SubString_string_cmp(&operator2->subString, "=") != 0 &&
 		getOperatorPrecedence(&operator1->subString) < getOperatorPrecedence(&operator2->subString)
 	) {
-		printf("Operator precedence not finished yet.");
+		printf("Operator precedence is not finished yet.");
 		abort();
 //		return parseOperators(current);
 	} else {
@@ -228,6 +228,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 		
 		switch (token->type) {
 			case TokenType_word: {
+				// function definition
 				if (SubString_string_cmp(&token->subString, "function") == 0) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -306,7 +307,10 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						printf("function definition expected an openingBracket or a quotation mark\n");
 						compileError(codeStart->location);
 					}
-				} else if (SubString_string_cmp(&token->subString, "return") == 0) {
+				}
+				
+				// return statement
+				else if (SubString_string_cmp(&token->subString, "return") == 0) {
 					*current = (*current)->next;
 					if (CURRENT_IS_NOT_SEMICOLON) {
 						linkedList_Node *expression = parse(current, ParserMode_expression);
@@ -334,7 +338,10 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						
 						((ASTnode_return *)data->value)->expression = NULL;
 					}
-				} else if (SubString_string_cmp(&token->subString, "var") == 0) {
+				}
+				
+				// variable definition
+				else if (SubString_string_cmp(&token->subString, "var") == 0) {
 					if (parserMode != ParserMode_normal) {
 						printf("variable definition in a weird spot\n");
 						compileError(token->location);
@@ -384,26 +391,35 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					((ASTnode_variableDefinition *)data->value)->name = &nameToken->subString;
 					((ASTnode_variableDefinition *)data->value)->type = type;
 					((ASTnode_variableDefinition *)data->value)->expression = expression;
-				} else if (SubString_string_cmp(&token->subString, "true") == 0) {
+				}
+				
+				// true constant
+				else if (SubString_string_cmp(&token->subString, "true") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 					
 					data->type = ASTnodeType_true;
 					data->location = token->location;
 					
 					*current = (*current)->next;
-				} else if (SubString_string_cmp(&token->subString, "false") == 0) {
+				}
+				
+				// false constant
+				else if (SubString_string_cmp(&token->subString, "false") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 					
 					data->type = ASTnodeType_false;
 					data->location = token->location;
 					
 					*current = (*current)->next;
-				} else {
+				}
+				
+				else {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
 					Token *nextToken = ((Token *)((*current)->data));
 					
 					if (nextToken->type == TokenType_separator && SubString_string_cmp(&nextToken->subString, "(") == 0) {
+						// if statement
 						if (SubString_string_cmp(&token->subString, "if") == 0) {
 							*current = (*current)->next;
 							linkedList_Node *expression = parse(current, ParserMode_expression);
@@ -433,7 +449,42 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							
 							((ASTnode_if *)data->value)->expression = expression;
 							((ASTnode_if *)data->value)->codeBlock = codeBlock;
-						} else { // function call
+						}
+						
+						// while loop
+						else if (SubString_string_cmp(&token->subString, "while") == 0) {
+							*current = (*current)->next;
+							linkedList_Node *expression = parse(current, ParserMode_expression);
+							
+							endIfCurrentIsEmpty()
+							Token *closingParentheses = ((Token *)((*current)->data));
+							if (closingParentheses->type != TokenType_separator || SubString_string_cmp(&closingParentheses->subString, ")") != 0) {
+								printf("while loop expected ')'\n");
+								compileError(token->location);
+							}
+							
+							*current = (*current)->next;
+							endIfCurrentIsEmpty()
+							Token *openingBracket = ((Token *)((*current)->data));
+							if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
+								printf("while loop expected '{'\n");
+								compileError(openingBracket->location);
+							}
+							
+							*current = (*current)->next;
+							linkedList_Node *codeBlock = parse(current, ParserMode_normal);
+							
+							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_while));
+							
+							data->type = ASTnodeType_while;
+							data->location = token->location;
+							
+							((ASTnode_while *)data->value)->expression = expression;
+							((ASTnode_while *)data->value)->codeBlock = codeBlock;
+						}
+						
+						// function call
+						else {
 							*current = (*current)->next;
 							linkedList_Node *arguments = parse(current, ParserMode_arguments);
 							
@@ -454,7 +505,10 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							((ASTnode_call *)data->value)->name = &token->subString;
 							((ASTnode_call *)data->value)->arguments = arguments;
 						}
-					} else if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") == 0) {
+					}
+					
+					// variable assignment
+					else if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") == 0) {
 						if (parserMode != ParserMode_normal) {
 							printf("variable assignment in a weird spot\n");
 							compileError(token->location);
@@ -478,7 +532,10 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						
 						((ASTnode_variableAssignment *)data->value)->name = &token->subString;
 						((ASTnode_variableAssignment *)data->value)->expression = expression;
-					} else {
+					}
+					
+					// variable
+					else {
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variable));
 						
 						data->type = ASTnodeType_variable;

@@ -73,6 +73,7 @@ typedef enum {
 	ASTnodeType_type,
 	ASTnodeType_function,
 	ASTnodeType_call,
+	ASTnodeType_while,
 	ASTnodeType_if,
 	ASTnodeType_return,
 	ASTnodeType_variableDefinition,
@@ -113,6 +114,11 @@ typedef struct {
 	SubString *name;
 	linkedList_Node *arguments;
 } ASTnode_call;
+
+typedef struct {
+	linkedList_Node *expression;
+	linkedList_Node *codeBlock;
+} ASTnode_while;
 
 typedef struct {
 	linkedList_Node *expression;
