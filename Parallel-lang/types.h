@@ -134,8 +134,13 @@ typedef struct {
 	linkedList_Node *expression;
 } ASTnode_variableAssignment;
 
+typedef enum {
+	ASTnode_operatorType_add,
+	ASTnode_operatorType_subtract,
+} ASTnode_operatorType;
+
 typedef struct {
-	int type;
+	ASTnode_operatorType operatorType;
 	linkedList_Node *left;
 	linkedList_Node *right;
 } ASTnode_operator;

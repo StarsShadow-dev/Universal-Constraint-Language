@@ -531,7 +531,15 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
 				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(outerSource, " = add nsw ");
+				CharAccumulator_appendChars(outerSource, " = ");
+				if (data->operatorType == ASTnode_operatorType_add) {
+					CharAccumulator_appendChars(outerSource, "add");
+				} else if (data->operatorType == ASTnode_operatorType_subtract) {
+					CharAccumulator_appendChars(outerSource, "sub");
+				} else {
+					abort();
+				}
+				CharAccumulator_appendChars(outerSource, " nsw ");
 				CharAccumulator_appendChars(outerSource, expectedLLVMtype);
 				CharAccumulator_appendChars(outerSource, " ");
 				CharAccumulator_appendChars(outerSource, leftSource);
