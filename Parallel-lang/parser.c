@@ -212,12 +212,14 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 		}
 		
 		if (parserMode != ParserMode_noOperatorChecking) {
-			Token *nextToken = (Token *)((*current)->next->data);
-			if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") != 0) {
-				linkedList_Node *operatorAST = parseOperators(current);
-				linkedList_join(&AST, &operatorAST);
-				if (parserMode == ParserMode_expression) {
-					return AST;
+			if ((*current)->next) {
+				Token *nextToken = (Token *)((*current)->next->data);
+				if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") != 0) {
+					linkedList_Node *operatorAST = parseOperators(current);
+					linkedList_join(&AST, &operatorAST);
+					if (parserMode == ParserMode_expression) {
+						return AST;
+					}
 				}
 			}
 		}
