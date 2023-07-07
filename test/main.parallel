@@ -1,13 +1,9 @@
 function main(): Int8 {
-	var i: Int32 = 97;
+	var a: Int32 = 97;
 
-	putchar(i);
-	putchar(i + 1);
-	putchar(i + 2);
-	putchar(i + 3);
-	putchar(i + 4);
-	putchar(i + 5);
-	putchar(i + 6);
+	putchar(a);
+	putchar(a + 1);
+	putchar(a + 1 + 1);
 
 	putchar(10); // \n
 

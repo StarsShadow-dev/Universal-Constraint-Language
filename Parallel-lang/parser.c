@@ -208,7 +208,9 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 			if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") != 0) {
 				linkedList_Node *operatorAST = parseOperators(current);
 				linkedList_join(&AST, &operatorAST);
-				
+				if (parserMode == ParserMode_expression) {
+					return AST;
+				}
 			}
 		}
 		
