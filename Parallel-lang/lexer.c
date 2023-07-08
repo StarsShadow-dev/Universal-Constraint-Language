@@ -13,7 +13,8 @@
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
-#define operator character == '=' || character == '+' || character == '-'
+#define operator_1char character == '=' || character == '+' || character == '-'
+#define operator_2chars character == '=' && source[index+1] == '='
 
 linkedList_Node *lex(void) {
 	linkedList_Node *tokens = 0;
@@ -86,7 +87,19 @@ linkedList_Node *lex(void) {
 			data->subString.length = 1;
 		}
 		
-		else if (operator) {
+		else if (operator_2chars) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_operator;
+			data->location = (SourceLocation){line, column, column + 2};
+			data->subString.start = source + index;
+			data->subString.length = 2;
+			
+			index++;
+			column++;
+		}
+		
+		else if (operator_1char) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_operator;

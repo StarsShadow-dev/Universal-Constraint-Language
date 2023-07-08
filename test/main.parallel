@@ -1,10 +1,9 @@
 function main(): Int8 {
-	// This is the most convoluted way
-	// I have ever put 'abc' to the standard out.
 	var i: Int32 = 0;
 
-	while (true) {
+	while (i == 0) {
 		printLine("in while loop");
+		i = i + 1;
 	}
 
 	putchar(10); // \n

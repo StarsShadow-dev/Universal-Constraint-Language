@@ -187,7 +187,9 @@ linkedList_Node *parseOperators(linkedList_Node **current) {
 		data->type = ASTnodeType_operator;
 		data->location = operator1->location;
 		
-		if (SubString_string_cmp(&operator1->subString, "+") == 0) {
+		if (SubString_string_cmp(&operator1->subString, "==") == 0) {
+			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_equivalent;
+		} else if (SubString_string_cmp(&operator1->subString, "+") == 0) {
 			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_add;
 		} else if (SubString_string_cmp(&operator1->subString, "-") == 0) {
 			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_subtract;

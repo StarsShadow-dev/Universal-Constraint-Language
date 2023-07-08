@@ -141,6 +141,7 @@ typedef struct {
 } ASTnode_variableAssignment;
 
 typedef enum {
+	ASTnode_operatorType_equivalent,
 	ASTnode_operatorType_add,
 	ASTnode_operatorType_subtract,
 } ASTnode_operatorType;
