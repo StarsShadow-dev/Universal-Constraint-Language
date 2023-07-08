@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define maxVariablesLevel 10
+
 extern char *source;
 
 #endif /* globals_h */

@@ -298,15 +298,18 @@ int main(int argc, char **argv) {
 		0
 	};
 	
-	linkedList_Node *variables[maxBuilderLevel] = {0};
+	linkedList_Node *variables[maxVariablesLevel] = {0};
 	addBuilderType(&variables[0], &(SubString){"Void", (int)strlen("Void")}, "void");
 	addBuilderType(&variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8");
 	addBuilderType(&variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32");
 	addBuilderType(&variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64");
 	addBuilderType(&variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
 	addBuilderType(&variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
+	
 	// level is -1 so that it starts at 0 for the first iteration
 	CharAccumulator_appendChars(&LLVMsource, buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST, 1, 0));
+	
+	return 0;
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		
@@ -403,7 +406,6 @@ int main(int argc, char **argv) {
 	CharAccumulator_free(&LLVMsource);
 	
 	linkedList_freeList(&tokens);
-//	free_AST(&AST);
 	
 	if (compilerMode == CompilerMode_compilerTesting) {
 		printf("no errors\n");

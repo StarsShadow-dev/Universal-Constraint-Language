@@ -3,8 +3,6 @@
 
 #include "types.h"
 
-#define maxBuilderLevel 10
-
 typedef struct {
 	CharAccumulator *topLevelSource;
 	
