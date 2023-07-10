@@ -38,7 +38,7 @@ void expectTypeWithString(ASTnode *expectedTypeNode, char *actualTypeString, Sou
 	}
 }
 
-void addTypeAsStringToList(linkedList_Node **list, char *string) {
+void addTypeAsString(linkedList_Node **list, char *string) {
 	SubString *subString = malloc(sizeof(SubString));
 	if (subString == NULL) {
 		printf("malloc failed\n");
@@ -81,13 +81,13 @@ Variable *getBuilderVariable(linkedList_Node **variables, int level, SubString *
 	return NULL;
 }
 
-char *getLLVMtypeFromType(linkedList_Node **variables, int level, linkedList_Node *type) {
-	Variable *LLVMtypeVariable = getBuilderVariable(variables, level, ((ASTnode_type *)((ASTnode *)type->data)->value)->name);
+char *getLLVMtypeFromType(linkedList_Node **variables, int level, ASTnode *type) {
+	Variable *LLVMtypeVariable = getBuilderVariable(variables, level, ((ASTnode_type *)(type)->value)->name);
 	
 	return ((Variable_type *)LLVMtypeVariable->value)->LLVMtype;
 }
 
-char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_Node **variables, int level, CharAccumulator *outerSource, SubString *outerName, linkedList_Node *expectedTypes, linkedList_Node *current, int withTypes, int withCommas) {
+void buildLLVM(GlobalBuilderInformation *GBI, linkedList_Node **variables, int level, SubString *outerName, CharAccumulator *innerSource, linkedList_Node **expectedTypes, linkedList_Node **types, linkedList_Node *current, int withTypes, int withCommas) {
 	level++;
 	if (level > maxVariablesLevel) {
 		printf("level (%i) > maxVariablesLevel (%i)\n", level, maxVariablesLevel);
@@ -142,7 +142,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 					currentArgument = currentArgument->next;
 				}
 				
-				char *LLVMreturnType = getLLVMtypeFromType(variables, level, data->returnType);
+				char *LLVMreturnType = getLLVMtypeFromType(variables, level, (ASTnode *)data->returnType->data);
 				
 				Variable *function = linkedList_addNode(&variables[0], sizeof(Variable) + sizeof(Variable_function));
 				
@@ -159,7 +159,7 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 				((Variable_function *)function->value)->argumentTypes = data->argumentTypes;
 				((Variable_function *)function->value)->returnType = data->returnType;
 				((Variable_function *)function->value)->hasReturned = 0;
-				((Variable_function *)function->value)->registerCount = 1;
+				((Variable_function *)function->value)->registerCount = 0;
 			}
 			
 			preLoopCurrent = preLoopCurrent->next;
@@ -179,121 +179,223 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 		
 		switch (node->type) {
 			case ASTnodeType_function: {
-				if (level != 0 || outerSource != NULL) {
+				if (level != 0) {
 					printf("function definitions are only allowed at top level\n");
 					compileError(node->location);
 				}
 				
-				break;
-			}
+				ASTnode_function *data = (ASTnode_function *)node->value;
 				
-			case ASTnodeType_call: {
-				if (outerSource == NULL || outerName == NULL) {
-					printf("function call in a weird spot\n");
-					compileError(node->location);
+				Variable *functionVariable = getBuilderVariable(variables, level, data->name);
+				if (functionVariable == NULL || functionVariable->type != VariableType_function) abort();
+				Variable_function *function = (Variable_function *)functionVariable->value;
+				
+				if (data->external) {
+					CharAccumulator_appendSubString(GBI->topLevelSource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
+				}
+				
+				else {
+					char *LLVMreturnType = getLLVMtypeFromType(variables, level, (ASTnode *)data->returnType->data);
+					
+					CharAccumulator_appendChars(GBI->topLevelSource, "\ndefine ");
+					CharAccumulator_appendChars(GBI->topLevelSource, LLVMreturnType);
+					CharAccumulator_appendChars(GBI->topLevelSource, " @");
+					CharAccumulator_appendSubString(GBI->topLevelSource, data->name);
+					CharAccumulator_appendChars(GBI->topLevelSource, "(");
+					
+					CharAccumulator functionSource = {100, 0, 0};
+					CharAccumulator_initialize(&functionSource);
+					
+					linkedList_Node *currentArgument = data->argumentTypes;
+					linkedList_Node *currentArgumentName = data->argumentNames;
+					if (currentArgument != NULL) {
+						int argumentCount =  linkedList_getCount(&data->argumentTypes);
+						while (1) {
+							char *currentArgumentLLVMtype = getLLVMtypeFromType(variables, level, (ASTnode *)currentArgument->data);
+							CharAccumulator_appendChars(GBI->topLevelSource, currentArgumentLLVMtype);
+							CharAccumulator_appendChars(GBI->topLevelSource, " %");
+							CharAccumulator_appendUint(GBI->topLevelSource, function->registerCount);
+							
+							CharAccumulator_appendChars(&functionSource, "\n\t%");
+							CharAccumulator_appendUint(&functionSource, function->registerCount + argumentCount + 1);
+							CharAccumulator_appendChars(&functionSource, " = alloca ");
+							CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
+							CharAccumulator_appendChars(&functionSource, ", align 8");
+							
+							CharAccumulator_appendChars(&functionSource, "\n\tstore ");
+							CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
+							CharAccumulator_appendChars(&functionSource, " %");
+							CharAccumulator_appendUint(&functionSource, function->registerCount);
+							CharAccumulator_appendChars(&functionSource, ", ");
+							CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
+							CharAccumulator_appendChars(&functionSource, " %");
+							CharAccumulator_appendUint(&functionSource, function->registerCount + argumentCount + 1);
+							CharAccumulator_appendChars(&functionSource, ", align 8");
+							
+							Variable *argumentVariable = getBuilderVariable(variables, level, (SubString *)currentArgumentName->data);
+							
+							if (argumentVariable != NULL) {
+								printf("there is already something named '");
+								SubString_print((SubString *)currentArgumentName->data);
+								printf("'\n");
+								compileError(node->location);
+							}
+							
+							Variable *argumentVariableData = linkedList_addNode(&variables[level + 1], sizeof(Variable) + sizeof(Variable_variable));
+							
+							argumentVariableData->key = (SubString *)currentArgumentName->data;
+							
+							argumentVariableData->type = VariableType_variable;
+							
+							((Variable_variable *)argumentVariableData->value)->LLVMRegister = function->registerCount + argumentCount + 1;
+							((Variable_variable *)argumentVariableData->value)->LLVMtype = currentArgumentLLVMtype;
+							((Variable_variable *)argumentVariableData->value)->type = currentArgument;
+							
+							function->registerCount++;
+							
+							if (currentArgument->next == NULL) {
+								break;
+							}
+							
+							CharAccumulator_appendChars(GBI->topLevelSource, ", ");
+							currentArgument = currentArgument->next;
+							currentArgumentName = currentArgumentName->next;
+						}
+						
+						function->registerCount += argumentCount + 1;
+						
+						if (!function->hasReturned) {
+							printf("function did not return\n");
+							compileError(node->location);
+						}
+					}
+					
+					CharAccumulator_appendChars(GBI->topLevelSource, ") {");
+					buildLLVM(GBI, variables, level, data->name, NULL, NULL, NULL, data->codeBlock, 0, 0);
+					CharAccumulator_appendChars(GBI->topLevelSource, functionSource.data);
+					CharAccumulator_appendChars(GBI->topLevelSource, "\n}");
+					
+					CharAccumulator_free(&functionSource);
+					
+					function->registerCount++;
 				}
 				
 				break;
 			}
 				
-			case ASTnodeType_while: {
-				if (outerSource == NULL || outerName == NULL) {
-					printf("while loop in a weird spot\n");
-					compileError(node->location);
-				}
-				
-				break;
-			}
-				
-			case ASTnodeType_if: {
-				if (outerSource == NULL || outerName == NULL) {
-					printf("if statement in a weird spot\n");
-					compileError(node->location);
-				}
-				
-				break;
-			}
-				
+//			case ASTnodeType_call: {
+//				if (outerName == NULL) {
+//					printf("function call in a weird spot\n");
+//					compileError(node->location);
+//				}
+//
+//				break;
+//			}
+//
+//			case ASTnodeType_while: {
+//				if (outerName == NULL) {
+//					printf("while loop in a weird spot\n");
+//					compileError(node->location);
+//				}
+//
+//				break;
+//			}
+//
+//			case ASTnodeType_if: {
+//				if (outerName == NULL) {
+//					printf("if statement in a weird spot\n");
+//					compileError(node->location);
+//				}
+//
+//				break;
+//			}
+//
 			case ASTnodeType_return: {
-				if (outerSource == NULL || outerName == NULL) {
+				if (outerName == NULL) {
 					printf("return in a weird spot\n");
 					compileError(node->location);
 				}
 				
-				break;
-			}
+				Variable *outerFunctionVariable = getBuilderVariable(variables, level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
 				
-			case ASTnodeType_variableDefinition: {
-				if (outerSource == NULL || outerName == NULL) {
-					printf("variable definition in a weird spot\n");
-					compileError(node->location);
+				ASTnode_return *data = (ASTnode_return *)node->value;
+				
+				if (data->expression == NULL) {
+					CharAccumulator_appendChars(GBI->topLevelSource, "\n\tret void");
+				} else {
+					CharAccumulator_appendChars(GBI->topLevelSource, "\n\tret ");
+					
+					buildLLVM(GBI, variables, level, outerName, NULL, &outerFunction->returnType, NULL, data->expression, 1, 0);
 				}
 				
-				break;
-			}
-				
-			case ASTnodeType_variableAssignment: {
-				if (outerSource == NULL || outerName == NULL) {
-					printf("variable assignment in a weird spot\n");
-					compileError(node->location);
-				}
+				outerFunction->hasReturned = 1;
 				
 				break;
 			}
-				
-			case ASTnodeType_operator: {
-				if (expectedTypes == NULL) {
-					printf("unexpected operator\n");
-					compileError(node->location);
-				}
-				
-				break;
-			}
-				
-			case ASTnodeType_true: {
-				if (expectedTypes == NULL) {
-					printf("unexpected bool\n");
-					compileError(node->location);
-				}
-				
-				break;
-			}
-
-			case ASTnodeType_false: {
-				if (expectedTypes == NULL) {
-					printf("unexpected bool\n");
-					compileError(node->location);
-				}
-				
-				break;
-			}
-				
+//
+//			case ASTnodeType_variableDefinition: {
+//				if (outerName == NULL) {
+//					printf("variable definition in a weird spot\n");
+//					compileError(node->location);
+//				}
+//
+//				break;
+//			}
+//
+//			case ASTnodeType_variableAssignment: {
+//				if (outerName == NULL) {
+//					printf("variable assignment in a weird spot\n");
+//					compileError(node->location);
+//				}
+//
+//				break;
+//			}
+//
+//			case ASTnodeType_operator: {
+//
+//				break;
+//			}
+//
+//			case ASTnodeType_true: {
+//
+//				break;
+//			}
+//
+//			case ASTnodeType_false: {
+//
+//				break;
+//			}
+			
 			case ASTnodeType_number: {
+				ASTnode_number *data = (ASTnode_number *)node->value;
+				
 				if (expectedTypes == NULL) {
-					printf("unexpected number\n");
-					compileError(node->location);
+					addTypeAsString(types, "number");
+				} else {
+					char *LLVMtype = getLLVMtypeFromType(variables, level, (ASTnode *)(*expectedTypes)->data);
+					
+					if (withTypes) {
+						CharAccumulator_appendChars(GBI->topLevelSource, LLVMtype);
+						CharAccumulator_appendChars(GBI->topLevelSource, " ");
+					}
+					
+					CharAccumulator_appendSubString(GBI->topLevelSource, data->string);
 				}
 				
 				break;
 			}
-				
-			case ASTnodeType_string: {
-				if (expectedTypes == NULL) {
-					printf("unexpected string\n");
-					compileError(node->location);
-				}
-				
-				break;
-			}
-				
-			case ASTnodeType_variable: {
-				if (expectedTypes == NULL) {
-					printf("unexpected variable\n");
-					compileError(node->location);
-				}
-				
-				break;
-			}
+			
+//			case ASTnodeType_string: {
+//
+//				break;
+//			}
+//
+//			case ASTnodeType_variable: {
+//
+//				break;
+//			}
 			
 			default: {
 				printf("unknown node type: %u\n", node->type);
@@ -307,9 +409,10 @@ char *buildLLVM(GlobalBuilderInformation *globalBuilderInformation, linkedList_N
 		}
 		
 		current = current->next;
+		if (expectedTypes != NULL) {
+			*expectedTypes = (*expectedTypes)->next;
+		}
 	}
 	
 	linkedList_freeList(&variables[level]);
-	
-	return LLVMsource.data;
 }

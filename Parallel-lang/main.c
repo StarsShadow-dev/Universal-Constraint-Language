@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <libgen.h>
 
 #include "main.h"
 #include "types.h"
@@ -10,8 +11,6 @@
 #include "lexer.h"
 #include "parser.h"
 #include "builder.h"
-
-#include <libgen.h>
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
@@ -293,8 +292,12 @@ int main(int argc, char **argv) {
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
 	
+	CharAccumulator LLVMconstantSource = {100, 0, 0};
+	CharAccumulator_initialize(&LLVMconstantSource);
+	
 	GlobalBuilderInformation globalBuilderInformation = {
 		&LLVMsource,
+		&LLVMconstantSource,
 		0
 	};
 	
@@ -307,9 +310,7 @@ int main(int argc, char **argv) {
 	addBuilderType(&variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
 	
 	// level is -1 so that it starts at 0 for the first iteration
-	CharAccumulator_appendChars(&LLVMsource, buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, AST, 1, 0));
-	
-	return 0;
+	buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, NULL, AST, 0, 0);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		
