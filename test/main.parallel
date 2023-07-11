@@ -1,10 +1,8 @@
 function main(): Int8 {
 	putchar(97); // a
-	putchar(98); // b
-	putchar(99); // c
+	putchar(97 + 1); // b
+	putchar(100 - 1); // c
 	putchar(10); // \n
-
-	""
 
 	return 0;
 }

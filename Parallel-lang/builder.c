@@ -435,12 +435,64 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 //
 //				break;
 //			}
-//
-//			case ASTnodeType_operator: {
-//
-//				break;
-//			}
-//
+			
+			case ASTnodeType_operator: {
+				ASTnode_operator *data = (ASTnode_operator *)node->value;
+				
+				Variable *outerFunctionVariable = getBuilderVariable(GBI->variables, GBI->level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				char *expectedLLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)expectedTypes->data);
+				
+				// the expected type for both sides of the operator is the same type that is expected for the operator
+				linkedList_Node *expectedTypeForLeftAndRight = NULL;
+				ASTnode *expectedTypeData = linkedList_addNode(&expectedTypeForLeftAndRight, sizeof(ASTnode) + sizeof(ASTnode_type));
+				memcpy(expectedTypeData, (ASTnode *)expectedTypes->data, sizeof(ASTnode) + sizeof(ASTnode_type));
+				
+				CharAccumulator leftInnerSource = {100, 0, 0};
+				CharAccumulator_initialize(&leftInnerSource);
+				
+				CharAccumulator rightInnerSource = {100, 0, 0};
+				CharAccumulator_initialize(&rightInnerSource);
+				
+				buildLLVM(GBI, outerName, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 0, 0);
+				buildLLVM(GBI, outerName, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
+				
+				CharAccumulator_appendChars(GBI->topLevelSource, "\n\t%");
+				CharAccumulator_appendUint(GBI->topLevelSource, outerFunction->registerCount);
+				CharAccumulator_appendChars(GBI->topLevelSource, " = ");
+				if (data->operatorType == ASTnode_operatorType_add) {
+					CharAccumulator_appendChars(GBI->topLevelSource, "add");
+				} else if (data->operatorType == ASTnode_operatorType_subtract) {
+					CharAccumulator_appendChars(GBI->topLevelSource, "sub");
+				} else {
+					abort();
+				}
+				CharAccumulator_appendChars(GBI->topLevelSource, " nsw ");
+				CharAccumulator_appendChars(GBI->topLevelSource, expectedLLVMtype);
+				CharAccumulator_appendChars(GBI->topLevelSource, " ");
+				CharAccumulator_appendChars(GBI->topLevelSource, leftInnerSource.data);
+				CharAccumulator_appendChars(GBI->topLevelSource, ", ");
+				CharAccumulator_appendChars(GBI->topLevelSource, rightInnerSource.data);
+				
+				if (withTypes) {
+					CharAccumulator_appendChars(innerSource, expectedLLVMtype);
+					CharAccumulator_appendChars(innerSource, " ");
+				}
+				CharAccumulator_appendChars(innerSource, "%");
+				CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
+				
+				CharAccumulator_free(&leftInnerSource);
+				CharAccumulator_free(&rightInnerSource);
+				
+				linkedList_freeList(&expectedTypeForLeftAndRight);
+				
+				outerFunction->registerCount++;
+				
+				break;
+			}
+			
 //			case ASTnodeType_true: {
 //
 //				break;
