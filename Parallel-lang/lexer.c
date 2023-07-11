@@ -175,7 +175,7 @@ linkedList_Node *lex(void) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_string;
-			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
+			data->location = (SourceLocation){line, columnStart - 1, columnStart + end - start + 1};
 			data->subString.start = source + start;
 			data->subString.length = end - start;
 		}

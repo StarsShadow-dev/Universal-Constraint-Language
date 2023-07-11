@@ -4,6 +4,8 @@ function main(): Int8 {
 	putchar(99); // c
 	putchar(10); // \n
 
+	""
+
 	return 0;
 }
 
