@@ -54,6 +54,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "build_binary"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "run"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

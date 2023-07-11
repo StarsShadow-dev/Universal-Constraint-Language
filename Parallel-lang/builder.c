@@ -6,7 +6,7 @@
 #include "error.h"
 
 void expectTypeWithType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode, SourceLocation location) {
-	if (expectedTypeNode->type != ASTnodeType_type || actualTypeNode->type != ASTnodeType_type) {
+	if (expectedTypeNode->nodeType != ASTnodeType_type || actualTypeNode->nodeType != ASTnodeType_type) {
 		abort();
 	}
 	
@@ -24,7 +24,7 @@ void expectTypeWithType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode, Sour
 }
 
 void expectTypeWithString(ASTnode *expectedTypeNode, char *actualTypeString, SourceLocation location) {
-	if (expectedTypeNode->type != ASTnodeType_type) {
+	if (expectedTypeNode->nodeType != ASTnodeType_type) {
 		abort();
 	}
 	
@@ -47,7 +47,7 @@ void addTypeAsString(linkedList_Node **list, char *string) {
 	*subString = (SubString){string, (int)strlen(string)};
 	
 	ASTnode *data = linkedList_addNode(list, sizeof(ASTnode) + sizeof(ASTnode_type));
-	data->type = ASTnodeType_type;
+	data->nodeType = ASTnodeType_type;
 	data->location = (SourceLocation){0, 0, 0};
 	((ASTnode_type *)data->value)->name = subString;
 }
@@ -87,21 +87,21 @@ char *getLLVMtypeFromType(linkedList_Node **variables, int level, ASTnode *type)
 	return ((Variable_type *)LLVMtypeVariable->value)->LLVMtype;
 }
 
-void generateFunction(GlobalBuilderInformation *GBI, Variable_function *function, ASTnode *node) {
+void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSource, Variable_function *function, ASTnode *node) {
 	ASTnode_function *data = (ASTnode_function *)node->value;
 	
 	if (data->external) {
-		CharAccumulator_appendSubString(GBI->topLevelSource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
+		CharAccumulator_appendSubString(outerSource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
 	}
 	
 	else {
 		char *LLVMreturnType = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)data->returnType->data);
 		
-		CharAccumulator_appendChars(GBI->topLevelSource, "\ndefine ");
-		CharAccumulator_appendChars(GBI->topLevelSource, LLVMreturnType);
-		CharAccumulator_appendChars(GBI->topLevelSource, " @");
-		CharAccumulator_appendSubString(GBI->topLevelSource, data->name);
-		CharAccumulator_appendChars(GBI->topLevelSource, "(");
+		CharAccumulator_appendChars(outerSource, "\ndefine ");
+		CharAccumulator_appendChars(outerSource, LLVMreturnType);
+		CharAccumulator_appendChars(outerSource, " @");
+		CharAccumulator_appendSubString(outerSource, data->name);
+		CharAccumulator_appendChars(outerSource, "(");
 		
 		CharAccumulator functionSource = {100, 0, 0};
 		CharAccumulator_initialize(&functionSource);
@@ -112,9 +112,9 @@ void generateFunction(GlobalBuilderInformation *GBI, Variable_function *function
 			int argumentCount =  linkedList_getCount(&data->argumentTypes);
 			while (1) {
 				char *currentArgumentLLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)currentArgument->data);
-				CharAccumulator_appendChars(GBI->topLevelSource, currentArgumentLLVMtype);
-				CharAccumulator_appendChars(GBI->topLevelSource, " %");
-				CharAccumulator_appendUint(GBI->topLevelSource, function->registerCount);
+				CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
+				CharAccumulator_appendChars(outerSource, " %");
+				CharAccumulator_appendUint(outerSource, function->registerCount);
 				
 				CharAccumulator_appendChars(&functionSource, "\n\t%");
 				CharAccumulator_appendUint(&functionSource, function->registerCount + argumentCount + 1);
@@ -155,7 +155,7 @@ void generateFunction(GlobalBuilderInformation *GBI, Variable_function *function
 					break;
 				}
 				
-				CharAccumulator_appendChars(GBI->topLevelSource, ", ");
+				CharAccumulator_appendChars(outerSource, ", ");
 				currentArgument = currentArgument->next;
 				currentArgumentName = currentArgumentName->next;
 			}
@@ -165,22 +165,22 @@ void generateFunction(GlobalBuilderInformation *GBI, Variable_function *function
 		
 		function->registerCount++;
 		
-		CharAccumulator_appendChars(GBI->topLevelSource, ") {");
-		CharAccumulator_appendChars(GBI->topLevelSource, functionSource.data);
-		buildLLVM(GBI, data->name, NULL, NULL, NULL, data->codeBlock, 0, 0);
+		CharAccumulator_appendChars(outerSource, ") {");
+		CharAccumulator_appendChars(outerSource, functionSource.data);
+		buildLLVM(GBI, data->name, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0);
 		
 		if (!function->hasReturned) {
 			printf("function did not return\n");
 			compileError(node->location);
 		}
 		
-		CharAccumulator_appendChars(GBI->topLevelSource, "\n}");
+		CharAccumulator_appendChars(outerSource, "\n}");
 		
 		CharAccumulator_free(&functionSource);
 	}
 }
 
-void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int withTypes, int withCommas) {
+void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int withTypes, int withCommas) {
 	GBI->level++;
 	if (GBI->level > maxVariablesLevel) {
 		printf("level (%i) > maxVariablesLevel (%i)\n", GBI->level, maxVariablesLevel);
@@ -205,7 +205,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 			
 			ASTnode *node = ((ASTnode *)preLoopCurrent->data);
 			
-			if (node->type == ASTnodeType_function) {
+			if (node->nodeType == ASTnodeType_function) {
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
 				// make sure that the return type actually exists
@@ -265,14 +265,10 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 	// main loop
 	//
 	
-	while (1) {
-		if (current == NULL) {
-			break;
-		}
-		
+	while (current != NULL) {
 		ASTnode *node = ((ASTnode *)current->data);
 		
-		switch (node->type) {
+		switch (node->nodeType) {
 			case ASTnodeType_function: {
 				if (GBI->level != 0) {
 					printf("function definitions are only allowed at top level\n");
@@ -285,7 +281,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				if (functionVariable == NULL || functionVariable->type != VariableType_function) abort();
 				Variable_function *function = (Variable_function *)functionVariable->value;
 				
-				generateFunction(GBI, function, node);
+				generateFunction(GBI, outerSource, function, node);
 				
 				break;
 			}
@@ -334,12 +330,12 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 					CharAccumulator newInnerSource = {100, 0, 0};
 					CharAccumulator_initialize(&newInnerSource);
 					
-					buildLLVM(GBI, outerName, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1);
+					buildLLVM(GBI, outerName, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1);
 					
 					if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
-						CharAccumulator_appendChars(GBI->topLevelSource, "\n\t%");
-						CharAccumulator_appendUint(GBI->topLevelSource, outerFunction->registerCount);
-						CharAccumulator_appendChars(GBI->topLevelSource, " = call ");
+						CharAccumulator_appendChars(outerSource, "\n\t%");
+						CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+						CharAccumulator_appendChars(outerSource, " = call ");
 						
 						if (innerSource != NULL) {
 							if (withTypes) {
@@ -350,14 +346,14 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 							CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
 						}
 					} else {
-						CharAccumulator_appendChars(GBI->topLevelSource, "\n\tcall ");
+						CharAccumulator_appendChars(outerSource, "\n\tcall ");
 					}
-					CharAccumulator_appendChars(GBI->topLevelSource, functionToCall->LLVMreturnType);
-					CharAccumulator_appendChars(GBI->topLevelSource, " @");
-					CharAccumulator_appendChars(GBI->topLevelSource, functionToCall->LLVMname);
-					CharAccumulator_appendChars(GBI->topLevelSource, "(");
-					CharAccumulator_appendChars(GBI->topLevelSource, newInnerSource.data);
-					CharAccumulator_appendChars(GBI->topLevelSource, ")");
+					CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
+					CharAccumulator_appendChars(outerSource, " @");
+					CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
+					CharAccumulator_appendChars(outerSource, "(");
+					CharAccumulator_appendChars(outerSource, newInnerSource.data);
+					CharAccumulator_appendChars(outerSource, ")");
 					
 					CharAccumulator_free(&newInnerSource);
 					
@@ -375,16 +371,58 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 //
 //				break;
 //			}
-//
-//			case ASTnodeType_if: {
-//				if (outerName == NULL) {
-//					printf("if statement in a weird spot\n");
-//					compileError(node->location);
-//				}
-//
-//				break;
-//			}
+			
+			case ASTnodeType_if: {
+				if (outerName == NULL) {
+					printf("if statement in a weird spot\n");
+					compileError(node->location);
+				}
 				
+				ASTnode_if *data = (ASTnode_if *)node->value;
+				
+				Variable *outerFunctionVariable = getBuilderVariable(GBI->variables, GBI->level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				linkedList_Node *expectedTypesForIf = NULL;
+				addTypeAsString(&expectedTypesForIf, "Bool");
+				
+				CharAccumulator expressionSource = {100, 0, 0};
+				CharAccumulator_initialize(&expressionSource);
+				
+				buildLLVM(GBI, outerName, outerSource, &expressionSource, expectedTypesForIf, NULL, data->expression, 1, 0);
+				
+				int jump1 = outerFunction->registerCount;
+				outerFunction->registerCount++;
+				CharAccumulator codeBlockSource = {100, 0, 0};
+				CharAccumulator_initialize(&codeBlockSource);
+				buildLLVM(GBI, outerName, &codeBlockSource, NULL, NULL, NULL, data->codeBlock, 0, 0);
+				int jump2 = outerFunction->registerCount;
+				outerFunction->registerCount++;
+				
+				CharAccumulator_appendChars(outerSource, "\n\tbr ");
+				CharAccumulator_appendChars(outerSource, expressionSource.data);
+				CharAccumulator_appendChars(outerSource, ", label %");
+				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendChars(outerSource, ", label %");
+				CharAccumulator_appendUint(outerSource, jump2);
+				
+				CharAccumulator_appendChars(outerSource, "\n\n");
+				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendChars(outerSource, ":");
+				CharAccumulator_appendChars(outerSource, codeBlockSource.data);
+				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
+				CharAccumulator_appendUint(outerSource, jump2);
+				
+				CharAccumulator_appendChars(outerSource, "\n\n");
+				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendChars(outerSource, ":");
+				
+				CharAccumulator_free(&expressionSource);
+				
+				break;
+			}
+			
 			case ASTnodeType_return: {
 				if (outerName == NULL) {
 					printf("return in a weird spot\n");
@@ -398,16 +436,16 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
 				if (data->expression == NULL) {
-					CharAccumulator_appendChars(GBI->topLevelSource, "\n\tret void");
+					CharAccumulator_appendChars(outerSource, "\n\tret void");
 				} else {
 					CharAccumulator newInnerSource = {100, 0, 0};
 					CharAccumulator_initialize(&newInnerSource);
 					
-					buildLLVM(GBI, outerName, &newInnerSource, outerFunction->returnType, NULL, data->expression, 1, 0);
+					buildLLVM(GBI, outerName, outerSource, &newInnerSource, outerFunction->returnType, NULL, data->expression, 1, 0);
 					
-					CharAccumulator_appendChars(GBI->topLevelSource, "\n\tret ");
+					CharAccumulator_appendChars(outerSource, "\n\tret ");
 					
-					CharAccumulator_appendChars(GBI->topLevelSource, newInnerSource.data);
+					CharAccumulator_appendChars(outerSource, newInnerSource.data);
 					
 					CharAccumulator_free(&newInnerSource);
 				}
@@ -456,25 +494,26 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				CharAccumulator rightInnerSource = {100, 0, 0};
 				CharAccumulator_initialize(&rightInnerSource);
 				
-				buildLLVM(GBI, outerName, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 0, 0);
-				buildLLVM(GBI, outerName, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
+				buildLLVM(GBI, outerName, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 0, 0);
+				buildLLVM(GBI, outerName, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
 				
-				CharAccumulator_appendChars(GBI->topLevelSource, "\n\t%");
-				CharAccumulator_appendUint(GBI->topLevelSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(GBI->topLevelSource, " = ");
-				if (data->operatorType == ASTnode_operatorType_add) {
-					CharAccumulator_appendChars(GBI->topLevelSource, "add");
+				CharAccumulator_appendChars(outerSource, "\n\t%");
+				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				CharAccumulator_appendChars(outerSource, " = ");
+				if (data->operatorType == ASTnode_operatorType_equivalent) {
+					CharAccumulator_appendChars(outerSource, "icmp eq ");
+				} else if (data->operatorType == ASTnode_operatorType_add) {
+					CharAccumulator_appendChars(outerSource, "add nsw ");
 				} else if (data->operatorType == ASTnode_operatorType_subtract) {
-					CharAccumulator_appendChars(GBI->topLevelSource, "sub");
+					CharAccumulator_appendChars(outerSource, "sub nsw ");
 				} else {
 					abort();
 				}
-				CharAccumulator_appendChars(GBI->topLevelSource, " nsw ");
-				CharAccumulator_appendChars(GBI->topLevelSource, expectedLLVMtype);
-				CharAccumulator_appendChars(GBI->topLevelSource, " ");
-				CharAccumulator_appendChars(GBI->topLevelSource, leftInnerSource.data);
-				CharAccumulator_appendChars(GBI->topLevelSource, ", ");
-				CharAccumulator_appendChars(GBI->topLevelSource, rightInnerSource.data);
+				CharAccumulator_appendChars(outerSource, expectedLLVMtype);
+				CharAccumulator_appendChars(outerSource, " ");
+				CharAccumulator_appendChars(outerSource, leftInnerSource.data);
+				CharAccumulator_appendChars(outerSource, ", ");
+				CharAccumulator_appendChars(outerSource, rightInnerSource.data);
 				
 				if (withTypes) {
 					CharAccumulator_appendChars(innerSource, expectedLLVMtype);
@@ -534,7 +573,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 //			}
 				
 			default: {
-				printf("unknown node type: %u\n", node->type);
+				printf("unknown node type: %u\n", node->nodeType);
 				compileError(node->location);
 				break;
 			}

@@ -296,7 +296,6 @@ int main(int argc, char **argv) {
 	CharAccumulator_initialize(&LLVMconstantSource);
 	
 	GlobalBuilderInformation globalBuilderInformation = {
-		&LLVMsource,
 		&LLVMconstantSource,
 		0,
 		
@@ -312,7 +311,7 @@ int main(int argc, char **argv) {
 	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
 	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
 	
-	buildLLVM(&globalBuilderInformation, NULL, NULL, NULL, NULL, AST, 0, 0);
+	buildLLVM(&globalBuilderInformation, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		

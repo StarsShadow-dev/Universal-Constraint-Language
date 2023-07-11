@@ -2,6 +2,11 @@ function main(): Int8 {
 	putchar(97); // a
 	putchar(97 + 1); // b
 	putchar(100 - 1); // c
+
+	if (1) {
+		putchar(100); // d
+	}
+
 	putchar(10); // \n
 
 	return 0;

@@ -43,6 +43,44 @@ int SubString_SubString_cmp(SubString *subString1, SubString *subString2);
 #define SubString_print(subString) printf("%.*s", (subString)->length, (subString)->start)
 
 //
+// variables
+//
+
+// "VariableType_variable" and "Variable_variable" I should probably name this something else
+typedef enum {
+	VariableType_type,
+	VariableType_function,
+	VariableType_variable
+} VariableType;
+
+typedef struct {
+	SubString *key;
+	VariableType type;
+	uint8_t value[] WORD_ALIGNED;
+} Variable;
+
+typedef struct {
+	char *LLVMtype;
+} Variable_type;
+
+typedef struct {
+	char *LLVMname;
+	char *LLVMreturnType;
+	linkedList_Node *argumentTypes;
+	linkedList_Node *returnType;
+	
+	int hasReturned;
+	// for LLVM registers
+	int registerCount;
+} Variable_function;
+
+typedef struct {
+	int LLVMRegister;
+	char *LLVMtype;
+	linkedList_Node *type;
+} Variable_variable;
+
+//
 // lexer, parser and builder
 //
 
@@ -91,7 +129,7 @@ typedef enum {
 } ASTnodeType;
 
 typedef struct {
-	ASTnodeType type;
+	ASTnodeType nodeType;
 	SourceLocation location;
 	uint8_t value[] WORD_ALIGNED;
 } ASTnode;
@@ -164,44 +202,6 @@ typedef struct {
 typedef struct {
 	SubString *name;
 } ASTnode_variable;
-
-//
-// variables
-//
-
-// "VariableType_variable" and "Variable_variable" I should probably name this something else
-typedef enum {
-	VariableType_type,
-	VariableType_function,
-	VariableType_variable
-} VariableType;
-
-typedef struct {
-	SubString *key;
-	VariableType type;
-	uint8_t value[] WORD_ALIGNED;
-} Variable;
-
-typedef struct {
-	char *LLVMtype;
-} Variable_type;
-
-typedef struct {
-	char *LLVMname;
-	char *LLVMreturnType;
-	linkedList_Node *argumentTypes;
-	linkedList_Node *returnType;
-	
-	int hasReturned;
-	// for LLVM registers
-	int registerCount;
-} Variable_function;
-
-typedef struct {
-	int LLVMRegister;
-	char *LLVMtype;
-	linkedList_Node *type;
-} Variable_variable;
 
 //
 // CharAccumulator

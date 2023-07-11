@@ -34,7 +34,7 @@ linkedList_Node *parseType(linkedList_Node **current) {
 	}
 	
 	ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_type));
-	data->type = ASTnodeType_type;
+	data->nodeType = ASTnodeType_type;
 	data->location = token->location;
 	((ASTnode_type *)data->value)->name = &token->subString;
 	
@@ -184,7 +184,7 @@ linkedList_Node *parseOperators(linkedList_Node **current) {
 		
 		ASTnode *data = linkedList_addNode(&operatorAST, sizeof(ASTnode) + sizeof(ASTnode_operator));
 		
-		data->type = ASTnodeType_operator;
+		data->nodeType = ASTnodeType_operator;
 		data->location = operator1->location;
 		
 		if (SubString_string_cmp(&operator1->subString, "==") == 0) {
@@ -278,7 +278,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
-						data->type = ASTnodeType_function;
+						data->nodeType = ASTnodeType_function;
 						data->location = nameToken->location;
 						
 						((ASTnode_function *)data->value)->name = &nameToken->subString;
@@ -290,7 +290,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					} else if (codeStart->type == TokenType_string) {
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
-						data->type = ASTnodeType_function;
+						data->nodeType = ASTnodeType_function;
 						data->location = nameToken->location;
 						
 						((ASTnode_function *)data->value)->name = &nameToken->subString;
@@ -300,7 +300,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						((ASTnode_function *)data->value)->argumentTypes = argumentTypes;
 						
 						ASTnode *codeBlockData = linkedList_addNode(&(((ASTnode_function *)data->value)->codeBlock), sizeof(ASTnode) + sizeof(ASTnode_string));
-						codeBlockData->type = ASTnodeType_string;
+						codeBlockData->nodeType = ASTnodeType_string;
 						codeBlockData->location = codeStart->location;
 						((ASTnode_string *)codeBlockData->value)->value = &codeStart->subString;
 						
@@ -326,7 +326,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
 						
-						data->type = ASTnodeType_return;
+						data->nodeType = ASTnodeType_return;
 						data->location = token->location;
 						
 						((ASTnode_return *)data->value)->expression = expression;
@@ -335,7 +335,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
 						
-						data->type = ASTnodeType_return;
+						data->nodeType = ASTnodeType_return;
 						data->location = token->location;
 						
 						((ASTnode_return *)data->value)->expression = NULL;
@@ -387,7 +387,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variableDefinition));
 					
-					data->type = ASTnodeType_variableDefinition;
+					data->nodeType = ASTnodeType_variableDefinition;
 					data->location = token->location;
 					
 					((ASTnode_variableDefinition *)data->value)->name = &nameToken->subString;
@@ -399,7 +399,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 				else if (SubString_string_cmp(&token->subString, "true") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 					
-					data->type = ASTnodeType_true;
+					data->nodeType = ASTnodeType_true;
 					data->location = token->location;
 					
 					*current = (*current)->next;
@@ -409,7 +409,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 				else if (SubString_string_cmp(&token->subString, "false") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 					
-					data->type = ASTnodeType_false;
+					data->nodeType = ASTnodeType_false;
 					data->location = token->location;
 					
 					*current = (*current)->next;
@@ -446,7 +446,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							
 							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_if));
 							
-							data->type = ASTnodeType_if;
+							data->nodeType = ASTnodeType_if;
 							data->location = token->location;
 							
 							((ASTnode_if *)data->value)->expression = expression;
@@ -478,7 +478,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							
 							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_while));
 							
-							data->type = ASTnodeType_while;
+							data->nodeType = ASTnodeType_while;
 							data->location = token->location;
 							
 							((ASTnode_while *)data->value)->expression = expression;
@@ -501,7 +501,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							
 							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
 							
-							data->type = ASTnodeType_call;
+							data->nodeType = ASTnodeType_call;
 							data->location = token->location;
 							
 							((ASTnode_call *)data->value)->name = &token->subString;
@@ -529,7 +529,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variableAssignment));
 						
-						data->type = ASTnodeType_variableAssignment;
+						data->nodeType = ASTnodeType_variableAssignment;
 						data->location = token->location;
 						
 						((ASTnode_variableAssignment *)data->value)->name = &token->subString;
@@ -540,7 +540,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					else {
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variable));
 						
-						data->type = ASTnodeType_variable;
+						data->nodeType = ASTnodeType_variable;
 						data->location = token->location;
 						((ASTnode_variable *)data->value)->name = &token->subString;
 					}
@@ -551,7 +551,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 			case TokenType_number: {
 				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_number));
 				
-				data->type = ASTnodeType_number;
+				data->nodeType = ASTnodeType_number;
 				data->location = token->location;
 				((ASTnode_number *)data->value)->string = &token->subString;
 				((ASTnode_number *)data->value)->value = parseInt(current).value;
@@ -563,7 +563,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 			case TokenType_string: {
 				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_string));
 				
-				data->type = ASTnodeType_string;
+				data->nodeType = ASTnodeType_string;
 				data->location = token->location;
 				((ASTnode_string *)data->value)->value = &token->subString;
 				
