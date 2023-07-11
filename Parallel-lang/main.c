@@ -298,19 +298,21 @@ int main(int argc, char **argv) {
 	GlobalBuilderInformation globalBuilderInformation = {
 		&LLVMsource,
 		&LLVMconstantSource,
-		0
+		0,
+		
+		// level is -1 so that it starts at 0 for the first iteration
+		-1,
+		{0}
 	};
 	
-	linkedList_Node *variables[maxVariablesLevel] = {0};
-	addBuilderType(&variables[0], &(SubString){"Void", (int)strlen("Void")}, "void");
-	addBuilderType(&variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8");
-	addBuilderType(&variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32");
-	addBuilderType(&variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64");
-	addBuilderType(&variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
-	addBuilderType(&variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
+	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Void", (int)strlen("Void")}, "void");
+	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8");
+	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32");
+	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64");
+	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
+	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
 	
-	// level is -1 so that it starts at 0 for the first iteration
-	buildLLVM(&globalBuilderInformation, (linkedList_Node **)&variables, -1, NULL, NULL, NULL, NULL, AST, 0, 0);
+	buildLLVM(&globalBuilderInformation, NULL, NULL, NULL, NULL, AST, 0, 0);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		

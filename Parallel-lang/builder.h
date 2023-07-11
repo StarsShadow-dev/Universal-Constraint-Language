@@ -8,10 +8,13 @@ typedef struct {
 	CharAccumulator *topLevelConstantSource;
 	
 	int stringCount;
+	
+	int level;
+	linkedList_Node *variables[maxVariablesLevel];
 } GlobalBuilderInformation;
 
 void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMtype);
 
-void buildLLVM(GlobalBuilderInformation *GBI, linkedList_Node **variables, int level, SubString *outerName, CharAccumulator *innerSource, linkedList_Node **expectedTypes, linkedList_Node **types, linkedList_Node *current, int withTypes, int withCommas);
+void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int withTypes, int withCommas);
 
 #endif /* builder_h */

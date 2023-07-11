@@ -109,6 +109,9 @@ void CharAccumulator_initialize(CharAccumulator *accumulator) {
 		printf("malloc failed\n");
 		abort();
 	}
+	
+	// add a NULL bite
+	*accumulator->data = 0;
 }
 
 void CharAccumulator_appendChar(CharAccumulator *accumulator, char character) {
