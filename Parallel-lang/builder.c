@@ -585,15 +585,37 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				break;
 			}
 			
-//			case ASTnodeType_true: {
-//
-//				break;
-//			}
-//
-//			case ASTnodeType_false: {
-//
-//				break;
-//			}
+			case ASTnodeType_true: {
+				
+				if (expectTypeWithString((ASTnode *)expectedTypes->data, "Bool")) {
+					printf("unexpected Bool\n");
+					compileError(node->location);
+				}
+				
+				if (withTypes) {
+					CharAccumulator_appendChars(innerSource, "i1 ");
+				}
+				
+				CharAccumulator_appendChars(innerSource, "true");
+				
+				break;
+			}
+
+			case ASTnodeType_false: {
+				
+				if (expectTypeWithString((ASTnode *)expectedTypes->data, "Bool")) {
+					printf("unexpected Bool\n");
+					compileError(node->location);
+				}
+				
+				if (withTypes) {
+					CharAccumulator_appendChars(innerSource, "i1 ");
+				}
+				
+				CharAccumulator_appendChars(innerSource, "false");
+				
+				break;
+			}
 				
 			case ASTnodeType_number: {
 				ASTnode_number *data = (ASTnode_number *)node->value;
@@ -627,9 +649,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (
-					expectTypeWithString((ASTnode *)expectedTypes->data, "Pointer")
-				) {
+				if (expectTypeWithString((ASTnode *)expectedTypes->data, "Pointer")) {
 					printf("unexpected string\n");
 					compileError(node->location);
 				}
@@ -693,7 +713,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 //
 //				break;
 //			}
-				
+			
 			default: {
 				printf("unknown node type: %u\n", node->nodeType);
 				compileError(node->location);

@@ -1,6 +1,6 @@
 function main(): Int8 {
-	if (2 == 2) {
-		printf("test \e test");
+	if (true) {
+		printf("It is true!\n");
 	}
 
 	return 0;
