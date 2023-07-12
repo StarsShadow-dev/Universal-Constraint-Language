@@ -295,7 +295,7 @@ int main(int argc, char **argv) {
 	CharAccumulator LLVMconstantSource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMconstantSource);
 	
-	GlobalBuilderInformation globalBuilderInformation = {
+	GlobalBuilderInformation GBI = {
 		&LLVMconstantSource,
 		0,
 		
@@ -304,14 +304,17 @@ int main(int argc, char **argv) {
 		{0}
 	};
 	
-	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Void", (int)strlen("Void")}, "void");
-	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8");
-	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32");
-	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64");
-	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
-	addBuilderType(&globalBuilderInformation.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
+	addBuilderType(&GBI.variables[0], &(SubString){"Void", (int)strlen("Void")}, "void");
+	addBuilderType(&GBI.variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8");
+	addBuilderType(&GBI.variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32");
+	addBuilderType(&GBI.variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64");
+	addBuilderType(&GBI.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
+	addBuilderType(&GBI.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
 	
-	buildLLVM(&globalBuilderInformation, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0);
+	buildLLVM(&GBI, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0);
+	
+	CharAccumulator_appendChars(&LLVMsource, LLVMconstantSource.data);
+	CharAccumulator_free(&LLVMconstantSource);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		

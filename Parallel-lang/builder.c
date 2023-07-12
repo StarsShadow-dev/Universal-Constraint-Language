@@ -624,11 +624,71 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				break;
 			}
 				
-//			case ASTnodeType_string: {
-//
-//				break;
-//			}
-//
+			case ASTnodeType_string: {
+				ASTnode_string *data = (ASTnode_string *)node->value;
+				
+				if (
+					expectTypeWithString((ASTnode *)expectedTypes->data, "Pointer")
+				) {
+					printf("unexpected string\n");
+					compileError(node->location);
+				}
+				
+				// + 1 for the NULL byte
+				int stringLength = (unsigned int)(data->value->length + 1);
+				
+				CharAccumulator string = {100, 0, 0};
+				CharAccumulator_initialize(&string);
+				
+				int i = 0;
+				int escaped = 0;
+				while (i < data->value->length) {
+					char character = data->value->start[i];
+					
+					if (escaped) {
+						if (character == '\\') {
+							CharAccumulator_appendChars(&string, "\\\\");
+							stringLength--;
+						} else if (character == 'n') {
+							CharAccumulator_appendChars(&string, "\\0A");
+							stringLength--;
+						} else {
+							printf("unexpected character in string after escape '%c'\n", character);
+							compileError(node->location);
+						}
+						escaped = 0;
+					} else {
+						if (character == '\\') {
+							escaped = 1;
+						} else {
+							CharAccumulator_appendChar(&string, character);
+						}
+					}
+					
+					i++;
+				}
+				
+				CharAccumulator_appendChars(GBI->topLevelConstantSource, "\n@.str.");
+				CharAccumulator_appendUint(GBI->topLevelConstantSource, GBI->stringCount);
+				CharAccumulator_appendChars(GBI->topLevelConstantSource, " = private unnamed_addr constant [");
+				CharAccumulator_appendUint(GBI->topLevelConstantSource, stringLength);
+				CharAccumulator_appendChars(GBI->topLevelConstantSource, " x i8] c\"");
+				CharAccumulator_appendChars(GBI->topLevelConstantSource, string.data);
+				CharAccumulator_appendChars(GBI->topLevelConstantSource, "\\00\""); // the \00 is the NULL byte
+				
+				if (withTypes) {
+					CharAccumulator_appendChars(innerSource, "ptr ");
+				}
+				CharAccumulator_appendChars(innerSource, "@.str.");
+				CharAccumulator_appendUint(innerSource, GBI->stringCount);
+				
+				GBI->stringCount++;
+				
+				CharAccumulator_free(&string);
+				
+				break;
+			}
+			
 //			case ASTnodeType_variable: {
 //
 //				break;
