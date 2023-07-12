@@ -348,6 +348,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 							CharAccumulator_appendChars(innerSource, "%");
 							CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
 						}
+						
+						outerFunction->registerCount++;
 					} else {
 						CharAccumulator_appendChars(outerSource, "\n\tcall ");
 					}
@@ -359,8 +361,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 					CharAccumulator_appendChars(outerSource, ")");
 					
 					CharAccumulator_free(&newInnerSource);
-					
-					outerFunction->registerCount++;
 				}
 				
 				break;
@@ -709,10 +709,45 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				break;
 			}
 			
-//			case ASTnodeType_variable: {
-//
-//				break;
-//			}
+			case ASTnodeType_variable: {
+				ASTnode_variable *data = (ASTnode_variable *)node->value;
+				
+				Variable *outerFunctionVariable = getBuilderVariable(GBI->variables, GBI->level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				Variable *variableVariable = getBuilderVariable(GBI->variables, GBI->level, data->name);
+				if (variableVariable == NULL) {
+					printf("no variable named '");
+					SubString_print(data->name);
+					printf("'\n");
+					compileError(node->location);
+				}
+				Variable_variable *variable = (Variable_variable *)variableVariable->value;
+				
+				CharAccumulator_appendChars(outerSource, "\n\t%");
+				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				CharAccumulator_appendChars(outerSource, " = load ");
+				CharAccumulator_appendChars(outerSource, variable->LLVMtype);
+				CharAccumulator_appendChars(outerSource, ", ptr %");
+				CharAccumulator_appendUint(outerSource, variable->LLVMRegister);
+				if (strcmp(variable->LLVMtype, "ptr") == 0) {
+					CharAccumulator_appendChars(outerSource, ", align 8");
+				} else {
+					CharAccumulator_appendChars(outerSource, ", align 4");
+				}
+				
+				if (withTypes) {
+					CharAccumulator_appendChars(innerSource, variable->LLVMtype);
+					CharAccumulator_appendChars(innerSource, " ");
+				}
+				CharAccumulator_appendChars(innerSource, "%");
+				CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
+				
+				outerFunction->registerCount++;
+				
+				break;
+			}
 			
 			default: {
 				printf("unknown node type: %u\n", node->nodeType);
