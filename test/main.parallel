@@ -1,6 +1,6 @@
 function main(): Int8 {
 	if (2 == 2) {
-		printf("Strings are working again!!!\n");
+		printf("test \e test");
 	}
 
 	return 0;

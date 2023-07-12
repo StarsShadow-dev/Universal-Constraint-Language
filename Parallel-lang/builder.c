@@ -654,7 +654,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 							stringLength--;
 						} else {
 							printf("unexpected character in string after escape '%c'\n", character);
-							compileError(node->location);
+							compileError((SourceLocation){node->location.line, node->location.columnStart + i + 1, node->location.columnEnd - (data->value->length - i)});
 						}
 						escaped = 0;
 					} else {
