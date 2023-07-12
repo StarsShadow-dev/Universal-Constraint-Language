@@ -3,7 +3,7 @@ function main(): Int8 {
 	putchar(97 + 1); // b
 	putchar(100 - 1); // c
 
-	if (1) {
+	if (2 == 2) {
 		putchar(100); // d
 	}
 

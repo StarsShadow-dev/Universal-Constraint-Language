@@ -5,7 +5,7 @@
 #include "builder.h"
 #include "error.h"
 
-void expectTypeWithType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode, SourceLocation location) {
+int expectTypeWithType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode) {
 	if (expectedTypeNode->nodeType != ASTnodeType_type || actualTypeNode->nodeType != ASTnodeType_type) {
 		abort();
 	}
@@ -14,16 +14,13 @@ void expectTypeWithType(ASTnode *expectedTypeNode, ASTnode *actualTypeNode, Sour
 	ASTnode_type *actualType = (ASTnode_type *)actualTypeNode->value;
 	
 	if (SubString_SubString_cmp(expectedType->name, actualType->name) != 0) {
-		printf("expected type '");
-		SubString_print(expectedType->name);
-		printf("' but got type '");
-		SubString_print(actualType->name);
-		printf("'\n");
-		compileError(location);
+		return 1;
 	}
+	
+	return 0;
 }
 
-void expectTypeWithString(ASTnode *expectedTypeNode, char *actualTypeString, SourceLocation location) {
+int expectTypeWithString(ASTnode *expectedTypeNode, char *actualTypeString) {
 	if (expectedTypeNode->nodeType != ASTnodeType_type) {
 		abort();
 	}
@@ -31,11 +28,10 @@ void expectTypeWithString(ASTnode *expectedTypeNode, char *actualTypeString, Sou
 	ASTnode_type *expectedType = (ASTnode_type *)expectedTypeNode->value;
 	
 	if (SubString_string_cmp(expectedType->name, actualTypeString) != 0) {
-		printf("expected type '");
-		SubString_print(expectedType->name);
-		printf("' but got type '%s'\n", actualTypeString);
-		compileError(location);
+		return 1;
 	}
+	
+	return 0;
 }
 
 void addTypeAsString(linkedList_Node **list, char *string) {
@@ -50,6 +46,13 @@ void addTypeAsString(linkedList_Node **list, char *string) {
 	data->nodeType = ASTnodeType_type;
 	data->location = (SourceLocation){0, 0, 0};
 	((ASTnode_type *)data->value)->name = subString;
+}
+
+void addTypeAsType(linkedList_Node **list, ASTnode *typeNode) {
+	ASTnode *data = linkedList_addNode(list, sizeof(ASTnode) + sizeof(ASTnode_type));
+	data->nodeType = ASTnodeType_type;
+	data->location = (SourceLocation){0, 0, 0};
+	memcpy(data->value, typeNode->value, sizeof(ASTnode_type));
 }
 
 void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMtype) {
@@ -308,7 +311,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				Variable_function *functionToCall = (Variable_function *)functionToCallVariable->value;
 				
 				if (types != NULL) {
-					linkedList_join(types, &functionToCall->returnType);
+					addTypeAsType(types, (ASTnode *)functionToCall->returnType->data);
 					break;
 				}
 				
@@ -483,30 +486,80 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				
 				char *expectedLLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)expectedTypes->data);
 				
-				// the expected type for both sides of the operator is the same type that is expected for the operator
-				linkedList_Node *expectedTypeForLeftAndRight = NULL;
-				ASTnode *expectedTypeData = linkedList_addNode(&expectedTypeForLeftAndRight, sizeof(ASTnode) + sizeof(ASTnode_type));
-				memcpy(expectedTypeData, (ASTnode *)expectedTypes->data, sizeof(ASTnode) + sizeof(ASTnode_type));
-				
 				CharAccumulator leftInnerSource = {100, 0, 0};
 				CharAccumulator_initialize(&leftInnerSource);
 				
 				CharAccumulator rightInnerSource = {100, 0, 0};
 				CharAccumulator_initialize(&rightInnerSource);
 				
-				buildLLVM(GBI, outerName, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 0, 0);
-				buildLLVM(GBI, outerName, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
+				linkedList_Node *expectedTypeForLeftAndRight = NULL;
 				
-				CharAccumulator_appendChars(outerSource, "\n\t%");
-				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(outerSource, " = ");
+				// ==
 				if (data->operatorType == ASTnode_operatorType_equivalent) {
-					CharAccumulator_appendChars(outerSource, "icmp eq ");
-				} else if (data->operatorType == ASTnode_operatorType_add) {
-					CharAccumulator_appendChars(outerSource, "add nsw ");
-				} else if (data->operatorType == ASTnode_operatorType_subtract) {
-					CharAccumulator_appendChars(outerSource, "sub nsw ");
-				} else {
+					buildLLVM(GBI, outerName, outerSource, &leftInnerSource, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0);
+					if (
+						expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int8") &&
+						expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int32") &&
+						expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int64")
+					) {
+						if (expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "__Number")) {
+							printf("right now the equivalent operator '==' only works for numbers\n");
+							compileError(node->location);
+						}
+						
+						linkedList_freeList(&expectedTypeForLeftAndRight);
+						buildLLVM(GBI, outerName, outerSource, &leftInnerSource, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0);
+						if (
+							expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int8") &&
+							expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int32") &&
+							expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int64")
+						) {
+							if (expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "__Number")) {
+								printf("right now the equivalent operator '==' only works for numbers\n");
+								compileError(node->location);
+							}
+							
+							// default to Int32
+							linkedList_freeList(&expectedTypeForLeftAndRight);
+							addTypeAsString(&expectedTypeForLeftAndRight, "Int32");
+						}
+					}
+					
+					
+					buildLLVM(GBI, outerName, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 0, 0);
+					buildLLVM(GBI, outerName, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendChars(outerSource, " = icmp eq ");
+				}
+				
+				// +
+				else if (data->operatorType == ASTnode_operatorType_add) {
+					// the expected type for both sides of the operator is the same type that is expected for the operator
+					ASTnode *expectedTypeData = linkedList_addNode(&expectedTypeForLeftAndRight, sizeof(ASTnode) + sizeof(ASTnode_type));
+					memcpy(expectedTypeData, (ASTnode *)expectedTypes->data, sizeof(ASTnode) + sizeof(ASTnode_type));
+					
+					buildLLVM(GBI, outerName, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 0, 0);
+					buildLLVM(GBI, outerName, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendChars(outerSource, " = add nsw ");
+				}
+				
+				// -
+				else if (data->operatorType == ASTnode_operatorType_subtract) {
+					// the expected type for both sides of the operator is the same type that is expected for the operator
+					ASTnode *expectedTypeData = linkedList_addNode(&expectedTypeForLeftAndRight, sizeof(ASTnode) + sizeof(ASTnode_type));
+					memcpy(expectedTypeData, (ASTnode *)expectedTypes->data, sizeof(ASTnode) + sizeof(ASTnode_type));
+					
+					buildLLVM(GBI, outerName, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 0, 0);
+					buildLLVM(GBI, outerName, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendChars(outerSource, " = sub nsw ");
+				}
+				
+				else {
 					abort();
 				}
 				CharAccumulator_appendChars(outerSource, expectedLLVMtype);
@@ -546,8 +599,17 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				ASTnode_number *data = (ASTnode_number *)node->value;
 				
 				if (types != NULL) {
-					addTypeAsString(types, "number");
+					addTypeAsString(types, "__Number");
 					break;
+				}
+				
+				if (
+					expectTypeWithString((ASTnode *)expectedTypes->data, "Int8") &&
+					expectTypeWithString((ASTnode *)expectedTypes->data, "Int32") &&
+					expectTypeWithString((ASTnode *)expectedTypes->data, "Int64")
+				) {
+					printf("unexpected number\n");
+					compileError(node->location);
 				}
 				
 				char *LLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)(*currentExpectedType)->data);
