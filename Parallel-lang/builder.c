@@ -534,13 +534,40 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				break;
 			}
 			
-//			case ASTnodeType_variableAssignment: {
-//				if (outerName == NULL) {
-//					printf("variable assignments are only allowed in a function\n");
-//					compileError(node->location);
-//				}
-//				break;
-//			}
+			case ASTnodeType_variableAssignment: {
+				if (outerName == NULL) {
+					printf("variable assignments are only allowed in a function\n");
+					compileError(node->location);
+				}
+				
+				ASTnode_variableAssignment *data = (ASTnode_variableAssignment *)node->value;
+				
+				Variable *variableVariable = getBuilderVariable(GBI->variables, GBI->level, data->name);
+				if (variableVariable == NULL || variableVariable->type != VariableType_variable) {
+					printf("variable does not exist\n");
+					compileError(node->location);
+				}
+				Variable_variable *variable = (Variable_variable *)variableVariable->value;
+				
+				CharAccumulator expressionSource = {100, 0, 0};
+				CharAccumulator_initialize(&expressionSource);
+				
+				buildLLVM(GBI, outerName, outerSource, &expressionSource, variable->type, NULL, data->expression, 1, 0);
+				
+				CharAccumulator_appendChars(outerSource, "\n\tstore ");
+				CharAccumulator_appendChars(outerSource, expressionSource.data);
+				CharAccumulator_appendChars(outerSource, ", ptr %");
+				CharAccumulator_appendUint(outerSource, variable->LLVMRegister);
+				if (strcmp(variable->LLVMtype, "ptr") == 0) {
+					CharAccumulator_appendChars(outerSource, ", align 8");
+				} else {
+					CharAccumulator_appendChars(outerSource, ", align 4");
+				}
+				
+				CharAccumulator_free(&expressionSource);
+				
+				break;
+			}
 			
 			case ASTnodeType_operator: {
 				ASTnode_operator *data = (ASTnode_operator *)node->value;

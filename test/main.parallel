@@ -3,9 +3,14 @@ function main(): Int8 {
 	var b:Int32 = a + 1;
 	var c:Int32 = a + 2;
 
-	putchar(c - 2); // a
-	putchar(c - 1); // b
-	putchar(a + 2); // c
+	var letter:Int32 = 0;
+
+	letter = b - 1;
+	putchar(letter); // a
+	letter = a + 1;
+	putchar(letter); // b
+	letter = b + 1;
+	putchar(letter); // c
 
 	putchar(10); // \n
 
