@@ -642,8 +642,13 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				
 				linkedList_Node *expectedTypeForLeftAndRight = NULL;
 				
-				// ==
-				if (data->operatorType == ASTnode_operatorType_equivalent) {
+				// all of these operators are very similar and even use the same 'icmp' instruction
+				// https://llvm.org/docs/LangRef.html#fcmp-instruction
+				if (
+					data->operatorType == ASTnode_operatorType_equivalent ||
+					data->operatorType == ASTnode_operatorType_greaterThan ||
+					data->operatorType == ASTnode_operatorType_lessThan
+				) {
 					buildLLVM(GBI, outerName, outerSource, &leftInnerSource, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0);
 					if (
 						expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int8") &&
@@ -651,7 +656,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 						expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int64")
 					) {
 						if (expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "__Number")) {
-							printf("right now the equivalent operator '==' only works for numbers\n");
+							printf("operator expected a number\n");
 							compileError(node->location);
 						}
 						
@@ -663,7 +668,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 							expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int64")
 						) {
 							if (expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "__Number")) {
-								printf("right now the equivalent operator '==' only works for numbers\n");
+								printf("operator expected a number\n");
 								compileError(node->location);
 							}
 							
@@ -678,7 +683,27 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 					buildLLVM(GBI, outerName, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
 					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
-					CharAccumulator_appendChars(outerSource, " = icmp eq ");
+					CharAccumulator_appendChars(outerSource, " = icmp ");
+					
+					if (data->operatorType == ASTnode_operatorType_equivalent) {
+						// eq: yields true if the operands are equal, false otherwise. No sign interpretation is necessary or performed.
+						CharAccumulator_appendChars(outerSource, "eq ");
+					}
+					
+					else if (data->operatorType == ASTnode_operatorType_greaterThan) {
+						// sgt: interprets the operands as signed values and yields true if op1 is greater than op2.
+						CharAccumulator_appendChars(outerSource, "sgt ");
+					}
+					
+					else if (data->operatorType == ASTnode_operatorType_lessThan) {
+						// slt: interprets the operands as signed values and yields true if op1 is less than op2.
+						CharAccumulator_appendChars(outerSource, "slt ");
+					}
+					
+					else {
+						abort();
+					}
+					
 					CharAccumulator_appendChars(outerSource, getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)expectedTypeForLeftAndRight->data));
 				}
 				

@@ -150,15 +150,29 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 int getOperatorPrecedence(SubString *subString) {
 	if (SubString_string_cmp(subString, "||") == 0) {
 		return 1;
-	} else if (SubString_string_cmp(subString, "&&") == 0) {
+	}
+	
+	else if (SubString_string_cmp(subString, "&&") == 0) {
 		return 2;
-	} else if (SubString_string_cmp(subString, "==") == 0) {
+	}
+	
+	else if (
+		SubString_string_cmp(subString, "==") == 0 ||
+		SubString_string_cmp(subString, ">") == 0 ||
+		SubString_string_cmp(subString, "<") == 0
+	) {
 		return 3;
-	} else if (SubString_string_cmp(subString, "+") == 0 || SubString_string_cmp(subString, "-") == 0) {
+	}
+	
+	else if (SubString_string_cmp(subString, "+") == 0 || SubString_string_cmp(subString, "-") == 0) {
 		return 4;
-	} else if (SubString_string_cmp(subString, "*") == 0 || SubString_string_cmp(subString, "/") == 0) {
+	}
+	
+	else if (SubString_string_cmp(subString, "*") == 0 || SubString_string_cmp(subString, "/") == 0) {
 		return 5;
-	} else {
+	}
+	
+	else {
 		abort();
 	}
 }
@@ -189,6 +203,10 @@ linkedList_Node *parseOperators(linkedList_Node **current) {
 		
 		if (SubString_string_cmp(&operator1->subString, "==") == 0) {
 			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_equivalent;
+		} else if (SubString_string_cmp(&operator1->subString, ">") == 0) {
+			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_greaterThan;
+		} else if (SubString_string_cmp(&operator1->subString, "<") == 0) {
+			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_lessThan;
 		} else if (SubString_string_cmp(&operator1->subString, "+") == 0) {
 			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_add;
 		} else if (SubString_string_cmp(&operator1->subString, "-") == 0) {

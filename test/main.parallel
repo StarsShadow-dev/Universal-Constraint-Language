@@ -1,8 +1,9 @@
 function main(): Int8 {
-	var i:Int32 = 0;
+	printLine("Starting loop.");
 
-	while (i == 0) {
-		putchar(97);
+	var i: Int32 = 0;
+	while (i < 5) {
+		printLine("Looping!");
 		i = i + 1;
 	}
 
