@@ -1,18 +1,10 @@
 function main(): Int8 {
-	var a:Int32 = 97;
-	var b:Int32 = a + 1;
-	var c:Int32 = a + 2;
+	var i:Int32 = 0;
 
-	var letter:Int32 = 0;
-
-	letter = b - 1;
-	putchar(letter); // a
-	letter = a + 1;
-	putchar(letter); // b
-	letter = b + 1;
-	putchar(letter); // c
-
-	putchar(10); // \n
+	while (i == 0) {
+		putchar(97);
+		i = i + 1;
+	}
 
 	return 0;
 }
