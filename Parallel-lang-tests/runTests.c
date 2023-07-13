@@ -4,12 +4,22 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <spawn.h>
+#include <time.h>
 
 extern char **environ;
 
 #define BUFFER_SIZE 1024
 #define testPath "./Parallel-lang-tests/tests/"
 #define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
+
+#define SEC_TO_MS(sec) ((sec)*1000)
+#define NS_TO_MS(ns) ((ns)/1000000)
+uint64_t getMilliseconds() {
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    uint64_t ms = SEC_TO_MS((uint64_t)ts.tv_sec) + NS_TO_MS((uint64_t)ts.tv_nsec);
+    return ms;
+}
 
 char *readFile(const char *path) {
 	FILE* file = fopen(path, "r");
@@ -138,7 +148,7 @@ void runTest(char* filePath) {
 }
 
 int main(int argc, char **argv) {
-	printf("Runing Tests:\n");
+	printf("Runing Tests:\n\n");
 
 	char filePath[1024] = testPath;
 	int testPathLength = strlen(testPath);
@@ -151,17 +161,21 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	uint64_t startMilliseconds = getMilliseconds();
+
 	while ((dir = readdir(d)) != NULL) {
 		if (*dir->d_name == '.') {
 			continue;
 		}
 		
-		// this is probably not very safe
 		snprintf(filePath + testPathLength, sizeof(filePath) - testPathLength, "%s", dir->d_name);
 
 		runTest(filePath);
 	}
 
 	closedir(d);
+
+	printf("\nAll tests succeeded in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
+
 	return 0;
 }
