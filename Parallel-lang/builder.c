@@ -123,7 +123,12 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 				CharAccumulator_appendUint(&functionSource, function->registerCount + argumentCount + 1);
 				CharAccumulator_appendChars(&functionSource, " = alloca ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
-				CharAccumulator_appendChars(&functionSource, ", align 8");
+				// align pointers on eight bytes and everything else on four bytes
+				if (strcmp(currentArgumentLLVMtype, "ptr") == 0) {
+					CharAccumulator_appendChars(&functionSource, ", align 8");
+				} else {
+					CharAccumulator_appendChars(&functionSource, ", align 4");
+				}
 				
 				CharAccumulator_appendChars(&functionSource, "\n\tstore ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
@@ -131,7 +136,12 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 				CharAccumulator_appendUint(&functionSource, function->registerCount);
 				CharAccumulator_appendChars(&functionSource, ", ptr %");
 				CharAccumulator_appendUint(&functionSource, function->registerCount + argumentCount + 1);
-				CharAccumulator_appendChars(&functionSource, ", align 8");
+				// align pointers on eight bytes and everything else on four bytes
+				if (strcmp(currentArgumentLLVMtype, "ptr") == 0) {
+					CharAccumulator_appendChars(&functionSource, ", align 8");
+				} else {
+					CharAccumulator_appendChars(&functionSource, ", align 4");
+				}
 				
 				Variable *argumentVariable = getBuilderVariable(GBI->variables, GBI->level, (SubString *)currentArgumentName->data);
 				
@@ -291,7 +301,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				
 			case ASTnodeType_call: {
 				if (outerName == NULL) {
-					printf("function call in a weird spot\n");
+					printf("function calls are only allowed in a function\n");
 					compileError(node->location);
 				}
 				
@@ -368,7 +378,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				
 //			case ASTnodeType_while: {
 //				if (outerName == NULL) {
-//					printf("while loop in a weird spot\n");
+//					printf("while loops are only allowed in a function\n");
 //					compileError(node->location);
 //				}
 //
@@ -377,7 +387,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 			
 			case ASTnodeType_if: {
 				if (outerName == NULL) {
-					printf("if statement in a weird spot\n");
+					printf("if statements are only allowed in a function\n");
 					compileError(node->location);
 				}
 				
@@ -428,7 +438,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 			
 			case ASTnodeType_return: {
 				if (outerName == NULL) {
-					printf("return in a weird spot\n");
+					printf("return statements are only allowed in a function\n");
 					compileError(node->location);
 				}
 				
@@ -458,22 +468,77 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 				break;
 			}
 				
-//			case ASTnodeType_variableDefinition: {
-//				if (outerName == NULL) {
-//					printf("variable definition in a weird spot\n");
-//					compileError(node->location);
-//				}
-//			}
-//
-//				break;
-//			}
-//
+			case ASTnodeType_variableDefinition: {
+				if (outerName == NULL) {
+					printf("variable definitions are only allowed in a function\n");
+					compileError(node->location);
+				}
+				
+				ASTnode_variableDefinition *data = (ASTnode_variableDefinition *)node->value;
+				
+				Variable *variableVariable = getBuilderVariable(GBI->variables, GBI->level, data->name);
+				if (variableVariable != NULL) {
+					printf("The name '");
+					SubString_print(data->name);
+					printf("' is already used.\n");
+					compileError(node->location);
+				}
+				
+				Variable *outerFunctionVariable = getBuilderVariable(GBI->variables, GBI->level, outerName);
+				if (outerFunctionVariable == NULL || outerFunctionVariable->type != VariableType_function) abort();
+				Variable_function *outerFunction = (Variable_function *)outerFunctionVariable->value;
+				
+				char *LLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)data->type->data);
+				
+				CharAccumulator expressionSource = {100, 0, 0};
+				CharAccumulator_initialize(&expressionSource);
+				
+				buildLLVM(GBI, outerName, outerSource, &expressionSource, data->type, NULL, data->expression, 1, 0);
+				
+				CharAccumulator_appendChars(outerSource, "\n\t%");
+				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				CharAccumulator_appendChars(outerSource, " = alloca ");
+				CharAccumulator_appendChars(outerSource, LLVMtype);
+				// align pointers on eight bytes and everything else on four bytes
+				if (strcmp(LLVMtype, "ptr") == 0) {
+					CharAccumulator_appendChars(outerSource, ", align 8");
+				} else {
+					CharAccumulator_appendChars(outerSource, ", align 4");
+				}
+				
+				CharAccumulator_appendChars(outerSource, "\n\tstore ");
+				CharAccumulator_appendChars(outerSource, expressionSource.data);
+				CharAccumulator_appendChars(outerSource, ", ptr %");
+				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				// align pointers on eight bytes and everything else on four bytes
+				if (strcmp(LLVMtype, "ptr") == 0) {
+					CharAccumulator_appendChars(outerSource, ", align 8");
+				} else {
+					CharAccumulator_appendChars(outerSource, ", align 4");
+				}
+				
+				Variable *variableData = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_variable));
+				
+				variableData->key = data->name;
+				
+				variableData->type = VariableType_variable;
+				
+				((Variable_variable *)variableData->value)->LLVMRegister = outerFunction->registerCount;
+				((Variable_variable *)variableData->value)->LLVMtype = LLVMtype;
+				((Variable_variable *)variableData->value)->type = data->type;
+				
+				outerFunction->registerCount++;
+				
+				CharAccumulator_free(&expressionSource);
+				
+				break;
+			}
+			
 //			case ASTnodeType_variableAssignment: {
 //				if (outerName == NULL) {
-//					printf("variable assignment in a weird spot\n");
+//					printf("variable assignments are only allowed in a function\n");
 //					compileError(node->location);
 //				}
-//
 //				break;
 //			}
 			
@@ -586,7 +651,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 			}
 			
 			case ASTnodeType_true: {
-				
 				if (expectTypeWithString((ASTnode *)expectedTypes->data, "Bool")) {
 					printf("unexpected Bool\n");
 					compileError(node->location);
@@ -602,7 +666,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, SubString *outerName, CharAccumula
 			}
 
 			case ASTnodeType_false: {
-				
 				if (expectTypeWithString((ASTnode *)expectedTypes->data, "Bool")) {
 					printf("unexpected Bool\n");
 					compileError(node->location);

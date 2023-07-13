@@ -1,5 +1,13 @@
 function main(): Int8 {
-	printLine("PrintLine is working.");
+	var a:Int32 = 97;
+	var b:Int32 = a + 1;
+	var c:Int32 = a + 2;
+
+	putchar(c - 2); // a
+	putchar(c - 1); // b
+	putchar(a + 2); // c
+
+	putchar(10); // \n
 
 	return 0;
 }
