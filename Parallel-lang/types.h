@@ -50,7 +50,8 @@ int SubString_SubString_cmp(SubString *subString1, SubString *subString2);
 typedef enum {
 	VariableType_type,
 	VariableType_function,
-	VariableType_variable
+	VariableType_variable,
+	VariableType_struct
 } VariableType;
 
 typedef struct {
@@ -79,6 +80,14 @@ typedef struct {
 	char *LLVMtype;
 	linkedList_Node *type;
 } Variable_variable;
+
+typedef struct {
+	char *LLVMname;
+	/// if there is a pointer anywhere in the struct then it must be aligned by eight bytes
+	int hasPointer;
+	
+	linkedList_Node *members;
+} Variable_struct;
 
 //
 // lexer, parser and builder
@@ -109,6 +118,8 @@ typedef struct {
 
 typedef enum {
 	ASTnodeType_type,
+	ASTnodeType_struct,
+	ASTnodeType_new,
 	ASTnodeType_function,
 	ASTnodeType_call,
 	ASTnodeType_while,
@@ -137,6 +148,16 @@ typedef struct {
 typedef struct {
 	SubString *name;
 } ASTnode_type;
+
+typedef struct {
+	SubString *name;
+	linkedList_Node *block;
+} ASTnode_struct;
+
+typedef struct {
+	SubString *name;
+	linkedList_Node *arguments;
+} ASTnode_new;
 
 typedef struct {
 	SubString *name;
