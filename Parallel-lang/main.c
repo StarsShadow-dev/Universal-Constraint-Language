@@ -292,6 +292,9 @@ int main(int argc, char **argv) {
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
 	
+	// declare malloc
+	CharAccumulator_appendChars(&LLVMsource, "\n; for the new keyword\ndeclare ptr @malloc(i64 noundef) allocsize(0)");
+	
 	CharAccumulator LLVMconstantSource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMconstantSource);
 	
@@ -304,12 +307,15 @@ int main(int argc, char **argv) {
 		{0}
 	};
 	
-	addBuilderType(&GBI.variables[0], &(SubString){"Void", (int)strlen("Void")}, "void");
-	addBuilderType(&GBI.variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8");
-	addBuilderType(&GBI.variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32");
-	addBuilderType(&GBI.variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64");
-	addBuilderType(&GBI.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1");
-	addBuilderType(&GBI.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr");
+	addBuilderType(&GBI.variables[0], &(SubString){"Void", (int)strlen("Void")}, "void", 0);
+	addBuilderType(&GBI.variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8", 1);
+	addBuilderType(&GBI.variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32", 4);
+	addBuilderType(&GBI.variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64", 8);
+	// how much space should be made for an i1?
+	// I will do one byte for now
+	addBuilderType(&GBI.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1", 1);
+	// 8 (on a 64 bit machine)
+	addBuilderType(&GBI.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr", 8);
 	
 	buildLLVM(&GBI, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0);
 	

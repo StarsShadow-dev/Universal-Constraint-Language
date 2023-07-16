@@ -57,6 +57,8 @@ typedef enum {
 typedef struct {
 	SubString *key;
 	VariableType type;
+	int byteSize;
+	
 	uint8_t value[] WORD_ALIGNED;
 } Variable;
 

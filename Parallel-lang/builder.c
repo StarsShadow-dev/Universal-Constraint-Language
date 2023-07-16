@@ -55,11 +55,12 @@ void addTypeAsType(linkedList_Node **list, ASTnode *typeNode) {
 	memcpy(data->value, typeNode->value, sizeof(ASTnode_type));
 }
 
-void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMtype) {
+void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMtype, int byteSize) {
 	Variable *data = linkedList_addNode(variables, sizeof(Variable) + sizeof(Variable_type));
 	
 	data->key = key;
 	data->type = VariableType_type;
+	data->byteSize = byteSize;
 	((Variable_type *)data->value)->LLVMtype = LLVMtype;
 }
 
@@ -106,7 +107,7 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 	else {
 		char *LLVMreturnType = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)data->returnType->data);
 		
-		CharAccumulator_appendChars(outerSource, "\ndefine ");
+		CharAccumulator_appendChars(outerSource, "\n\ndefine ");
 		CharAccumulator_appendChars(outerSource, LLVMreturnType);
 		CharAccumulator_appendChars(outerSource, " @");
 		CharAccumulator_appendChars(outerSource, function->LLVMname);
@@ -261,8 +262,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				functionLLVMname[data->name->length] = 0;
 				
 				function->key = data->name;
-				
 				function->type = VariableType_function;
+				// I do not think I need to set byteSize to anything specific
+				function->byteSize = 0;
 				
 				((Variable_function *)function->value)->LLVMname = functionLLVMname;
 				((Variable_function *)function->value)->LLVMreturnType = LLVMreturnType;
@@ -278,6 +280,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				Variable *structVariableData = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_struct));
 				structVariableData->key = data->name;
 				structVariableData->type = VariableType_struct;
+				structVariableData->byteSize = 0;
 				
 				int strlength = strlen("%struct.");
 				
@@ -289,7 +292,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				((Variable_struct *)structVariableData->value)->LLVMname = LLVMname;
 				((Variable_struct *)structVariableData->value)->hasPointer = 0;
 				
-				CharAccumulator_appendChars(outerSource, "%struct.");
+				CharAccumulator_appendChars(outerSource, "\n\n%struct.");
 				CharAccumulator_appendSubString(outerSource, data->name);
 				CharAccumulator_appendChars(outerSource, " = type { ");
 				
@@ -301,13 +304,23 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					ASTnode *node = ((ASTnode *)currentMember->data);
 					
 					if (node->nodeType == ASTnodeType_variableDefinition) {
-						ASTnode_variableDefinition *data = (ASTnode_variableDefinition *)node->value;
+						ASTnode_variableDefinition *memberData = (ASTnode_variableDefinition *)node->value;
 						
-						char *LLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)data->type->data);
+						char *LLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)memberData->type->data);
+						
+						Variable *type = getBuilderVariable(GBI->variables, GBI->level, ((ASTnode_type *)((ASTnode *)memberData->type->data)->value)->name);
+						if (type == NULL) {
+							printf("unknown type: '");
+							SubString_print(((ASTnode_type *)((ASTnode *)memberData->type->data)->value)->name);
+							printf("'\n");
+							compileError(((ASTnode *)memberData->type->data)->location);
+						}
 						
 						if (strcmp(LLVMtype, "ptr") == 0) {
 							((Variable_struct *)structVariableData->value)->hasPointer = 1;
 						}
+						
+						structVariableData->byteSize += type->byteSize;
 						
 						CharAccumulator_appendChars(outerSource, LLVMtype);
 						
@@ -319,18 +332,18 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						// TODO: LLVMRegister
 						((Variable_variable *)variableData->value)->LLVMRegister = 0;
 						((Variable_variable *)variableData->value)->LLVMtype = LLVMtype;
-						((Variable_variable *)variableData->value)->type = data->type;
+						((Variable_variable *)variableData->value)->type = memberData->type;
 						
 					} else if (node->nodeType == ASTnodeType_function) {
-						ASTnode_function *functionData = (ASTnode_function *)node->value;
+						ASTnode_function *memberData = (ASTnode_function *)node->value;
 						
 						// make sure that the return type actually exists
-						Variable *type = getBuilderVariable(GBI->variables, GBI->level, ((ASTnode_type *)((ASTnode *)functionData->returnType->data)->value)->name);
+						Variable *type = getBuilderVariable(GBI->variables, GBI->level, ((ASTnode_type *)((ASTnode *)memberData->returnType->data)->value)->name);
 						if (type == NULL) {
 							printf("unknown type: '");
-							SubString_print(((ASTnode_type *)((ASTnode *)functionData->returnType->data)->value)->name);
+							SubString_print(((ASTnode_type *)((ASTnode *)memberData->returnType->data)->value)->name);
 							printf("'\n");
-							compileError(((ASTnode *)functionData->returnType->data)->location);
+							compileError(((ASTnode *)memberData->returnType->data)->location);
 						}
 						
 						if (type->type != VariableType_type) {
@@ -338,10 +351,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						}
 						
 						// make sure that the types of all arguments actually exist
-						linkedList_Node *currentArgument = functionData->argumentTypes;
+						linkedList_Node *currentArgument = memberData->argumentTypes;
 						while (currentArgument != NULL) {
-		//					SubString_print(((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
-							
 							Variable *currentArgumentType = getBuilderVariable(GBI->variables, GBI->level, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
 							if (currentArgumentType == NULL) {
 								printf("unknown type: '");
@@ -353,16 +364,16 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 							currentArgument = currentArgument->next;
 						}
 						
-						char *LLVMreturnType = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)functionData->returnType->data);
+						char *LLVMreturnType = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)memberData->returnType->data);
 						
 						Variable *function = linkedList_addNode(&((Variable_struct *)structVariableData->value)->members, sizeof(Variable) + sizeof(Variable_function));
 						
 						// TODO: this is a mess
-						int functionLLVMnameLength = data->name->length + functionData->name->length;
+						int functionLLVMnameLength = data->name->length + memberData->name->length;
 						char *functionLLVMname = malloc(functionLLVMnameLength + 2);
 						memcpy(functionLLVMname, data->name->start, data->name->length);
-						*((char *)functionLLVMname + functionData->name->length - 1) = '.';
-						memcpy(functionLLVMname + functionData->name->length, functionData->name->start, functionData->name->length);
+						*((char *)functionLLVMname + memberData->name->length - 1) = '.';
+						memcpy(functionLLVMname + memberData->name->length, memberData->name->start, memberData->name->length);
 						functionLLVMname[functionLLVMnameLength + 1] = 0;
 						
 						function->key = data->name;
@@ -370,8 +381,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						
 						((Variable_function *)function->value)->LLVMname = functionLLVMname;
 						((Variable_function *)function->value)->LLVMreturnType = LLVMreturnType;
-						((Variable_function *)function->value)->argumentTypes = functionData->argumentTypes;
-						((Variable_function *)function->value)->returnType = functionData->returnType;
+						((Variable_function *)function->value)->argumentTypes = memberData->argumentTypes;
+						((Variable_function *)function->value)->returnType = memberData->returnType;
 						((Variable_function *)function->value)->hasReturned = 0;
 						((Variable_function *)function->value)->registerCount = 0;
 						
@@ -436,13 +447,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
 				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(outerSource, " = alloca ");
-				CharAccumulator_appendChars(outerSource, structToInit->LLVMname);
-				if (structToInit->hasPointer) {
-					CharAccumulator_appendChars(outerSource, ", align 8");
-				} else {
-					CharAccumulator_appendChars(outerSource, ", align 4");
-				}
+				CharAccumulator_appendChars(outerSource, " = call ptr @malloc(i64 noundef ");
+				CharAccumulator_appendUint(outerSource, structVariable->byteSize);
+				CharAccumulator_appendChars(outerSource, ") allocsize(0)");
 				
 				CharAccumulator_appendChars(outerSource, "\n\tcall void @");
 				
@@ -704,6 +711,14 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					SubString_print(data->name);
 					printf("' is already used.\n");
 					compileError(node->location);
+				}
+				
+				Variable *type = getBuilderVariable(GBI->variables, GBI->level, ((ASTnode_type *)((ASTnode *)data->type->data)->value)->name);
+				if (type == NULL) {
+					printf("unknown type: '");
+					SubString_print(((ASTnode_type *)((ASTnode *)data->type->data)->value)->name);
+					printf("'\n");
+					compileError(((ASTnode *)data->type->data)->location);
 				}
 				
 				char *LLVMtype = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)data->type->data);
