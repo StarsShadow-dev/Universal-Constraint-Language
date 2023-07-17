@@ -685,6 +685,10 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
 				if (data->expression == NULL) {
+					if (outerFunction->returnType != NULL) {
+						printf("returning void in a function that does not return void\n");
+						compileError(node->location);
+					}
 					CharAccumulator_appendChars(outerSource, "\n\tret void");
 				} else {
 					CharAccumulator newInnerSource = {100, 0, 0};
