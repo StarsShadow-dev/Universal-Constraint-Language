@@ -1,7 +1,3 @@
-/*
-no errors
-*/
-
 function main(): Int8 {
 	// This is the most convoluted way
 	// I have ever put 'abc' to the standard out.

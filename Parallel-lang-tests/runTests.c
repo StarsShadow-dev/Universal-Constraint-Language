@@ -9,7 +9,8 @@
 extern char **environ;
 
 #define BUFFER_SIZE 1024
-#define testPath "./Parallel-lang-tests/tests/"
+#define testPath_fail "./Parallel-lang-tests/fail/"
+#define testPath_succeed "./Parallel-lang-tests/succeed/"
 #define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
 
 #define SEC_TO_MS(sec) ((sec)*1000)
@@ -84,8 +85,8 @@ int checkTestOutput(char *stdout, char *testFileData) {
 	return strncmp(stdout, startOfBlockCommentText, lengthOfTestExpectation) == 0;
 }
 
-void runTest(char* filePath) {
-	printf("runing: %s\n", filePath);
+void runTest(char* filePath, int shouldSucceed) {
+	printf("\nRuning: %s\n", filePath);
 
 	char *text = readFile(filePath);
 
@@ -113,24 +114,34 @@ void runTest(char* filePath) {
 			abort();
 		}
 		else {
-			if (WIFEXITED(status)) {
-				// printf("exit code: %d\n", WEXITSTATUS(status));
-			}
-			else {
+			if (!WIFEXITED(status)) {
 				printf("Compiler failed unexpectedly.\n");
+				abort();
 			}
 
 			close(out[1]);
-			// dump_child_stdout(out[0]);
+
+			// printf("exit code: %d\n", WEXITSTATUS(status));
 
 			char *compiler_stdout = read_stdout(out[0]);
-
-			if (checkTestOutput(compiler_stdout, text)) {
-				printf("Test succeeded.\n");
+			
+			if (shouldSucceed) {
+				if (WEXITSTATUS(status) == 0) {
+					printf("Test succeeded.\n");
+				} else {
+					printf("Test failed.\n");
+					printf("Expected exit code 0 but got exit code: %d\n", WEXITSTATUS(status));
+					printf("compiler_stdout:\n%s", compiler_stdout);
+					exit(1);
+				}
 			} else {
-				printf("Test failed.\n");
-				printf("compiler_stdout:\n%s", compiler_stdout);
-				exit(1);
+				if (checkTestOutput(compiler_stdout, text)) {
+					printf("Test succeeded.\n");
+				} else {
+					printf("Test failed.\n");
+					printf("compiler_stdout:\n%s", compiler_stdout);
+					exit(1);
+				}
 			}
 
 			free(compiler_stdout);
@@ -148,31 +159,58 @@ void runTest(char* filePath) {
 }
 
 int main(int argc, char **argv) {
-	printf("Runing Tests:\n\n");
-
-	char filePath[1024] = testPath;
-	int testPathLength = strlen(testPath);
+	printf("Runing Tests:\n");
 	
 	struct dirent *dir;
-	DIR *d = opendir(testPath);
-
-	if (d == NULL) {
-		printf("Could not open \"%s\"\n", testPath);
-		return 0;
-	}
+	char path[1024];
+	int pathLength;
+	DIR *d;
 
 	uint64_t startMilliseconds = getMilliseconds();
 
+	//
+	// testPath_succeed
+	//
+
+	pathLength = strlen(testPath_succeed);
+	snprintf(path, pathLength + 1, "%s", testPath_succeed);
+
+	d = opendir(path);
+	if (d == NULL) {
+		printf("Could not open \"%s\"\n", path);
+		return 0;
+	}
 	while ((dir = readdir(d)) != NULL) {
 		if (*dir->d_name == '.') {
 			continue;
 		}
 		
-		snprintf(filePath + testPathLength, sizeof(filePath) - testPathLength, "%s", dir->d_name);
+		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(filePath);
+		runTest(path, 1);
 	}
+	closedir(d);
 
+	//
+	// testPath_fail
+	//
+
+	pathLength = strlen(testPath_fail);
+	snprintf(path, pathLength + 1, "%s", testPath_fail);
+	d = opendir(path);
+	if (d == NULL) {
+		printf("Could not open \"%s\"\n", path);
+		return 0;
+	}
+	while ((dir = readdir(d)) != NULL) {
+		if (*dir->d_name == '.') {
+			continue;
+		}
+		
+		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
+
+		runTest(path, 0);
+	}
 	closedir(d);
 
 	printf("\nAll tests succeeded in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
