@@ -34,6 +34,16 @@ int expectTypeWithString(ASTnode *expectedTypeNode, char *actualTypeString) {
 	return 0;
 }
 
+SubString *getTypeAsSubString(ASTnode *typeNode) {
+	if (typeNode->nodeType != ASTnodeType_type) {
+		abort();
+	}
+	
+	ASTnode_type *expectedType = (ASTnode_type *)typeNode->value;
+	
+	return expectedType->name;
+}
+
 void addTypeAsString(linkedList_Node **list, char *string) {
 	SubString *subString = malloc(sizeof(SubString));
 	if (subString == NULL) {
@@ -991,7 +1001,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					expectTypeWithString((ASTnode *)expectedTypes->data, "Int32") &&
 					expectTypeWithString((ASTnode *)expectedTypes->data, "Int64")
 				) {
-					printf("unexpected number\n");
+					printf("Expected type '");
+					SubString_print(getTypeAsSubString((ASTnode *)expectedTypes->data));
+					printf("' but got a number.\n");
 					compileError(node->location);
 				}
 				
