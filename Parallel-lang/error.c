@@ -83,6 +83,13 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 	CharAccumulator_free(&indicator);
 }
 
+void printSpaces(int count) {
+	while (count > 0) {
+		putchar(' ');
+		count--;
+	}
+}
+
 void compileError(SourceLocation location) {
 	int maxLineSize = getSizeOfUint(location.line + 1);
 	
@@ -97,15 +104,30 @@ void compileError(SourceLocation location) {
 		}
 		
 		if (line == location.line - 1) {
-			printf("%d |", location.line - 1);
+			printf("%d", line);
+			int lineSize = getSizeOfUint(line);
+			if (lineSize < maxLineSize) {
+				printSpaces(maxLineSize - lineSize);
+			}
+			printf(" |");
 			printLine(&index);
 			line++;
 		} else if (line == location.line) {
-			printf("%d |", location.line);
+			printf("%d", line);
+			int lineSize = getSizeOfUint(line);
+			if (lineSize < maxLineSize) {
+				printSpaces(maxLineSize - lineSize);
+			}
+			printf(" |");
 			printLineWithIndicator(&index, location.columnStart, location.columnEnd, maxLineSize + 2);
 			line++;
 		} else if (line == location.line + 1) {
-			printf("%d |", location.line + 1);
+			printf("%d", line);
+			int lineSize = getSizeOfUint(line);
+			if (lineSize < maxLineSize) {
+				printSpaces(maxLineSize - lineSize);
+			}
+			printf(" |");
 			printLine(&index);
 			exit(1);
 		} else if (character == '\n') {

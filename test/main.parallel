@@ -1,7 +1,13 @@
+
+
+
+
+
+
 function main(): Int8 {
 	var thing: Pointer = new Thing();
 
-	return 0;
+	return;
 }
 
 struct Thing {
@@ -17,7 +23,7 @@ function printLine(string: Pointer): Void {
 	printf(string);
 	putchar(10); // \n
 	
-	return 0;
+	return;
 }
 
 function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
