@@ -1,13 +1,7 @@
-
-
-
-
-
-
 function main(): Int8 {
 	var thing: Pointer = new Thing();
 
-	return;
+	return 0;
 }
 
 struct Thing {

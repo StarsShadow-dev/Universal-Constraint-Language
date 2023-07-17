@@ -1,6 +1,6 @@
 /*
 no function named 'printLine'
-9 |function main(): Int8 {
+9  |function main(): Int8 {
 10 |    printLine("test");
 ________^^^^^^^^^_________
 11 |

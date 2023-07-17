@@ -1,6 +1,6 @@
 /*
 unknown type: 'notAType'
-9 |function main(): Int8 {
+9  |function main(): Int8 {
 10 |    var a: notAType = 0;
 _______________^^^^^^^^_____
 11 |
