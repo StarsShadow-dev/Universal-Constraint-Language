@@ -296,9 +296,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				CharAccumulator_appendSubString(outerSource, data->name);
 				CharAccumulator_appendChars(outerSource, " = type { ");
 				
-				CharAccumulator methodSource = {100, 0, 0};
-				CharAccumulator_initialize(&methodSource);
-				
 				linkedList_Node *currentMember = data->block;
 				while (currentMember != NULL) {
 					ASTnode *node = ((ASTnode *)currentMember->data);
@@ -385,8 +382,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						((Variable_function *)function->value)->returnType = memberData->returnType;
 						((Variable_function *)function->value)->hasReturned = 0;
 						((Variable_function *)function->value)->registerCount = 0;
-						
-						generateFunction(GBI, &methodSource, (Variable_function *)function->value, node);
 					} else {
 						abort();
 					}
@@ -395,10 +390,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				}
 				
 				CharAccumulator_appendChars(outerSource, " }");
-				
-				CharAccumulator_appendChars(outerSource, methodSource.data);
-				
-				CharAccumulator_free(&methodSource);
 			}
 			
 			preLoopCurrent = preLoopCurrent->next;
@@ -435,6 +426,27 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					printf("struct definitions are only allowed at top level\n");
 					compileError(node->location);
 				}
+				
+				ASTnode_struct *data = (ASTnode_struct *)node->value;
+				
+				Variable *structVariable = getBuilderVariable(GBI->variables, GBI->level, data->name);
+				if (structVariable == NULL || structVariable->type != VariableType_struct) abort();
+				Variable_struct *structVariableData = (Variable_struct *)structVariable->value;
+				
+				linkedList_Node *currentMember = data->block;
+				linkedList_Node *currentMemberVariable = structVariableData->members;
+				while (currentMember != NULL) {
+					ASTnode *memberNode = ((ASTnode *)currentMember->data);
+					Variable *variable = (Variable *)currentMemberVariable->data;
+					
+					if (variable->type == VariableType_function) {
+						generateFunction(GBI, outerSource, (Variable_function *)variable->value, memberNode);
+					}
+					
+					currentMember = currentMember->next;
+					currentMemberVariable = currentMemberVariable->next;
+				}
+				
 				break;
 			}
 			
