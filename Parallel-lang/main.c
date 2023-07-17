@@ -131,8 +131,11 @@ void printHelp(void) {
 	printf("Commands:\n");
 	printf("\n");
 	printf("parallel-lang build_objectFile <config_path>\n");
+	printf("\tcreates an object file\n\n");
 	printf("parallel-lang build_binary <config_path>\n");
+	printf("\tbuild_objectFile and links the object file using clang (clang also links the C standard library)\n\n");
 	printf("parallel-lang run <config_path>\n");
+	printf("\tbuild_binary and runs the binary\n\n");
 }
 
 typedef enum {
