@@ -255,6 +255,9 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 				if (parserMode == ParserMode_expression) {
 					return AST;
 				}
+				// there might be an operator right after this operator
+				// so go back to the top of the while loop
+				continue;
 			}
 		}
 		

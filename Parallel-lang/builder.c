@@ -324,6 +324,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				CharAccumulator_appendSubString(outerSource, data->name);
 				CharAccumulator_appendChars(outerSource, " = type { ");
 				
+				int addComma = 0;
+				
 				linkedList_Node *currentMember = data->block;
 				while (currentMember != NULL) {
 					ASTnode *node = ((ASTnode *)currentMember->data);
@@ -348,6 +350,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						
 						structVariableData->byteSize += type->byteSize;
 						
+						if (addComma) {
+							CharAccumulator_appendChars(outerSource, ", ");
+						}
 						CharAccumulator_appendChars(outerSource, LLVMtype);
 						
 						SubString *nameData = linkedList_addNode(&((Variable_struct *)structVariableData->value)->memberNames, sizeof(SubString));
@@ -365,6 +370,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						((Variable_variable *)variableData->value)->LLVMtype = LLVMtype;
 						((Variable_variable *)variableData->value)->type = memberData->type;
 						
+						addComma = 1;
 					} else if (node->nodeType == ASTnodeType_function) {
 						ASTnode_function *memberData = (ASTnode_function *)node->value;
 						
