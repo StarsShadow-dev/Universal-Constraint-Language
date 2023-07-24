@@ -1,0 +1,6 @@
+{
+	"name": "objectFile",
+
+	"entry_path": "main.parallel",
+	"build_directory": "build"
+}

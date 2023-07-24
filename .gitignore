@@ -9,6 +9,9 @@ DerivedData/
 .netrc
 
 test/build/*
-Parallel-lang/old/*
 
 Parallel-lang-tests/runTests
+
+Parallel-lang/old/*
+Parallel-lang/parallel/build/*
+Parallel-lang/parallel/Parallel-lang-old

@@ -12,6 +12,8 @@
 #include "parser.h"
 #include "builder.h"
 
+#include "fromParallel.h"
+
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
 	if (head == NULL) {
@@ -146,6 +148,8 @@ typedef enum {
 } CompilerMode;
 
 int main(int argc, char **argv) {
+	printf("string: %s\n", getString());
+	
 	CompilerMode compilerMode;
 	
 	if (argc == 1) {

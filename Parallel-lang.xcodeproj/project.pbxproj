@@ -14,6 +14,7 @@
 		020300242A1D0BB70082A063 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300232A1D0BB70082A063 /* error.c */; };
 		020300272A1EBA4A0082A063 /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300262A1EBA4A0082A063 /* parser.c */; };
 		0203002E2A24F49C0082A063 /* builder.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203002D2A24F49C0082A063 /* builder.c */; };
+		028F239D2A6F2D6000279ECC /* objectFile.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 028F239C2A6F2BE000279ECC /* objectFile.o */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -52,6 +53,8 @@
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
 		02392E012A046E2B00F1AE9C /* AcronymsAndAbbreviations.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = AcronymsAndAbbreviations.txt; sourceTree = "<group>"; };
 		026FC18F2A05E22400EF5FD9 /* types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = types.swift; sourceTree = "<group>"; };
+		028F239C2A6F2BE000279ECC /* objectFile.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = objectFile.o; path = "Parallel-lang/parallel/build/objectFile.o"; sourceTree = "<group>"; };
+		028F239E2A6F2E0800279ECC /* fromParallel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fromParallel.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +62,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				028F239D2A6F2D6000279ECC /* objectFile.o in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +88,7 @@
 				02392E012A046E2B00F1AE9C /* AcronymsAndAbbreviations.txt */,
 				02392DF72A04024600F1AE9C /* Parallel-lang */,
 				02392DF62A04024600F1AE9C /* Products */,
+				028F239B2A6F2BDF00279ECC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -114,8 +119,17 @@
 				0203002C2A24F49C0082A063 /* builder.h */,
 				0203002D2A24F49C0082A063 /* builder.c */,
 				0203002B2A2031CA0082A063 /* jsmn.h */,
+				028F239E2A6F2E0800279ECC /* fromParallel.h */,
 			);
 			path = "Parallel-lang";
+			sourceTree = "<group>";
+		};
+		028F239B2A6F2BDF00279ECC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				028F239C2A6F2BE000279ECC /* objectFile.o */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
