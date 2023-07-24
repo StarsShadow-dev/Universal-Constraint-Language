@@ -14,7 +14,7 @@
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
-	if (head == 0) {
+	if (head == NULL) {
 		printf("Tokens: []\n");
 		return;
 	}
@@ -271,9 +271,9 @@ int main(int argc, char **argv) {
 		}
 		
 		source = readFile(actual_entry_path.data);
-#ifdef COMPILER_DEBUG_MODE
-		printf("Source: %s\n", source);
-#endif
+//#ifdef COMPILER_DEBUG_MODE
+//		printf("Source: %s\n", source);
+//#endif
 		
 		free(configJSON);
 		free(build_directory);
@@ -310,17 +310,16 @@ int main(int argc, char **argv) {
 		{0}
 	};
 	
-	addBuilderType(&GBI.variables[0], &(SubString){"Void", (int)strlen("Void")}, "void", 0);
-	addBuilderType(&GBI.variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8", 1);
-	addBuilderType(&GBI.variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32", 4);
-	addBuilderType(&GBI.variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64", 8);
+	addBuilderType(&GBI.variables[0], &(SubString){"Void", (int)strlen("Void")}, "void", 0, 4);
+	addBuilderType(&GBI.variables[0], &(SubString){"Int8", (int)strlen("Int8")}, "i8", 1, 4);
+	addBuilderType(&GBI.variables[0], &(SubString){"Int32", (int)strlen("Int32")}, "i32", 4, 4);
+	addBuilderType(&GBI.variables[0], &(SubString){"Int64", (int)strlen("Int64")}, "i64", 8, 4);
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addBuilderType(&GBI.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1", 1);
-	// 8 (on a 64 bit machine)
-	addBuilderType(&GBI.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr", 8);
+	addBuilderType(&GBI.variables[0], &(SubString){"Bool", (int)strlen("Bool")}, "i1", 1, 4);
+	addBuilderType(&GBI.variables[0], &(SubString){"Pointer", (int)strlen("Pointer")}, "ptr", pointer_byteSize, pointer_byteSize);
 	
-	buildLLVM(&GBI, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0);
+	buildLLVM(&GBI, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
 	
 	CharAccumulator_appendChars(&LLVMsource, LLVMconstantSource.data);
 	CharAccumulator_free(&LLVMconstantSource);

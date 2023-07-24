@@ -148,12 +148,16 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 }
 
 int getOperatorPrecedence(SubString *subString) {
-	if (SubString_string_cmp(subString, "||") == 0) {
+	if (SubString_string_cmp(subString, "=") == 0) {
 		return 1;
 	}
 	
-	else if (SubString_string_cmp(subString, "&&") == 0) {
+	else if (SubString_string_cmp(subString, "||") == 0) {
 		return 2;
+	}
+	
+	else if (SubString_string_cmp(subString, "&&") == 0) {
+		return 3;
 	}
 	
 	else if (
@@ -161,15 +165,19 @@ int getOperatorPrecedence(SubString *subString) {
 		SubString_string_cmp(subString, ">") == 0 ||
 		SubString_string_cmp(subString, "<") == 0
 	) {
-		return 3;
-	}
-	
-	else if (SubString_string_cmp(subString, "+") == 0 || SubString_string_cmp(subString, "-") == 0) {
 		return 4;
 	}
 	
-	else if (SubString_string_cmp(subString, "*") == 0 || SubString_string_cmp(subString, "/") == 0) {
+	else if (SubString_string_cmp(subString, "+") == 0 || SubString_string_cmp(subString, "-") == 0) {
 		return 5;
+	}
+	
+	else if (SubString_string_cmp(subString, "*") == 0 || SubString_string_cmp(subString, "/") == 0) {
+		return 6;
+	}
+	
+	else if (SubString_string_cmp(subString, ".") == 0) {
+		return 7;
 	}
 	
 	else {
@@ -177,52 +185,59 @@ int getOperatorPrecedence(SubString *subString) {
 	}
 }
 
-linkedList_Node *parseOperators(linkedList_Node **current) {
-	Token *operator1 = ((Token *)((*current)->next->data));
-	Token *operator2 = (Token *)((*current)->next->next->next->data);
+linkedList_Node *parseOperators(linkedList_Node **current, linkedList_Node *left, int precedence) {
+	Token *operator = ((Token *)((*current)->data));
 	
-	if (
-		operator2->type == TokenType_operator &&
-		SubString_string_cmp(&operator2->subString, "=") != 0 &&
-		getOperatorPrecedence(&operator1->subString) < getOperatorPrecedence(&operator2->subString)
-	) {
-		printf("Operator precedence is not finished yet.");
-		abort();
-//		return parseOperators(current);
-	} else {
-		linkedList_Node *operatorAST = NULL;
+	if (operator->type == TokenType_operator) {
+		int nextPrecedence = getOperatorPrecedence(&operator->subString);
 		
-		linkedList_Node *left = parse(current, ParserMode_noOperatorChecking);
-		*current = (*current)->next;
-		linkedList_Node *right = parse(current, ParserMode_expression);
-		
-		ASTnode *data = linkedList_addNode(&operatorAST, sizeof(ASTnode) + sizeof(ASTnode_operator));
-		
-		data->nodeType = ASTnodeType_operator;
-		data->location = operator1->location;
-		
-		if (SubString_string_cmp(&operator1->subString, "==") == 0) {
-			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_equivalent;
-		} else if (SubString_string_cmp(&operator1->subString, ">") == 0) {
-			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_greaterThan;
-		} else if (SubString_string_cmp(&operator1->subString, "<") == 0) {
-			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_lessThan;
-		} else if (SubString_string_cmp(&operator1->subString, "+") == 0) {
-			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_add;
-		} else if (SubString_string_cmp(&operator1->subString, "-") == 0) {
-			((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_subtract;
-		} else {
-			abort();
+		if (nextPrecedence > precedence) {
+			linkedList_Node *AST = NULL;
+			
+			*current = (*current)->next;
+			linkedList_Node *right = parseOperators(current, parse(current, ParserMode_noOperatorChecking), nextPrecedence);
+			
+			ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_operator));
+			
+			data->nodeType = ASTnodeType_operator;
+			data->location = operator->location;
+			
+			if (SubString_string_cmp(&operator->subString, "=") == 0) {
+				Token *token = (Token *)((*current)->data);
+				
+				if (CURRENT_IS_NOT_SEMICOLON) {
+					printf("expected ';' after variable assignment\n");
+					compileError(token->location);
+				}
+				*current = (*current)->next;
+				
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_assignment;
+			} else if (SubString_string_cmp(&operator->subString, "==") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_equivalent;
+			} else if (SubString_string_cmp(&operator->subString, ">") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_greaterThan;
+			} else if (SubString_string_cmp(&operator->subString, "<") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_lessThan;
+			} else if (SubString_string_cmp(&operator->subString, "+") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_add;
+			} else if (SubString_string_cmp(&operator->subString, "-") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_subtract;
+			} else if (SubString_string_cmp(&operator->subString, ".") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_memberAccess;
+			} else {
+				abort();
+			}
+			
+			((ASTnode_operator *)data->value)->left = left;
+			((ASTnode_operator *)data->value)->right = right;
+			
+			return parseOperators(current, AST, precedence);
 		}
-		
-		((ASTnode_operator *)data->value)->left = left;
-		((ASTnode_operator *)data->value)->right = right;
-		
-		return operatorAST;
 	}
+	
+	return left;
 }
 
-// operatorPrecedence should be zero when it is not being used
 linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 	linkedList_Node *AST = NULL;
 	
@@ -231,20 +246,19 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 			return AST;
 		}
 		
-		if (parserMode != ParserMode_noOperatorChecking) {
-			if ((*current)->next) {
-				Token *nextToken = (Token *)((*current)->next->data);
-				if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") != 0) {
-					linkedList_Node *operatorAST = parseOperators(current);
-					linkedList_join(&AST, &operatorAST);
-					if (parserMode == ParserMode_expression) {
-						return AST;
-					}
+		if (parserMode != ParserMode_noOperatorChecking && (*current)->next != NULL) {
+			Token *nextToken = (Token *)((*current)->next->data);
+			
+			if (nextToken->type == TokenType_operator) {
+				linkedList_Node *operatorAST = parseOperators(current, parse(current, ParserMode_noOperatorChecking), 0);
+				linkedList_join(&AST, &operatorAST);
+				if (parserMode == ParserMode_expression) {
+					return AST;
 				}
 			}
 		}
 		
-		Token *token = ((Token *)((*current)->data));
+		Token *token = (Token *)((*current)->data);
 		
 		switch (token->type) {
 			case TokenType_word: {
@@ -589,33 +603,6 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							((ASTnode_call *)data->value)->name = &token->subString;
 							((ASTnode_call *)data->value)->arguments = arguments;
 						}
-					}
-					
-					// variable assignment
-					else if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "=") == 0) {
-						if (parserMode != ParserMode_normal) {
-							printf("variable assignment in a weird spot\n");
-							compileError(token->location);
-						}
-						
-						*current = (*current)->next;
-						linkedList_Node *expression = parse(current, ParserMode_expression);
-						
-						if (parserMode == ParserMode_normal) {
-							if (CURRENT_IS_NOT_SEMICOLON) {
-								printf("expected ';' after variable assignment\n");
-								compileError(token->location);
-							}
-							*current = (*current)->next;
-						}
-						
-						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variableAssignment));
-						
-						data->nodeType = ASTnodeType_variableAssignment;
-						data->location = token->location;
-						
-						((ASTnode_variableAssignment *)data->value)->name = &token->subString;
-						((ASTnode_variableAssignment *)data->value)->expression = expression;
 					}
 					
 					// variable

@@ -48,7 +48,7 @@ int SubString_SubString_cmp(SubString *subString1, SubString *subString2);
 
 // "VariableType_variable" and "Variable_variable" I should probably name this something else
 typedef enum {
-	VariableType_type,
+	VariableType_simpleType,
 	VariableType_function,
 	VariableType_variable,
 	VariableType_struct
@@ -58,13 +58,14 @@ typedef struct {
 	SubString *key;
 	VariableType type;
 	int byteSize;
+	int byteAlign;
 	
 	uint8_t value[] WORD_ALIGNED;
 } Variable;
 
 typedef struct {
 	char *LLVMtype;
-} Variable_type;
+} Variable_simpleType;
 
 typedef struct {
 	char *LLVMname;
@@ -85,10 +86,11 @@ typedef struct {
 
 typedef struct {
 	char *LLVMname;
-	/// if there is a pointer anywhere in the struct then it must be aligned by eight bytes
-	int hasPointer;
-	
-	linkedList_Node *members;
+	/// SubString
+	linkedList_Node *memberNames;
+	// for properties and methods
+	/// Variable
+	linkedList_Node *memberVariables;
 } Variable_struct;
 
 //
@@ -131,7 +133,7 @@ typedef enum {
 	ASTnodeType_variableAssignment,
 	ASTnodeType_operator,
 	
-	// I do not really need an ASTnode_true or ASTnode_false because I would not be storing anything in them
+	// I do not really need an ASTnode_true or ASTnode_false struct because I would not be storing anything in them
 	ASTnodeType_true,
 	ASTnodeType_false,
 	
@@ -196,17 +198,14 @@ typedef struct {
 	linkedList_Node *expression;
 } ASTnode_variableDefinition;
 
-typedef struct {
-	SubString *name;
-	linkedList_Node *expression;
-} ASTnode_variableAssignment;
-
 typedef enum {
+	ASTnode_operatorType_assignment,
 	ASTnode_operatorType_equivalent,
 	ASTnode_operatorType_greaterThan,
 	ASTnode_operatorType_lessThan,
 	ASTnode_operatorType_add,
 	ASTnode_operatorType_subtract,
+	ASTnode_operatorType_memberAccess
 } ASTnode_operatorType;
 
 typedef struct {

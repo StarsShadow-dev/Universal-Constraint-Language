@@ -13,7 +13,8 @@
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
-#define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-'
+// periods are considered operators because they perform an operation
+#define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '.'
 #define operator_2chars character == '=' && source[index+1] == '='
 
 linkedList_Node *lex(void) {
