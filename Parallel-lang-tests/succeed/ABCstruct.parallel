@@ -1,0 +1,22 @@
+struct ABC {
+	var a: Int32;
+	var b: Int32;
+	var c: Int32;
+}
+
+function main(): Int8 {
+	var abc: ABC;
+
+	abc.a = 97;
+	abc.b = 98;
+	abc.c = 99;
+
+	putchar(abc.a);
+	putchar(abc.b);
+	putchar(abc.c);
+	putchar(10); // \n
+
+	return 0;
+}
+
+function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"

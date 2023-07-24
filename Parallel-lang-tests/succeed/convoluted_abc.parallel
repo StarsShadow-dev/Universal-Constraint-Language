@@ -1,6 +1,4 @@
 function main(): Int8 {
-	// This is the most convoluted way
-	// I have ever put 'abc' to the standard out.
 	var a: Int32 = 97;
 	var b: Int32 = a + 1;
 	var ABdifference: Int32 = b - a;
