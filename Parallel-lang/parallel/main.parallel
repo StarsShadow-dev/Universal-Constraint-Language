@@ -1,3 +1,5 @@
+// Parallel-lang/parallel/Parallel-lang-old build_objectFile Parallel-lang/parallel/config.json
+
 function getString(): Pointer {
 	return "testing";
 }

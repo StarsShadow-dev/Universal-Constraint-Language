@@ -148,8 +148,6 @@ typedef enum {
 } CompilerMode;
 
 int main(int argc, char **argv) {
-	printf("string: %s\n", getString());
-	
 	CompilerMode compilerMode;
 	
 	if (argc == 1) {
@@ -353,7 +351,7 @@ int main(int argc, char **argv) {
 		CharAccumulator_free(&LLC_command);
 		
 		if (LLC_exitCode != 0) {
-			printf("LLVM error\n");
+			printf("llc error\n");
 			exit(1);
 		}
 		
@@ -410,6 +408,20 @@ int main(int argc, char **argv) {
 		
 		free(name);
 		free(entry_path);
+	} else {
+		CharAccumulator LLC_command = {100, 0, 0};
+		CharAccumulator_initialize(&LLC_command);
+		CharAccumulator_appendChars(&LLC_command, LLC_path);
+		CharAccumulator_appendChars(&LLC_command, " > /dev/null");
+		FILE *fp = popen(LLC_command.data, "w");
+		fprintf(fp, "%s", LLVMsource.data);
+		int LLC_status = pclose(fp);
+		int LLC_exitCode = WEXITSTATUS(LLC_status);
+		CharAccumulator_free(&LLC_command);
+		
+		if (LLC_exitCode != 0) {
+			abort();
+		}
 	}
 	
 	// clean up
@@ -423,10 +435,6 @@ int main(int argc, char **argv) {
 	CharAccumulator_free(&LLVMsource);
 	
 	linkedList_freeList(&tokens);
-	
-	if (compilerMode == CompilerMode_compilerTesting) {
-		printf("no errors\n");
-	}
 	
 	return 0;
 }

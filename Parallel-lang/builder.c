@@ -963,7 +963,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					// figure out what the type of both sides should be
 					//
 					
-					buildLLVM(GBI, outerFunction, outerSource, &leftInnerSource, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0, 0);
+					buildLLVM(GBI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0, 0);
 					if (
 						expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int8") &&
 						expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int32") &&
@@ -975,7 +975,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						}
 						
 						linkedList_freeList(&expectedTypeForLeftAndRight);
-						buildLLVM(GBI, outerFunction, outerSource, &leftInnerSource, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0, 0);
+						buildLLVM(GBI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0, 0);
 						if (
 							expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int8") &&
 							expectTypeWithString((ASTnode *)expectedTypeForLeftAndRight->data, "Int32") &&

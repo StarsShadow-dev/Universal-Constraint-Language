@@ -54,30 +54,30 @@ char *readFile(const char *path) {
 
 char *read_stdout(int filedes) {
 	ssize_t num_read;
-	char *buf;
 	// we are using calloc so that we do not have to add a NULL byte
-	buf = calloc(BUFFER_SIZE, 1);
+	char *buffer = calloc(BUFFER_SIZE, 1);
 
-	num_read = read(filedes, buf, BUFFER_SIZE - 1);
+	num_read = read(filedes, buffer, BUFFER_SIZE - 1);
 	if (num_read > 0) {
 		if (num_read == BUFFER_SIZE - 1) {
 			char throwAway[1];
 			ssize_t count = read(filedes, &throwAway, 1);
 			if (count == 1) {
-				printf("Compiler put too much to stdout.\nLast output:\n%s", buf);
+				printf("Compiler put too much to stdout.\nLast output:\n%s", buffer);
 				exit(1);
 			}
 		}
 	}
 	else {
-		printf("No stdout from the compiler.\n");
-		exit(1);
+		free(buffer);
+		return NULL;
 	}
 
-	return buf;
+	return buffer;
 }
 
 int checkTestOutput(char *stdout, char *testFileData) {
+	if (stdout == NULL) abort();
 	char *startOfBlockCommentText = testFileData + 3;
 	char *endOfBlockComment = strstr(testFileData, "*/");
 	size_t lengthOfTestExpectation = endOfBlockComment - startOfBlockCommentText;
@@ -107,50 +107,49 @@ void runTest(char* filePath, int shouldSucceed) {
 
 	status = posix_spawn(&pid, args[0], &action, NULL, args, environ);
 
-	if (status == 0) {
-		// printf("child pid: %d\n", pid);
-		if (waitpid(pid, &status, 0) < 0) {
-			printf("waitpid error");
+
+	if (status != 0) {
+		printf("posix_spawn error: %s\n", strerror(status));
+		abort();
+	}
+
+	// printf("child pid: %d\n", pid);
+	
+	if (waitpid(pid, &status, 0) < 0) {
+		printf("waitpid error");
+		abort();
+	} else {
+		if (!WIFEXITED(status)) {
+			printf("Compiler failed unexpectedly.\n");
 			abort();
 		}
-		else {
-			if (!WIFEXITED(status)) {
-				printf("Compiler failed unexpectedly.\n");
-				abort();
-			}
 
-			close(out[1]);
-
-			// printf("exit code: %d\n", WEXITSTATUS(status));
-
-			char *compiler_stdout = read_stdout(out[0]);
-			
-			if (shouldSucceed) {
-				if (WEXITSTATUS(status) == 0) {
-					printf("Test succeeded.\n");
-				} else {
-					printf("Test failed.\n");
-					printf("Expected exit code 0 but got exit code: %d\n", WEXITSTATUS(status));
-					printf("compiler_stdout:\n%s", compiler_stdout);
-					exit(1);
-				}
-			} else {
-				if (checkTestOutput(compiler_stdout, text)) {
-					printf("Test succeeded.\n");
-				} else {
-					printf("Test failed.\n");
-					printf("compiler_stdout:\n%s", compiler_stdout);
-					exit(1);
-				}
-			}
-
-			free(compiler_stdout);
-		}
-	}
-	else
-	{
-		printf("posix_spawn error: %s\n", strerror(status));
 		close(out[1]);
+
+		// printf("exit code: %d\n", WEXITSTATUS(status));
+
+		char *compiler_stdout = read_stdout(out[0]);
+		
+		if (shouldSucceed) {
+			if (WEXITSTATUS(status) != 0) {
+				printf("Test failed.\n");
+				printf("Expected exit code 0 but got exit code: %d\n", WEXITSTATUS(status));
+				printf("compiler_stdout:\n%s", compiler_stdout);
+				exit(1);
+			}
+
+			printf("Test succeeded.\n");
+		} else {
+			if (checkTestOutput(compiler_stdout, text)) {
+				printf("Test succeeded.\n");
+			} else {
+				printf("Test failed.\n");
+				printf("compiler_stdout:\n%s", compiler_stdout);
+				exit(1);
+			}
+		}
+
+		free(compiler_stdout);
 	}
 
 	posix_spawn_file_actions_destroy(&action);
