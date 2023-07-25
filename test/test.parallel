@@ -1,0 +1,7 @@
+function inTest(): Void {
+	return;
+}
+
+public function fromTest(): Void {
+	return;
+}
