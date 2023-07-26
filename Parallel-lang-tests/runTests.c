@@ -6,6 +6,9 @@
 #include <spawn.h>
 #include <time.h>
 
+int testsSucceeded = 0;
+int testsFailed = 0;
+
 extern char **environ;
 
 #define BUFFER_SIZE 1024
@@ -132,21 +135,30 @@ void runTest(char* filePath, int shouldSucceed) {
 		
 		if (shouldSucceed) {
 			if (WEXITSTATUS(status) != 0) {
+				printf("\x1B[31m"); // red
 				printf("Test failed.\n");
 				printf("Expected exit code 0 but got exit code: %d\n", WEXITSTATUS(status));
 				printf("compiler_stdout:\n%s", compiler_stdout);
-				exit(1);
-			}
+				printf("\x1B[0m"); // reset
 
-			printf("Test succeeded.\n");
-		} else {
-			if (checkTestOutput(compiler_stdout, text)) {
-				printf("Test succeeded.\n");
+				testsFailed++;
 			} else {
+				printf("    \x1B[32mTest succeeded.\x1B[0m\n");
+				testsSucceeded++;
+			}
+		} else {
+			if (!checkTestOutput(compiler_stdout, text)) {
+				printf("\x1B[31m"); // red
 				printf("Test failed.\n");
 				printf("compiler_stdout:\n%s", compiler_stdout);
-				exit(1);
+				printf("\x1B[0m"); // reset
+
+				testsFailed++;
+			} else {
+				printf("    \x1B[32mTest succeeded.\x1B[0m\n");
+				testsSucceeded++;
 			}
+			
 		}
 
 		free(compiler_stdout);
@@ -212,7 +224,13 @@ int main(int argc, char **argv) {
 	}
 	closedir(d);
 
-	printf("\nAll tests succeeded in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
+	if (testsFailed > 0) {
+		printf("\nRan all tests in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
+	} else {
+		printf("\nAll tests succeeded in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
+	}
+	printf("\x1B[32mtests succeeded: %d\x1B[0m\n", testsSucceeded);
+	printf("\x1B[31mtests failed: %d\x1B[0m\n", testsFailed);
 
 	return 0;
 }
