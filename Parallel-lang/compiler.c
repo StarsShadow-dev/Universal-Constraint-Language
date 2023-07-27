@@ -197,51 +197,58 @@ void compileFile(char *path, GlobalBuilderInformation *GBI, CharAccumulator *LLV
 	buildLLVM(GBI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
 }
 
-void compileModule(char *configPath, CompilerMode compilerMode, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
-	char *projectDirectoryPath = dirname(configPath);
+void compileModule(char *path, CompilerMode compilerMode, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
+	char *projectDirectoryPath = dirname(path);
 	
-	char *configJSON = readFile(configPath);
-	
-	jsmn_parser p;
-	jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
-	jsmn_init(&p);
-	int configJSONcount = jsmn_parse(&p, configJSON, strlen(configJSON), t, 128);
-	
-	char *name = getJsmnString(configJSON, t, 1, configJSONcount, "name");
-	if (name == 0 || name[0] == 0) {
-		printf("No name in file at: ./config.json\n");
-		exit(1);
-	}
-	
-	linkedList_Node *file_paths = getJsmnStringArray(configJSON, t, 1, configJSONcount, "file_paths");
-	if (file_paths == NULL) {
-		printf("No file_paths in file at: ./config.json\n");
-		exit(1);
-	}
-	
-	char *build_directory = getJsmnString(configJSON, t, 1, configJSONcount, "build_directory");
-	if (build_directory == 0 || build_directory[0] == 0) {
-		printf("No build_directory in file at: ./config.json\n");
-		exit(1);
-	}
-	
-	printf("Compiler version: %s\n", CURRENT_VERSION);
-	
+	char *name = NULL;
+	linkedList_Node *file_paths = NULL;
 	CharAccumulator full_build_directory = {100, 0, 0};
-	CharAccumulator_initialize(&full_build_directory);
-	CharAccumulator_appendChars(&full_build_directory, projectDirectoryPath);
-	CharAccumulator_appendChars(&full_build_directory, "/");
-	CharAccumulator_appendChars(&full_build_directory, build_directory);
 	
-	struct stat stat_buffer = {0};
-	if (stat(full_build_directory.data, &stat_buffer) == -1) {
-		printf("The \"build_directory\" specified in the config file does not exist.\n");
-		exit(1);
-	} else {
-		if (!S_ISDIR(stat_buffer.st_mode)) {
-			printf("The \"build_directory\" specified in the config file exists but is not a directory.\n");
+	if (compilerMode != CompilerMode_compilerTesting) {
+		char *configJSON = readFile(path);
+		
+		jsmn_parser p;
+		jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
+		jsmn_init(&p);
+		int configJSONcount = jsmn_parse(&p, configJSON, strlen(configJSON), t, 128);
+		
+		name = getJsmnString(configJSON, t, 1, configJSONcount, "name");
+		if (name == 0 || name[0] == 0) {
+			printf("No name in file at: ./config.json\n");
 			exit(1);
 		}
+		
+		file_paths = getJsmnStringArray(configJSON, t, 1, configJSONcount, "file_paths");
+		if (file_paths == NULL) {
+			printf("No file_paths in file at: ./config.json\n");
+			exit(1);
+		}
+		
+		char *build_directory = getJsmnString(configJSON, t, 1, configJSONcount, "build_directory");
+		if (build_directory == 0 || build_directory[0] == 0) {
+			printf("No build_directory in file at: ./config.json\n");
+			exit(1);
+		}
+		
+		CharAccumulator_initialize(&full_build_directory);
+		CharAccumulator_appendChars(&full_build_directory, projectDirectoryPath);
+		CharAccumulator_appendChars(&full_build_directory, "/");
+		CharAccumulator_appendChars(&full_build_directory, build_directory);
+		
+		struct stat stat_buffer = {0};
+		if (stat(full_build_directory.data, &stat_buffer) == -1) {
+			printf("The \"build_directory\" specified in the config file does not exist.\n");
+			exit(1);
+		} else {
+			if (!S_ISDIR(stat_buffer.st_mode)) {
+				printf("The \"build_directory\" specified in the config file exists but is not a directory.\n");
+				exit(1);
+			}
+		}
+		
+		free(configJSON);
+		
+		free(build_directory);
 	}
 	
 	// declare malloc
@@ -268,17 +275,21 @@ void compileModule(char *configPath, CompilerMode compilerMode, CharAccumulator 
 	addBuilderType(&GBI.variables[0], "Bool", "i1", 1, 4);
 	addBuilderType(&GBI.variables[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
-	linkedList_Node *currentFilePath = file_paths;
-	while (currentFilePath != NULL) {
-		CharAccumulator full_entry_path = {100, 0, 0};
-		CharAccumulator_initialize(&full_entry_path);
-		CharAccumulator_appendChars(&full_entry_path, projectDirectoryPath);
-		CharAccumulator_appendChars(&full_entry_path, "/");
-		CharAccumulator_appendChars(&full_entry_path, (char *)currentFilePath->data);
-		compileFile(full_entry_path.data, &GBI, LLVMsource);
-		CharAccumulator_free(&full_entry_path);
-		
-		currentFilePath = currentFilePath->next;
+	if (compilerMode != CompilerMode_compilerTesting) {
+		linkedList_Node *currentFilePath = file_paths;
+		while (currentFilePath != NULL) {
+			CharAccumulator full_entry_path = {100, 0, 0};
+			CharAccumulator_initialize(&full_entry_path);
+			CharAccumulator_appendChars(&full_entry_path, projectDirectoryPath);
+			CharAccumulator_appendChars(&full_entry_path, "/");
+			CharAccumulator_appendChars(&full_entry_path, (char *)currentFilePath->data);
+			compileFile(full_entry_path.data, &GBI, LLVMsource);
+			CharAccumulator_free(&full_entry_path);
+			
+			currentFilePath = currentFilePath->next;
+		}
+	} else {
+		compileFile(path, &GBI, LLVMsource);
 	}
 	
 	CharAccumulator_appendChars(LLVMsource, LLVMconstantSource.data);
@@ -287,7 +298,6 @@ void compileModule(char *configPath, CompilerMode compilerMode, CharAccumulator 
 	linkedList_freeList(&GBI.variables[0]);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
-		
 #ifdef COMPILER_DEBUG_MODE
 		printf("LLVMsource: %s\n", LLVMsource->data);
 #endif
@@ -366,6 +376,8 @@ void compileModule(char *configPath, CompilerMode compilerMode, CharAccumulator 
 		
 		CharAccumulator_free(&full_build_directory);
 		
+		linkedList_freeList(&file_paths);
+		
 		free(name);
 	} else {
 		CharAccumulator LLC_command = {100, 0, 0};
@@ -388,7 +400,4 @@ void compileModule(char *configPath, CompilerMode compilerMode, CharAccumulator 
 	free(clang_path);
 	
 	free(source);
-	
-	free(configJSON);
-	free(build_directory);
 }

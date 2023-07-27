@@ -64,6 +64,10 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
+	if (compilerMode != CompilerMode_compilerTesting) {
+		printf("Compiler version: %s\n", CURRENT_VERSION);
+	}
+	
 	char *homePath = getenv("HOME");
 	if (homePath == NULL) {
 		printf("No home (getenv(\"HOME\")) failed");
