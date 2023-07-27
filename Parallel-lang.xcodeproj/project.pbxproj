@@ -58,6 +58,7 @@
 		028F239E2A6F2E0800279ECC /* fromParallel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fromParallel.h; sourceTree = "<group>"; };
 		028F239F2A707CBB00279ECC /* compiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		028F23A02A707CBB00279ECC /* compiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = compiler.c; sourceTree = "<group>"; };
+		028F23A22A72D99400279ECC /* Parallel-lang.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Parallel-lang.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +107,7 @@
 		02392DF72A04024600F1AE9C /* Parallel-lang */ = {
 			isa = PBXGroup;
 			children = (
+				028F23A22A72D99400279ECC /* Parallel-lang.entitlements */,
 				020300152A1A7A940082A063 /* old */,
 				020300162A1A7AD90082A063 /* main.h */,
 				020300172A1A7AD90082A063 /* main.c */,
@@ -325,11 +327,14 @@
 		02392DFD2A04024600F1AE9C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = "Parallel-lang/Parallel-lang.entitlements";
+				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 97H32P7425;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -337,11 +342,15 @@
 		02392DFE2A04024600F1AE9C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = "Parallel-lang/Parallel-lang.entitlements";
+				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 97H32P7425;
-				ENABLE_HARDENED_RUNTIME = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

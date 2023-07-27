@@ -15,6 +15,7 @@ extern char **environ;
 #define testPath_fail "./Parallel-lang-tests/fail/"
 #define testPath_succeed "./Parallel-lang-tests/succeed/"
 #define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
+#define target_triple "arm64-apple-macosx13.0.0"
 
 #define SEC_TO_MS(sec) ((sec)*1000)
 #define NS_TO_MS(ns) ((ns)/1000000)
@@ -99,7 +100,7 @@ void runTest(char* filePath, int shouldSucceed) {
 	pid_t pid;
 	int out[2];
 	posix_spawn_file_actions_t action;
-	char *args[] = {compilerPath, "compilerTesting", filePath, NULL};
+	char *args[] = {compilerPath, "compilerTesting", target_triple, filePath, NULL};
 
 	posix_spawn_file_actions_init(&action);
 

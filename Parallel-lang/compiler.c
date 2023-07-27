@@ -197,7 +197,7 @@ void compileFile(char *path, GlobalBuilderInformation *GBI, CharAccumulator *LLV
 	buildLLVM(GBI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
 }
 
-void compileModule(char *path, CompilerMode compilerMode, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
+void compileModule(char *path, char *target_triple, CompilerMode compilerMode, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
 	char *projectDirectoryPath = dirname(path);
 	
 	char *name = NULL;
@@ -311,7 +311,10 @@ void compileModule(char *path, CompilerMode compilerMode, CharAccumulator *LLVMs
 		CharAccumulator LLC_command = {100, 0, 0};
 		CharAccumulator_initialize(&LLC_command);
 		CharAccumulator_appendChars(&LLC_command, LLC_path);
-		CharAccumulator_appendChars(&LLC_command, " -filetype=obj -o ");
+		// -mtriple=<target triple> Override the target triple specified in the input file with the specified string.
+		CharAccumulator_appendChars(&LLC_command, " -mtriple=\"");
+		CharAccumulator_appendChars(&LLC_command, target_triple);
+		CharAccumulator_appendChars(&LLC_command, "\" -filetype=obj -o ");
 		CharAccumulator_appendChars(&LLC_command, outputFilePath.data);
 		CharAccumulator_appendChars(&LLC_command, ".o");
 		FILE *fp = popen(LLC_command.data, "w");

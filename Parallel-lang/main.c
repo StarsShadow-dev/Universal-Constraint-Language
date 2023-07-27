@@ -48,8 +48,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	if (argc != 3) {
-		printf("Unexpected amount of arguments, expected: 2, but got: %d\n", argc - 1);
+	if (argc != 4) {
+		printf("Unexpected amount of arguments, expected: 3, but got: %d\n", argc - 1);
 		exit(1);
 	}
 	
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
 	
-	compileModule(argv[2], compilerMode, &LLVMsource, LLC_path, clang_path);
+	compileModule(argv[3],  argv[2], compilerMode, &LLVMsource, LLC_path, clang_path);
 	
 	free(globalConfigPath);
 	free(globalConfigJSON);
