@@ -181,22 +181,20 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 void compileFile(char *path, GlobalBuilderInformation *GBI, CharAccumulator *LLVMsource) {
 	source = readFile(path);
 	
-#ifdef COMPILER_DEBUG_MODE
-		printf("Source (%s): %s\n", path, source);
-#endif
+//#ifdef COMPILER_DEBUG_MODE
+//	printf("Source (%s): %s\n", path, source);
+//#endif
 	
 	linkedList_Node *tokens = lex();
-#ifdef COMPILER_DEBUG_MODE
-	printTokens(tokens);
-#endif
+//#ifdef COMPILER_DEBUG_MODE
+//	printTokens(tokens);
+//#endif
 	
 	linkedList_Node *currentToken = tokens;
 	
 	linkedList_Node *AST = parse(&currentToken, ParserMode_normal);
 	
 	buildLLVM(GBI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
-	
-	linkedList_freeList(&tokens);
 }
 
 void compileModule(char *configPath, CompilerMode compilerMode, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
@@ -285,6 +283,8 @@ void compileModule(char *configPath, CompilerMode compilerMode, CharAccumulator 
 	
 	CharAccumulator_appendChars(LLVMsource, LLVMconstantSource.data);
 	CharAccumulator_free(&LLVMconstantSource);
+	
+	linkedList_freeList(&GBI.variables[0]);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		
