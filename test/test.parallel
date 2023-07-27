@@ -1,3 +1,15 @@
 function inTest(): Pointer {
 	return "from inTest";
 }
+
+function test(): Void {
+	return;
+}
+
+function test(): Void {
+	return;
+}
+
+// function test(): Int32 {
+// 	return 5;
+// }

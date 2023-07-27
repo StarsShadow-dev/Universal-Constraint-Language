@@ -1,30 +1,38 @@
-struct Thing {
-	function __init(): Void {
-		printLine("initializing a thing");
-		// self.number = 0;
-		return;
-	}
+// struct Thing {
+// 	function __init(): Void {
+// 		printLine("initializing a thing");
+// 		// self.number = 0;
+// 		return;
+// 	}
 
-	var number: Int32;
-}
+// 	var number: Int32;
+// }
 
-function main(): Int8 {
-	// var thing: Pointer = new Thing();
-	// var thing: Thing;
-	// thing.number = 97;
-	// putchar(thing.number);
+// function main(): Int8 {
+// 	// var thing: Pointer = new Thing();
+// 	// var thing: Thing;
+// 	// thing.number = 97;
+// 	// putchar(thing.number);
 
-	printLine(inTest());
+// 	printLine(inTest());
 
-	return 0;
-}
+// 	return 0;
+// }
 
-function printLine(string: Pointer): Void {
-	printf(string);
-	putchar(10); // \n
+// function printLine(string: Pointer): Void {
+// 	printf(string);
+// 	putchar(10); // \n
 	
-	return;
-}
+// 	return;
+// }
 
-function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
-function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
+// function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
+// function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
+
+// function test(): Void {
+// 	return;
+// }
+
+// function test(): Int32 {
+// 	return 2;
+// }

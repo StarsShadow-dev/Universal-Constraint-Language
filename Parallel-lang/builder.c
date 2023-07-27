@@ -137,6 +137,16 @@ char *getLLVMtypeFromType(linkedList_Node **variables, int level, ASTnode *type)
 	abort();
 }
 
+void expectUnusedName(GlobalBuilderInformation *GBI, SubString *name, SourceLocation location) {
+	Variable *variable = getBuilderVariable(GBI->variables, GBI->level, name);
+	if (variable != NULL) {
+		printf("The name '");
+		SubString_print(name);
+		printf("' is already used.\n");
+		compileError(location);
+	}
+}
+
 void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSource, Variable_function *function, ASTnode *node) {
 	ASTnode_function *data = (ASTnode_function *)node->value;
 	
@@ -257,6 +267,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 			if (node->nodeType == ASTnodeType_function) {
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
+				// make sure that the name is not already used
+				expectUnusedName(GBI, data->name, node->location);
+				
 				// make sure that the return type actually exists
 				Variable *type = getBuilderVariable(GBI->variables, GBI->level, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
 				if (type == NULL) {
@@ -288,7 +301,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				char *LLVMreturnType = getLLVMtypeFromType(GBI->variables, GBI->level, (ASTnode *)data->returnType->data);
 				
-				Variable *function = linkedList_addNode(&GBI->variables[0], sizeof(Variable) + sizeof(Variable_function));
+				Variable *function = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_function));
 				
 				char *functionLLVMname = malloc(data->name->length + 1);
 				memcpy(functionLLVMname, data->name->start, data->name->length);
@@ -296,8 +309,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				function->key = data->name;
 				function->type = VariableType_function;
-				// I do not think I need to set byteSize to anything specific
+				// I do not think I need to set byteSize or byteAlign to anything specific
 				function->byteSize = 0;
+				function->byteAlign = 0;
 				
 				((Variable_function *)function->value)->LLVMname = functionLLVMname;
 				((Variable_function *)function->value)->LLVMreturnType = LLVMreturnType;
@@ -774,13 +788,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 //					compileError(node->location);
 //				}
 				
-				Variable *variableVariable = getBuilderVariable(GBI->variables, GBI->level, data->name);
-				if (variableVariable != NULL) {
-					printf("The name '");
-					SubString_print(data->name);
-					printf("' is already used.\n");
-					compileError(node->location);
-				}
+				expectUnusedName(GBI, data->name, node->location);
 				
 				Variable *type = getBuilderVariable(GBI->variables, GBI->level, ((ASTnode_type *)((ASTnode *)data->type->data)->value)->name);
 				if (type == NULL) {
