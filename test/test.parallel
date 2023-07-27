@@ -1,7 +1,3 @@
-function inTest(): Void {
-	return;
-}
-
-public function fromTest(): Void {
-	return;
+function inTest(): Pointer {
+	return "from inTest";
 }

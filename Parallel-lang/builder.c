@@ -65,7 +65,15 @@ void addTypeFromNode(linkedList_Node **list, ASTnode *node) {
 	memcpy(data->value, node->value, sizeof(ASTnode_type));
 }
 
-void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMtype, int byteSize, int byteAlign) {
+void addBuilderType(linkedList_Node **variables, char *name, char *LLVMtype, int byteSize, int byteAlign) {
+	SubString *key = malloc(sizeof(SubString));
+	if (key == NULL) {
+		printf("malloc failed\n");
+		abort();
+	}
+	key->start = name;
+	key->length = (int)strlen(name);
+	
 	Variable *data = linkedList_addNode(variables, sizeof(Variable) + sizeof(Variable_simpleType));
 	
 	data->key = key;
@@ -1263,7 +1271,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 		}
 	}
 	
-	linkedList_freeList(&GBI->variables[GBI->level]);
+	if (GBI->level != 0) {
+		linkedList_freeList(&GBI->variables[GBI->level]);
+	}
 	
 	GBI->level--;
 }

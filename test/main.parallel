@@ -1,5 +1,3 @@
-// import { fromTest } from "test.parallel"
-
 struct Thing {
 	function __init(): Void {
 		printLine("initializing a thing");
@@ -12,11 +10,11 @@ struct Thing {
 
 function main(): Int8 {
 	// var thing: Pointer = new Thing();
-	var thing: Thing;
+	// var thing: Thing;
+	// thing.number = 97;
+	// putchar(thing.number);
 
-	thing.number = 97;
-
-	putchar(thing.number);
+	printLine(inTest());
 
 	return 0;
 }

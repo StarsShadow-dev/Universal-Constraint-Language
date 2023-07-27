@@ -13,7 +13,7 @@ typedef struct {
 	linkedList_Node *variables[maxVariablesLevel];
 } GlobalBuilderInformation;
 
-void addBuilderType(linkedList_Node **variables, SubString *key, char *LLVMtype, int byteSize, int byteAlign);
+void addBuilderType(linkedList_Node **variables, char *name, char *LLVMtype, int byteSize, int byteAlign);
 
 void buildLLVM(
 	GlobalBuilderInformation *GBI,
