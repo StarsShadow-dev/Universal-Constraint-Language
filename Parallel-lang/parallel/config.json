@@ -1,6 +1,8 @@
 {
 	"name": "objectFile",
 
-	"entry_path": "main.parallel",
+	"file_paths": [
+		"help.parallel"
+	],
 	"build_directory": "build"
 }

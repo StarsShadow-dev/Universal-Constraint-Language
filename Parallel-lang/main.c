@@ -1,7 +1,9 @@
 /*
- This file has the main function and printHelp.
+ This file has the main function.
  
  The main function has a simple command line argument parser and then calls compileModule from "compiler.c".
+ 
+ The printHelp function comes from "help.parallel" (#include "fromParallel.h");
  */
 
 #include <stdio.h>
@@ -15,25 +17,12 @@
 #include "globals.h"
 #include "compiler.h"
 
-void printHelp(void) {
-	printf("Compiler version: %s\n", CURRENT_VERSION);
-	printf("\n");
-	printf("Usage: parallel-lang <command> [<args>]\n");
-	printf("\n");
-	printf("Commands:\n");
-	printf("\n");
-	printf("parallel-lang build_objectFile <config_path>\n");
-	printf("\tcreates an object file\n\n");
-	printf("parallel-lang build_binary <config_path>\n");
-	printf("\tbuild_objectFile and links the object file using clang (clang also links the C standard library)\n\n");
-	printf("parallel-lang run <config_path>\n");
-	printf("\tbuild_binary and runs the binary\n\n");
-}
-
 int main(int argc, char **argv) {
 	CompilerMode compilerMode;
 	
 	if (argc == 1) {
+		printf("Compiler version: %s\n", CURRENT_VERSION);
+		printf("\n");
 		printHelp();
 		exit(1);
 	}
