@@ -1,3 +1,9 @@
+/*
+ This file has the main function and printHelp.
+ 
+ The main function has a simple command line argument parser and then calls compileModule from "compiler.c".
+ */
+
 #include <stdio.h>
 #include <string.h>
 
