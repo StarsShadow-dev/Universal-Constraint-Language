@@ -9,12 +9,9 @@
 // }
 
 function main(): Int8 {
-	// var thing: Pointer = new Thing();
-	// var thing: Thing;
-	// thing.number = 97;
-	// putchar(thing.number);
-
 	printLine(inTest());
+
+	notAFunction();
 
 	var a: printLine = 0;
 

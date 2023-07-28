@@ -584,9 +584,11 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				Variable *functionToCallVariable = getBuilderVariableFromSubString(GBI, data->name);
 				if (functionToCallVariable == NULL || functionToCallVariable->type != VariableType_function) {
-					printf("no function named '");
-					SubString_print(data->name);
-					printf("'\n");
+					addStringToErrorMsg("unknown function");
+					
+					addStringToErrorIndicator("no function named '");
+					addSubStringToErrorIndicator(data->name);
+					addStringToErrorIndicator("'");
 					compileError(node->location);
 				}
 				Variable_function *functionToCall = (Variable_function *)functionToCallVariable->value;
