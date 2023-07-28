@@ -16,9 +16,6 @@ function main(): Int8 {
 
 	printLine(inTest());
 
-	var thing: Int32;
-	var thing: Int32;
-
 	return 0;
 }
 

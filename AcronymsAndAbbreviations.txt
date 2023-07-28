@@ -1,6 +1,7 @@
 Acronyms and abbreviations for better code readability.
 
 char - character
+msg - message
 
 LLVM - https://llvm.org
 AST - Abstract Syntax Tree
