@@ -1,4 +1,4 @@
-// Parallel-lang/parallel/Parallel-lang-old build_objectFile arm64-apple-macosx13.0.0 Parallel-lang/parallel/config.json
+// ~/.Parallel_Lang/Parallel-lang build_objectFile arm64-apple-macosx13.0.0 Parallel-lang/parallel/config.json
 
 function printHelp(): Void {
 	printf("Usage: parallel-lang <command> [<args>]\n");
