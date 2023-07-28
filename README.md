@@ -17,7 +17,7 @@ But it may work on other platforms.
 
 If you get an error message like `“Parallel-lang” cannot be opened because it is from an unidentified developer`.
 
-This is probably because safari gave the executable the `com.apple.quarantine` attribute.
+This is probably because your web browser gave the executable the `com.apple.quarantine` attribute.
 
 You can list the attributes on the binary with:
 ```
