@@ -4,6 +4,26 @@
 #include "error.h"
 #include "globals.h"
 
+CharAccumulator errorMsg = {100, 0, 0};
+
+void addStringToErrorMsg(char *string) {
+	CharAccumulator_appendChars(&errorMsg, string);
+}
+
+void addSubStringToErrorMsg(SubString *subString) {
+	CharAccumulator_appendSubString(&errorMsg, subString);
+}
+
+CharAccumulator errorIndicator = {100, 0, 0};
+
+void addStringToErrorIndicator(char *string) {
+	CharAccumulator_appendChars(&errorIndicator, string);
+}
+
+void addSubStringToErrorIndicator(SubString *subString) {
+	CharAccumulator_appendSubString(&errorIndicator, subString);
+}
+
 // there might be a simpler way of doing this
 // But this works!
 int getSizeOfUint(unsigned int number) {
@@ -40,7 +60,7 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 	CharAccumulator_initialize(&indicator);
 	
 	for (int i = 0; i < indicatorOffset; i++) {
-		CharAccumulator_appendChars(&indicator, "_");
+		CharAccumulator_appendChars(&indicator, " ");
 	}
 	
 	int i = 0;
@@ -61,7 +81,7 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 			if (i > columnStart && i < columnEnd) {
 				CharAccumulator_appendChars(&indicator, "^^^^");
 			} else {
-				CharAccumulator_appendChars(&indicator, "____");
+				CharAccumulator_appendChars(&indicator, "    ");
 			}
 		} else {
 			putchar(character);
@@ -70,15 +90,22 @@ void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indi
 			
 			if (i > columnStart && i <= columnEnd) {
 				CharAccumulator_appendChars(&indicator, "^");
+			} else if (i > columnEnd) {
+				
 			} else {
-				CharAccumulator_appendChars(&indicator, "_");
+				CharAccumulator_appendChars(&indicator, " ");
 			}
 		}
 		
 		(*index) += 1;
 	}
 	
-	printf("%s\n", indicator.data);
+	if (errorIndicator.size > 0) {
+		printf("%s %s\n", indicator.data, errorIndicator.data);
+		CharAccumulator_initialize(&errorIndicator);
+	} else {
+		printf("%s\n", indicator.data);
+	}
 	
 	CharAccumulator_free(&indicator);
 }
@@ -91,6 +118,11 @@ void printSpaces(int count) {
 }
 
 void compileError(SourceLocation location) {
+	if (errorMsg.size > 0) {
+		printf("\x1B[31merror\x1B[0m: %s", errorMsg.data);
+		CharAccumulator_initialize(&errorMsg);
+	}
+	
 	int maxLineSize = getSizeOfUint(location.line + 1);
 	
 	int index = 0;
@@ -100,7 +132,7 @@ void compileError(SourceLocation location) {
 		
 		if (character == 0) {
 			putchar('\n');
-			exit(1);
+			break;
 		}
 		
 		if (line == location.line - 1) {
@@ -129,11 +161,13 @@ void compileError(SourceLocation location) {
 			}
 			printf(" |");
 			printLine(&index);
-			exit(1);
+			break;
 		} else if (character == '\n') {
 			line++;
 		}
 		
 		index++;
 	}
+	
+	exit(1);
 }

@@ -283,7 +283,10 @@ void compileModule(char *path, char *target_triple, CompilerMode compilerMode, C
 			CharAccumulator_appendChars(&full_entry_path, projectDirectoryPath);
 			CharAccumulator_appendChars(&full_entry_path, "/");
 			CharAccumulator_appendChars(&full_entry_path, (char *)currentFilePath->data);
+			
+			printf("Compiling file: %s\n", (char *)currentFilePath->data);
 			compileFile(full_entry_path.data, &GBI, LLVMsource);
+			
 			CharAccumulator_free(&full_entry_path);
 			
 			currentFilePath = currentFilePath->next;

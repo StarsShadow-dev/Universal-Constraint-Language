@@ -11,6 +11,7 @@
 
 #include "fromParallel.h"
 
+#include "error.h"
 #include "jsmn.h"
 #include "main.h"
 #include "types.h"
@@ -96,6 +97,9 @@ int main(int argc, char **argv) {
 	
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
+	
+	CharAccumulator_initialize(&errorMsg);
+	CharAccumulator_initialize(&errorIndicator);
 	
 	compileModule(argv[3],  argv[2], compilerMode, &LLVMsource, LLC_path, clang_path);
 	

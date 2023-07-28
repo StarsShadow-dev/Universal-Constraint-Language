@@ -1,3 +1,3 @@
 #include "globals.h"
 
-char *source = 0;
+char *source = NULL;

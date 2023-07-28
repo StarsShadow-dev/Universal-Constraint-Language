@@ -109,20 +109,20 @@ Variable *getBuilderVariableFromSubString(GlobalBuilderInformation *GBI, SubStri
 //	int index = level;
 //	while (index >= 0) {
 //		linkedList_Node *current = variables[index];
-//		
+//
 //		while (current != NULL) {
 //			Variable *variable = ((Variable *)current->data);
-//			
+//
 //			if (SubString_string_cmp(variable->key, key) == 0) {
 //				return variable;
 //			}
-//			
+//
 //			current = current->next;
 //		}
-//		
+//
 //		index--;
 //	}
-//	
+//
 //	return NULL;
 //}
 
@@ -161,9 +161,14 @@ char *getLLVMtypeFromType(GlobalBuilderInformation *GBI, ASTnode *type) {
 void expectUnusedName(GlobalBuilderInformation *GBI, SubString *name, SourceLocation location) {
 	Variable *variable = getBuilderVariableFromSubString(GBI, name);
 	if (variable != NULL) {
-		printf("The name '");
-		SubString_print(name);
-		printf("' is already used.\n");
+		addStringToErrorMsg("the name '");
+		addSubStringToErrorMsg(name);
+		addStringToErrorMsg("' is defined multiple times.\n");
+		
+		
+		addStringToErrorIndicator("'");
+		addSubStringToErrorIndicator(name);
+		addStringToErrorIndicator("' redefined here");
 		compileError(location);
 	}
 }

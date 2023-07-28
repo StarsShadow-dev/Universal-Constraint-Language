@@ -61,6 +61,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "arm64-apple-macosx13.0.0"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "test/config.json"
             isEnabled = "YES">
          </CommandLineArgument>

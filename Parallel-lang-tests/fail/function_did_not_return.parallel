@@ -2,7 +2,7 @@
 function did not return
 8  |
 9  |function main(): Void {
-_____________^^^^__________
+             ^^^^
 10 |
 */
 
