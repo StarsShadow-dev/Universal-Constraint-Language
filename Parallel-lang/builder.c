@@ -163,14 +163,40 @@ void expectUnusedName(GlobalBuilderInformation *GBI, SubString *name, SourceLoca
 	if (variable != NULL) {
 		addStringToErrorMsg("the name '");
 		addSubStringToErrorMsg(name);
-		addStringToErrorMsg("' is defined multiple times.\n");
-		
+		addStringToErrorMsg("' is defined multiple times.");
 		
 		addStringToErrorIndicator("'");
 		addSubStringToErrorIndicator(name);
 		addStringToErrorIndicator("' redefined here");
 		compileError(location);
 	}
+}
+
+Variable *expectTypeExists(GlobalBuilderInformation *GBI, SubString *name, SourceLocation location) {
+	Variable *variable = getBuilderVariableFromSubString(GBI, name);
+	if (variable == NULL) {
+		addStringToErrorMsg("use of undeclared type");
+		
+		addStringToErrorIndicator("nothing named '");
+		addSubStringToErrorIndicator(name);
+		addStringToErrorIndicator("'");
+		compileError(location);
+	}
+	
+	if (variable->type != VariableType_simpleType && variable->type != VariableType_struct) {
+		if (variable->type == VariableType_function) {
+			addStringToErrorMsg("expected type but got a function");
+		} else {
+			abort();
+		}
+		
+		addStringToErrorIndicator("'");
+		addSubStringToErrorIndicator(name);
+		addStringToErrorIndicator("' is not a type");
+		compileError(location);
+	}
+	
+	return variable;
 }
 
 void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSource, Variable_function *function, ASTnode *node) {
@@ -297,30 +323,12 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				expectUnusedName(GBI, data->name, node->location);
 				
 				// make sure that the return type actually exists
-				Variable *type = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
-				if (type == NULL) {
-					printf("unknown type: '");
-					SubString_print(((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name);
-					printf("'\n");
-					compileError(((ASTnode *)data->returnType->data)->location);
-				}
-				
-				if (type->type != VariableType_simpleType) {
-					abort();
-				}
+				expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)data->returnType->data)->value)->name, ((ASTnode *)data->returnType->data)->location);
 				
 				// make sure that the types of all arguments actually exist
 				linkedList_Node *currentArgument = data->argumentTypes;
 				while (currentArgument != NULL) {
-//					SubString_print(((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
-					
-					Variable *currentArgumentType = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
-					if (currentArgumentType == NULL) {
-						printf("unknown type: '");
-						SubString_print(((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
-						printf("'\n");
-						compileError(((ASTnode *)currentArgument->data)->location);
-					}
+					expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
 					
 					currentArgument = currentArgument->next;
 				}
@@ -383,20 +391,14 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						
 						char *LLVMtype = getLLVMtypeFromType(GBI, (ASTnode *)memberData->type->data);
 						
-						Variable *type = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)memberData->type->data)->value)->name);
-						if (type == NULL) {
-							printf("unknown type: '");
-							SubString_print(((ASTnode_type *)((ASTnode *)memberData->type->data)->value)->name);
-							printf("'\n");
-							compileError(((ASTnode *)memberData->type->data)->location);
-						}
+						Variable *typeVariable = expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)memberData->type->data)->value)->name, ((ASTnode *)memberData->type->data)->location);
 						
 						// if there is a pointer anywhere in the struct then the struct should be aligned by pointer_byteSize
 						if (strcmp(LLVMtype, "ptr") == 0) {
 							structVariableData->byteAlign = pointer_byteSize;
 						}
 						
-						structVariableData->byteSize += type->byteSize;
+						structVariableData->byteSize += typeVariable->byteSize;
 						
 						if (addComma) {
 							CharAccumulator_appendChars(outerSource, ", ");
@@ -410,8 +412,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						
 						variableData->key = data->name;
 						variableData->type = VariableType_variable;
-						variableData->byteSize = type->byteSize;
-						variableData->byteAlign = type->byteSize;
+						variableData->byteSize = typeVariable->byteSize;
+						variableData->byteAlign = typeVariable->byteSize;
 						
 						// TODO: LLVMRegister
 						((Variable_variable *)variableData->value)->LLVMRegister = 0;
@@ -423,28 +425,12 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						ASTnode_function *memberData = (ASTnode_function *)node->value;
 						
 						// make sure that the return type actually exists
-						Variable *type = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)memberData->returnType->data)->value)->name);
-						if (type == NULL) {
-							printf("unknown type: '");
-							SubString_print(((ASTnode_type *)((ASTnode *)memberData->returnType->data)->value)->name);
-							printf("'\n");
-							compileError(((ASTnode *)memberData->returnType->data)->location);
-						}
-						
-						if (type->type != VariableType_simpleType) {
-							abort();
-						}
+						expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)memberData->returnType->data)->value)->name, ((ASTnode *)memberData->returnType->data)->location);
 						
 						// make sure that the types of all arguments actually exist
 						linkedList_Node *currentArgument = memberData->argumentTypes;
 						while (currentArgument != NULL) {
-							Variable *currentArgumentType = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
-							if (currentArgumentType == NULL) {
-								printf("unknown type: '");
-								SubString_print(((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
-								printf("'\n");
-								compileError(((ASTnode *)currentArgument->data)->location);
-							}
+							expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
 							
 							currentArgument = currentArgument->next;
 						}
@@ -816,13 +802,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				expectUnusedName(GBI, data->name, node->location);
 				
-				Variable *type = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)data->type->data)->value)->name);
-				if (type == NULL) {
-					printf("unknown type: '");
-					SubString_print(((ASTnode_type *)((ASTnode *)data->type->data)->value)->name);
-					printf("'\n");
-					compileError(((ASTnode *)data->type->data)->location);
-				}
+				Variable* typeVariable = expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)data->type->data)->value)->name, ((ASTnode *)data->type->data)->location);
 				
 				char *LLVMtype = getLLVMtypeFromType(GBI, (ASTnode *)data->type->data);
 				
@@ -836,7 +816,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				CharAccumulator_appendChars(outerSource, " = alloca ");
 				CharAccumulator_appendChars(outerSource, LLVMtype);
 				CharAccumulator_appendChars(outerSource, ", align ");
-				CharAccumulator_appendUint(outerSource, type->byteAlign);
+				CharAccumulator_appendUint(outerSource, typeVariable->byteAlign);
 				
 				if (data->expression != NULL) {
 					CharAccumulator_appendChars(outerSource, "\n\tstore ");
@@ -844,7 +824,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					CharAccumulator_appendChars(outerSource, ", ptr %");
 					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, ", align ");
-					CharAccumulator_appendUint(outerSource, type->byteAlign);
+					CharAccumulator_appendUint(outerSource, typeVariable->byteAlign);
 				}
 				
 				Variable *variableData = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_variable));

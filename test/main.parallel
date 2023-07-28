@@ -16,6 +16,8 @@ function main(): Int8 {
 
 	printLine(inTest());
 
+	var a: printLine = 0;
+
 	return 0;
 }
 

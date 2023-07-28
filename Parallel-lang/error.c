@@ -119,7 +119,8 @@ void printSpaces(int count) {
 
 void compileError(SourceLocation location) {
 	if (errorMsg.size > 0) {
-		printf("\x1B[31merror\x1B[0m: %s", errorMsg.data);
+		// \x1B[31m \x1B[0m
+		printf("error: %s\n", errorMsg.data);
 		CharAccumulator_initialize(&errorMsg);
 	}
 	

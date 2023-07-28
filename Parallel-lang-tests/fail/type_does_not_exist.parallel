@@ -1,8 +1,8 @@
 /*
-unknown type: 'notAType'
+error: use of undeclared type
 9  |function main(): Int8 {
 10 |    var a: notAType = 0;
-               ^^^^^^^^
+               ^^^^^^^^ nothing named 'notAType'
 11 |
 */
 
