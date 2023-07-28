@@ -1142,9 +1142,11 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					expectTypeWithString((ASTnode *)expectedTypes->data, "Int32") &&
 					expectTypeWithString((ASTnode *)expectedTypes->data, "Int64")
 				) {
-					printf("Expected type '");
-					SubString_print(getTypeAsSubString((ASTnode *)expectedTypes->data));
-					printf("' but got a number.\n");
+					addStringToErrorMsg("unexpected type");
+					
+					addStringToErrorIndicator("expected type '");
+					addSubStringToErrorIndicator(getTypeAsSubString((ASTnode *)expectedTypes->data));
+					addStringToErrorIndicator("' but got a number.");
 					compileError(node->location);
 				}
 				
