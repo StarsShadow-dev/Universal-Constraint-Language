@@ -867,12 +867,12 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					
 					CharAccumulator leftSource = {100, 0, 0};
 					CharAccumulator_initialize(&leftSource);
-					linkedList_Node *expectedTypeForLeft = NULL;
-					buildLLVM(GBI, outerFunction, outerSource, &leftSource, NULL, &expectedTypeForLeft, data->left, 0, 0, 0);
+					linkedList_Node *leftType = NULL;
+					buildLLVM(GBI, outerFunction, outerSource, &leftSource, NULL, &leftType, data->left, 0, 0, 0);
 					
 					CharAccumulator rightSource = {100, 0, 0};
 					CharAccumulator_initialize(&rightSource);
-					buildLLVM(GBI, outerFunction, outerSource, &rightSource, expectedTypeForLeft, NULL, data->right, 1, 1, 0);
+					buildLLVM(GBI, outerFunction, outerSource, &rightSource, leftType, NULL, data->right, 1, 1, 0);
 					
 					CharAccumulator_appendChars(outerSource, "\n\tstore ");
 					CharAccumulator_appendChars(outerSource, rightSource.data);
@@ -1232,9 +1232,19 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				Variable *variableVariable = getBuilderVariableFromVariableNode(GBI, node);
 				if (variableVariable == NULL) {
-					printf("no variable named '");
-					SubString_print(data->name);
-					printf("'\n");
+					addStringToErrorMsg("value not in scope");
+					
+					addStringToErrorIndicator("no variable named '");
+					addSubStringToErrorIndicator(data->name);
+					addStringToErrorIndicator("'");
+					compileError(node->location);
+				}
+				if (variableVariable->type != VariableType_variable) {
+					addStringToErrorMsg("value exists but is not a variable");
+					
+					addStringToErrorIndicator("'");
+					addSubStringToErrorIndicator(data->name);
+					addStringToErrorIndicator("' is not a variable");
 					compileError(node->location);
 				}
 				Variable_variable *variable = (Variable_variable *)variableVariable->value;
