@@ -170,8 +170,12 @@ void CharAccumulator_appendChars(CharAccumulator *accumulator, char *chars) {
 	CharAccumulator_appendCharsCount(accumulator, chars, strlen(chars));
 }
 
-void CharAccumulator_appendUint(CharAccumulator *accumulator, const unsigned int number) {
-	int n = number;
+void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number) {
+	if (number < 0) {
+		printf("CharAccumulator_appendInt error");
+		abort();
+	}
+	int64_t n = number;
 	int count = 1;
 
 	while (n > 9) {
@@ -197,7 +201,7 @@ void CharAccumulator_appendUint(CharAccumulator *accumulator, const unsigned int
 		free(oldData);
 	}
 
-	sprintf(accumulator->data + accumulator->size, "%u", number);
+	sprintf(accumulator->data + accumulator->size, "%lld", number);
 
 	accumulator->size += count;
 }

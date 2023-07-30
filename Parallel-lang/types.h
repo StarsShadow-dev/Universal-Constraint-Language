@@ -247,7 +247,7 @@ void CharAccumulator_appendChars(CharAccumulator *accumulator, char *chars);
 
 #define CharAccumulator_appendSubString(accumulator, subString) CharAccumulator_appendCharsCount(accumulator, (subString)->start, (subString)->length)
 
-void CharAccumulator_appendUint(CharAccumulator *accumulator, const unsigned int number);
+void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number);
 
 void CharAccumulator_free(CharAccumulator *accumulator);
 

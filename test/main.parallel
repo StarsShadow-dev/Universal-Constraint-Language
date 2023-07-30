@@ -12,10 +12,12 @@ function main(): Int8 {
 	// var thing: Thing;
 	// notThing.number = 97;
 
+	var number: Int8 = 128;
+
 	return 0;
 }
 
-function printLine(printf: Pointer): Void {
+function printLine(string: Pointer): Void {
 	printf(string);
 	putchar(10); // \n
 	

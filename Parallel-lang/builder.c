@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "globals.h"
 #include "builder.h"
@@ -228,23 +229,23 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 				char *currentArgumentLLVMtype = getLLVMtypeFromType(GBI, (ASTnode *)currentArgument->data);
 				CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
 				CharAccumulator_appendChars(outerSource, " %");
-				CharAccumulator_appendUint(outerSource, function->registerCount);
+				CharAccumulator_appendInt(outerSource, function->registerCount);
 				
 				CharAccumulator_appendChars(&functionSource, "\n\t%");
-				CharAccumulator_appendUint(&functionSource, function->registerCount + argumentCount + 1);
+				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
 				CharAccumulator_appendChars(&functionSource, " = alloca ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
 				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendUint(&functionSource, argumentType->byteAlign);
+				CharAccumulator_appendInt(&functionSource, argumentType->byteAlign);
 				
 				CharAccumulator_appendChars(&functionSource, "\n\tstore ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
 				CharAccumulator_appendChars(&functionSource, " %");
-				CharAccumulator_appendUint(&functionSource, function->registerCount);
+				CharAccumulator_appendInt(&functionSource, function->registerCount);
 				CharAccumulator_appendChars(&functionSource, ", ptr %");
-				CharAccumulator_appendUint(&functionSource, function->registerCount + argumentCount + 1);
+				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
 				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendUint(&functionSource, argumentType->byteAlign);
+				CharAccumulator_appendInt(&functionSource, argumentType->byteAlign);
 				
 				expectUnusedName(GBI, (SubString *)currentArgumentName->data, node->location);
 				
@@ -532,9 +533,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				Variable_struct *structToInit = (Variable_struct *)structVariable->value;
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
-				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 				CharAccumulator_appendChars(outerSource, " = call ptr @malloc(i64 noundef ");
-				CharAccumulator_appendUint(outerSource, structVariable->byteSize);
+				CharAccumulator_appendInt(outerSource, structVariable->byteSize);
 				CharAccumulator_appendChars(outerSource, ") allocsize(0)");
 				
 				CharAccumulator_appendChars(outerSource, "\n\tcall void @");
@@ -558,11 +559,11 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				}
 				
 				CharAccumulator_appendChars(outerSource, "(ptr %");
-				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 				CharAccumulator_appendChars(outerSource, ")");
 				
 				CharAccumulator_appendChars(innerSource, "ptr %");
-				CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
+				CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 				
 				outerFunction->registerCount++;
 				
@@ -615,7 +616,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					
 					if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
 						CharAccumulator_appendChars(outerSource, "\n\t%");
-						CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 						CharAccumulator_appendChars(outerSource, " = call ");
 						
 						if (innerSource != NULL) {
@@ -624,7 +625,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 								CharAccumulator_appendChars(innerSource, " ");
 							}
 							CharAccumulator_appendChars(innerSource, "%");
-							CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
+							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 						}
 						
 						outerFunction->registerCount++;
@@ -674,28 +675,28 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				outerFunction->registerCount++;
 				
 				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
-				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendInt(outerSource, jump1);
 				
 				CharAccumulator_appendChars(outerSource, "\n\n");
-				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendInt(outerSource, jump1);
 				CharAccumulator_appendChars(outerSource, ":");
 				CharAccumulator_appendChars(outerSource, jump1_outerSource.data);
 				CharAccumulator_appendChars(outerSource, "\n\tbr ");
 				CharAccumulator_appendChars(outerSource, expressionSource.data);
 				CharAccumulator_appendChars(outerSource, ", label %");
-				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendInt(outerSource, jump2);
 				CharAccumulator_appendChars(outerSource, ", label %");
-				CharAccumulator_appendUint(outerSource, endJump);
+				CharAccumulator_appendInt(outerSource, endJump);
 				
 				CharAccumulator_appendChars(outerSource, "\n\n");
-				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendInt(outerSource, jump2);
 				CharAccumulator_appendChars(outerSource, ":");
 				CharAccumulator_appendChars(outerSource, jump2_outerSource.data);
 				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
-				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendInt(outerSource, jump1);
 				
 				CharAccumulator_appendChars(outerSource, "\n\n");
-				CharAccumulator_appendUint(outerSource, endJump);
+				CharAccumulator_appendInt(outerSource, endJump);
 				CharAccumulator_appendChars(outerSource, ":");
 				
 				CharAccumulator_free(&expressionSource);
@@ -732,19 +733,19 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				CharAccumulator_appendChars(outerSource, "\n\tbr ");
 				CharAccumulator_appendChars(outerSource, expressionSource.data);
 				CharAccumulator_appendChars(outerSource, ", label %");
-				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendInt(outerSource, jump1);
 				CharAccumulator_appendChars(outerSource, ", label %");
-				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendInt(outerSource, jump2);
 				
 				CharAccumulator_appendChars(outerSource, "\n\n");
-				CharAccumulator_appendUint(outerSource, jump1);
+				CharAccumulator_appendInt(outerSource, jump1);
 				CharAccumulator_appendChars(outerSource, ":");
 				CharAccumulator_appendChars(outerSource, codeBlockSource.data);
 				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
-				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendInt(outerSource, jump2);
 				
 				CharAccumulator_appendChars(outerSource, "\n\n");
-				CharAccumulator_appendUint(outerSource, jump2);
+				CharAccumulator_appendInt(outerSource, jump2);
 				CharAccumulator_appendChars(outerSource, ":");
 				
 				CharAccumulator_free(&expressionSource);
@@ -809,19 +810,19 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				buildLLVM(GBI, outerFunction, outerSource, &expressionSource, data->type, NULL, data->expression, 1, 1, 0);
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
-				CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 				CharAccumulator_appendChars(outerSource, " = alloca ");
 				CharAccumulator_appendChars(outerSource, LLVMtype);
 				CharAccumulator_appendChars(outerSource, ", align ");
-				CharAccumulator_appendUint(outerSource, typeVariable->byteAlign);
+				CharAccumulator_appendInt(outerSource, typeVariable->byteAlign);
 				
 				if (data->expression != NULL) {
 					CharAccumulator_appendChars(outerSource, "\n\tstore ");
 					CharAccumulator_appendChars(outerSource, expressionSource.data);
 					CharAccumulator_appendChars(outerSource, ", ptr %");
-					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, ", align ");
-					CharAccumulator_appendUint(outerSource, typeVariable->byteAlign);
+					CharAccumulator_appendInt(outerSource, typeVariable->byteAlign);
 				}
 				
 				Variable *variableData = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_variable));
@@ -874,7 +875,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					CharAccumulator_appendChars(outerSource, ", ptr ");
 					CharAccumulator_appendChars(outerSource, leftSource.data);
 					CharAccumulator_appendChars(outerSource, ", align ");
-					CharAccumulator_appendUint(outerSource, leftVariable->byteAlign);
+					CharAccumulator_appendInt(outerSource, leftVariable->byteAlign);
 					
 					CharAccumulator_free(&rightSource);
 					CharAccumulator_free(&leftSource);
@@ -921,24 +922,24 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 							}
 							
 							CharAccumulator_appendChars(outerSource, "\n\t%");
-							CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+							CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 							CharAccumulator_appendChars(outerSource, " = getelementptr inbounds ");
 							CharAccumulator_appendChars(outerSource, structData->LLVMname);
 							CharAccumulator_appendChars(outerSource, ", ptr ");
 							CharAccumulator_appendChars(outerSource, leftInnerSource.data);
 							CharAccumulator_appendChars(outerSource, ", i32 0");
 							CharAccumulator_appendChars(outerSource, ", i32 ");
-							CharAccumulator_appendUint(outerSource, index);
+							CharAccumulator_appendInt(outerSource, index);
 							
 							if (loadVariables) {
 								CharAccumulator_appendChars(outerSource, "\n\t%");
-								CharAccumulator_appendUint(outerSource, outerFunction->registerCount + 1);
+								CharAccumulator_appendInt(outerSource, outerFunction->registerCount + 1);
 								CharAccumulator_appendChars(outerSource, " = load ");
 								CharAccumulator_appendChars(outerSource, ((Variable_variable *)memberVariable->value)->LLVMtype);
 								CharAccumulator_appendChars(outerSource, ", ptr %");
-								CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+								CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 								CharAccumulator_appendChars(outerSource, ", align ");
-								CharAccumulator_appendUint(outerSource, memberVariable->byteAlign);
+								CharAccumulator_appendInt(outerSource, memberVariable->byteAlign);
 								
 								if (withTypes) {
 									CharAccumulator_appendChars(innerSource, ((Variable_variable *)memberVariable->value)->LLVMtype);
@@ -949,7 +950,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 							}
 							
 							CharAccumulator_appendChars(innerSource, "%");
-							CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
+							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 							
 							outerFunction->registerCount++;
 							
@@ -1018,7 +1019,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					buildLLVM(GBI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
 					buildLLVM(GBI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, " = icmp ");
 					
 					if (data->operatorType == ASTnode_operatorType_equivalent) {
@@ -1052,7 +1053,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					buildLLVM(GBI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
 					buildLLVM(GBI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, " = add nsw ");
 					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
 				}
@@ -1066,7 +1067,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					buildLLVM(GBI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
 					buildLLVM(GBI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, " = sub nsw ");
 					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
 				}
@@ -1084,7 +1085,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					CharAccumulator_appendChars(innerSource, " ");
 				}
 				CharAccumulator_appendChars(innerSource, "%");
-				CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
+				CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 				
 				CharAccumulator_free(&leftInnerSource);
 				CharAccumulator_free(&rightInnerSource);
@@ -1145,6 +1146,18 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					addSubStringToErrorIndicator(getTypeAsSubString((ASTnode *)expectedTypes->data));
 					addStringToErrorIndicator("' but got a number.");
 					compileError(node->location);
+				} else {
+					Variable *typeVariable = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name);
+					
+					if (data->value > pow(2, (typeVariable->byteSize * 8) - 1) - 1) {
+						addStringToErrorMsg("integer overflow detected");
+						
+						CharAccumulator_appendInt(&errorIndicator, data->value);
+						addStringToErrorIndicator(" is larger than the maximum size of the type '");
+						addSubStringToErrorIndicator(getTypeAsSubString((ASTnode *)expectedTypes->data));
+						addStringToErrorIndicator("'");
+						compileError(node->location);
+					}
 				}
 				
 				char *LLVMtype = getLLVMtypeFromType(GBI, (ASTnode *)(*currentExpectedType)->data);
@@ -1202,9 +1215,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				}
 				
 				CharAccumulator_appendChars(GBI->topLevelConstantSource, "\n@.str.");
-				CharAccumulator_appendUint(GBI->topLevelConstantSource, GBI->stringCount);
+				CharAccumulator_appendInt(GBI->topLevelConstantSource, GBI->stringCount);
 				CharAccumulator_appendChars(GBI->topLevelConstantSource, " = private unnamed_addr constant [");
-				CharAccumulator_appendUint(GBI->topLevelConstantSource, stringLength);
+				CharAccumulator_appendInt(GBI->topLevelConstantSource, stringLength);
 				CharAccumulator_appendChars(GBI->topLevelConstantSource, " x i8] c\"");
 				CharAccumulator_appendChars(GBI->topLevelConstantSource, string.data);
 				CharAccumulator_appendChars(GBI->topLevelConstantSource, "\\00\""); // the \00 is the NULL byte
@@ -1213,7 +1226,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					CharAccumulator_appendChars(innerSource, "ptr ");
 				}
 				CharAccumulator_appendChars(innerSource, "@.str.");
-				CharAccumulator_appendUint(innerSource, GBI->stringCount);
+				CharAccumulator_appendInt(innerSource, GBI->stringCount);
 				
 				GBI->stringCount++;
 				
@@ -1258,19 +1271,19 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					
 					if (loadVariables) {
 						CharAccumulator_appendChars(outerSource, "\n\t%");
-						CharAccumulator_appendUint(outerSource, outerFunction->registerCount);
+						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 						CharAccumulator_appendChars(outerSource, " = load ");
 						CharAccumulator_appendChars(outerSource, variable->LLVMtype);
 						CharAccumulator_appendChars(outerSource, ", ptr %");
-						CharAccumulator_appendUint(outerSource, variable->LLVMRegister);
+						CharAccumulator_appendInt(outerSource, variable->LLVMRegister);
 						CharAccumulator_appendChars(outerSource, ", align ");
-						CharAccumulator_appendUint(outerSource, variableVariable->byteAlign);
+						CharAccumulator_appendInt(outerSource, variableVariable->byteAlign);
 						
-						CharAccumulator_appendUint(innerSource, outerFunction->registerCount);
+						CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 						
 						outerFunction->registerCount++;
 					} else {
-						CharAccumulator_appendUint(innerSource, variable->LLVMRegister);
+						CharAccumulator_appendInt(innerSource, variable->LLVMRegister);
 					}
 				}
 				
