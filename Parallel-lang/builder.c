@@ -246,13 +246,8 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 				CharAccumulator_appendChars(&functionSource, ", align ");
 				CharAccumulator_appendUint(&functionSource, argumentType->byteAlign);
 				
-				Variable *argumentVariable = getBuilderVariableFromSubString(GBI, (SubString *)currentArgumentName->data);
-				if (argumentVariable != NULL) {
-					printf("there is already something named '");
-					SubString_print((SubString *)currentArgumentName->data);
-					printf("'\n");
-					compileError(node->location);
-				}
+				expectUnusedName(GBI, (SubString *)currentArgumentName->data, node->location);
+				
 				Variable *argumentVariableData = linkedList_addNode(&GBI->variables[GBI->level + 1], sizeof(Variable) + sizeof(Variable_variable));
 				
 				argumentVariableData->key = (SubString *)currentArgumentName->data;
