@@ -31,21 +31,22 @@ var myVariable: Int32 = 5;
 
 ## Types
 
+The names of the integers are literally copied from Swift.
+
 ```parallel
 Void
 
 Int8
+Int16
 Int32
 Int64
+
+UInt8
+UInt16
+UInt32
+UInt64
 
 Bool
 Pointer
 ```
 
-## Attributes
-
-The attribute syntax is inspired by [rust](https://doc.rust-lang.org/rust-by-example/attribute.html).
-
-```parallel
-#[attribute]
-```
