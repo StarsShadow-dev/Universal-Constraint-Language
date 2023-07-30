@@ -167,7 +167,7 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 		
 		int size = token.end - token.start;
 		
-		char *data = linkedList_addNode(&strings, size);
+		char *data = linkedList_addNode(&strings, size + 1);
 		
 		memcpy(data, buffer + token.start, size);
 		data[size] = 0;

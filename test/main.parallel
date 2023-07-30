@@ -5,14 +5,19 @@ struct Thing {
 		return;
 	}
 
+	function putcharNumber(): Void {
+		// putchar(self.number);
+		return;
+	}
+
 	var number: Int32;
 }
 
 function main(): Int8 {
-	// var thing: Thing;
-	// notThing.number = 97;
+	var thing: Thing;
+	thing.number = 97;
 
-	var number: Int16 = 32768;
+	putchar(thing.number);
 
 	return 0;
 }

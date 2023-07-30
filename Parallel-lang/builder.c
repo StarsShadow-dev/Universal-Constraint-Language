@@ -334,6 +334,10 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				Variable *function = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_function));
 				
 				char *functionLLVMname = malloc(data->name->length + 1);
+				if (functionLLVMname == NULL) {
+					printf("malloc failed\n");
+					abort();
+				}
 				memcpy(functionLLVMname, data->name->start, data->name->length);
 				functionLLVMname[data->name->length] = 0;
 				
@@ -364,6 +368,10 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				int strlength = strlen("%struct.");
 				
 				char *LLVMname = malloc(strlength + data->name->length + 1);
+				if (LLVMname == NULL) {
+					printf("malloc failed\n");
+					abort();
+				}
 				memcpy(LLVMname, "%struct.", strlength);
 				memcpy(LLVMname + strlength, data->name->start, data->name->length);
 				LLVMname[strlength + data->name->length] = 0;
@@ -438,13 +446,13 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						
 						Variable *function = linkedList_addNode(&((Variable_struct *)structVariableData->value)->memberVariables, sizeof(Variable) + sizeof(Variable_function));
 						
-						// TODO: this is a mess
-						int functionLLVMnameLength = data->name->length + memberData->name->length;
-						char *functionLLVMname = malloc(functionLLVMnameLength + 2);
-						memcpy(functionLLVMname, data->name->start, data->name->length);
-						*((char *)functionLLVMname + memberData->name->length - 1) = '.';
-						memcpy(functionLLVMname + memberData->name->length, memberData->name->start, memberData->name->length);
-						functionLLVMname[functionLLVMnameLength + 1] = 0;
+						int functionLLVMnameLength = data->name->length + 1 + memberData->name->length;
+						char *functionLLVMname = malloc(functionLLVMnameLength + 1);
+						if (functionLLVMname == NULL) {
+							printf("malloc failed\n");
+							abort();
+						}
+						snprintf(functionLLVMname, functionLLVMnameLength + 1, "%.*s.%s", data->name->length, data->name->start, memberData->name->start);
 						
 						function->key = data->name;
 						function->type = VariableType_function;
