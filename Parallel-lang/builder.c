@@ -1137,6 +1137,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				if (
 					expectTypeWithString((ASTnode *)expectedTypes->data, "Int8") &&
+					expectTypeWithString((ASTnode *)expectedTypes->data, "Int16") &&
 					expectTypeWithString((ASTnode *)expectedTypes->data, "Int32") &&
 					expectTypeWithString((ASTnode *)expectedTypes->data, "Int64")
 				) {

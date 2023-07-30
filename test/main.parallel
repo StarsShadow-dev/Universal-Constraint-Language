@@ -12,7 +12,7 @@ function main(): Int8 {
 	// var thing: Thing;
 	// notThing.number = 97;
 
-	var number: Int8 = 128;
+	var number: Int16 = 32768;
 
 	return 0;
 }

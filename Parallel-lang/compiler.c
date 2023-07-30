@@ -268,6 +268,7 @@ void compileModule(char *path, char *target_triple, CompilerMode compilerMode, C
 	
 	addBuilderType(&GBI.variables[0], "Void", "void", 0, 4);
 	addBuilderType(&GBI.variables[0], "Int8", "i8", 1, 4);
+	addBuilderType(&GBI.variables[0], "Int16", "i16", 2, 4);
 	addBuilderType(&GBI.variables[0], "Int32", "i32", 4, 4);
 	addBuilderType(&GBI.variables[0], "Int64", "i64", 8, 4);
 	// how much space should be made for an i1?
