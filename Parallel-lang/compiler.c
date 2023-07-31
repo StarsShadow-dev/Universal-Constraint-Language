@@ -266,15 +266,15 @@ void compileModule(char *path, char *target_triple, CompilerMode compilerMode, C
 		{0}
 	};
 	
-	addBuilderType(&GBI.variables[0], "Void", "void", 0, 4);
-	addBuilderType(&GBI.variables[0], "Int8", "i8", 1, 4);
-	addBuilderType(&GBI.variables[0], "Int16", "i16", 2, 4);
-	addBuilderType(&GBI.variables[0], "Int32", "i32", 4, 4);
-	addBuilderType(&GBI.variables[0], "Int64", "i64", 8, 4);
+	addContextBinding_simpleType(&GBI.context[0], "Void", "void", 0, 4);
+	addContextBinding_simpleType(&GBI.context[0], "Int8", "i8", 1, 4);
+	addContextBinding_simpleType(&GBI.context[0], "Int16", "i16", 2, 4);
+	addContextBinding_simpleType(&GBI.context[0], "Int32", "i32", 4, 4);
+	addContextBinding_simpleType(&GBI.context[0], "Int64", "i64", 8, 4);
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addBuilderType(&GBI.variables[0], "Bool", "i1", 1, 4);
-	addBuilderType(&GBI.variables[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	addContextBinding_simpleType(&GBI.context[0], "Bool", "i1", 1, 4);
+	addContextBinding_simpleType(&GBI.context[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		linkedList_Node *currentFilePath = file_paths;
@@ -299,7 +299,7 @@ void compileModule(char *path, char *target_triple, CompilerMode compilerMode, C
 	CharAccumulator_appendChars(LLVMsource, LLVMconstantSource.data);
 	CharAccumulator_free(&LLVMconstantSource);
 	
-	linkedList_freeList(&GBI.variables[0]);
+	linkedList_freeList(&GBI.context[0]);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 #ifdef COMPILER_DEBUG_MODE

@@ -10,14 +10,14 @@ typedef struct {
 	int stringCount;
 	
 	int level;
-	linkedList_Node *variables[maxVariablesLevel];
+	linkedList_Node *context[maxVariablesLevel];
 } GlobalBuilderInformation;
 
-void addBuilderType(linkedList_Node **variables, char *name, char *LLVMtype, int byteSize, int byteAlign);
+void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
 
 void buildLLVM(
 	GlobalBuilderInformation *GBI,
-	Variable_function *outerFunction,
+	ContextBinding_function *outerFunction,
 	CharAccumulator *outerSource,
 	CharAccumulator *innerSource,
 	

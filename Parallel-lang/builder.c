@@ -66,7 +66,7 @@ void addTypeFromNode(linkedList_Node **list, ASTnode *node) {
 	memcpy(data->value, node->value, sizeof(ASTnode_type));
 }
 
-void addBuilderType(linkedList_Node **variables, char *name, char *LLVMtype, int byteSize, int byteAlign) {
+void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign) {
 	SubString *key = malloc(sizeof(SubString));
 	if (key == NULL) {
 		printf("malloc failed\n");
@@ -75,25 +75,25 @@ void addBuilderType(linkedList_Node **variables, char *name, char *LLVMtype, int
 	key->start = name;
 	key->length = (int)strlen(name);
 	
-	Variable *data = linkedList_addNode(variables, sizeof(Variable) + sizeof(Variable_simpleType));
+	ContextBinding *data = linkedList_addNode(context, sizeof(ContextBinding) + sizeof(ContextBinding_simpleType));
 	
 	data->key = key;
-	data->type = VariableType_simpleType;
+	data->type = ContextBindingType_simpleType;
 	data->byteSize = byteSize;
 	data->byteAlign = byteAlign;
-	((Variable_simpleType *)data->value)->LLVMtype = LLVMtype;
+	((ContextBinding_simpleType *)data->value)->LLVMtype = LLVMtype;
 }
 
-Variable *getBuilderVariableFromSubString(GlobalBuilderInformation *GBI, SubString *key) {
+ContextBinding *getContextBindingFromSubString(GlobalBuilderInformation *GBI, SubString *key) {
 	int index = GBI->level;
 	while (index >= 0) {
-		linkedList_Node *current = GBI->variables[index];
+		linkedList_Node *current = GBI->context[index];
 		
 		while (current != NULL) {
-			Variable *variable = ((Variable *)current->data);
+			ContextBinding *binding = ((ContextBinding *)current->data);
 			
-			if (SubString_SubString_cmp(key, variable->key) == 0) {
-				return variable;
+			if (SubString_SubString_cmp(key, binding->key) == 0) {
+				return binding;
 			}
 			
 			current = current->next;
@@ -105,41 +105,19 @@ Variable *getBuilderVariableFromSubString(GlobalBuilderInformation *GBI, SubStri
 	return NULL;
 }
 
-// for testing
-//Variable *getBuilderVariableFromString(linkedList_Node **variables, int level, char *key) {
-//	int index = level;
-//	while (index >= 0) {
-//		linkedList_Node *current = variables[index];
-//
-//		while (current != NULL) {
-//			Variable *variable = ((Variable *)current->data);
-//
-//			if (SubString_string_cmp(variable->key, key) == 0) {
-//				return variable;
-//			}
-//
-//			current = current->next;
-//		}
-//
-//		index--;
-//	}
-//
-//	return NULL;
-//}
-
 /// if the node is a memberAccess operator the function calls itself until it gets to the end of the memberAccess operators
-Variable *getBuilderVariableFromVariableNode(GlobalBuilderInformation *GBI, ASTnode *node) {
+ContextBinding *getContextBindingFromVariableNode(GlobalBuilderInformation *GBI, ASTnode *node) {
 	if (node->nodeType == ASTnodeType_variable) {
 		ASTnode_variable *data = (ASTnode_variable *)node->value;
 		
-		return getBuilderVariableFromSubString(GBI, data->name);
+		return getContextBindingFromSubString(GBI, data->name);
 	} else if (node->nodeType == ASTnodeType_operator) {
 		ASTnode_operator *data = (ASTnode_operator *)node->value;
 		
 		if (data->operatorType != ASTnode_operatorType_memberAccess) abort();
 		
 		// more recursion!
-		return getBuilderVariableFromVariableNode(GBI, (ASTnode *)data->left->data);
+		return getContextBindingFromVariableNode(GBI, (ASTnode *)data->left->data);
 	} else {
 		abort();
 	}
@@ -148,20 +126,20 @@ Variable *getBuilderVariableFromVariableNode(GlobalBuilderInformation *GBI, ASTn
 }
 
 char *getLLVMtypeFromType(GlobalBuilderInformation *GBI, ASTnode *type) {
-	Variable *LLVMtypeVariable = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)(type)->value)->name);
+	ContextBinding *binding = getContextBindingFromSubString(GBI, ((ASTnode_type *)(type)->value)->name);
 	
-	if (LLVMtypeVariable->type == VariableType_simpleType) {
-		return ((Variable_simpleType *)LLVMtypeVariable->value)->LLVMtype;
-	} else if (LLVMtypeVariable->type == VariableType_struct) {
-		return ((Variable_struct *)LLVMtypeVariable->value)->LLVMname;
+	if (binding->type == ContextBindingType_simpleType) {
+		return ((ContextBinding_simpleType *)binding->value)->LLVMtype;
+	} else if (binding->type == ContextBindingType_struct) {
+		return ((ContextBinding_struct *)binding->value)->LLVMname;
 	}
 	
 	abort();
 }
 
 void expectUnusedName(GlobalBuilderInformation *GBI, SubString *name, SourceLocation location) {
-	Variable *variable = getBuilderVariableFromSubString(GBI, name);
-	if (variable != NULL) {
+	ContextBinding *binding = getContextBindingFromSubString(GBI, name);
+	if (binding != NULL) {
 		addStringToErrorMsg("the name '");
 		addSubStringToErrorMsg(name);
 		addStringToErrorMsg("' is defined multiple times.");
@@ -173,9 +151,9 @@ void expectUnusedName(GlobalBuilderInformation *GBI, SubString *name, SourceLoca
 	}
 }
 
-Variable *expectTypeExists(GlobalBuilderInformation *GBI, SubString *name, SourceLocation location) {
-	Variable *variable = getBuilderVariableFromSubString(GBI, name);
-	if (variable == NULL) {
+ContextBinding *expectTypeExists(GlobalBuilderInformation *GBI, SubString *name, SourceLocation location) {
+	ContextBinding *binding = getContextBindingFromSubString(GBI, name);
+	if (binding == NULL) {
 		addStringToErrorMsg("use of undeclared type");
 		
 		addStringToErrorIndicator("nothing named '");
@@ -184,8 +162,8 @@ Variable *expectTypeExists(GlobalBuilderInformation *GBI, SubString *name, Sourc
 		compileError(location);
 	}
 	
-	if (variable->type != VariableType_simpleType && variable->type != VariableType_struct) {
-		if (variable->type == VariableType_function) {
+	if (binding->type != ContextBindingType_simpleType && binding->type != ContextBindingType_struct) {
+		if (binding->type == ContextBindingType_function) {
 			addStringToErrorMsg("expected type but got a function");
 		} else {
 			abort();
@@ -197,10 +175,10 @@ Variable *expectTypeExists(GlobalBuilderInformation *GBI, SubString *name, Sourc
 		compileError(location);
 	}
 	
-	return variable;
+	return binding;
 }
 
-void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSource, Variable_function *function, ASTnode *node) {
+void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSource, ContextBinding_function *function, ASTnode *node) {
 	ASTnode_function *data = (ASTnode_function *)node->value;
 	
 	if (data->external) {
@@ -224,7 +202,7 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 		if (currentArgument != NULL) {
 			int argumentCount =  linkedList_getCount(&data->argumentTypes);
 			while (1) {
-				Variable *argumentType = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
+				ContextBinding *argumentTypeBinding = getContextBindingFromSubString(GBI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name);
 				
 				char *currentArgumentLLVMtype = getLLVMtypeFromType(GBI, (ASTnode *)currentArgument->data);
 				CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
@@ -236,7 +214,7 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 				CharAccumulator_appendChars(&functionSource, " = alloca ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
 				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendInt(&functionSource, argumentType->byteAlign);
+				CharAccumulator_appendInt(&functionSource, argumentTypeBinding->byteAlign);
 				
 				CharAccumulator_appendChars(&functionSource, "\n\tstore ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
@@ -245,20 +223,20 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 				CharAccumulator_appendChars(&functionSource, ", ptr %");
 				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
 				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendInt(&functionSource, argumentType->byteAlign);
+				CharAccumulator_appendInt(&functionSource, argumentTypeBinding->byteAlign);
 				
 				expectUnusedName(GBI, (SubString *)currentArgumentName->data, node->location);
 				
-				Variable *argumentVariableData = linkedList_addNode(&GBI->variables[GBI->level + 1], sizeof(Variable) + sizeof(Variable_variable));
+				ContextBinding *argumentVariableData = linkedList_addNode(&GBI->context[GBI->level + 1], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
 				argumentVariableData->key = (SubString *)currentArgumentName->data;
-				argumentVariableData->type = VariableType_variable;
-				argumentVariableData->byteSize = argumentType->byteSize;
-				argumentVariableData->byteAlign = argumentType->byteAlign;
+				argumentVariableData->type = ContextBindingType_variable;
+				argumentVariableData->byteSize = argumentTypeBinding->byteSize;
+				argumentVariableData->byteAlign = argumentTypeBinding->byteAlign;
 				
-				((Variable_variable *)argumentVariableData->value)->LLVMRegister = function->registerCount + argumentCount + 1;
-				((Variable_variable *)argumentVariableData->value)->LLVMtype = currentArgumentLLVMtype;
-				((Variable_variable *)argumentVariableData->value)->type = currentArgument;
+				((ContextBinding_variable *)argumentVariableData->value)->LLVMRegister = function->registerCount + argumentCount + 1;
+				((ContextBinding_variable *)argumentVariableData->value)->LLVMtype = currentArgumentLLVMtype;
+				((ContextBinding_variable *)argumentVariableData->value)->type = currentArgument;
 				
 				function->registerCount++;
 				
@@ -291,7 +269,7 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 	}
 }
 
-void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
+void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
 	GBI->level++;
 	if (GBI->level > maxVariablesLevel) {
 		printf("level (%i) > maxVariablesLevel (%i)\n", GBI->level, maxVariablesLevel);
@@ -331,7 +309,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				char *LLVMreturnType = getLLVMtypeFromType(GBI, (ASTnode *)data->returnType->data);
 				
-				Variable *function = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_function));
+				ContextBinding *functionData = linkedList_addNode(&GBI->context[GBI->level], sizeof(ContextBinding) + sizeof(ContextBinding_function));
 				
 				char *functionLLVMname = malloc(data->name->length + 1);
 				if (functionLLVMname == NULL) {
@@ -341,29 +319,29 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				memcpy(functionLLVMname, data->name->start, data->name->length);
 				functionLLVMname[data->name->length] = 0;
 				
-				function->key = data->name;
-				function->type = VariableType_function;
+				functionData->key = data->name;
+				functionData->type = ContextBindingType_function;
 				// I do not think I need to set byteSize or byteAlign to anything specific
-				function->byteSize = 0;
-				function->byteAlign = 0;
+				functionData->byteSize = 0;
+				functionData->byteAlign = 0;
 				
-				((Variable_function *)function->value)->LLVMname = functionLLVMname;
-				((Variable_function *)function->value)->LLVMreturnType = LLVMreturnType;
-				((Variable_function *)function->value)->argumentTypes = data->argumentTypes;
-				((Variable_function *)function->value)->returnType = data->returnType;
-				((Variable_function *)function->value)->hasReturned = 0;
-				((Variable_function *)function->value)->registerCount = 0;
+				((ContextBinding_function *)functionData->value)->LLVMname = functionLLVMname;
+				((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
+				((ContextBinding_function *)functionData->value)->argumentTypes = data->argumentTypes;
+				((ContextBinding_function *)functionData->value)->returnType = data->returnType;
+				((ContextBinding_function *)functionData->value)->hasReturned = 0;
+				((ContextBinding_function *)functionData->value)->registerCount = 0;
 			}
 			
 			else if (node->nodeType == ASTnodeType_struct) {
 				ASTnode_struct *data = (ASTnode_struct *)node->value;
 				
-				Variable *structVariableData = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_struct));
-				structVariableData->key = data->name;
-				structVariableData->type = VariableType_struct;
-				structVariableData->byteSize = 0;
+				ContextBinding *structBinding = linkedList_addNode(&GBI->context[GBI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
+				structBinding->key = data->name;
+				structBinding->type = ContextBindingType_struct;
+				structBinding->byteSize = 0;
 				// 4 by default but set it to pointer_byteSize if there is a pointer is in the struct
-				structVariableData->byteAlign = 4;
+				structBinding->byteAlign = 4;
 				
 				int strlength = strlen("%struct.");
 				
@@ -376,9 +354,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				memcpy(LLVMname + strlength, data->name->start, data->name->length);
 				LLVMname[strlength + data->name->length] = 0;
 				
-				((Variable_struct *)structVariableData->value)->LLVMname = LLVMname;
-				((Variable_struct *)structVariableData->value)->memberNames = NULL;
-				((Variable_struct *)structVariableData->value)->memberVariables = NULL;
+				((ContextBinding_struct *)structBinding->value)->LLVMname = LLVMname;
+				((ContextBinding_struct *)structBinding->value)->memberNames = NULL;
+				((ContextBinding_struct *)structBinding->value)->memberBindings = NULL;
 				
 				CharAccumulator_appendChars(outerSource, "\n\n%struct.");
 				CharAccumulator_appendSubString(outerSource, data->name);
@@ -395,34 +373,34 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						
 						char *LLVMtype = getLLVMtypeFromType(GBI, (ASTnode *)memberData->type->data);
 						
-						Variable *typeVariable = expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)memberData->type->data)->value)->name, ((ASTnode *)memberData->type->data)->location);
+						ContextBinding *typeBinding = expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)memberData->type->data)->value)->name, ((ASTnode *)memberData->type->data)->location);
 						
 						// if there is a pointer anywhere in the struct then the struct should be aligned by pointer_byteSize
 						if (strcmp(LLVMtype, "ptr") == 0) {
-							structVariableData->byteAlign = pointer_byteSize;
+							structBinding->byteAlign = pointer_byteSize;
 						}
 						
-						structVariableData->byteSize += typeVariable->byteSize;
+						structBinding->byteSize += typeBinding->byteSize;
 						
 						if (addComma) {
 							CharAccumulator_appendChars(outerSource, ", ");
 						}
 						CharAccumulator_appendChars(outerSource, LLVMtype);
 						
-						SubString *nameData = linkedList_addNode(&((Variable_struct *)structVariableData->value)->memberNames, sizeof(SubString));
+						SubString *nameData = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberNames, sizeof(SubString));
 						memcpy(nameData, memberData->name, sizeof(SubString));
 						
-						Variable *variableData = linkedList_addNode(&((Variable_struct *)structVariableData->value)->memberVariables, sizeof(Variable) + sizeof(Variable_variable));
+						ContextBinding *variableBinding = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 						
-						variableData->key = data->name;
-						variableData->type = VariableType_variable;
-						variableData->byteSize = typeVariable->byteSize;
-						variableData->byteAlign = typeVariable->byteSize;
+						variableBinding->key = data->name;
+						variableBinding->type = ContextBindingType_variable;
+						variableBinding->byteSize = typeBinding->byteSize;
+						variableBinding->byteAlign = typeBinding->byteSize;
 						
 						// TODO: LLVMRegister
-						((Variable_variable *)variableData->value)->LLVMRegister = 0;
-						((Variable_variable *)variableData->value)->LLVMtype = LLVMtype;
-						((Variable_variable *)variableData->value)->type = memberData->type;
+						((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
+						((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
+						((ContextBinding_variable *)variableBinding->value)->type = memberData->type;
 						
 						addComma = 1;
 					} else if (node->nodeType == ASTnodeType_function) {
@@ -441,10 +419,10 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						
 						char *LLVMreturnType = getLLVMtypeFromType(GBI, (ASTnode *)memberData->returnType->data);
 						
-						SubString *nameData = linkedList_addNode(&((Variable_struct *)structVariableData->value)->memberNames, sizeof(SubString));
+						SubString *nameData = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberNames, sizeof(SubString));
 						memcpy(nameData, memberData->name, sizeof(SubString));
 						
-						Variable *function = linkedList_addNode(&((Variable_struct *)structVariableData->value)->memberVariables, sizeof(Variable) + sizeof(Variable_function));
+						ContextBinding *functionData = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberBindings, sizeof(ContextBinding) + sizeof(ContextBinding_function));
 						
 						int functionLLVMnameLength = data->name->length + 1 + memberData->name->length;
 						char *functionLLVMname = malloc(functionLLVMnameLength + 1);
@@ -454,17 +432,17 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						}
 						snprintf(functionLLVMname, functionLLVMnameLength + 1, "%.*s.%s", data->name->length, data->name->start, memberData->name->start);
 						
-						function->key = data->name;
-						function->type = VariableType_function;
-						function->byteSize = pointer_byteSize;
-						function->byteAlign = pointer_byteSize;
+						functionData->key = data->name;
+						functionData->type = ContextBindingType_function;
+						functionData->byteSize = pointer_byteSize;
+						functionData->byteAlign = pointer_byteSize;
 						
-						((Variable_function *)function->value)->LLVMname = functionLLVMname;
-						((Variable_function *)function->value)->LLVMreturnType = LLVMreturnType;
-						((Variable_function *)function->value)->argumentTypes = memberData->argumentTypes;
-						((Variable_function *)function->value)->returnType = memberData->returnType;
-						((Variable_function *)function->value)->hasReturned = 0;
-						((Variable_function *)function->value)->registerCount = 0;
+						((ContextBinding_function *)functionData->value)->LLVMname = functionLLVMname;
+						((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
+						((ContextBinding_function *)functionData->value)->argumentTypes = memberData->argumentTypes;
+						((ContextBinding_function *)functionData->value)->returnType = memberData->returnType;
+						((ContextBinding_function *)functionData->value)->hasReturned = 0;
+						((ContextBinding_function *)functionData->value)->registerCount = 0;
 					} else {
 						abort();
 					}
@@ -495,9 +473,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
-				Variable *functionVariable = getBuilderVariableFromSubString(GBI, data->name);
-				if (functionVariable == NULL || functionVariable->type != VariableType_function) abort();
-				Variable_function *function = (Variable_function *)functionVariable->value;
+				ContextBinding *functionBinding = getContextBindingFromSubString(GBI, data->name);
+				if (functionBinding == NULL || functionBinding->type != ContextBindingType_function) abort();
+				ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
 				
 				generateFunction(GBI, outerSource, function, node);
 				
@@ -512,18 +490,18 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				ASTnode_struct *data = (ASTnode_struct *)node->value;
 				
-				Variable *structVariable = getBuilderVariableFromSubString(GBI, data->name);
-				if (structVariable == NULL || structVariable->type != VariableType_struct) abort();
-				Variable_struct *structVariableData = (Variable_struct *)structVariable->value;
+				ContextBinding *structBinding = getContextBindingFromSubString(GBI, data->name);
+				if (structBinding == NULL || structBinding->type != ContextBindingType_struct) abort();
+				ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
 				
 				linkedList_Node *currentMember = data->block;
-				linkedList_Node *currentMemberVariable = structVariableData->memberVariables;
+				linkedList_Node *currentMemberVariable = structData->memberBindings;
 				while (currentMember != NULL) {
 					ASTnode *memberNode = ((ASTnode *)currentMember->data);
-					Variable *variable = (Variable *)currentMemberVariable->data;
+					ContextBinding *memberBinding = (ContextBinding *)currentMemberVariable->data;
 					
-					if (variable->type == VariableType_function) {
-						generateFunction(GBI, outerSource, (Variable_function *)variable->value, memberNode);
+					if (memberBinding->type == ContextBindingType_function) {
+						generateFunction(GBI, outerSource, (ContextBinding_function *)memberBinding->value, memberNode);
 					}
 					
 					currentMember = currentMember->next;
@@ -536,30 +514,30 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 			case ASTnodeType_new: {
 				ASTnode_new *data = (ASTnode_new *)node->value;
 				
-				Variable *structVariable = getBuilderVariableFromSubString(GBI, data->name);
-				if (structVariable == NULL || structVariable->type != VariableType_struct) abort();
-				Variable_struct *structToInit = (Variable_struct *)structVariable->value;
+				ContextBinding *structBinding = getContextBindingFromSubString(GBI, data->name);
+				if (structBinding == NULL || structBinding->type != ContextBindingType_struct) abort();
+				ContextBinding_struct *structToInit = (ContextBinding_struct *)structBinding->value;
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
 				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 				CharAccumulator_appendChars(outerSource, " = call ptr @malloc(i64 noundef ");
-				CharAccumulator_appendInt(outerSource, structVariable->byteSize);
+				CharAccumulator_appendInt(outerSource, structBinding->byteSize);
 				CharAccumulator_appendChars(outerSource, ") allocsize(0)");
 				
 				CharAccumulator_appendChars(outerSource, "\n\tcall void @");
 				
-				linkedList_Node *currentMember = structToInit->memberVariables;
+				linkedList_Node *currentMember = structToInit->memberBindings;
 				while (1) {
 					if (currentMember == NULL) {
 						printf("tried to initialize a struct that does not have an initializer");
 						compileError(node->location);
 					}
-					Variable *variable = (Variable *)currentMember->data;
+					ContextBinding *memberBinding = (ContextBinding *)currentMember->data;
 					
-					if (variable->type == VariableType_function && SubString_string_cmp(variable->key, "__init")) {
-						Variable_function *variableFunction = (Variable_function *)variable->value;
+					if (memberBinding->type == ContextBindingType_function && SubString_string_cmp(memberBinding->key, "__init")) {
+						ContextBinding_function *function = (ContextBinding_function *)memberBinding->value;
 						
-						CharAccumulator_appendChars(outerSource, variableFunction->LLVMname);
+						CharAccumulator_appendChars(outerSource, function->LLVMname);
 						break;
 					}
 					
@@ -586,8 +564,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				ASTnode_call *data = (ASTnode_call *)node->value;
 				
-				Variable *functionToCallVariable = getBuilderVariableFromSubString(GBI, data->name);
-				if (functionToCallVariable == NULL || functionToCallVariable->type != VariableType_function) {
+				ContextBinding *functionToCallBinding = getContextBindingFromSubString(GBI, data->name);
+				if (functionToCallBinding == NULL || functionToCallBinding->type != ContextBindingType_function) {
 					addStringToErrorMsg("unknown function");
 					
 					addStringToErrorIndicator("no function named '");
@@ -595,7 +573,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					addStringToErrorIndicator("'");
 					compileError(node->location);
 				}
-				Variable_function *functionToCall = (Variable_function *)functionToCallVariable->value;
+				ContextBinding_function *functionToCall = (ContextBinding_function *)functionToCallBinding->value;
 				
 				if (types != NULL) {
 					addTypeFromNode(types, (ASTnode *)functionToCall->returnType->data);
@@ -808,7 +786,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 				
 				expectUnusedName(GBI, data->name, node->location);
 				
-				Variable* typeVariable = expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)data->type->data)->value)->name, ((ASTnode *)data->type->data)->location);
+				ContextBinding* typeVariable = expectTypeExists(GBI, ((ASTnode_type *)((ASTnode *)data->type->data)->value)->name, ((ASTnode *)data->type->data)->location);
 				
 				char *LLVMtype = getLLVMtypeFromType(GBI, (ASTnode *)data->type->data);
 				
@@ -833,16 +811,16 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					CharAccumulator_appendInt(outerSource, typeVariable->byteAlign);
 				}
 				
-				Variable *variableData = linkedList_addNode(&GBI->variables[GBI->level], sizeof(Variable) + sizeof(Variable_variable));
+				ContextBinding *variableData = linkedList_addNode(&GBI->context[GBI->level], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
 				variableData->key = data->name;
-				variableData->type = VariableType_variable;
+				variableData->type = ContextBindingType_variable;
 				variableData->byteSize = pointer_byteSize;
 				variableData->byteAlign = pointer_byteSize;
 				
-				((Variable_variable *)variableData->value)->LLVMRegister = outerFunction->registerCount;
-				((Variable_variable *)variableData->value)->LLVMtype = LLVMtype;
-				((Variable_variable *)variableData->value)->type = data->type;
+				((ContextBinding_variable *)variableData->value)->LLVMRegister = outerFunction->registerCount;
+				((ContextBinding_variable *)variableData->value)->LLVMtype = LLVMtype;
+				((ContextBinding_variable *)variableData->value)->type = data->type;
 				
 				outerFunction->registerCount++;
 				
@@ -866,8 +844,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						compileError(node->location);
 					}
 					
-					Variable *leftVariable = getBuilderVariableFromVariableNode(GBI, (ASTnode *)data->left->data);
-//					Variable_variable *variable = (Variable_variable *)leftVariable->value;
+					ContextBinding *leftVariable = getContextBindingFromVariableNode(GBI, (ASTnode *)data->left->data);
 					
 					CharAccumulator leftSource = {100, 0, 0};
 					CharAccumulator_initialize(&leftSource);
@@ -905,16 +882,16 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					ASTnode *leftASTnode = (ASTnode *)leftTypes->data;
 					if (leftASTnode->nodeType != ASTnodeType_type) abort();
 					
-					Variable *structVariable = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)leftASTnode->value)->name);
-					if (structVariable->type != VariableType_struct) abort();
-					Variable_struct *structData = (Variable_struct *)structVariable->value;
+					ContextBinding *structBinding = getContextBindingFromSubString(GBI, ((ASTnode_type *)leftASTnode->value)->name);
+					if (structBinding->type != ContextBindingType_struct) abort();
+					ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
 					
 					ASTnode_variable *rightData = (ASTnode_variable *)rightNode->value;
 					
 					int index = 0;
 					
 					linkedList_Node *currentMemberName = structData->memberNames;
-					linkedList_Node *currentMemberType = structData->memberVariables;
+					linkedList_Node *currentMemberType = structData->memberBindings;
 					while (1) {
 						if (currentMemberName == NULL) {
 							printf("left side of memberAccess must exist\n");
@@ -922,52 +899,62 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						}
 						
 						SubString *memberName = (SubString *)currentMemberName->data;
-						Variable *memberVariable = (Variable *)currentMemberType->data;
+						ContextBinding *memberBinding = (ContextBinding *)currentMemberType->data;
 						
 						if (SubString_SubString_cmp(memberName, rightData->name) == 0) {
-							if (types != NULL) {
-								addTypeFromNode(types, (ASTnode *)((Variable_variable *)memberVariable->value)->type->data);
-							}
-							
-							CharAccumulator_appendChars(outerSource, "\n\t%");
-							CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-							CharAccumulator_appendChars(outerSource, " = getelementptr inbounds ");
-							CharAccumulator_appendChars(outerSource, structData->LLVMname);
-							CharAccumulator_appendChars(outerSource, ", ptr ");
-							CharAccumulator_appendChars(outerSource, leftInnerSource.data);
-							CharAccumulator_appendChars(outerSource, ", i32 0");
-							CharAccumulator_appendChars(outerSource, ", i32 ");
-							CharAccumulator_appendInt(outerSource, index);
-							
-							if (loadVariables) {
-								CharAccumulator_appendChars(outerSource, "\n\t%");
-								CharAccumulator_appendInt(outerSource, outerFunction->registerCount + 1);
-								CharAccumulator_appendChars(outerSource, " = load ");
-								CharAccumulator_appendChars(outerSource, ((Variable_variable *)memberVariable->value)->LLVMtype);
-								CharAccumulator_appendChars(outerSource, ", ptr %");
-								CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-								CharAccumulator_appendChars(outerSource, ", align ");
-								CharAccumulator_appendInt(outerSource, memberVariable->byteAlign);
-								
-								if (withTypes) {
-									CharAccumulator_appendChars(innerSource, ((Variable_variable *)memberVariable->value)->LLVMtype);
-									CharAccumulator_appendChars(innerSource, " ");
+							if (memberBinding->type == ContextBindingType_variable) {
+								if (types != NULL) {
+									addTypeFromNode(types, (ASTnode *)((ContextBinding_variable *)memberBinding->value)->type->data);
 								}
 								
+								CharAccumulator_appendChars(outerSource, "\n\t%");
+								CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+								CharAccumulator_appendChars(outerSource, " = getelementptr inbounds ");
+								CharAccumulator_appendChars(outerSource, structData->LLVMname);
+								CharAccumulator_appendChars(outerSource, ", ptr ");
+								CharAccumulator_appendChars(outerSource, leftInnerSource.data);
+								CharAccumulator_appendChars(outerSource, ", i32 0");
+								CharAccumulator_appendChars(outerSource, ", i32 ");
+								CharAccumulator_appendInt(outerSource, index);
+								
+								if (loadVariables) {
+									CharAccumulator_appendChars(outerSource, "\n\t%");
+									CharAccumulator_appendInt(outerSource, outerFunction->registerCount + 1);
+									CharAccumulator_appendChars(outerSource, " = load ");
+									CharAccumulator_appendChars(outerSource, ((ContextBinding_variable *)memberBinding->value)->LLVMtype);
+									CharAccumulator_appendChars(outerSource, ", ptr %");
+									CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+									CharAccumulator_appendChars(outerSource, ", align ");
+									CharAccumulator_appendInt(outerSource, memberBinding->byteAlign);
+									
+									if (withTypes) {
+										CharAccumulator_appendChars(innerSource, ((ContextBinding_variable *)memberBinding->value)->LLVMtype);
+										CharAccumulator_appendChars(innerSource, " ");
+									}
+									
+									outerFunction->registerCount++;
+								}
+								
+								CharAccumulator_appendChars(innerSource, "%");
+								CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+								
 								outerFunction->registerCount++;
+							} else if (memberBinding->type == ContextBindingType_function) {
+								abort();
+//								ContextBinding_function *memberFunction = (ContextBinding_function *)memberBinding->value;
+//
+//								CharAccumulator_appendChars(innerSource, "@");
+//								CharAccumulator_appendChars(innerSource, memberFunction->LLVMname);
+							} else {
+								abort();
 							}
-							
-							CharAccumulator_appendChars(innerSource, "%");
-							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
-							
-							outerFunction->registerCount++;
 							
 							break;
 						}
 						
 						currentMemberName = currentMemberName->next;
 						currentMemberType = currentMemberType->next;
-						if (memberVariable->type != VariableType_function) {
+						if (memberBinding->type != ContextBindingType_function) {
 							index++;
 						}
 					}
@@ -1156,7 +1143,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					addStringToErrorIndicator("' but got a number.");
 					compileError(node->location);
 				} else {
-					Variable *typeVariable = getBuilderVariableFromSubString(GBI, ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name);
+					ContextBinding *typeVariable = getContextBindingFromSubString(GBI, ((ASTnode_type *)((ASTnode *)expectedTypes->data)->value)->name);
 					
 					if (data->value > pow(2, (typeVariable->byteSize * 8) - 1) - 1) {
 						addStringToErrorMsg("integer overflow detected");
@@ -1247,8 +1234,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 			case ASTnodeType_variable: {
 				ASTnode_variable *data = (ASTnode_variable *)node->value;
 				
-				Variable *variableVariable = getBuilderVariableFromVariableNode(GBI, node);
-				if (variableVariable == NULL) {
+				ContextBinding *variableBinding = getContextBindingFromVariableNode(GBI, node);
+				if (variableBinding == NULL) {
 					addStringToErrorMsg("value not in scope");
 					
 					addStringToErrorIndicator("no variable named '");
@@ -1256,7 +1243,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					addStringToErrorIndicator("'");
 					compileError(node->location);
 				}
-				if (variableVariable->type != VariableType_variable) {
+				if (variableBinding->type != ContextBindingType_variable) {
 					addStringToErrorMsg("value exists but is not a variable");
 					
 					addStringToErrorIndicator("'");
@@ -1264,7 +1251,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 					addStringToErrorIndicator("' is not a variable");
 					compileError(node->location);
 				}
-				Variable_variable *variable = (Variable_variable *)variableVariable->value;
+				ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
 				
 				if (types != NULL) {
 					addTypeFromNode(types, (ASTnode *)variable->type->data);
@@ -1286,7 +1273,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 						CharAccumulator_appendChars(outerSource, ", ptr %");
 						CharAccumulator_appendInt(outerSource, variable->LLVMRegister);
 						CharAccumulator_appendChars(outerSource, ", align ");
-						CharAccumulator_appendInt(outerSource, variableVariable->byteAlign);
+						CharAccumulator_appendInt(outerSource, variableBinding->byteAlign);
 						
 						CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 						
@@ -1317,7 +1304,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, Variable_function *outerFunction, 
 	}
 	
 	if (GBI->level != 0) {
-		linkedList_freeList(&GBI->variables[GBI->level]);
+		linkedList_freeList(&GBI->context[GBI->level]);
 	}
 	
 	GBI->level--;

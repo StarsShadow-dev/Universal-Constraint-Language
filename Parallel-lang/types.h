@@ -43,29 +43,28 @@ int SubString_SubString_cmp(SubString *subString1, SubString *subString2);
 #define SubString_print(subString) printf("%.*s", (subString)->length, (subString)->start)
 
 //
-// variables
+// context
 //
 
-// "VariableType_variable" and "Variable_variable" I should probably name this something else
 typedef enum {
-	VariableType_simpleType,
-	VariableType_function,
-	VariableType_variable,
-	VariableType_struct
-} VariableType;
+	ContextBindingType_simpleType,
+	ContextBindingType_function,
+	ContextBindingType_variable,
+	ContextBindingType_struct
+} ContextBindingType;
 
 typedef struct {
 	SubString *key;
-	VariableType type;
+	ContextBindingType type;
 	int byteSize;
 	int byteAlign;
 	
 	uint8_t value[] WORD_ALIGNED;
-} Variable;
+} ContextBinding;
 
 typedef struct {
 	char *LLVMtype;
-} Variable_simpleType;
+} ContextBinding_simpleType;
 
 typedef struct {
 	char *LLVMname;
@@ -76,22 +75,21 @@ typedef struct {
 	int hasReturned;
 	// for LLVM registers
 	int registerCount;
-} Variable_function;
+} ContextBinding_function;
 
 typedef struct {
 	int LLVMRegister;
 	char *LLVMtype;
 	linkedList_Node *type;
-} Variable_variable;
+} ContextBinding_variable;
 
 typedef struct {
 	char *LLVMname;
 	/// SubString
 	linkedList_Node *memberNames;
-	// for properties and methods
-	/// Variable
-	linkedList_Node *memberVariables;
-} Variable_struct;
+	/// for properties and methods
+	linkedList_Node *memberBindings;
+} ContextBinding_struct;
 
 //
 // lexer, parser and builder

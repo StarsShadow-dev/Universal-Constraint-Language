@@ -17,6 +17,8 @@ function main(): Int8 {
 	var thing: Thing;
 	thing.number = 97;
 
+	// thing.putcharNumber
+
 	putchar(thing.number);
 
 	return 0;
