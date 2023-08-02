@@ -63,14 +63,19 @@ typedef struct {
 } ContextBinding;
 
 typedef struct {
+	ContextBinding *binding;
+} BuilderType;
+
+typedef struct {
 	char *LLVMtype;
 } ContextBinding_simpleType;
 
 typedef struct {
 	char *LLVMname;
 	char *LLVMreturnType;
+	/// BuilderType
 	linkedList_Node *argumentTypes;
-	linkedList_Node *returnType;
+	BuilderType returnType;
 	
 	int hasReturned;
 	// for LLVM registers
@@ -80,7 +85,7 @@ typedef struct {
 typedef struct {
 	int LLVMRegister;
 	char *LLVMtype;
-	linkedList_Node *type;
+	BuilderType type;
 } ContextBinding_variable;
 
 typedef struct {
@@ -164,7 +169,7 @@ typedef struct {
 typedef struct {
 	SubString *name;
 	int external;
-	linkedList_Node *returnType;
+	ASTnode *returnType;
 	linkedList_Node *argumentNames;
 	linkedList_Node *argumentTypes;
 	linkedList_Node *codeBlock;
@@ -192,7 +197,7 @@ typedef struct {
 
 typedef struct {
 	SubString *name;
-	linkedList_Node *type;
+	ASTnode *type;
 	linkedList_Node *expression;
 } ASTnode_variableDefinition;
 

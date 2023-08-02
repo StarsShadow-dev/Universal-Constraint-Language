@@ -7,4 +7,4 @@ The functions defined in "error.h" and "error.c" are for automating this when th
 
 Before calling `compileError` strings can be appended to `errorMsg` and `errorIndicator`:
 * `errorMsg` is displayed at the top of the error message
-* `errorIndicator` is displayed below is the line with the error
+* `errorIndicator` is displayed below the line with the error

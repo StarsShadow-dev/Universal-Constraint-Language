@@ -301,7 +301,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node *returnType = parseType(current);
+					ASTnode *returnType = (ASTnode *)parseType(current)->data;
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -466,7 +466,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node *type = parseType(current);
+					ASTnode *type = (ASTnode *)parseType(current)->data;
 					
 					linkedList_Node *expression = NULL;
 					

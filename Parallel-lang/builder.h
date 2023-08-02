@@ -21,9 +21,9 @@ void buildLLVM(
 	CharAccumulator *outerSource,
 	CharAccumulator *innerSource,
 	
-	/// Variable
+	/// BuilderType
 	linkedList_Node *expectedTypes,
-	/// Variable?, ASTnode?
+	/// BuilderType
 	linkedList_Node **types,
 	/// ASTnode
 	linkedList_Node *current,
