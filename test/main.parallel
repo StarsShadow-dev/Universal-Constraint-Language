@@ -1,17 +1,17 @@
-struct Thing {
-	function __init(): Void {
-		printLine("initializing a thing");
-		// self.number = 0;
-		return;
-	}
+// struct Thing {
+// 	function __init(): Void {
+// 		printLine("initializing a thing");
+// 		// self.number = 0;
+// 		return;
+// 	}
 
-	function putcharNumber(): Void {
-		// putchar(self.number);
-		return;
-	}
+// 	function putcharNumber(): Void {
+// 		// putchar(self.number);
+// 		return;
+// 	}
 
-	var number: Int32;
-}
+// 	var number: Int32;
+// }
 
 function main(): Int8 {
 	// var thing: Thing;
@@ -19,26 +19,28 @@ function main(): Int8 {
 	// thing.putcharNumber
 	// putchar(thing.number);
 
-	printCount("Hello, World", 5);
+	printAlphabet(); // abcdefghijklmnopqrstuvwxyz
+	putchar(10); // \n
 
 	return 0;
 }
 
-function printCount(string: Pointer, count: Int32): Void {
-	while (count > 0) {
-		printLine(string);
-		count = count - 1;
+function printAlphabet(): Void {
+	var i:Int32 = 97;
+	while (i < 123) {
+		putchar(i);
+		i = i + 1;
 	}
 
 	return;
 }
 
-function printLine(string: Pointer): Void {
-	printf(string);
-	putchar(10); // \n
+// function printLine(string: Pointer): Void {
+// 	printf(string);
+// 	putchar(10); // \n
 	
-	return;
-}
+// 	return;
+// }
 
 function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
-function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
+// function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"

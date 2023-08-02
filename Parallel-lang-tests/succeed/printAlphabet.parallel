@@ -1,0 +1,18 @@
+function main(): Int8 {
+	printAlphabet(); // abcdefghijklmnopqrstuvwxyz
+	putchar(10); // \n
+
+	return 0;
+}
+
+function printAlphabet(): Void {
+	var i:Int32 = 97;
+	while (i < 123) {
+		putchar(i);
+		i = i + 1;
+	}
+
+	return;
+}
+
+function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
