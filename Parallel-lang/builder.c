@@ -1,3 +1,11 @@
+/*
+ This file has the buildLLVM function and a bunch of functions that the BuildLLVM function calls.
+ 
+ This file is: very big, hard to read, very hard to debug.
+ Part of the debuging issue comes from how much casting is being used.
+ But I do not think there is much I can do about that in C.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>

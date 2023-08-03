@@ -19,20 +19,7 @@ function main(): Int8 {
 	// thing.putcharNumber
 	// putchar(thing.number);
 
-	printAlphabet(); // abcdefghijklmnopqrstuvwxyz
-	putchar(10); // \n
-
 	return 0;
-}
-
-function printAlphabet(): Void {
-	var i:Int32 = 97;
-	while (i < 123) {
-		putchar(i);
-		i = i + 1;
-	}
-
-	return;
 }
 
 // function printLine(string: Pointer): Void {
