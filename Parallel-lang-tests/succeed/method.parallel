@@ -1,0 +1,12 @@
+struct Thing {
+	function method(): Void {
+		return;
+	}
+}
+
+function main(): Int8 {
+	var thing: Thing;
+	thing.method();
+
+	return 0;
+}
