@@ -251,7 +251,30 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 			
 			if (nextToken->type == TokenType_operator) {
 				linkedList_Node *operatorAST = parseOperators(current, parse(current, ParserMode_noOperatorChecking), 0);
-				linkedList_join(&AST, &operatorAST);
+				Token *token = (Token *)((*current)->data);
+				if (token->type == TokenType_separator && SubString_string_cmp(&token->subString, "(") == 0) {
+					*current = (*current)->next;
+					linkedList_Node *arguments = parse(current, ParserMode_arguments);
+					
+					endIfCurrentIsEmpty()
+					if (parserMode == ParserMode_normal) {
+						if (CURRENT_IS_NOT_SEMICOLON) {
+							printf("expected ';' after function call\n");
+							compileError(token->location);
+						}
+						*current = (*current)->next;
+					}
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
+					
+					data->nodeType = ASTnodeType_call;
+					data->location = token->location;
+					
+					((ASTnode_call *)data->value)->left = operatorAST;
+					((ASTnode_call *)data->value)->arguments = arguments;
+				} else {
+					linkedList_join(&AST, &operatorAST);
+				}
 				if (parserMode == ParserMode_expression) {
 					return AST;
 				}
@@ -519,7 +542,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					endIfCurrentIsEmpty()
 					Token *nextToken = ((Token *)((*current)->data));
 					
-					if (nextToken->type == TokenType_separator && SubString_string_cmp(&nextToken->subString, "(") == 0) {
+					if (parserMode != ParserMode_noOperatorChecking && nextToken->type == TokenType_separator && SubString_string_cmp(&nextToken->subString, "(") == 0) {
 						// if statement
 						if (SubString_string_cmp(&token->subString, "if") == 0) {
 							*current = (*current)->next;
@@ -598,12 +621,20 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 								*current = (*current)->next;
 							}
 							
+							linkedList_Node *left = NULL;
+							
+							ASTnode *leftData = linkedList_addNode(&left, sizeof(ASTnode) + sizeof(ASTnode_variable));
+							
+							leftData->nodeType = ASTnodeType_variable;
+							leftData->location = token->location;
+							((ASTnode_variable *)leftData->value)->name = &token->subString;
+							
 							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
 							
 							data->nodeType = ASTnodeType_call;
 							data->location = token->location;
 							
-							((ASTnode_call *)data->value)->name = &token->subString;
+							((ASTnode_call *)data->value)->left = left;
 							((ASTnode_call *)data->value)->arguments = arguments;
 						}
 					}

@@ -177,7 +177,7 @@ typedef struct {
 
 // a function call
 typedef struct {
-	SubString *name;
+	linkedList_Node *left;
 	linkedList_Node *arguments;
 } ASTnode_call;
 

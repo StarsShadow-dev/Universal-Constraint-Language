@@ -151,6 +151,11 @@ void addTypeFromBuilderType(GlobalBuilderInformation *GBI, linkedList_Node **lis
 	data->binding = type->binding;
 }
 
+void addTypeFromBinding(GlobalBuilderInformation *GBI, linkedList_Node **list, ContextBinding *binding) {
+	BuilderType *data = linkedList_addNode(list, sizeof(BuilderType));
+	data->binding = binding;
+}
+
 linkedList_Node *typeToList(BuilderType type) {
 	linkedList_Node *list = NULL;
 	
@@ -612,15 +617,13 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				
 				ASTnode_call *data = (ASTnode_call *)node->value;
 				
-				ContextBinding *functionToCallBinding = getContextBindingFromSubString(GBI, data->name);
-				if (functionToCallBinding == NULL || functionToCallBinding->type != ContextBindingType_function) {
-					addStringToErrorMsg("unknown function");
-					
-					addStringToErrorIndicator("no function named '");
-					addSubStringToErrorIndicator(data->name);
-					addStringToErrorIndicator("'");
-					compileError(node->location);
-				}
+				CharAccumulator leftSource = {100, 0, 0};
+				CharAccumulator_initialize(&leftSource);
+				
+				linkedList_Node *leftTypes = NULL;
+				buildLLVM(GBI, outerFunction, outerSource, &leftSource, NULL, &leftTypes, data->left, 1, 0, 0);
+				
+				ContextBinding *functionToCallBinding = ((BuilderType *)leftTypes->data)->binding;
 				ContextBinding_function *functionToCall = (ContextBinding_function *)functionToCallBinding->value;
 				
 				if (types != NULL) {
@@ -632,12 +635,12 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				int actualArgumentCount = linkedList_getCount(&data->arguments);
 				
 				if (expectedArgumentCount > actualArgumentCount) {
-					SubString_print(data->name);
+					SubString_print(functionToCallBinding->key);
 					printf(" did not get enough arguments (expected %d but got %d)\n", expectedArgumentCount, actualArgumentCount);
 					compileError(node->location);
 				}
 				if (expectedArgumentCount < actualArgumentCount) {
-					SubString_print(data->name);
+					SubString_print(functionToCallBinding->key);
 					printf(" got too many arguments (expected %d but got %d)\n", expectedArgumentCount, actualArgumentCount);
 					compileError(node->location);
 				}
@@ -982,7 +985,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 								
 								outerFunction->registerCount++;
 							} else if (memberBinding->type == ContextBindingType_function) {
-								abort();
+								if (types != NULL) {
+									addTypeFromBinding(GBI, types, memberBinding);
+								}
 //								ContextBinding_function *memberFunction = (ContextBinding_function *)memberBinding->value;
 //
 //								CharAccumulator_appendChars(innerSource, "@");
@@ -1278,49 +1283,56 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				if (variableBinding == NULL) {
 					addStringToErrorMsg("value not in scope");
 					
-					addStringToErrorIndicator("no variable named '");
+					addStringToErrorIndicator("nothing named '");
 					addSubStringToErrorIndicator(data->name);
 					addStringToErrorIndicator("'");
 					compileError(node->location);
 				}
-				if (variableBinding->type != ContextBindingType_variable) {
-					addStringToErrorMsg("value exists but is not a variable");
+				if (variableBinding->type == ContextBindingType_variable) {
+					ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
+					
+					if (types != NULL) {
+						addTypeFromBuilderType(GBI, types, &variable->type);
+					}
+					
+					if (outerSource != NULL) {
+						if (withTypes) {
+							CharAccumulator_appendChars(innerSource, variable->LLVMtype);
+							CharAccumulator_appendChars(innerSource, " ");
+						}
+						
+						CharAccumulator_appendChars(innerSource, "%");
+						
+						if (loadVariables) {
+							CharAccumulator_appendChars(outerSource, "\n\t%");
+							CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+							CharAccumulator_appendChars(outerSource, " = load ");
+							CharAccumulator_appendChars(outerSource, variable->LLVMtype);
+							CharAccumulator_appendChars(outerSource, ", ptr %");
+							CharAccumulator_appendInt(outerSource, variable->LLVMRegister);
+							CharAccumulator_appendChars(outerSource, ", align ");
+							CharAccumulator_appendInt(outerSource, variableBinding->byteAlign);
+							
+							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+							
+							outerFunction->registerCount++;
+						} else {
+							CharAccumulator_appendInt(innerSource, variable->LLVMRegister);
+						}
+					}
+				} else if (variableBinding->type == ContextBindingType_function) {
+					ContextBinding_function *function = (ContextBinding_function *)variableBinding->value;
+					
+					if (types != NULL) {
+						addTypeFromBinding(GBI, types, variableBinding);
+					}
+				} else {
+					addStringToErrorMsg("value exists but is not a variable or function");
 					
 					addStringToErrorIndicator("'");
 					addSubStringToErrorIndicator(data->name);
-					addStringToErrorIndicator("' is not a variable");
+					addStringToErrorIndicator("' is not a variable or function");
 					compileError(node->location);
-				}
-				ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
-				
-				if (types != NULL) {
-					addTypeFromBuilderType(GBI, types, &variable->type);
-				}
-				
-				if (outerSource != NULL) {
-					if (withTypes) {
-						CharAccumulator_appendChars(innerSource, variable->LLVMtype);
-						CharAccumulator_appendChars(innerSource, " ");
-					}
-					
-					CharAccumulator_appendChars(innerSource, "%");
-					
-					if (loadVariables) {
-						CharAccumulator_appendChars(outerSource, "\n\t%");
-						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-						CharAccumulator_appendChars(outerSource, " = load ");
-						CharAccumulator_appendChars(outerSource, variable->LLVMtype);
-						CharAccumulator_appendChars(outerSource, ", ptr %");
-						CharAccumulator_appendInt(outerSource, variable->LLVMRegister);
-						CharAccumulator_appendChars(outerSource, ", align ");
-						CharAccumulator_appendInt(outerSource, variableBinding->byteAlign);
-						
-						CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
-						
-						outerFunction->registerCount++;
-					} else {
-						CharAccumulator_appendInt(innerSource, variable->LLVMRegister);
-					}
 				}
 				
 				break;

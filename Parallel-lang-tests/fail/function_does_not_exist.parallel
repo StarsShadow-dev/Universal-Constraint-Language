@@ -1,8 +1,8 @@
 /*
-error: unknown function
+error: value not in scope
 9  |function main(): Int8 {
 10 |    notAFunction();
-        ^^^^^^^^^^^^ no function named 'notAFunction'
+        ^^^^^^^^^^^^ nothing named 'notAFunction'
 11 |
 */
 
