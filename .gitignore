@@ -10,7 +10,7 @@ DerivedData/
 
 test/build/*
 
-Parallel-lang-tests/runTests
+tests/runTests
 
 Parallel-lang/old/*
 Parallel-lang/parallel/build/*
