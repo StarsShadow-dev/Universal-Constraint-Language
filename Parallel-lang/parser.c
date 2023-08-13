@@ -33,6 +33,11 @@ linkedList_Node *parseType(linkedList_Node **current) {
 		compileError(token->location);
 	}
 	
+//	Token *nextToken = ((Token *)((*current)->next->data));
+//	if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "<") == 0) {
+//		
+//	}
+	
 	ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_type));
 	data->nodeType = ASTnodeType_type;
 	data->location = token->location;

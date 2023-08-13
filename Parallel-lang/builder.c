@@ -165,12 +165,32 @@ linkedList_Node *typeToList(BuilderType type) {
 	return list;
 }
 
+void expectUnusedMemberBindingName(ContextBinding_struct *structData, SubString *name, SourceLocation location) {
+	linkedList_Node *currentMemberBinding = structData->memberBindings;
+	while (currentMemberBinding != NULL) {
+		ContextBinding *memberBinding = (ContextBinding *)currentMemberBinding->data;
+		
+		if (SubString_SubString_cmp(memberBinding->key, name) == 0) {
+			addStringToErrorMsg("the name '");
+			addSubStringToErrorMsg(name);
+			addStringToErrorMsg("' is defined multiple times inside a struct");
+			
+			addStringToErrorIndicator("'");
+			addSubStringToErrorIndicator(name);
+			addStringToErrorIndicator("' redefined here");
+			compileError(location);
+		}
+		
+		currentMemberBinding = currentMemberBinding->next;
+	}
+}
+
 void expectUnusedName(GlobalBuilderInformation *GBI, SubString *name, SourceLocation location) {
 	ContextBinding *binding = getContextBindingFromSubString(GBI, name);
 	if (binding != NULL) {
 		addStringToErrorMsg("the name '");
 		addSubStringToErrorMsg(name);
-		addStringToErrorMsg("' is defined multiple times.");
+		addStringToErrorMsg("' is defined multiple times");
 		
 		addStringToErrorIndicator("'");
 		addSubStringToErrorIndicator(name);
@@ -420,6 +440,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 					if (node->nodeType == ASTnodeType_variableDefinition) {
 						ASTnode_variableDefinition *memberData = (ASTnode_variableDefinition *)node->value;
 						
+						expectUnusedMemberBindingName((ContextBinding_struct *)structBinding->value, memberData->name, node->location);
+						
 						char *LLVMtype = getLLVMtypeFromASTnode(GBI, memberData->type);
 						
 						ContextBinding *typeBinding = expectTypeExists(GBI, ((ASTnode_type *)memberData->type->value)->name, memberData->type->location);
@@ -443,7 +465,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 						
 						ContextBinding *variableBinding = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 						
-						variableBinding->key = data->name;
+						variableBinding->key = memberData->name;
 						variableBinding->type = ContextBindingType_variable;
 						variableBinding->byteSize = typeBinding->byteSize;
 						variableBinding->byteAlign = typeBinding->byteSize;
@@ -456,6 +478,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 						addComma = 1;
 					} else if (node->nodeType == ASTnodeType_function) {
 						ASTnode_function *memberData = (ASTnode_function *)node->value;
+						
+						expectUnusedMemberBindingName((ContextBinding_struct *)structBinding->value, memberData->name, node->location);
 						
 						// make sure that the return type actually exists
 						expectTypeExists(GBI, ((ASTnode_type *)memberData->returnType->value)->name, memberData->returnType->location);
@@ -485,7 +509,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 						
 						ContextBinding *functionData = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberBindings, sizeof(ContextBinding) + sizeof(ContextBinding_function));
 						
-						functionData->key = data->name;
+						functionData->key = memberData->name;
 						functionData->type = ContextBindingType_function;
 						functionData->byteSize = pointer_byteSize;
 						functionData->byteAlign = pointer_byteSize;
@@ -548,17 +572,17 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
 				
 				linkedList_Node *currentMember = data->block;
-				linkedList_Node *currentMemberVariable = structData->memberBindings;
+				linkedList_Node *currentMemberBinding = structData->memberBindings;
 				while (currentMember != NULL) {
 					ASTnode *memberNode = ((ASTnode *)currentMember->data);
-					ContextBinding *memberBinding = (ContextBinding *)currentMemberVariable->data;
+					ContextBinding *memberBinding = (ContextBinding *)currentMemberBinding->data;
 					
 					if (memberBinding->type == ContextBindingType_function) {
 						generateFunction(GBI, outerSource, (ContextBinding_function *)memberBinding->value, memberNode);
 					}
 					
 					currentMember = currentMember->next;
-					currentMemberVariable = currentMemberVariable->next;
+					currentMemberBinding = currentMemberBinding->next;
 				}
 				
 				break;
@@ -587,7 +611,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 					}
 					ContextBinding *memberBinding = (ContextBinding *)currentMember->data;
 					
-					if (memberBinding->type == ContextBindingType_function && SubString_string_cmp(memberBinding->key, "__init")) {
+					if (memberBinding->type == ContextBindingType_function && SubString_string_cmp(memberBinding->key, "__init") == 0) {
 						ContextBinding_function *function = (ContextBinding_function *)memberBinding->value;
 						
 						CharAccumulator_appendChars(outerSource, function->LLVMname);

@@ -1,26 +1,17 @@
 function main(): Int8 {
-	var thing: Thing;
-	thing.number = 97;
-	thing.putcharNumber();
-	putchar(thing.number);
-
 	return 0;
 }
 
-struct Thing {
-	function __init(): Void {
-		// printLine("initializing a thing");
-		// self.number = 0;
-		return;
-	}
+struct Point {
+	var x: Int32;
+	var y: Int32;
+	var y: Int32;
+}
 
-	function putcharNumber(): Void {
-		printLine("in putcharNumber");
-		// putchar(self.number);
-		return;
-	}
-
-	var number: Int32;
+struct Triangle {
+	var p1: Point;
+	var p2: Point;
+	var p3: Point;
 }
 
 function printLine(string: Pointer): Void {
