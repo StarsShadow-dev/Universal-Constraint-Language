@@ -17,6 +17,7 @@
 #include "types.h"
 #include "globals.h"
 #include "compiler.h"
+#include "utilities.h"
 
 int main(int argc, char **argv) {
 	CompilerMode compilerMode;
@@ -65,11 +66,7 @@ int main(int argc, char **argv) {
 	}
 	
 	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
-	char *globalConfigPath = malloc(strlen(homePath) + strlen(globalConfigRelativePath) + 1);
-	if (globalConfigPath == NULL) {
-		printf("malloc failed\n");
-		abort();
-	}
+	char *globalConfigPath = safeMalloc(strlen(homePath) + strlen(globalConfigRelativePath) + 1);
 	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
 
 	char *globalConfigJSON = readFile(globalConfigPath);

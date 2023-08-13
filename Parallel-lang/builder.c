@@ -13,13 +13,10 @@
 #include "globals.h"
 #include "builder.h"
 #include "error.h"
+#include "utilities.h"
 
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign) {
-	SubString *key = malloc(sizeof(SubString));
-	if (key == NULL) {
-		printf("malloc failed\n");
-		abort();
-	}
+	SubString *key = safeMalloc(sizeof(SubString));
 	key->start = name;
 	key->length = (int)strlen(name);
 	
@@ -380,11 +377,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				
 				ContextBinding *functionData = linkedList_addNode(&GBI->context[GBI->level], sizeof(ContextBinding) + sizeof(ContextBinding_function));
 				
-				char *functionLLVMname = malloc(data->name->length + 1);
-				if (functionLLVMname == NULL) {
-					printf("malloc failed\n");
-					abort();
-				}
+				char *functionLLVMname = safeMalloc(data->name->length + 1);
 				memcpy(functionLLVMname, data->name->start, data->name->length);
 				functionLLVMname[data->name->length] = 0;
 				
@@ -414,11 +407,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				
 				int strlength = strlen("%struct.");
 				
-				char *LLVMname = malloc(strlength + data->name->length + 1);
-				if (LLVMname == NULL) {
-					printf("malloc failed\n");
-					abort();
-				}
+				char *LLVMname = safeMalloc(strlength + data->name->length + 1);
 				memcpy(LLVMname, "%struct.", strlength);
 				memcpy(LLVMname + strlength, data->name->start, data->name->length);
 				LLVMname[strlength + data->name->length] = 0;
@@ -498,11 +487,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 						memcpy(nameData, memberData->name, sizeof(SubString));
 						
 						int functionLLVMnameLength = data->name->length + 1 + memberData->name->length;
-						char *functionLLVMname = malloc(functionLLVMnameLength + 1);
-						if (functionLLVMname == NULL) {
-							printf("malloc failed\n");
-							abort();
-						}
+						char *functionLLVMname = safeMalloc(functionLLVMnameLength + 1);
 						snprintf(functionLLVMname, functionLLVMnameLength + 1, "%.*s.%s", data->name->length, data->name->start, memberData->name->start);
 						
 						BuilderType returnType = getTypeFromASTnode(GBI, memberData->returnType);

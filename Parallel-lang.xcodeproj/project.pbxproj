@@ -14,6 +14,7 @@
 		020300242A1D0BB70082A063 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300232A1D0BB70082A063 /* error.c */; };
 		020300272A1EBA4A0082A063 /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300262A1EBA4A0082A063 /* parser.c */; };
 		0203002E2A24F49C0082A063 /* builder.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203002D2A24F49C0082A063 /* builder.c */; };
+		028BE7EA2A88FAED0049431E /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = 028BE7E92A88FAED0049431E /* utilities.c */; };
 		028F239D2A6F2D6000279ECC /* objectFile.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 028F239C2A6F2BE000279ECC /* objectFile.o */; };
 		028F23A12A707CBB00279ECC /* compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 028F23A02A707CBB00279ECC /* compiler.c */; };
 /* End PBXBuildFile section */
@@ -54,6 +55,8 @@
 		02392DFF2A0414AF00F1AE9C /* ShellCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellCommand.swift; sourceTree = "<group>"; };
 		02392E012A046E2B00F1AE9C /* AcronymsAndAbbreviations.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = AcronymsAndAbbreviations.txt; sourceTree = "<group>"; };
 		026FC18F2A05E22400EF5FD9 /* types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = types.swift; sourceTree = "<group>"; };
+		028BE7E82A88FAED0049431E /* utilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
+		028BE7E92A88FAED0049431E /* utilities.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
 		028F239C2A6F2BE000279ECC /* objectFile.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = objectFile.o; path = "Parallel-lang/parallel/build/objectFile.o"; sourceTree = "<group>"; };
 		028F239E2A6F2E0800279ECC /* fromParallel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fromParallel.h; sourceTree = "<group>"; };
 		028F239F2A707CBB00279ECC /* compiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
@@ -115,6 +118,8 @@
 				020300232A1D0BB70082A063 /* error.c */,
 				020300192A1AC0420082A063 /* globals.h */,
 				0203001A2A1AC0420082A063 /* globals.c */,
+				028BE7E82A88FAED0049431E /* utilities.h */,
+				028BE7E92A88FAED0049431E /* utilities.c */,
 				0203001C2A1ACA210082A063 /* types.h */,
 				0203001D2A1AD5C40082A063 /* types.c */,
 				0203001F2A1D08840082A063 /* lexer.h */,
@@ -203,6 +208,7 @@
 				0203001B2A1AC0420082A063 /* globals.c in Sources */,
 				020300182A1A7AD90082A063 /* main.c in Sources */,
 				020300272A1EBA4A0082A063 /* parser.c in Sources */,
+				028BE7EA2A88FAED0049431E /* utilities.c in Sources */,
 				028F23A12A707CBB00279ECC /* compiler.c in Sources */,
 				020300242A1D0BB70082A063 /* error.c in Sources */,
 			);

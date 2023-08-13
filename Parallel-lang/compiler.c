@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "builder.h"
+#include "utilities.h"
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
@@ -57,11 +58,7 @@ char *readFile(const char *path) {
 	size_t fileSize = ftell(file);
 	rewind(file);
 	
-	char *buffer = malloc(fileSize + 1);
-	if (buffer == NULL) {
-		printf("malloc failed\n");
-		abort();
-	}
+	char *buffer = safeMalloc(fileSize + 1);
 	
 	if (fread(buffer, sizeof(char), fileSize, file) != fileSize) {
 		printf("fread failed\n");
@@ -139,11 +136,7 @@ char *getJsmnString(char *buffer, jsmntok_t *t, int start, int count, char *key)
 	
 	unsigned long stringLen = token.end - token.start;
 	char *stringValue = buffer + token.start;
-	char *result = malloc(stringLen + 1);
-	if (result == NULL) {
-		printf("malloc failed\n");
-		abort();
-	}
+	char *result = safeMalloc(stringLen + 1);
 	
 	memcpy(result, stringValue, stringLen);
 	result[stringLen] = 0;

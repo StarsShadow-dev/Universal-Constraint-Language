@@ -5,7 +5,7 @@ function main(): Int8 {
 struct Point {
 	var x: Int32;
 	var y: Int32;
-	var y: Int32;
+	var z: Int32;
 }
 
 struct Triangle {

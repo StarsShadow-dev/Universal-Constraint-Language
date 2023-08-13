@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "error.h"
+#include "utilities.h"
 
 //
 // linkedList
@@ -104,11 +105,7 @@ void CharAccumulator_initialize(CharAccumulator *accumulator) {
 	if (accumulator->data != NULL) {
 		free(accumulator->data);
 	}
-	accumulator->data = malloc(accumulator->maxSize);
-	if (accumulator->data == NULL) {
-		printf("malloc failed\n");
-		abort();
-	}
+	accumulator->data = safeMalloc(accumulator->maxSize);
 	
 	// add a NULL bite
 	*accumulator->data = 0;
@@ -122,11 +119,7 @@ void CharAccumulator_appendChar(CharAccumulator *accumulator, char character) {
 		// reallocate
 		char *oldData = accumulator->data;
 		
-		accumulator->data = malloc(accumulator->maxSize);
-		if (accumulator->data == NULL) {
-			printf("malloc failed\n");
-			abort();
-		}
+		accumulator->data = safeMalloc(accumulator->maxSize);
 		
 		stpncpy(accumulator->data, oldData, accumulator->size);
 		
@@ -148,11 +141,7 @@ void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars,
 		// reallocate
 		char *oldData = accumulator->data;
 		
-		accumulator->data = malloc(accumulator->maxSize);
-		if (accumulator->data == NULL) {
-			printf("malloc failed\n");
-			abort();
-		}
+		accumulator->data = safeMalloc(accumulator->maxSize);
 		
 		stpncpy(accumulator->data, oldData, accumulator->size);
 		
@@ -190,11 +179,7 @@ void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number) {
 		// reallocate
 		char *oldData = accumulator->data;
 		
-		accumulator->data = malloc(accumulator->maxSize);
-		if (accumulator->data == NULL) {
-			printf("malloc failed\n");
-			abort();
-		}
+		accumulator->data = safeMalloc(accumulator->maxSize);
 		
 		stpncpy(accumulator->data, oldData, accumulator->size);
 		
