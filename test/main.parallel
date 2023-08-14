@@ -1,5 +1,5 @@
 function main(): Int8 {
-	pointer == 0
+	pointer.0
 	return 0;
 }
 

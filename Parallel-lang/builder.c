@@ -931,7 +931,12 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 					
 					// make sure that both sides of the member access are a variable
 					if (leftNode->nodeType != ASTnodeType_variable) abort();
-					if (rightNode->nodeType != ASTnodeType_variable) abort();
+					if (rightNode->nodeType != ASTnodeType_variable) {
+						addStringToErrorMsg("right side of memberAccess must be a word");
+						
+						addStringToErrorIndicator("right side of memberAccess is not a word");
+						compileError(rightNode->location);
+					};
 					
 					linkedList_Node *leftTypes = NULL;
 					buildLLVM(GBI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypes, data->left, 0, 0, 0);
