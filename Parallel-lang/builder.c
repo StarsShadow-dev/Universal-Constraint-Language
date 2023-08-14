@@ -1020,6 +1020,13 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 					break;
 				}
 				
+				if (expectedTypes == NULL) {
+					addStringToErrorMsg("unexpected operator");
+					
+					addStringToErrorIndicator("the return value of this operator is not used");
+					compileError(node->location);
+				}
+				
 				linkedList_Node *expectedTypeForLeftAndRight = NULL;
 				char *expectedLLVMtype = getLLVMtypeFromBuilderType(GBI, (BuilderType *)expectedTypes->data);
 				
@@ -1330,7 +1337,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 						}
 					}
 				} else if (variableBinding->type == ContextBindingType_function) {
-					ContextBinding_function *function = (ContextBinding_function *)variableBinding->value;
+//					ContextBinding_function *function = (ContextBinding_function *)variableBinding->value;
 					
 					if (types != NULL) {
 						addTypeFromBinding(GBI, types, variableBinding);
