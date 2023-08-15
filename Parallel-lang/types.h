@@ -77,7 +77,6 @@ typedef struct {
 	linkedList_Node *argumentTypes;
 	BuilderType returnType;
 	
-	int hasReturned;
 	// for LLVM registers
 	int registerCount;
 } ContextBinding_function;

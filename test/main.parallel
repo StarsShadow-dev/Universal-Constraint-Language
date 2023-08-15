@@ -1,9 +1,9 @@
 function main(): Int8 {
-	var point: Point;
-	point.x = 0;
-	point.y = 0;
-	point.z = 0;
-	return 0;
+	if (true) {
+		return 0;
+	}
+	
+	// return 1;
 }
 
 function safeMalloc(size: Int64): Pointer {

@@ -15,7 +15,7 @@ typedef struct {
 
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
 
-void buildLLVM(
+int buildLLVM(
 	GlobalBuilderInformation *GBI,
 	ContextBinding_function *outerFunction,
 	CharAccumulator *outerSource,

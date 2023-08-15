@@ -320,9 +320,9 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 		
 		CharAccumulator_appendChars(outerSource, ") {");
 		CharAccumulator_appendChars(outerSource, functionSource.data);
-		buildLLVM(GBI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
+		int functionHasReturned = buildLLVM(GBI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
 		
-		if (!function->hasReturned) {
+		if (!functionHasReturned) {
 			printf("function did not return\n");
 			compileError(node->location);
 		}
@@ -333,7 +333,7 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 	}
 }
 
-void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
+int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
 	GBI->level++;
 	if (GBI->level > maxVariablesLevel) {
 		printf("level (%i) > maxVariablesLevel (%i)\n", GBI->level, maxVariablesLevel);
@@ -344,6 +344,8 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 	if (expectedTypes != NULL) {
 		currentExpectedType = &expectedTypes;
 	}
+	
+	int hasReturned = 0;
 	
 	//
 	// pre-loop
@@ -396,7 +398,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
 				((ContextBinding_function *)functionData->value)->argumentTypes = argumentTypes;
 				((ContextBinding_function *)functionData->value)->returnType = returnType;
-				((ContextBinding_function *)functionData->value)->hasReturned = 0;
 				((ContextBinding_function *)functionData->value)->registerCount = 0;
 			}
 			
@@ -508,7 +509,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 						((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
 						((ContextBinding_function *)functionData->value)->argumentTypes = memberData->argumentTypes;
 						((ContextBinding_function *)functionData->value)->returnType = returnType;
-						((ContextBinding_function *)functionData->value)->hasReturned = 0;
 						((ContextBinding_function *)functionData->value)->registerCount = 0;
 					} else {
 						abort();
@@ -790,7 +790,9 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 					CharAccumulator_free(&newInnerSource);
 				}
 				
-				outerFunction->hasReturned = 1;
+				hasReturned = 1;
+				
+				outerFunction->registerCount++;
 				
 				break;
 			}
@@ -1345,4 +1347,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 	}
 	
 	GBI->level--;
+	
+	return hasReturned;
 }
