@@ -578,51 +578,6 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				break;
 			}
 			
-			case ASTnodeType_new: {
-				ASTnode_new *data = (ASTnode_new *)node->value;
-				
-				ContextBinding *structBinding = getContextBindingFromSubString(GBI, data->name);
-				if (structBinding == NULL || structBinding->type != ContextBindingType_struct) abort();
-				ContextBinding_struct *structToInit = (ContextBinding_struct *)structBinding->value;
-				
-				CharAccumulator_appendChars(outerSource, "\n\t%");
-				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(outerSource, " = call ptr @malloc(i64 noundef ");
-				CharAccumulator_appendInt(outerSource, structBinding->byteSize);
-				CharAccumulator_appendChars(outerSource, ") allocsize(0)");
-				
-				CharAccumulator_appendChars(outerSource, "\n\tcall void @");
-				
-				linkedList_Node *currentMember = structToInit->memberBindings;
-				while (1) {
-					if (currentMember == NULL) {
-						printf("tried to initialize a struct that does not have an initializer");
-						compileError(node->location);
-					}
-					ContextBinding *memberBinding = (ContextBinding *)currentMember->data;
-					
-					if (memberBinding->type == ContextBindingType_function && SubString_string_cmp(memberBinding->key, "__init") == 0) {
-						ContextBinding_function *function = (ContextBinding_function *)memberBinding->value;
-						
-						CharAccumulator_appendChars(outerSource, function->LLVMname);
-						break;
-					}
-					
-					currentMember = currentMember->next;
-				}
-				
-				CharAccumulator_appendChars(outerSource, "(ptr %");
-				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(outerSource, ")");
-				
-				CharAccumulator_appendChars(innerSource, "ptr %");
-				CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
-				
-				outerFunction->registerCount++;
-				
-				break;
-			}
-			
 			case ASTnodeType_call: {
 				if (outerFunction == NULL) {
 					printf("function calls are only allowed in a function\n");

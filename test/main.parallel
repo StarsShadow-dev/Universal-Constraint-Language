@@ -1,4 +1,8 @@
 function main(): Int8 {
+	var point: Point;
+	point.x = 0;
+	point.y = 0;
+	point.z = 0;
 	return 0;
 }
 
@@ -30,6 +34,6 @@ function printLine(string: Pointer): Void {
 	return;
 }
 
-function malloc(size: Int64): Int32 "declare ptr @malloc(i64 noundef) allocsize(0)"
+function malloc(size: Int64): Pointer "declare ptr @malloc(i64 noundef) allocsize(0)"
 function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
 function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"

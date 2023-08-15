@@ -405,40 +405,6 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					((ASTnode_struct *)data->value)->block = block;
 				}
 				
-				// new
-//				else if (SubString_string_cmp(&token->subString, "new") == 0) {
-//					if (parserMode != ParserMode_expression) {
-//						printf("the new keyword can only be used in an expression\n");
-//						compileError(token->location);
-//					}
-//
-//					*current = (*current)->next;
-//					endIfCurrentIsEmpty()
-//					Token *nameToken = ((Token *)((*current)->data));
-//					if (nameToken->type != TokenType_word) {
-//						printf("expected word after var keyword\n");
-//						compileError(nameToken->location);
-//					}
-//
-//					*current = (*current)->next;
-//					*current = (*current)->next;
-//					linkedList_Node *arguments = parse(current, ParserMode_arguments);
-//
-//					endIfCurrentIsEmpty()
-//					if (CURRENT_IS_NOT_SEMICOLON) {
-//						printf("expected ';' after new keyword\n");
-//						compileError(token->location);
-//					}
-//
-//					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_new));
-//
-//					data->nodeType = ASTnodeType_new;
-//					data->location = token->location;
-//
-//					((ASTnode_new *)data->value)->name = &nameToken->subString;
-//					((ASTnode_new *)data->value)->arguments = arguments;
-//				}
-				
 				// return statement
 				else if (SubString_string_cmp(&token->subString, "return") == 0) {
 					*current = (*current)->next;

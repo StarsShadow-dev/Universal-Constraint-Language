@@ -244,9 +244,6 @@ void compileModule(char *path, char *target_triple, CompilerMode compilerMode, C
 		free(build_directory);
 	}
 	
-	// declare malloc
-//	CharAccumulator_appendChars(LLVMsource, "\n; for the new keyword\ndeclare ptr @malloc(i64 noundef) allocsize(0)");
-	
 	CharAccumulator LLVMconstantSource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMconstantSource);
 	

@@ -126,7 +126,6 @@ typedef struct {
 typedef enum {
 	ASTnodeType_type,
 	ASTnodeType_struct,
-	ASTnodeType_new,
 	ASTnodeType_function,
 	ASTnodeType_call,
 	ASTnodeType_while,
@@ -160,11 +159,6 @@ typedef struct {
 	SubString *name;
 	linkedList_Node *block;
 } ASTnode_struct;
-
-typedef struct {
-	SubString *name;
-	linkedList_Node *arguments;
-} ASTnode_new;
 
 typedef struct {
 	SubString *name;
