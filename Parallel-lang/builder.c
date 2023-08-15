@@ -115,15 +115,7 @@ char *getLLVMtypeFromBuilderType(GlobalBuilderInformation *GBI, BuilderType *typ
 	abort();
 }
 
-int expectTypeWithType(BuilderType *expectedType, BuilderType actualType) {
-	if (expectedType->binding == actualType.binding) {
-		return 1;
-	}
-	
-	return 0;
-}
-
-int expectTypeWithString(BuilderType *expectedType, char *actualTypeString) {
+int ifTypeIsNamed(BuilderType *expectedType, char *actualTypeString) {
 	if (SubString_string_cmp(expectedType->binding->key, actualTypeString) != 0) {
 		return 1;
 	}
@@ -160,6 +152,19 @@ linkedList_Node *typeToList(BuilderType type) {
 	data->binding = type.binding;
 	
 	return list;
+}
+
+void expectSameType(BuilderType *expectedType, BuilderType actualType, SourceLocation location) {
+	if (expectedType->binding != actualType.binding) {
+		addStringToErrorMsg("unexpected type");
+		
+		addStringToErrorIndicator("expected type '");
+		addSubStringToErrorIndicator(expectedType->binding->key);
+		addStringToErrorIndicator("' but got type '");
+		addSubStringToErrorIndicator(actualType.binding->key);
+		addStringToErrorIndicator("'");
+		compileError(location);
+	}
 }
 
 void expectUnusedMemberBindingName(ContextBinding_struct *structData, SubString *name, SourceLocation location) {
@@ -654,6 +659,10 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 					compileError(node->location);
 				}
 				
+				if (expectedTypes != NULL) {
+					expectSameType((BuilderType *)expectedTypes->data, functionToCall->returnType, node->location);
+				}
+				
 				if (types == NULL) {
 					CharAccumulator newInnerSource = {100, 0, 0};
 					CharAccumulator_initialize(&newInnerSource);
@@ -808,7 +817,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
 				if (data->expression == NULL) {
-					if (expectTypeWithString(&outerFunction->returnType, "Void")) {
+					if (ifTypeIsNamed(&outerFunction->returnType, "Void")) {
 						printf("Returning Void in a function that does not return Void.\n");
 						compileError(node->location);
 					}
@@ -1048,11 +1057,11 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 					
 					buildLLVM(GBI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0, 0);
 					if (
-						expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
-						expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
-						expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
 					) {
-						if (expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
+						if (ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 							printf("operator expected a number\n");
 							compileError(node->location);
 						}
@@ -1060,11 +1069,11 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 						linkedList_freeList(&expectedTypeForLeftAndRight);
 						buildLLVM(GBI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0, 0);
 						if (
-							expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
-							expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
-							expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
+							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
+							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
+							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
 						) {
-							if (expectTypeWithString((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
+							if (ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 								printf("operator expected a number\n");
 								compileError(node->location);
 							}
@@ -1159,7 +1168,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 			}
 			
 			case ASTnodeType_true: {
-				if (expectTypeWithString((BuilderType *)expectedTypes->data, "Bool")) {
+				if (ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
 					printf("unexpected Bool\n");
 					compileError(node->location);
 				}
@@ -1174,7 +1183,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 			}
 
 			case ASTnodeType_false: {
-				if (expectTypeWithString((BuilderType *)expectedTypes->data, "Bool")) {
+				if (ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
 					printf("unexpected Bool\n");
 					compileError(node->location);
 				}
@@ -1197,10 +1206,10 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 				}
 				
 				if (
-					expectTypeWithString((BuilderType *)expectedTypes->data, "Int8") &&
-					expectTypeWithString((BuilderType *)expectedTypes->data, "Int16") &&
-					expectTypeWithString((BuilderType *)expectedTypes->data, "Int32") &&
-					expectTypeWithString((BuilderType *)expectedTypes->data, "Int64")
+					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int8") &&
+					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int16") &&
+					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int32") &&
+					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int64")
 				) {
 					addStringToErrorMsg("unexpected type");
 					
@@ -1237,7 +1246,7 @@ void buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunc
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (expectTypeWithString((BuilderType *)expectedTypes->data, "Pointer")) {
+				if (ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
 					printf("unexpected string\n");
 					compileError(node->location);
 				}

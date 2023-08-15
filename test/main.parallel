@@ -1,6 +1,14 @@
 function main(): Int8 {
-	pointer.0
 	return 0;
+}
+
+function safeMalloc(size: Int64): Pointer {
+	var pointer: Pointer = malloc(size);
+	// if (pointer == 0) {
+	// 	printf("safeMalloc: malloc failed");
+	// 	abort();
+	// }
+	return pointer;
 }
 
 struct Point {
@@ -22,5 +30,6 @@ function printLine(string: Pointer): Void {
 	return;
 }
 
+function malloc(size: Int64): Int32 "declare ptr @malloc(i64 noundef) allocsize(0)"
 function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
 function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
