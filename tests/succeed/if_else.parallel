@@ -1,0 +1,11 @@
+function main(): Int8 {
+	if (true) {
+		return 0;
+	}
+	else {
+		return 1;
+	}
+
+	// unreachable
+	return 1;
+}
