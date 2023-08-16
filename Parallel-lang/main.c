@@ -57,9 +57,7 @@ int main(int argc, char **argv) {
 		char *arg = argv[i];
 //		printf("arg %d: %s\n", i, arg);
 		if (strcmp(arg, "-d") == 0) {
-			printf("'-d' (includeDebugInformation) is not currently supported\n");
-			exit(1);
-//			compilerOptions.includeDebugInformation = 1;
+			compilerOptions.includeDebugInformation = 1;
 		}
 		
 		else if (strcmp(arg, "-v") == 0) {

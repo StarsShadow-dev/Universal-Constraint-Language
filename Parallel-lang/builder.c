@@ -318,7 +318,12 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 		
 		function->registerCount++;
 		
-		CharAccumulator_appendChars(outerSource, ") {");
+		CharAccumulator_appendChars(outerSource, ")");
+		if (compilerOptions.includeDebugInformation) {
+			CharAccumulator_appendChars(outerSource, " !dbg !");
+			CharAccumulator_appendInt(outerSource, function->debugInformationScopeID);
+		}
+		CharAccumulator_appendChars(outerSource, " {");
 		CharAccumulator_appendChars(outerSource, functionSource.data);
 		int functionHasReturned = buildLLVM(GBI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
 		
@@ -399,6 +404,25 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 				((ContextBinding_function *)functionData->value)->argumentTypes = argumentTypes;
 				((ContextBinding_function *)functionData->value)->returnType = returnType;
 				((ContextBinding_function *)functionData->value)->registerCount = 0;
+				
+				if (compilerOptions.includeDebugInformation) {
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, "\n!");
+					CharAccumulator_appendInt(GBI->LLVMmetadataSource, GBI->metadataCount);
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, " = distinct !DISubprogram(");
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, "name: \"");
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, functionLLVMname);
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, "\", scope: !");
+					CharAccumulator_appendInt(GBI->LLVMmetadataSource, GBI->debugInformationFileScopeID);
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, ", file: !");
+					CharAccumulator_appendInt(GBI->LLVMmetadataSource, GBI->debugInformationFileScopeID);
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, ", unit: !");
+					CharAccumulator_appendInt(GBI->LLVMmetadataSource, GBI->debugInformationCompileUnitID);
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, ")");
+					
+					((ContextBinding_function *)functionData->value)->debugInformationScopeID = GBI->metadataCount;
+					
+					GBI->metadataCount++;
+				}
 			}
 			
 			else if (node->nodeType == ASTnodeType_struct) {
@@ -648,6 +672,15 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 					CharAccumulator_appendChars(outerSource, "(");
 					CharAccumulator_appendChars(outerSource, newInnerSource.data);
 					CharAccumulator_appendChars(outerSource, ")");
+					
+					if (compilerOptions.includeDebugInformation) {
+						CharAccumulator_appendChars(outerSource, ", !dbg !DILocation(line: ");
+						CharAccumulator_appendInt(outerSource, node->location.line);
+						
+						CharAccumulator_appendChars(outerSource, ", scope: !");
+						CharAccumulator_appendInt(outerSource, outerFunction->debugInformationScopeID);
+						CharAccumulator_appendChars(outerSource, ")");
+					}
 					
 					CharAccumulator_free(&newInnerSource);
 				}

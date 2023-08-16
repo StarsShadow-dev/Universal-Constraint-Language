@@ -79,6 +79,8 @@ typedef struct {
 	
 	// for LLVM registers
 	int registerCount;
+	
+	int debugInformationScopeID;
 } ContextBinding_function;
 
 typedef struct {

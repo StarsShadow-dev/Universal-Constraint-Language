@@ -6,11 +6,17 @@
 
 typedef struct {
 	CharAccumulator *topLevelConstantSource;
+	CharAccumulator *LLVMmetadataSource;
+	
+	int metadataCount;
 	
 	int stringCount;
 	
 	int level;
 	linkedList_Node *context[maxVariablesLevel];
+	
+	int debugInformationCompileUnitID;
+	int debugInformationFileScopeID;
 } GlobalBuilderInformation;
 
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);

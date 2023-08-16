@@ -244,13 +244,33 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 	CharAccumulator LLVMconstantSource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMconstantSource);
 	
+	CharAccumulator LLVMmetadataSource = {100, 0, 0};
+	CharAccumulator_initialize(&LLVMmetadataSource);
+	
+	// for "!llvm.dbg.cu"
+	CharAccumulator llvmDbgCu = {100, 0, 0};
+	CharAccumulator_initialize(&llvmDbgCu);
+	
 	GlobalBuilderInformation GBI = {
 		&LLVMconstantSource,
+		&LLVMmetadataSource,
+		// metadataCount
+		0,
+		
+		// stringCount
 		0,
 		
 		// level is -1 so that it starts at 0 for the first iteration
 		-1,
-		{0}
+		
+		// context
+		{0},
+		
+		//debugInformationCompileUnitID
+		0,
+		
+		// debugInformationFileScopeID
+		0
 	};
 	
 	addContextBinding_simpleType(&GBI.context[0], "Void", "void", 0, 4);
@@ -266,16 +286,45 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 	if (compilerMode != CompilerMode_compilerTesting) {
 		linkedList_Node *currentFilePath = file_paths;
 		while (currentFilePath != NULL) {
-			CharAccumulator full_entry_path = {100, 0, 0};
-			CharAccumulator_initialize(&full_entry_path);
-			CharAccumulator_appendChars(&full_entry_path, projectDirectoryPath);
-			CharAccumulator_appendChars(&full_entry_path, "/");
-			CharAccumulator_appendChars(&full_entry_path, (char *)currentFilePath->data);
+			CharAccumulator fullFilePath = {100, 0, 0};
+			CharAccumulator_initialize(&fullFilePath);
+			CharAccumulator_appendChars(&fullFilePath, projectDirectoryPath);
+			CharAccumulator_appendChars(&fullFilePath, "/");
+			CharAccumulator_appendChars(&fullFilePath, (char *)currentFilePath->data);
+			
+			if (compilerOptions.includeDebugInformation) {
+				CharAccumulator_appendChars(&LLVMmetadataSource, "\n!");
+				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.metadataCount);
+				CharAccumulator_appendChars(&LLVMmetadataSource, " = !DIFile(filename: \"");
+				CharAccumulator_appendChars(&LLVMmetadataSource, (char *)currentFilePath->data);
+				CharAccumulator_appendChars(&LLVMmetadataSource, "\", directory: \"");
+				CharAccumulator_appendChars(&LLVMmetadataSource, projectDirectoryPath);
+				CharAccumulator_appendChars(&LLVMmetadataSource, "\")");
+				GBI.debugInformationFileScopeID = GBI.metadataCount;
+				GBI.metadataCount++;
+				
+				if (llvmDbgCu.size > 0) {
+					CharAccumulator_appendChars(&llvmDbgCu, ", ");
+				}
+				
+				CharAccumulator_appendChars(&llvmDbgCu, "!");
+				CharAccumulator_appendInt(&llvmDbgCu, GBI.metadataCount);
+				
+				CharAccumulator_appendChars(&LLVMmetadataSource, "\n!");
+				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.metadataCount);
+				CharAccumulator_appendChars(&LLVMmetadataSource, " = distinct !DICompileUnit(language: DW_LANG_C11, file: !");
+				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.debugInformationFileScopeID);
+				CharAccumulator_appendChars(&LLVMmetadataSource, ", runtimeVersion: 0, emissionKind: FullDebug)");
+				
+				GBI.debugInformationCompileUnitID = GBI.metadataCount;
+				
+				GBI.metadataCount++;
+			}
 			
 			printf("Compiling file: %s\n", (char *)currentFilePath->data);
-			compileFile(full_entry_path.data, &GBI, LLVMsource);
+			compileFile(fullFilePath.data, &GBI, LLVMsource);
 			
-			CharAccumulator_free(&full_entry_path);
+			CharAccumulator_free(&fullFilePath);
 			
 			currentFilePath = currentFilePath->next;
 		}
@@ -284,7 +333,26 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 	}
 	
 	CharAccumulator_appendChars(LLVMsource, LLVMconstantSource.data);
+	CharAccumulator_appendChars(LLVMsource, LLVMmetadataSource.data);
+	CharAccumulator_appendChars(LLVMsource, "\n!llvm.dbg.cu = !{");
+	CharAccumulator_appendChars(LLVMsource, llvmDbgCu.data);
+	CharAccumulator_appendChars(LLVMsource, "}");
+	
+	CharAccumulator_appendChars(LLVMsource, "\n!llvm.module.flags = !{!");
+	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount);
+	CharAccumulator_appendChars(LLVMsource, ", !");
+	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount + 1);
+	CharAccumulator_appendChars(LLVMsource, "}\n!");
+	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount);
+	CharAccumulator_appendChars(LLVMsource, " = !{i32 7, !\"Dwarf Version\", i32 4}\n!");
+	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount + 1);
+	CharAccumulator_appendChars(LLVMsource, " = !{i32 2, !\"Debug Info Version\", i32 3}");
+	
+	GBI.metadataCount += 2;
+	
 	CharAccumulator_free(&LLVMconstantSource);
+	CharAccumulator_free(&LLVMmetadataSource);
+	CharAccumulator_free(&llvmDbgCu);
 	
 	linkedList_freeList(&GBI.context[0]);
 	
