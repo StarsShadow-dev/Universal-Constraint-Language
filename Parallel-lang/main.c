@@ -50,9 +50,25 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	if (argc != 4) {
-		printf("Unexpected amount of arguments, expected: 3, but got: %d\n", argc - 1);
-		exit(1);
+	char *target_triple = argv[2];
+	char *path = argv[3];
+	
+	for (int i = 4; i < argc; i++) {
+		char *arg = argv[i];
+//		printf("arg %d: %s\n", i, arg);
+		if (strcmp(arg, "-d") == 0) {
+			exit(1);
+//			compilerOptions.includeDebugInformation = 1;
+		}
+		
+		else if (strcmp(arg, "-v") == 0) {
+			compilerOptions.verbose = 1;
+		}
+		
+		else {
+			printf("'%s' is not a valid argument\n", arg);
+			exit(1);
+		}
 	}
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
@@ -98,7 +114,7 @@ int main(int argc, char **argv) {
 	CharAccumulator_initialize(&errorMsg);
 	CharAccumulator_initialize(&errorIndicator);
 	
-	compileModule(argv[3],  argv[2], compilerMode, &LLVMsource, LLC_path, clang_path);
+	compileModule(compilerMode, target_triple,  path, &LLVMsource, LLC_path, clang_path);
 	
 	free(globalConfigPath);
 	free(globalConfigJSON);

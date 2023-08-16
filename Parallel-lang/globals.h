@@ -4,7 +4,6 @@
 #include "types.h"
 
 #define CURRENT_VERSION "beta.5"
-#define COMPILER_DEBUG_MODE
 
 // 8 bytes on a 64 bit machine
 #define pointer_byteSize 8
@@ -12,5 +11,12 @@
 #define maxVariablesLevel 10
 
 extern char *source;
+
+typedef struct {
+	int includeDebugInformation;
+	int verbose;
+} CompilerOptions;
+
+extern CompilerOptions compilerOptions;
 
 #endif /* globals_h */

@@ -173,15 +173,12 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 
 void compileFile(char *path, GlobalBuilderInformation *GBI, CharAccumulator *LLVMsource) {
 	source = readFile(path);
-	
-//#ifdef COMPILER_DEBUG_MODE
 //	printf("Source (%s): %s\n", path, source);
-//#endif
 	
 	linkedList_Node *tokens = lex();
-//#ifdef COMPILER_DEBUG_MODE
-//	printTokens(tokens);
-//#endif
+	if (compilerOptions.verbose) {
+		printTokens(tokens);
+	}
 	
 	linkedList_Node *currentToken = tokens;
 	
@@ -190,7 +187,7 @@ void compileFile(char *path, GlobalBuilderInformation *GBI, CharAccumulator *LLV
 	buildLLVM(GBI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
 }
 
-void compileModule(char *path, char *target_triple, CompilerMode compilerMode, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
+void compileModule(CompilerMode compilerMode, char *target_triple, char *path, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
 	char *projectDirectoryPath = dirname(path);
 	
 	char *name = NULL;
@@ -292,9 +289,9 @@ void compileModule(char *path, char *target_triple, CompilerMode compilerMode, C
 	linkedList_freeList(&GBI.context[0]);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
-#ifdef COMPILER_DEBUG_MODE
-		printf("LLVMsource: %s\n", LLVMsource->data);
-#endif
+		if (compilerOptions.verbose) {
+			printf("LLVMsource: %s\n", LLVMsource->data);
+		}
 		
 		CharAccumulator outputFilePath = {100, 0, 0};
 		CharAccumulator_initialize(&outputFilePath);
