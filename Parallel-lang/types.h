@@ -181,7 +181,8 @@ typedef struct {
 
 typedef struct {
 	linkedList_Node *expression;
-	linkedList_Node *codeBlock;
+	linkedList_Node *trueCodeBlock;
+	linkedList_Node *falseCodeBlock;
 } ASTnode_if;
 
 typedef struct {

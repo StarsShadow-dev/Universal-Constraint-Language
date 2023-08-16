@@ -733,32 +733,72 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 				buildLLVM(GBI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, NULL, data->expression, 1, 1, 0);
 				
 				int jump1 = outerFunction->registerCount;
-				outerFunction->registerCount++;
-				CharAccumulator codeBlockSource = {100, 0, 0};
-				CharAccumulator_initialize(&codeBlockSource);
-				buildLLVM(GBI, outerFunction, &codeBlockSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
-				int jump2 = outerFunction->registerCount;
-				outerFunction->registerCount++;
+				if (data->falseCodeBlock == NULL) {
+					outerFunction->registerCount++;
+				}
+				CharAccumulator trueCodeBlockSource = {100, 0, 0};
+				CharAccumulator_initialize(&trueCodeBlockSource);
+				buildLLVM(GBI, outerFunction, &trueCodeBlockSource, NULL, NULL, NULL, data->trueCodeBlock, 0, 0, 0);
+				CharAccumulator falseCodeBlockSource = {100, 0, 0};
+				CharAccumulator_initialize(&falseCodeBlockSource);
 				
-				CharAccumulator_appendChars(outerSource, "\n\tbr ");
-				CharAccumulator_appendChars(outerSource, expressionSource.data);
-				CharAccumulator_appendChars(outerSource, ", label %");
-				CharAccumulator_appendInt(outerSource, jump1);
-				CharAccumulator_appendChars(outerSource, ", label %");
-				CharAccumulator_appendInt(outerSource, jump2);
+				int endJump;
+				
+				if (data->falseCodeBlock == NULL) {
+					endJump = outerFunction->registerCount;
+					outerFunction->registerCount += 2;
+					
+					CharAccumulator_appendChars(outerSource, "\n\tbr ");
+					CharAccumulator_appendChars(outerSource, expressionSource.data);
+					CharAccumulator_appendChars(outerSource, ", label %");
+					CharAccumulator_appendInt(outerSource, jump1);
+					CharAccumulator_appendChars(outerSource, ", label %");
+					CharAccumulator_appendInt(outerSource, endJump);
+					
+					CharAccumulator_appendChars(outerSource, "\n\n");
+					CharAccumulator_appendInt(outerSource, jump1);
+					CharAccumulator_appendChars(outerSource, ":");
+					CharAccumulator_appendChars(outerSource, trueCodeBlockSource.data);
+					CharAccumulator_appendChars(outerSource, "\n\tbr label %");
+					CharAccumulator_appendInt(outerSource, endJump);
+				} else {
+					buildLLVM(GBI, outerFunction, &falseCodeBlockSource, NULL, NULL, NULL, data->falseCodeBlock, 0, 0, 0);
+					int jump2 = outerFunction->registerCount;
+					outerFunction->registerCount += 2;
+					
+					endJump = outerFunction->registerCount;
+					outerFunction->registerCount++;
+					
+					CharAccumulator_appendChars(outerSource, "\n\tbr ");
+					CharAccumulator_appendChars(outerSource, expressionSource.data);
+					CharAccumulator_appendChars(outerSource, ", label %");
+					CharAccumulator_appendInt(outerSource, jump1);
+					CharAccumulator_appendChars(outerSource, ", label %");
+					CharAccumulator_appendInt(outerSource, jump2);
+					
+					CharAccumulator_appendChars(outerSource, "\n\n");
+					CharAccumulator_appendInt(outerSource, jump1);
+					CharAccumulator_appendChars(outerSource, ":");
+					CharAccumulator_appendChars(outerSource, trueCodeBlockSource.data);
+					CharAccumulator_appendChars(outerSource, "\n\tbr label %");
+					CharAccumulator_appendInt(outerSource, endJump);
+					
+					CharAccumulator_appendChars(outerSource, "\n\n");
+					CharAccumulator_appendInt(outerSource, jump2);
+					CharAccumulator_appendChars(outerSource, ":");
+					CharAccumulator_appendChars(outerSource, falseCodeBlockSource.data);
+					CharAccumulator_appendChars(outerSource, "\n\tbr label %");
+					CharAccumulator_appendInt(outerSource, endJump);
+				}
 				
 				CharAccumulator_appendChars(outerSource, "\n\n");
-				CharAccumulator_appendInt(outerSource, jump1);
-				CharAccumulator_appendChars(outerSource, ":");
-				CharAccumulator_appendChars(outerSource, codeBlockSource.data);
-				CharAccumulator_appendChars(outerSource, "\n\tbr label %");
-				CharAccumulator_appendInt(outerSource, jump2);
-				
-				CharAccumulator_appendChars(outerSource, "\n\n");
-				CharAccumulator_appendInt(outerSource, jump2);
+				CharAccumulator_appendInt(outerSource, endJump);
 				CharAccumulator_appendChars(outerSource, ":");
 				
 				CharAccumulator_free(&expressionSource);
+				
+				CharAccumulator_free(&trueCodeBlockSource);
+				CharAccumulator_free(&falseCodeBlockSource);
 				
 				break;
 			}

@@ -535,7 +535,9 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							}
 							
 							*current = (*current)->next;
-							linkedList_Node *codeBlock = parse(current, ParserMode_normal);
+							linkedList_Node *trueCodeBlock = parse(current, ParserMode_normal);
+							
+							Token *elseToken = ((Token *)((*current)->data));
 							
 							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_if));
 							
@@ -543,7 +545,17 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							data->location = token->location;
 							
 							((ASTnode_if *)data->value)->expression = expression;
-							((ASTnode_if *)data->value)->codeBlock = codeBlock;
+							((ASTnode_if *)data->value)->trueCodeBlock = trueCodeBlock;
+							
+							if (SubString_string_cmp(&elseToken->subString, "else") == 0) {
+								*current = (*current)->next;
+								*current = (*current)->next;
+								linkedList_Node *falseCodeBlock = parse(current, ParserMode_normal);
+								
+								((ASTnode_if *)data->value)->falseCodeBlock = falseCodeBlock;
+							} else {
+								((ASTnode_if *)data->value)->falseCodeBlock = NULL;
+							}
 						}
 						
 						// while loop

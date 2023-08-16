@@ -2,8 +2,11 @@ function main(): Int8 {
 	if (true) {
 		return 0;
 	}
+	else {
+		return 0;
+	}
 	
-	// return 1;
+	return 1;
 }
 
 function safeMalloc(size: Int64): Pointer {
