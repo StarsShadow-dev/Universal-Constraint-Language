@@ -1,12 +1,12 @@
 function main(): Int8 {
 	if (true) {
-		return 0;
+		printLine("it is true");
 	}
 	else {
-		return 0;
+		printLine("it is false");
 	}
-	
-	return 1;
+
+	return 0;
 }
 
 function safeMalloc(size: Int64): Pointer {

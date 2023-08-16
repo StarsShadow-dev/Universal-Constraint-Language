@@ -733,12 +733,10 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 				buildLLVM(GBI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, NULL, data->expression, 1, 1, 0);
 				
 				int jump1 = outerFunction->registerCount;
-				if (data->falseCodeBlock == NULL) {
-					outerFunction->registerCount++;
-				}
+				outerFunction->registerCount++;
 				CharAccumulator trueCodeBlockSource = {100, 0, 0};
 				CharAccumulator_initialize(&trueCodeBlockSource);
-				buildLLVM(GBI, outerFunction, &trueCodeBlockSource, NULL, NULL, NULL, data->trueCodeBlock, 0, 0, 0);
+				int trueHasReturned = buildLLVM(GBI, outerFunction, &trueCodeBlockSource, NULL, NULL, NULL, data->trueCodeBlock, 0, 0, 0);
 				CharAccumulator falseCodeBlockSource = {100, 0, 0};
 				CharAccumulator_initialize(&falseCodeBlockSource);
 				
@@ -762,9 +760,9 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 					CharAccumulator_appendChars(outerSource, "\n\tbr label %");
 					CharAccumulator_appendInt(outerSource, endJump);
 				} else {
-					buildLLVM(GBI, outerFunction, &falseCodeBlockSource, NULL, NULL, NULL, data->falseCodeBlock, 0, 0, 0);
 					int jump2 = outerFunction->registerCount;
-					outerFunction->registerCount += 2;
+					outerFunction->registerCount++;
+					int falseHasReturned = buildLLVM(GBI, outerFunction, &falseCodeBlockSource, NULL, NULL, NULL, data->falseCodeBlock, 0, 0, 0);
 					
 					endJump = outerFunction->registerCount;
 					outerFunction->registerCount++;
@@ -789,6 +787,10 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 					CharAccumulator_appendChars(outerSource, falseCodeBlockSource.data);
 					CharAccumulator_appendChars(outerSource, "\n\tbr label %");
 					CharAccumulator_appendInt(outerSource, endJump);
+					
+					if (trueHasReturned && falseHasReturned) {
+//						hasReturned = 1;
+					}
 				}
 				
 				CharAccumulator_appendChars(outerSource, "\n\n");
