@@ -415,7 +415,8 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 					CharAccumulator_appendInt(GBI->LLVMmetadataSource, GBI->debugInformationFileScopeID);
 					CharAccumulator_appendChars(GBI->LLVMmetadataSource, ", file: !");
 					CharAccumulator_appendInt(GBI->LLVMmetadataSource, GBI->debugInformationFileScopeID);
-					CharAccumulator_appendChars(GBI->LLVMmetadataSource, ", unit: !");
+					// so apparently Homebrew crashes without a helpful error message if "type" is not here
+					CharAccumulator_appendChars(GBI->LLVMmetadataSource, ", type: !DISubroutineType(types: !{}), unit: !");
 					CharAccumulator_appendInt(GBI->LLVMmetadataSource, GBI->debugInformationCompileUnitID);
 					CharAccumulator_appendChars(GBI->LLVMmetadataSource, ")");
 					

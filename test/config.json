@@ -2,7 +2,6 @@
 	"name": "test",
 
 	"file_paths": [
-		"test.parallel",
 		"main.parallel"
 	],
 	"build_directory": "build"
