@@ -301,6 +301,7 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 				
 				CharAccumulator_appendChars(&LLVMmetadataSource, "\n!");
 				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.metadataCount);
+				// TODO: the language field is required, but I cannot find any documentation on it (DW_LANG_C11 works)
 				CharAccumulator_appendChars(&LLVMmetadataSource, " = distinct !DICompileUnit(language: DW_LANG_C11, file: !");
 				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.debugInformationFileScopeID);
 				CharAccumulator_appendChars(&LLVMmetadataSource, ", runtimeVersion: 0, emissionKind: FullDebug)");
@@ -334,9 +335,11 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount + 1);
 	CharAccumulator_appendChars(LLVMsource, " = !{i32 2, !\"Debug Info Version\", i32 3}");
 	
-	CharAccumulator_appendChars(LLVMsource, "\n!llvm.dbg.cu = !{!");
-	CharAccumulator_appendInt(LLVMsource, GBI.debugInformationCompileUnitID);
-	CharAccumulator_appendChars(LLVMsource, "}");
+	if (compilerOptions.includeDebugInformation) {
+		CharAccumulator_appendChars(LLVMsource, "\n!llvm.dbg.cu = !{!");
+		CharAccumulator_appendInt(LLVMsource, GBI.debugInformationCompileUnitID);
+		CharAccumulator_appendChars(LLVMsource, "}");
+	}
 	
 	GBI.metadataCount += 2;
 	

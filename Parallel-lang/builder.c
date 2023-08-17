@@ -15,6 +15,16 @@
 #include "error.h"
 #include "utilities.h"
 
+void addDILocation(CharAccumulator *source, int ID, SourceLocation location) {
+	CharAccumulator_appendChars(source, ", !dbg !DILocation(line: ");
+	CharAccumulator_appendInt(source, location.line);
+	CharAccumulator_appendChars(source, ", column: ");
+	CharAccumulator_appendInt(source, location.columnStart + 1);
+	CharAccumulator_appendChars(source, ", scope: !");
+	CharAccumulator_appendInt(source, ID);
+	CharAccumulator_appendChars(source, ")");
+}
+
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign) {
 	SubString *key = safeMalloc(sizeof(SubString));
 	key->start = name;
@@ -675,12 +685,7 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 					CharAccumulator_appendChars(outerSource, ")");
 					
 					if (compilerOptions.includeDebugInformation) {
-						CharAccumulator_appendChars(outerSource, ", !dbg !DILocation(line: ");
-						CharAccumulator_appendInt(outerSource, node->location.line);
-						
-						CharAccumulator_appendChars(outerSource, ", scope: !");
-						CharAccumulator_appendInt(outerSource, outerFunction->debugInformationScopeID);
-						CharAccumulator_appendChars(outerSource, ")");
+						addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
 					}
 					
 					CharAccumulator_free(&newInnerSource);
@@ -864,6 +869,10 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 					CharAccumulator_appendChars(outerSource, newInnerSource.data);
 					
 					CharAccumulator_free(&newInnerSource);
+				}
+				
+				if (compilerOptions.includeDebugInformation) {
+					addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
 				}
 				
 				hasReturned = 1;
