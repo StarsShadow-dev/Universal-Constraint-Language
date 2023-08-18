@@ -1297,7 +1297,7 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 					
 					addStringToErrorIndicator("expected type '");
 					addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
-					addStringToErrorIndicator("' but got type a string");
+					addStringToErrorIndicator("' but got a string");
 					compileError(node->location);
 				}
 				

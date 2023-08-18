@@ -1,0 +1,11 @@
+/*
+error: unexpected type
+9  |function main(): Int8 {
+10 |    return "";
+               ^^ expected type 'Int8' but got a string
+11 |}
+*/
+
+function main(): Int8 {
+	return "";
+}
