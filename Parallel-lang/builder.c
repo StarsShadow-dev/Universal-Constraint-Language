@@ -338,7 +338,11 @@ void generateFunction(GlobalBuilderInformation *GBI, CharAccumulator *outerSourc
 		int functionHasReturned = buildLLVM(GBI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
 		
 		if (!functionHasReturned) {
-			printf("function did not return\n");
+			addStringToErrorMsg("function did not return");
+			
+			addStringToErrorIndicator("the compiler cannot guarantee that function '");
+			addSubStringToErrorIndicator(data->name);
+			addStringToErrorIndicator("' returns");
 			compileError(node->location);
 		}
 		

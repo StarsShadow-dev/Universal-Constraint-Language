@@ -1,8 +1,8 @@
 /*
-function did not return
+error: function did not return
 8  |
 9  |function main(): Void {
-             ^^^^
+             ^^^^ the compiler cannot guarantee that function 'main' returns
 10 |
 */
 
