@@ -6,7 +6,7 @@ function main(): Int8 {
 		printLine("it is false");
 	}
 
-	return 0;
+	return "string";
 }
 
 function safeMalloc(size: Int64): Pointer {

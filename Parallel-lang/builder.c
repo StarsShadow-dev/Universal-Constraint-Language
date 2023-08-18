@@ -1293,7 +1293,11 @@ int buildLLVM(GlobalBuilderInformation *GBI, ContextBinding_function *outerFunct
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
 				if (ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
-					printf("unexpected string\n");
+					addStringToErrorMsg("unexpected type");
+					
+					addStringToErrorIndicator("expected type '");
+					addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+					addStringToErrorIndicator("' but got type a string");
 					compileError(node->location);
 				}
 				
