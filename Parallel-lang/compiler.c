@@ -3,8 +3,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define JSMN_HEADER
-#include "jsmn.h"
 #include "compiler.h"
 #include "globals.h"
 #include "lexer.h"
@@ -84,7 +82,7 @@ int getJsmnTokenIndex(char *buffer, jsmntok_t *t, int start, int count, char *ke
 			jsmntok_t keyToken = t[i];
 			if (keyToken.type != JSMN_STRING) {
 				// the "key" is not a string.
-				abort();
+				return -1;
 			}
 			if (keyToken.size != 1) {
 				// keys should have a single value.
@@ -171,31 +169,33 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 	return strings;
 }
 
-void compileFile(char *path, GlobalBuilderInformation *GBI, CharAccumulator *LLVMsource) {
-	source = readFile(path);
-//	printf("Source (%s): %s\n", path, source);
+void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource) {
+	MI->currentSource = readFile(path);
+//	printf("Source (%s): %s\n", path, MI->currentSource);
 	
-	linkedList_Node *tokens = lex();
+	linkedList_Node *tokens = lex(MI);
 	if (compilerOptions.verbose) {
 		printTokens(tokens);
 	}
 	
 	linkedList_Node *currentToken = tokens;
 	
-	linkedList_Node *AST = parse(&currentToken, ParserMode_normal);
+	linkedList_Node *AST = parse(MI, &currentToken, ParserMode_normal);
 	
-	buildLLVM(GBI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
+	buildLLVM(MI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
 }
 
-void compileModule(CompilerMode compilerMode, char *target_triple, char *path, CharAccumulator *LLVMsource, char *LLC_path, char *clang_path) {
-	char *projectDirectoryPath = dirname(path);
-	
+void compileModule(CompilerMode compilerMode, char *path) {
 	char *name = NULL;
 	linkedList_Node *file_paths = NULL;
-	CharAccumulator full_build_directory = {100, 0, 0};
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
-		char *configJSON = readFile(path);
+		CharAccumulator configJSONPath = {100, 0, 0};
+		CharAccumulator_initialize(&configJSONPath);
+		CharAccumulator_appendChars(&configJSONPath, path);
+		CharAccumulator_appendChars(&configJSONPath, "/config.json");
+		
+		char *configJSON = readFile(configJSONPath.data);
 		
 		jsmn_parser p;
 		jsmntok_t t[128] = {}; // expect no more than 128 JSON tokens
@@ -214,32 +214,12 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 			exit(1);
 		}
 		
-		char *build_directory = getJsmnString(configJSON, t, 1, configJSONcount, "build_directory");
-		if (build_directory == 0 || build_directory[0] == 0) {
-			printf("No build_directory in file at: ./config.json\n");
-			exit(1);
-		}
-		
-		CharAccumulator_initialize(&full_build_directory);
-		CharAccumulator_appendChars(&full_build_directory, projectDirectoryPath);
-		CharAccumulator_appendChars(&full_build_directory, "/");
-		CharAccumulator_appendChars(&full_build_directory, build_directory);
-		
-		struct stat stat_buffer = {0};
-		if (stat(full_build_directory.data, &stat_buffer) == -1) {
-			printf("The \"build_directory\" specified in the config file does not exist.\n");
-			exit(1);
-		} else {
-			if (!S_ISDIR(stat_buffer.st_mode)) {
-				printf("The \"build_directory\" specified in the config file exists but is not a directory.\n");
-				exit(1);
-			}
-		}
-		
 		free(configJSON);
-		
-		free(build_directory);
+		CharAccumulator_free(&configJSONPath);
 	}
+	
+	CharAccumulator LLVMsource = {100, 0, 0};
+	CharAccumulator_initialize(&LLVMsource);
 	
 	CharAccumulator LLVMconstantSource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMconstantSource);
@@ -247,7 +227,9 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 	CharAccumulator LLVMmetadataSource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMmetadataSource);
 	
-	GlobalBuilderInformation GBI = {
+	ModuleInformation MI = {
+		path,
+		NULL,
 		&LLVMconstantSource,
 		&LLVMmetadataSource,
 		// metadataCount
@@ -269,93 +251,93 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 		0
 	};
 	
-	addContextBinding_simpleType(&GBI.context[0], "Void", "void", 0, 4);
-	addContextBinding_simpleType(&GBI.context[0], "Int8", "i8", 1, 4);
-	addContextBinding_simpleType(&GBI.context[0], "Int16", "i16", 2, 4);
-	addContextBinding_simpleType(&GBI.context[0], "Int32", "i32", 4, 4);
-	addContextBinding_simpleType(&GBI.context[0], "Int64", "i64", 8, 4);
+	addContextBinding_simpleType(&MI.context[0], "Void", "void", 0, 4);
+	addContextBinding_simpleType(&MI.context[0], "Int8", "i8", 1, 4);
+	addContextBinding_simpleType(&MI.context[0], "Int16", "i16", 2, 4);
+	addContextBinding_simpleType(&MI.context[0], "Int32", "i32", 4, 4);
+	addContextBinding_simpleType(&MI.context[0], "Int64", "i64", 8, 4);
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addContextBinding_simpleType(&GBI.context[0], "Bool", "i1", 1, 4);
-	addContextBinding_simpleType(&GBI.context[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	addContextBinding_simpleType(&MI.context[0], "Bool", "i1", 1, 4);
+	addContextBinding_simpleType(&MI.context[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		linkedList_Node *currentFilePath = file_paths;
 		while (currentFilePath != NULL) {
 			CharAccumulator fullFilePath = {100, 0, 0};
 			CharAccumulator_initialize(&fullFilePath);
-			CharAccumulator_appendChars(&fullFilePath, projectDirectoryPath);
+			CharAccumulator_appendChars(&fullFilePath, path);
 			CharAccumulator_appendChars(&fullFilePath, "/");
 			CharAccumulator_appendChars(&fullFilePath, (char *)currentFilePath->data);
 			
 			if (compilerOptions.includeDebugInformation) {
 				CharAccumulator_appendChars(&LLVMmetadataSource, "\n!");
-				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.metadataCount);
+				CharAccumulator_appendInt(&LLVMmetadataSource, MI.metadataCount);
 				CharAccumulator_appendChars(&LLVMmetadataSource, " = !DIFile(filename: \"");
 				CharAccumulator_appendChars(&LLVMmetadataSource, (char *)currentFilePath->data);
 				CharAccumulator_appendChars(&LLVMmetadataSource, "\", directory: \"");
-				CharAccumulator_appendChars(&LLVMmetadataSource, projectDirectoryPath);
+				CharAccumulator_appendChars(&LLVMmetadataSource, path);
 				CharAccumulator_appendChars(&LLVMmetadataSource, "\")");
-				GBI.debugInformationFileScopeID = GBI.metadataCount;
-				GBI.metadataCount++;
+				MI.debugInformationFileScopeID = MI.metadataCount;
+				MI.metadataCount++;
 				
 				CharAccumulator_appendChars(&LLVMmetadataSource, "\n!");
-				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.metadataCount);
+				CharAccumulator_appendInt(&LLVMmetadataSource, MI.metadataCount);
 				// TODO: the language field is required, but I cannot find any documentation on it (DW_LANG_C11 works)
 				CharAccumulator_appendChars(&LLVMmetadataSource, " = distinct !DICompileUnit(language: DW_LANG_C11, file: !");
-				CharAccumulator_appendInt(&LLVMmetadataSource, GBI.debugInformationFileScopeID);
+				CharAccumulator_appendInt(&LLVMmetadataSource, MI.debugInformationFileScopeID);
 				CharAccumulator_appendChars(&LLVMmetadataSource, ", runtimeVersion: 0, emissionKind: FullDebug)");
 				
-				GBI.debugInformationCompileUnitID = GBI.metadataCount;
+				MI.debugInformationCompileUnitID = MI.metadataCount;
 				
-				GBI.metadataCount++;
+				MI.metadataCount++;
 			}
 			
 			printf("Compiling file: %s\n", (char *)currentFilePath->data);
-			compileFile(fullFilePath.data, &GBI, LLVMsource);
+			compileFile(fullFilePath.data, &MI, &LLVMsource);
 			
 			CharAccumulator_free(&fullFilePath);
 			
 			currentFilePath = currentFilePath->next;
 		}
 	} else {
-		compileFile(path, &GBI, LLVMsource);
+		compileFile(path, &MI, &LLVMsource);
 	}
 	
-	CharAccumulator_appendChars(LLVMsource, LLVMconstantSource.data);
-	CharAccumulator_appendChars(LLVMsource, LLVMmetadataSource.data);
+	CharAccumulator_appendChars(&LLVMsource, LLVMconstantSource.data);
+	CharAccumulator_appendChars(&LLVMsource, LLVMmetadataSource.data);
 	
-	CharAccumulator_appendChars(LLVMsource, "\n!llvm.module.flags = !{!");
-	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount);
-	CharAccumulator_appendChars(LLVMsource, ", !");
-	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount + 1);
-	CharAccumulator_appendChars(LLVMsource, "}\n!");
-	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount);
-	CharAccumulator_appendChars(LLVMsource, " = !{i32 7, !\"Dwarf Version\", i32 4}\n!");
-	CharAccumulator_appendInt(LLVMsource, GBI.metadataCount + 1);
-	CharAccumulator_appendChars(LLVMsource, " = !{i32 2, !\"Debug Info Version\", i32 3}");
+	CharAccumulator_appendChars(&LLVMsource, "\n!llvm.module.flags = !{!");
+	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount);
+	CharAccumulator_appendChars(&LLVMsource, ", !");
+	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount + 1);
+	CharAccumulator_appendChars(&LLVMsource, "}\n!");
+	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount);
+	CharAccumulator_appendChars(&LLVMsource, " = !{i32 7, !\"Dwarf Version\", i32 4}\n!");
+	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount + 1);
+	CharAccumulator_appendChars(&LLVMsource, " = !{i32 2, !\"Debug Info Version\", i32 3}");
 	
 	if (compilerOptions.includeDebugInformation) {
-		CharAccumulator_appendChars(LLVMsource, "\n!llvm.dbg.cu = !{!");
-		CharAccumulator_appendInt(LLVMsource, GBI.debugInformationCompileUnitID);
-		CharAccumulator_appendChars(LLVMsource, "}");
+		CharAccumulator_appendChars(&LLVMsource, "\n!llvm.dbg.cu = !{!");
+		CharAccumulator_appendInt(&LLVMsource, MI.debugInformationCompileUnitID);
+		CharAccumulator_appendChars(&LLVMsource, "}");
 	}
 	
-	GBI.metadataCount += 2;
+	MI.metadataCount += 2;
 	
 	CharAccumulator_free(&LLVMconstantSource);
 	CharAccumulator_free(&LLVMmetadataSource);
 	
-	linkedList_freeList(&GBI.context[0]);
+	linkedList_freeList(&MI.context[0]);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		if (compilerOptions.verbose) {
-			printf("LLVMsource: %s\n", LLVMsource->data);
+			printf("LLVMsource: %s\n", LLVMsource.data);
 		}
 		
 		CharAccumulator outputFilePath = {100, 0, 0};
 		CharAccumulator_initialize(&outputFilePath);
-		CharAccumulator_appendChars(&outputFilePath, full_build_directory.data);
+		CharAccumulator_appendChars(&outputFilePath, full_build_directory);
 		CharAccumulator_appendChars(&outputFilePath, "/");
 		CharAccumulator_appendChars(&outputFilePath, name);
 		
@@ -363,13 +345,14 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 		CharAccumulator_initialize(&LLC_command);
 		CharAccumulator_appendChars(&LLC_command, LLC_path);
 		// -mtriple=<target triple> Override the target triple specified in the input file with the specified string.
-		CharAccumulator_appendChars(&LLC_command, " -mtriple=\"");
-		CharAccumulator_appendChars(&LLC_command, target_triple);
-		CharAccumulator_appendChars(&LLC_command, "\" -filetype=obj -o ");
+//		CharAccumulator_appendChars(&LLC_command, " -mtriple=\"");
+//		CharAccumulator_appendChars(&LLC_command, target_triple);
+//		CharAccumulator_appendChars(&LLC_command, "\"");
+		CharAccumulator_appendChars(&LLC_command, " -filetype=obj -o ");
 		CharAccumulator_appendChars(&LLC_command, outputFilePath.data);
 		CharAccumulator_appendChars(&LLC_command, ".o");
 		FILE *fp = popen(LLC_command.data, "w");
-		fprintf(fp, "%s", LLVMsource->data);
+		fprintf(fp, "%s", LLVMsource.data);
 		int LLC_status = pclose(fp);
 		int LLC_exitCode = WEXITSTATUS(LLC_status);
 		CharAccumulator_free(&LLC_command);
@@ -397,7 +380,7 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 			CharAccumulator_appendChars(&clang_command, ".o -o ");
 			CharAccumulator_appendChars(&clang_command, getcwdBuffer);
 			CharAccumulator_appendChars(&clang_command, "/");
-			CharAccumulator_appendChars(&clang_command, full_build_directory.data);
+			CharAccumulator_appendChars(&clang_command, full_build_directory);
 			CharAccumulator_appendChars(&clang_command, "/");
 			CharAccumulator_appendChars(&clang_command, name);
 			
@@ -428,8 +411,6 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 		
 		CharAccumulator_free(&outputFilePath);
 		
-		CharAccumulator_free(&full_build_directory);
-		
 		linkedList_freeList(&file_paths);
 		
 		free(name);
@@ -439,7 +420,7 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 		CharAccumulator_appendChars(&LLC_command, LLC_path);
 		CharAccumulator_appendChars(&LLC_command, " > /dev/null");
 		FILE *fp = popen(LLC_command.data, "w");
-		fprintf(fp, "%s", LLVMsource->data);
+		fprintf(fp, "%s", LLVMsource.data);
 		int LLC_status = pclose(fp);
 		int LLC_exitCode = WEXITSTATUS(LLC_status);
 		CharAccumulator_free(&LLC_command);
@@ -449,9 +430,5 @@ void compileModule(CompilerMode compilerMode, char *target_triple, char *path, C
 		}
 	}
 	
-	// clean up
-	free(LLC_path);
-	free(clang_path);
-	
-	free(source);
+	CharAccumulator_free(&LLVMsource);
 }

@@ -3,6 +3,5 @@
 
 	"file_paths": [
 		"main.parallel"
-	],
-	"build_directory": "build"
+	]
 }

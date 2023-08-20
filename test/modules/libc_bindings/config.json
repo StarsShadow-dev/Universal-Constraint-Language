@@ -1,0 +1,7 @@
+{
+	"name": "libc",
+
+	"file_paths": [
+		"stdio.parallel"
+	]
+}

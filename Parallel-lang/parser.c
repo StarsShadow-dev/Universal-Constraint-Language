@@ -7,7 +7,7 @@
 #define endIfCurrentIsEmpty()\
 if (current == NULL) {\
 	printf("unexpected end of file\n");\
-	compileError(token->location);\
+	compileError(MI, token->location);\
 }
 
 #define CURRENT_IS_NOT_SEMICOLON (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0)
@@ -23,14 +23,14 @@ int64_t intPow(int64_t base, int64_t exponent) {
 	return result;
 }
 
-linkedList_Node *parseType(linkedList_Node **current) {
+linkedList_Node *parseType(ModuleInformation *MI, linkedList_Node **current) {
 	linkedList_Node *AST = NULL;
 	
 	Token *token = ((Token *)((*current)->data));
 	endIfCurrentIsEmpty()
 	if (token->type != TokenType_word) {
 		printf("not a word in a type expression\n");
-		compileError(token->location);
+		compileError(MI, token->location);
 	}
 	
 //	Token *nextToken = ((Token *)((*current)->next->data));
@@ -46,7 +46,7 @@ linkedList_Node *parseType(linkedList_Node **current) {
 	return AST;
 }
 
-ASTnode_number parseInt(linkedList_Node **current) {
+ASTnode_number parseInt(ModuleInformation *MI, linkedList_Node **current) {
 	ASTnode_number node = {};
 	
 	Token *token = ((Token *)((*current)->data));
@@ -75,7 +75,7 @@ typedef struct {
 	linkedList_Node *list2;
 } linkedList_Node_tuple;
 
-linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
+linkedList_Node_tuple parseFunctionArguments(ModuleInformation *MI, linkedList_Node **current) {
 	linkedList_Node *argumentNames = NULL;
 	linkedList_Node *argumentTypes = NULL;
 	
@@ -95,11 +95,11 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 				
 				if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
 					printf("function argument expected a colon\n");
-					compileError(colon->location);
+					compileError(MI, colon->location);
 				}
 				
 				*current = (*current)->next;
-				linkedList_Node *type = parseType(current);
+				linkedList_Node *type = parseType(MI, current);
 				
 				SubString *nameSubString = linkedList_addNode(&argumentNames, sizeof(SubString));
 				nameSubString->start = token->subString.start;
@@ -119,11 +119,11 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 							printf("unexpected separator: '");
 							SubString_print(&token->subString);
 							printf("'\n");
-							compileError(token->location);
+							compileError(MI, token->location);
 						}
 					}
 					printf("expected a comma\n");
-					compileError(token->location);
+					compileError(MI, token->location);
 				}
 				
 				break;
@@ -136,14 +136,14 @@ linkedList_Node_tuple parseFunctionArguments(linkedList_Node **current) {
 					printf("unexpected separator: '");
 					SubString_print(&token->subString);
 					printf("'\n");
-					compileError(token->location);
+					compileError(MI, token->location);
 				}
 				break;
 			}
 				
 			default: {
 				printf("unexpected token type: %u inside of function arguments\n", token->type);
-				compileError(token->location);
+				compileError(MI, token->location);
 				break;
 			}
 		}
@@ -190,7 +190,7 @@ int getOperatorPrecedence(SubString *subString) {
 	}
 }
 
-linkedList_Node *parseOperators(linkedList_Node **current, linkedList_Node *left, int precedence) {
+linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current, linkedList_Node *left, int precedence) {
 	Token *operator = ((Token *)((*current)->data));
 	
 	if (operator->type == TokenType_operator) {
@@ -200,7 +200,7 @@ linkedList_Node *parseOperators(linkedList_Node **current, linkedList_Node *left
 			linkedList_Node *AST = NULL;
 			
 			*current = (*current)->next;
-			linkedList_Node *right = parseOperators(current, parse(current, ParserMode_noOperatorChecking), nextPrecedence);
+			linkedList_Node *right = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), nextPrecedence);
 			
 			ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_operator));
 			
@@ -212,7 +212,7 @@ linkedList_Node *parseOperators(linkedList_Node **current, linkedList_Node *left
 				
 				if (CURRENT_IS_NOT_SEMICOLON) {
 					printf("expected ';' after variable assignment\n");
-					compileError(token->location);
+					compileError(MI, token->location);
 				}
 				*current = (*current)->next;
 				
@@ -236,14 +236,14 @@ linkedList_Node *parseOperators(linkedList_Node **current, linkedList_Node *left
 			((ASTnode_operator *)data->value)->left = left;
 			((ASTnode_operator *)data->value)->right = right;
 			
-			return parseOperators(current, AST, precedence);
+			return parseOperators(MI, current, AST, precedence);
 		}
 	}
 	
 	return left;
 }
 
-linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
+linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserMode parserMode) {
 	linkedList_Node *AST = NULL;
 	
 	while (1) {
@@ -255,17 +255,17 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 			Token *nextToken = (Token *)((*current)->next->data);
 			
 			if (nextToken->type == TokenType_operator) {
-				linkedList_Node *operatorAST = parseOperators(current, parse(current, ParserMode_noOperatorChecking), 0);
+				linkedList_Node *operatorAST = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0);
 				Token *token = (Token *)((*current)->data);
 				if (token->type == TokenType_separator && SubString_string_cmp(&token->subString, "(") == 0) {
 					*current = (*current)->next;
-					linkedList_Node *arguments = parse(current, ParserMode_arguments);
+					linkedList_Node *arguments = parse(MI, current, ParserMode_arguments);
 					
 					endIfCurrentIsEmpty()
 					if (parserMode == ParserMode_normal) {
 						if (CURRENT_IS_NOT_SEMICOLON) {
 							printf("expected ';' after function call\n");
-							compileError(token->location);
+							compileError(MI, token->location);
 						}
 						*current = (*current)->next;
 					}
@@ -293,15 +293,45 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 		
 		switch (token->type) {
 			case TokenType_word: {
+				// import statement
+				if (SubString_string_cmp(&token->subString, "import") == 0) {
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *nameToken = ((Token *)((*current)->data));
+					
+					if (nameToken->type != TokenType_word) {
+						addStringToErrorIndicator("expected word after import keyword");
+						compileError(MI, nameToken->location);
+					}
+					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *pathString = ((Token *)((*current)->data));
+					
+					if (pathString->type != TokenType_string) {
+						addStringToErrorIndicator("expected string as part of import keyword");
+						compileError(MI, pathString->location);
+					}
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_import));
+					
+					data->nodeType = ASTnodeType_import;
+					data->location = token->location;
+					
+					((ASTnode_import *)data->value)->name = &nameToken->subString;
+					((ASTnode_import *)data->value)->path = &pathString->subString;
+					
+					*current = (*current)->next;
+				}
 				// function definition
-				if (SubString_string_cmp(&token->subString, "function") == 0) {
+				else if (SubString_string_cmp(&token->subString, "function") == 0) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
 					Token *nameToken = ((Token *)((*current)->data));
 					
 					if (nameToken->type != TokenType_word) {
 						printf("expected word after function keyword\n");
-						compileError(nameToken->location);
+						compileError(MI, nameToken->location);
 					}
 					
 					*current = (*current)->next;
@@ -310,11 +340,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					
 					if (openingParentheses->type != TokenType_separator || SubString_string_cmp(&openingParentheses->subString, "(") != 0) {
 						printf("function definition expected an openingParentheses\n");
-						compileError(openingParentheses->location);
+						compileError(MI, openingParentheses->location);
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node_tuple argument_tuple = parseFunctionArguments(current);
+					linkedList_Node_tuple argument_tuple = parseFunctionArguments(MI, current);
 					
 					linkedList_Node *argumentNames = argument_tuple.list1;
 					linkedList_Node *argumentTypes = argument_tuple.list2;
@@ -325,11 +355,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					
 					if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
 						printf("function definition expected a colon\n");
-						compileError(colon->location);
+						compileError(MI, colon->location);
 					}
 					
 					*current = (*current)->next;
-					ASTnode *returnType = (ASTnode *)parseType(current)->data;
+					ASTnode *returnType = (ASTnode *)parseType(MI, current)->data;
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -337,7 +367,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					
 					if (codeStart->type == TokenType_separator && SubString_string_cmp(&codeStart->subString, "{") == 0) {
 						*current = (*current)->next;
-						linkedList_Node *codeBlock = parse(current, ParserMode_normal);
+						linkedList_Node *codeBlock = parse(MI, current, ParserMode_normal);
 						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
@@ -370,7 +400,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						*current = (*current)->next;
 					} else {
 						printf("function definition expected an openingBracket or a quotation mark\n");
-						compileError(codeStart->location);
+						compileError(MI, codeStart->location);
 					}
 				}
 				
@@ -382,7 +412,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					
 					if (nameToken->type != TokenType_word) {
 						printf("expected word after struct keyword\n");
-						compileError(nameToken->location);
+						compileError(MI, nameToken->location);
 					}
 					
 					*current = (*current)->next;
@@ -390,11 +420,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					Token *openingBracket = ((Token *)((*current)->data));
 					if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
 						printf("struct expected '{'\n");
-						compileError(openingBracket->location);
+						compileError(MI, openingBracket->location);
 					}
 					
 					*current = (*current)->next;
-					linkedList_Node *block = parse(current, ParserMode_normal);
+					linkedList_Node *block = parse(MI, current, ParserMode_normal);
 					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_struct));
 					
@@ -409,12 +439,12 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 				else if (SubString_string_cmp(&token->subString, "return") == 0) {
 					*current = (*current)->next;
 					if (CURRENT_IS_NOT_SEMICOLON) {
-						linkedList_Node *expression = parse(current, ParserMode_expression);
+						linkedList_Node *expression = parse(MI, current, ParserMode_expression);
 						
 						endIfCurrentIsEmpty()
 						if (CURRENT_IS_NOT_SEMICOLON) {
 							printf("expected ';' after return statement\n");
-							compileError(token->location);
+							compileError(MI, token->location);
 						}
 						*current = (*current)->next;
 						
@@ -440,7 +470,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 				else if (SubString_string_cmp(&token->subString, "var") == 0) {
 					if (parserMode != ParserMode_normal) {
 						printf("variable definition in a weird spot\n");
-						compileError(token->location);
+						compileError(MI, token->location);
 					}
 					
 					*current = (*current)->next;
@@ -448,7 +478,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					Token *nameToken = ((Token *)((*current)->data));
 					if (nameToken->type != TokenType_word) {
 						printf("expected word after var keyword\n");
-						compileError(nameToken->location);
+						compileError(MI, nameToken->location);
 					}
 					
 					*current = (*current)->next;
@@ -456,11 +486,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					Token *colon = ((Token *)((*current)->data));
 					if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
 						printf("variable definition expected a colon\n");
-						compileError(colon->location);
+						compileError(MI, colon->location);
 					}
 					
 					*current = (*current)->next;
-					ASTnode *type = (ASTnode *)parseType(current)->data;
+					ASTnode *type = (ASTnode *)parseType(MI, current)->data;
 					
 					linkedList_Node *expression = NULL;
 					
@@ -469,12 +499,12 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					Token *equals = ((Token *)((*current)->data));
 					if (equals->type == TokenType_operator && SubString_string_cmp(&equals->subString, "=") == 0) {
 						*current = (*current)->next;
-						expression = parse(current, ParserMode_expression);
+						expression = parse(MI, current, ParserMode_expression);
 					}
 					
 					if (CURRENT_IS_NOT_SEMICOLON) {
 						printf("expected ';' after variable definition\n");
-						compileError(token->location);
+						compileError(MI, token->location);
 					}
 					*current = (*current)->next;
 					
@@ -517,13 +547,13 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						// if statement
 						if (SubString_string_cmp(&token->subString, "if") == 0) {
 							*current = (*current)->next;
-							linkedList_Node *expression = parse(current, ParserMode_expression);
+							linkedList_Node *expression = parse(MI, current, ParserMode_expression);
 							
 							endIfCurrentIsEmpty()
 							Token *closingParentheses = ((Token *)((*current)->data));
 							if (closingParentheses->type != TokenType_separator || SubString_string_cmp(&closingParentheses->subString, ")") != 0) {
 								printf("if statement expected ')'\n");
-								compileError(token->location);
+								compileError(MI, token->location);
 							}
 							
 							*current = (*current)->next;
@@ -531,11 +561,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							Token *openingBracket = ((Token *)((*current)->data));
 							if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
 								printf("if statement expected '{'\n");
-								compileError(openingBracket->location);
+								compileError(MI, openingBracket->location);
 							}
 							
 							*current = (*current)->next;
-							linkedList_Node *trueCodeBlock = parse(current, ParserMode_normal);
+							linkedList_Node *trueCodeBlock = parse(MI, current, ParserMode_normal);
 							
 							Token *elseToken = ((Token *)((*current)->data));
 							
@@ -550,7 +580,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							if (SubString_string_cmp(&elseToken->subString, "else") == 0) {
 								*current = (*current)->next;
 								*current = (*current)->next;
-								linkedList_Node *falseCodeBlock = parse(current, ParserMode_normal);
+								linkedList_Node *falseCodeBlock = parse(MI, current, ParserMode_normal);
 								
 								((ASTnode_if *)data->value)->falseCodeBlock = falseCodeBlock;
 							} else {
@@ -561,13 +591,13 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						// while loop
 						else if (SubString_string_cmp(&token->subString, "while") == 0) {
 							*current = (*current)->next;
-							linkedList_Node *expression = parse(current, ParserMode_expression);
+							linkedList_Node *expression = parse(MI, current, ParserMode_expression);
 							
 							endIfCurrentIsEmpty()
 							Token *closingParentheses = ((Token *)((*current)->data));
 							if (closingParentheses->type != TokenType_separator || SubString_string_cmp(&closingParentheses->subString, ")") != 0) {
 								printf("while loop expected ')'\n");
-								compileError(token->location);
+								compileError(MI, token->location);
 							}
 							
 							*current = (*current)->next;
@@ -575,11 +605,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 							Token *openingBracket = ((Token *)((*current)->data));
 							if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
 								printf("while loop expected '{'\n");
-								compileError(openingBracket->location);
+								compileError(MI, openingBracket->location);
 							}
 							
 							*current = (*current)->next;
-							linkedList_Node *codeBlock = parse(current, ParserMode_normal);
+							linkedList_Node *codeBlock = parse(MI, current, ParserMode_normal);
 							
 							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_while));
 							
@@ -593,13 +623,13 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						// function call
 						else {
 							*current = (*current)->next;
-							linkedList_Node *arguments = parse(current, ParserMode_arguments);
+							linkedList_Node *arguments = parse(MI, current, ParserMode_arguments);
 							
 							endIfCurrentIsEmpty()
 							if (parserMode == ParserMode_normal) {
 								if (CURRENT_IS_NOT_SEMICOLON) {
 									printf("expected ';' after function call\n");
-									compileError(token->location);
+									compileError(MI, token->location);
 								}
 								*current = (*current)->next;
 							}
@@ -640,7 +670,7 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 				data->nodeType = ASTnodeType_number;
 				data->location = token->location;
 				((ASTnode_number *)data->value)->string = &token->subString;
-				((ASTnode_number *)data->value)->value = parseInt(current).value;
+				((ASTnode_number *)data->value)->value = parseInt(MI, current).value;
 				
 				*current = (*current)->next;
 				break;
@@ -665,14 +695,14 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 					printf("unexpected separator: '");
 					SubString_print(&token->subString);
 					printf("'\n");
-					compileError(token->location);
+					compileError(MI, token->location);
 				}
 				break;
 			}
 				
 			default: {
 				printf("unknown token type: %u\n", token->type);
-				compileError(token->location);
+				compileError(MI, token->location);
 				break;
 			}
 		}
@@ -692,11 +722,11 @@ linkedList_Node *parse(linkedList_Node **current, ParserMode parserMode) {
 						printf("unexpected separator: '");
 						SubString_print(&token->subString);
 						printf("'\n");
-						compileError(token->location);
+						compileError(MI, token->location);
 					}
 				}
 				printf("expected a comma\n");
-				compileError(token->location);
+				compileError(MI, token->location);
 			}
 			*current = (*current)->next;
 		}

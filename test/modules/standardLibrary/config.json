@@ -1,0 +1,7 @@
+{
+	"name": "standardLibrary",
+
+	"file_paths": [
+		"printLine.parallel"
+	]
+}

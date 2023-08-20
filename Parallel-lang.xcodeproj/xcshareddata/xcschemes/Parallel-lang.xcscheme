@@ -54,7 +54,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "build_binary"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "run"
@@ -65,8 +65,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "test/config.json"
-            isEnabled = "NO">
+            argument = "test"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "compilerTesting"

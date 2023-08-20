@@ -10,13 +10,15 @@
 
 #define maxVariablesLevel 10
 
-extern char *source;
-
 typedef struct {
 	int includeDebugInformation;
 	int verbose;
 } CompilerOptions;
 
 extern CompilerOptions compilerOptions;
+
+extern char *LLC_path;
+extern char *clang_path;
+extern char *full_build_directory;
 
 #endif /* globals_h */

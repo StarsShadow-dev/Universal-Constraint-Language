@@ -15,21 +15,21 @@
 
 // periods are considered operators because they perform an operation
 #define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '.'
-#define operator_2chars character == '=' && source[index+1] == '='
+#define operator_2chars character == '=' && MI->currentSource[index+1] == '='
 
-linkedList_Node *lex(void) {
+linkedList_Node *lex(ModuleInformation *MI) {
 	linkedList_Node *tokens = 0;
 	
 	int index = 0;
 	int line = 1;
 	int column = 0;
 	
-	if (source == NULL) {
+	if (MI->currentSource == NULL) {
 		return NULL;
 	}
 	
 	while (1) {
-		char character = source[index];
+		char character = MI->currentSource[index];
 		
 		// if character is a NULL byte, then the string is over
 		if (character == 0) {
@@ -56,7 +56,7 @@ linkedList_Node *lex(void) {
 			int end = 0;
 			
 			while (1) {
-				char character = source[index];
+				char character = MI->currentSource[index];
 				
 				if (character != 0 && wordContinue) {
 					index++;
@@ -75,7 +75,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_word;
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			data->subString.start = source + start;
+			data->subString.start = MI->currentSource + start;
 			data->subString.length = end - start;
 		}
 		
@@ -84,7 +84,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_separator;
 			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = source + index;
+			data->subString.start = MI->currentSource + index;
 			data->subString.length = 1;
 		}
 		
@@ -93,7 +93,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_operator;
 			data->location = (SourceLocation){line, column, column + 2};
-			data->subString.start = source + index;
+			data->subString.start = MI->currentSource + index;
 			data->subString.length = 2;
 			
 			index++;
@@ -105,7 +105,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_operator;
 			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = source + index;
+			data->subString.start = MI->currentSource + index;
 			data->subString.length = 1;
 		}
 		
@@ -115,7 +115,7 @@ linkedList_Node *lex(void) {
 			int end = 0;
 			
 			while (1) {
-				char character = source[index];
+				char character = MI->currentSource[index];
 				
 				if (character != 0 && numberContinue) {
 					index++;
@@ -134,7 +134,7 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_number;
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			data->subString.start = source + start;
+			data->subString.start = MI->currentSource + start;
 			data->subString.length = end - start;
 		}
 		
@@ -148,7 +148,7 @@ linkedList_Node *lex(void) {
 			int end = 0;
 			
 			while (1) {
-				char character = source[index];
+				char character = MI->currentSource[index];
 				
 				if (character != 0 && character != '"') {
 					index++;
@@ -177,17 +177,17 @@ linkedList_Node *lex(void) {
 			
 			data->type = TokenType_string;
 			data->location = (SourceLocation){line, columnStart - 1, columnStart + end - start + 1};
-			data->subString.start = source + start;
+			data->subString.start = MI->currentSource + start;
 			data->subString.length = end - start;
 		}
 		
 		// comment
-		else if (character == '/' && source[index+1] == '/') {
+		else if (character == '/' && MI->currentSource[index+1] == '/') {
 			index++;
 			column++;
 			
 			while (1) {
-				char character = source[index];
+				char character = MI->currentSource[index];
 				
 				if (character != 0 && character != '\n') {
 					index++;
@@ -202,12 +202,12 @@ linkedList_Node *lex(void) {
 		}
 		
 		// block comment
-		else if (character == '/' && source[index+1] == '*') {
+		else if (character == '/' && MI->currentSource[index+1] == '*') {
 			index++;
 			column++;
 			
 			while (1) {
-				char character = source[index];
+				char character = MI->currentSource[index];
 				
 				if (character == 0) {
 					index--;
@@ -217,7 +217,7 @@ linkedList_Node *lex(void) {
 				
 				if (character == '\n') {
 					line++;
-				} else if (character == '*' && source[index+1] == '/') {
+				} else if (character == '*' && MI->currentSource[index+1] == '/') {
 					index++;
 					column++;
 					break;
@@ -230,7 +230,7 @@ linkedList_Node *lex(void) {
 		
 		else {
 			printf("unexpected character '%c'\n", character);
-			compileError((SourceLocation){line, column, column + 1});
+			compileError(MI, (SourceLocation){line, column, column + 1});
 		}
 		
 		index++;

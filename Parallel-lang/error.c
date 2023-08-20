@@ -37,7 +37,7 @@ int getSizeOfUint(unsigned int number) {
 	return size;
 }
 
-void printLine(int *index) {
+void printLine(char *source, int *index) {
 	while (1) {
 		char character = source[*index];
 		
@@ -55,7 +55,7 @@ void printLine(int *index) {
 	}
 }
 
-void printLineWithIndicator(int *index, int columnStart, int columnEnd, int indicatorOffset) {
+void printLineWithIndicator(char *source, int *index, int columnStart, int columnEnd, int indicatorOffset) {
 	CharAccumulator indicator = {100, 0, 0};
 	CharAccumulator_initialize(&indicator);
 	
@@ -117,7 +117,7 @@ void printSpaces(int count) {
 	}
 }
 
-void compileError(SourceLocation location) {
+void compileError(ModuleInformation *MI, SourceLocation location) {
 	if (errorMsg.size > 0) {
 		// \x1B[31m \x1B[0m
 		printf("error: %s\n", errorMsg.data);
@@ -129,7 +129,7 @@ void compileError(SourceLocation location) {
 	int index = 0;
 	int line = 1;
 	while (1) {
-		char character = source[index];
+		char character = MI->currentSource[index];
 		
 		if (character == 0) {
 			putchar('\n');
@@ -143,7 +143,7 @@ void compileError(SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLine(&index);
+			printLine(MI->currentSource, &index);
 			line++;
 		} else if (line == location.line) {
 			printf("%d", line);
@@ -152,7 +152,7 @@ void compileError(SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLineWithIndicator(&index, location.columnStart, location.columnEnd, maxLineSize + 2);
+			printLineWithIndicator(MI->currentSource, &index, location.columnStart, location.columnEnd, maxLineSize + 2);
 			line++;
 		} else if (line == location.line + 1) {
 			printf("%d", line);
@@ -161,7 +161,7 @@ void compileError(SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLine(&index);
+			printLine(MI->currentSource, &index);
 			break;
 		} else if (character == '\n') {
 			line++;
