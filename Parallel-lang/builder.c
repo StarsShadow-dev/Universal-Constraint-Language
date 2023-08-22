@@ -660,13 +660,13 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				ModuleInformation *newMI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
 				compileModule(newMI, CompilerMode_build_objectFile, path);
-				ModuleInformation **modulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
-				*modulePointerData = newMI;
 				
 				linkedList_Node *current = newMI->context[0];
 				
 				while (current != NULL) {
 					ContextBinding *binding = ((ContextBinding *)current->data);
+					
+					expectUnusedName(MI, binding->key, node->location);
 					
 					if (binding->type == ContextBindingType_function) {
 						ContextBinding_function *function = (ContextBinding_function *)binding->value;
@@ -675,6 +675,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					
 					current = current->next;
 				}
+				
+				// add the new module to importedModules
+				ModuleInformation **modulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
+				*modulePointerData = newMI;
 				
 				break;
 			}
