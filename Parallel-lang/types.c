@@ -200,6 +200,7 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 	ModuleInformation *MI = safeMalloc(sizeof(ModuleInformation));
 	
 	*MI = (ModuleInformation){
+		.name = NULL,
 		.path = path,
 		.currentSource = NULL,
 		.topLevelConstantSource = topLevelConstantSource,

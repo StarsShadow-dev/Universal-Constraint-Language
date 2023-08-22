@@ -653,36 +653,27 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 				(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
 				CharAccumulator_initialize(topLevelConstantSource);
-
+				
 				CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
 				(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 				CharAccumulator_initialize(LLVMmetadataSource);
 				
 				ModuleInformation *newMI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
-				ModuleInformation **coreModulePointerData = linkedList_addNode(&newMI->importedModules, sizeof(void *));
-				*coreModulePointerData = coreModulePointer;
 				compileModule(newMI, CompilerMode_build_objectFile, path);
 				ModuleInformation **modulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
 				*modulePointerData = newMI;
 				
-				linkedList_Node *currentModule = MI->importedModules;
-				while (currentModule != NULL) {
-					ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+				linkedList_Node *current = newMI->context[0];
+				
+				while (current != NULL) {
+					ContextBinding *binding = ((ContextBinding *)current->data);
 					
-					linkedList_Node *current = moduleInformation->context[0];
-					
-					while (current != NULL) {
-						ContextBinding *binding = ((ContextBinding *)current->data);
-						
-						if (binding->type == ContextBindingType_function) {
-							ContextBinding_function *function = (ContextBinding_function *)binding->value;
-							generateFunction(MI, outerSource, function, NULL, 0);
-						}
-						
-						current = current->next;
+					if (binding->type == ContextBindingType_function) {
+						ContextBinding_function *function = (ContextBinding_function *)binding->value;
+						generateFunction(MI, outerSource, function, NULL, 0);
 					}
 					
-					currentModule = currentModule->next;
+					current = current->next;
 				}
 				
 				break;

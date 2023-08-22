@@ -1,5 +1,5 @@
 {
-	"name": "libc",
+	"name": "libc_bindings",
 
 	"file_paths": [
 		"stdio.parallel"

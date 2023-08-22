@@ -1,10 +1,12 @@
 // import { printLine } from "modules/std"
 import "modules/std"
+import "modules/libc_bindings"
 
 function main(): Int8 {
 	// std.printLine("testing");
 	// std::printLine("testing");
-	printLine("testing");
+	printLine("testing (printLine)");
+	printf("testing (printf)\n");
 
 	return 0;
 }

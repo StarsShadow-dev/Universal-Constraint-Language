@@ -189,9 +189,11 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	char *name = NULL;
 	linkedList_Node *file_paths = NULL;
 	
+	// add the coreModule to this module's importedModules list
+	ModuleInformation **coreModulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
+	*coreModulePointerData = coreModulePointer;
+	
 	if (compilerMode != CompilerMode_compilerTesting) {
-		printf("Compiling module '%s'.\n", path);
-		
 		CharAccumulator configJSONPath = {100, 0, 0};
 		CharAccumulator_initialize(&configJSONPath);
 		CharAccumulator_appendChars(&configJSONPath, path);
@@ -218,6 +220,21 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 		
 		free(configJSON);
 		CharAccumulator_free(&configJSONPath);
+		
+		linkedList_Node *currentModule = alreadyCompiledModules;
+		while (currentModule != NULL) {
+			ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+			
+			if (strcmp(moduleInformation->name, name) == 0) {
+				if (compilerOptions.verbose) printf("Module already compiled %s\n", name);
+				*MI = *moduleInformation;
+				return;
+			}
+			
+			currentModule = currentModule->next;
+		}
+		
+		printf("Compiling module %s\n", name);
 	}
 	
 	CharAccumulator LLVMsource = {100, 0, 0};
@@ -270,6 +287,17 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	CharAccumulator_free(MI->LLVMmetadataSource);
 	
 	if (compilerOptions.includeDebugInformation) {
+		CharAccumulator_appendChars(&LLVMsource, "\n!llvm.module.flags = !{!");
+		CharAccumulator_appendInt(&LLVMsource, MI->metadataCount);
+		CharAccumulator_appendChars(&LLVMsource, ", !");
+		CharAccumulator_appendInt(&LLVMsource, MI->metadataCount + 1);
+		CharAccumulator_appendChars(&LLVMsource, "}\n!");
+		CharAccumulator_appendInt(&LLVMsource, MI->metadataCount);
+		CharAccumulator_appendChars(&LLVMsource, " = !{i32 7, !\"Dwarf Version\", i32 4}\n!");
+		CharAccumulator_appendInt(&LLVMsource, MI->metadataCount + 1);
+		CharAccumulator_appendChars(&LLVMsource, " = !{i32 2, !\"Debug Info Version\", i32 3}");
+		MI->metadataCount += 2;
+		
 		CharAccumulator_appendChars(&LLVMsource, "\n!llvm.dbg.cu = !{!");
 		CharAccumulator_appendInt(&LLVMsource, MI->debugInformationCompileUnitID);
 		CharAccumulator_appendChars(&LLVMsource, "}");
@@ -312,13 +340,13 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 		CharAccumulator_appendChars(&objectFiles, outputFilePath.data);
 		CharAccumulator_appendChars(&objectFiles, ".o ");
 		
-		printf("Object file saved to saved to %s.o\n", outputFilePath.data);
+		printf("Object file saved to %s.o\n", outputFilePath.data);
 		
 		CharAccumulator_free(&outputFilePath);
 		
 		linkedList_freeList(&file_paths);
 		
-		free(name);
+//		free(name);
 	} else {
 		CharAccumulator LLC_command = {100, 0, 0};
 		CharAccumulator_initialize(&LLC_command);
@@ -336,4 +364,9 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	}
 	
 	CharAccumulator_free(&LLVMsource);
+	
+	MI->name = name;
+	
+	ModuleInformation **modulePointerData = linkedList_addNode(&alreadyCompiledModules, sizeof(void *));
+	*modulePointerData = MI;
 }

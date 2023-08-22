@@ -9,3 +9,5 @@ char *clang_path = NULL;
 char *full_build_directory = NULL;
 
 ModuleInformation *coreModulePointer;
+
+linkedList_Node *alreadyCompiledModules = NULL;

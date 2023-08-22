@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
 	}
 	
 	ModuleInformation coreModule = {
+		.name = "__core__",
 		.path = NULL,
 		.currentSource = NULL,
 		.topLevelConstantSource = NULL,
@@ -170,8 +171,6 @@ int main(int argc, char **argv) {
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
 	ModuleInformation *MI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
-	ModuleInformation **coreModulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
-	*coreModulePointerData = coreModulePointer;
 	compileModule(MI, compilerMode, path);
 	linkedList_freeList(&MI->context[0]);
 	
@@ -190,6 +189,8 @@ int main(int argc, char **argv) {
 		if (compilerOptions.verbose) {
 			printf("clang_command: %s\n", clang_command.data);
 		}
+		
+		printf("Binary saved to %s/binary\n", full_build_directory);
 		
 		int clang_status = system(clang_command.data);
 

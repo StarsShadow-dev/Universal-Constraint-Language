@@ -264,6 +264,7 @@ void CharAccumulator_free(CharAccumulator *accumulator);
 #define maxContextLevel 10
 
 typedef struct {
+	char *name;
 	char *path;
 	char *currentSource;
 	CharAccumulator *topLevelConstantSource;

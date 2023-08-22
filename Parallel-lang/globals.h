@@ -24,4 +24,6 @@ extern char *full_build_directory;
 
 extern ModuleInformation *coreModulePointer;
 
+extern linkedList_Node *alreadyCompiledModules;
+
 #endif /* globals_h */

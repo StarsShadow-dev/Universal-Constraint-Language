@@ -1,8 +1,4 @@
-// import libc "libc"
-
-// from libc
-function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
-function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
+import "./../libc_bindings"
 
 function printLine(string: Pointer): Void {
 	printf(string);
