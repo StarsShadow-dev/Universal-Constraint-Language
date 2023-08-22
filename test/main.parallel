@@ -1,14 +1,11 @@
 // import { printLine } from "modules/std"
-// import "modules/std"
+import "modules/std"
 import "modules/libc_bindings"
-// import "modules/libc_bindings"
-
-function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
 
 function main(): Int8 {
 	// std.printLine("testing");
 	// std::printLine("testing");
-	// printLine("testing (printLine)");
+	printLine("testing (printLine)");
 	printf("testing (printf)\n");
 
 	return 0;

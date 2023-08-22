@@ -3,6 +3,8 @@ import "./../libc_bindings"
 function printLine(string: Pointer): Void {
 	printf(string);
 	putchar(10); // \n
+
+	abc
 	
 	return;
 }

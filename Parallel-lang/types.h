@@ -267,6 +267,7 @@ typedef struct {
 	char *name;
 	char *path;
 	char *currentSource;
+	char *currentFilePath;
 	CharAccumulator *topLevelConstantSource;
 	CharAccumulator *LLVMmetadataSource;
 	

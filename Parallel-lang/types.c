@@ -203,6 +203,7 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 		.name = NULL,
 		.path = path,
 		.currentSource = NULL,
+		.currentFilePath = NULL,
 		.topLevelConstantSource = topLevelConstantSource,
 		.LLVMmetadataSource = LLVMmetadataSource,
 		

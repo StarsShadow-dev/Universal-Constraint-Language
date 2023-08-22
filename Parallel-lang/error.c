@@ -120,7 +120,7 @@ void printSpaces(int count) {
 void compileError(ModuleInformation *MI, SourceLocation location) {
 	if (errorMsg.size > 0) {
 		// \x1B[31m \x1B[0m
-		printf("error: %s\n", errorMsg.data);
+		printf("\nerror: %s\n at %s:%s:%d\n", errorMsg.data, MI->name, MI->currentFilePath, location.line);
 		CharAccumulator_initialize(&errorMsg);
 	}
 	

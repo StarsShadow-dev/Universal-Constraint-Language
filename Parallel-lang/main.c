@@ -137,6 +137,7 @@ int main(int argc, char **argv) {
 		.name = "__core__",
 		.path = NULL,
 		.currentSource = NULL,
+		.currentFilePath = NULL,
 		.topLevelConstantSource = NULL,
 		.LLVMmetadataSource = NULL,
 		

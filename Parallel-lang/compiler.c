@@ -234,6 +234,8 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 			currentModule = currentModule->next;
 		}
 		
+		MI->name = name;
+		
 		printf("Compiling module %s\n", name);
 	}
 	
@@ -243,17 +245,19 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	if (compilerMode != CompilerMode_compilerTesting) {
 		linkedList_Node *currentFilePath = file_paths;
 		while (currentFilePath != NULL) {
+			MI->currentFilePath = (char *)currentFilePath->data;
+			
 			CharAccumulator fullFilePath = {100, 0, 0};
 			CharAccumulator_initialize(&fullFilePath);
 			CharAccumulator_appendChars(&fullFilePath, path);
 			CharAccumulator_appendChars(&fullFilePath, "/");
-			CharAccumulator_appendChars(&fullFilePath, (char *)currentFilePath->data);
+			CharAccumulator_appendChars(&fullFilePath, MI->currentFilePath);
 			
 			if (compilerOptions.includeDebugInformation) {
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\n!");
 				CharAccumulator_appendInt(MI->LLVMmetadataSource, MI->metadataCount);
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, " = !DIFile(filename: \"");
-				CharAccumulator_appendChars(MI->LLVMmetadataSource, (char *)currentFilePath->data);
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, MI->currentFilePath);
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\", directory: \"");
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, path);
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\")");
@@ -364,8 +368,6 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	}
 	
 	CharAccumulator_free(&LLVMsource);
-	
-	MI->name = name;
 	
 	ModuleInformation **modulePointerData = linkedList_addNode(&alreadyCompiledModules, sizeof(void *));
 	*modulePointerData = MI;
