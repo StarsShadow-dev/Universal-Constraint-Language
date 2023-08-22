@@ -186,12 +186,12 @@ void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource)
 }
 
 void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path) {
-	printf("Compiling module '%s'.\n", path);
-	
 	char *name = NULL;
 	linkedList_Node *file_paths = NULL;
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
+		printf("Compiling module '%s'.\n", path);
+		
 		CharAccumulator configJSONPath = {100, 0, 0};
 		CharAccumulator_initialize(&configJSONPath);
 		CharAccumulator_appendChars(&configJSONPath, path);
@@ -312,11 +312,7 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 		CharAccumulator_appendChars(&objectFiles, outputFilePath.data);
 		CharAccumulator_appendChars(&objectFiles, ".o ");
 		
-		if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {
-			
-		} else {
-			printf("Object file saved to saved to %s.o\n", outputFilePath.data);
-		}
+		printf("Object file saved to saved to %s.o\n", outputFilePath.data);
 		
 		CharAccumulator_free(&outputFilePath);
 		

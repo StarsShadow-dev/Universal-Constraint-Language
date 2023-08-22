@@ -54,7 +54,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "build_binary"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "run"
@@ -66,11 +66,15 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "test"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "compilerTesting"
-            isEnabled = "NO">
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "./tests/succeed/convoluted_abc.parallel"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "./test/main.parallel"

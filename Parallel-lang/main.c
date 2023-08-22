@@ -118,15 +118,19 @@ int main(int argc, char **argv) {
 	CharAccumulator_appendChars(&full_build_directoryCA, path);
 	CharAccumulator_appendChars(&full_build_directoryCA, "/build");
 	
-	struct stat stat_buffer = {0};
-	if (stat(full_build_directoryCA.data, &stat_buffer) == -1) {
-		printf("The \"build_directory\" (%s) does not exist.\n", full_build_directoryCA.data);
-		exit(1);
-	} else {
-		if (!S_ISDIR(stat_buffer.st_mode)) {
-			printf("The \"build_directory\" (%s) exists but is not a directory.\n", full_build_directoryCA.data);
+	if (compilerMode != CompilerMode_compilerTesting) {
+		struct stat stat_buffer = {0};
+		if (stat(full_build_directoryCA.data, &stat_buffer) == -1) {
+			printf("The \"build_directory\" (%s) does not exist.\n", full_build_directoryCA.data);
 			exit(1);
+		} else {
+			if (!S_ISDIR(stat_buffer.st_mode)) {
+				printf("The \"build_directory\" (%s) exists but is not a directory.\n", full_build_directoryCA.data);
+				exit(1);
+			}
 		}
+		
+		full_build_directory = full_build_directoryCA.data;
 	}
 	
 	ModuleInformation coreModule = {
@@ -157,8 +161,6 @@ int main(int argc, char **argv) {
 	addContextBinding_simpleType(&coreModule.context[0], "Bool", "i1", 1, 4);
 	addContextBinding_simpleType(&coreModule.context[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
-	full_build_directory = full_build_directoryCA.data;
-	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(topLevelConstantSource);
@@ -173,31 +175,33 @@ int main(int argc, char **argv) {
 	compileModule(MI, compilerMode, path);
 	linkedList_freeList(&MI->context[0]);
 	
-	CharAccumulator clang_command = {100, 0, 0};
-	CharAccumulator_initialize(&clang_command);
-	CharAccumulator_appendChars(&clang_command, clang_path);
-	CharAccumulator_appendChars(&clang_command, " ");
-//	CharAccumulator_appendChars(&clang_command, getcwdBuffer);
-//	CharAccumulator_appendChars(&clang_command, "/");
-	CharAccumulator_appendChars(&clang_command, objectFiles.data);
-	CharAccumulator_appendChars(&clang_command, "-o ");
-	CharAccumulator_appendChars(&clang_command, full_build_directory);
-	CharAccumulator_appendChars(&clang_command, "/binary");
-	
-	if (compilerOptions.verbose) {
-		printf("clang_command: %s\n", clang_command.data);
-	}
-	
-	int clang_status = system(clang_command.data);
+	if (compilerMode != CompilerMode_compilerTesting) {
+		CharAccumulator clang_command = {100, 0, 0};
+		CharAccumulator_initialize(&clang_command);
+		CharAccumulator_appendChars(&clang_command, clang_path);
+		CharAccumulator_appendChars(&clang_command, " ");
+	//	CharAccumulator_appendChars(&clang_command, getcwdBuffer);
+	//	CharAccumulator_appendChars(&clang_command, "/");
+		CharAccumulator_appendChars(&clang_command, objectFiles.data);
+		CharAccumulator_appendChars(&clang_command, "-o ");
+		CharAccumulator_appendChars(&clang_command, full_build_directory);
+		CharAccumulator_appendChars(&clang_command, "/binary");
+		
+		if (compilerOptions.verbose) {
+			printf("clang_command: %s\n", clang_command.data);
+		}
+		
+		int clang_status = system(clang_command.data);
 
-	int clang_exitCode = WEXITSTATUS(clang_status);
+		int clang_exitCode = WEXITSTATUS(clang_status);
 
-	if (clang_exitCode != 0) {
-		printf("clang error\n");
-		exit(1);
+		if (clang_exitCode != 0) {
+			printf("clang error\n");
+			exit(1);
+		}
+		
+		CharAccumulator_free(&clang_command);
 	}
-	
-	CharAccumulator_free(&clang_command);
 	
 	if (compilerMode == CompilerMode_run) {
 		abort();
