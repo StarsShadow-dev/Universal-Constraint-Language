@@ -74,6 +74,8 @@ typedef struct {
 	char *LLVMname;
 	char *LLVMreturnType;
 	/// BuilderType
+	linkedList_Node *argumentNames;
+	/// BuilderType
 	linkedList_Node *argumentTypes;
 	BuilderType returnType;
 	
@@ -81,6 +83,9 @@ typedef struct {
 	int registerCount;
 	
 	int debugInformationScopeID;
+	
+//	int wasCalled;
+//	char *addToLLVMTopOnCall;
 } ContextBinding_function;
 
 typedef struct {
@@ -154,7 +159,7 @@ typedef struct {
 } ASTnode;
 
 typedef struct {
-	SubString *name;
+//	SubString *name;
 	SubString *path;
 } ASTnode_import;
 
@@ -255,5 +260,26 @@ void CharAccumulator_appendChars(CharAccumulator *accumulator, char *chars);
 void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number);
 
 void CharAccumulator_free(CharAccumulator *accumulator);
+
+#define maxContextLevel 10
+
+typedef struct {
+	char *path;
+	char *currentSource;
+	CharAccumulator *topLevelConstantSource;
+	CharAccumulator *LLVMmetadataSource;
+	
+	int stringCount;
+	int metadataCount;
+	
+	int level;
+	linkedList_Node *context[maxContextLevel];
+	linkedList_Node *importedModules;
+	
+	int debugInformationCompileUnitID;
+	int debugInformationFileScopeID;
+} ModuleInformation;
+
+ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *LLVMmetadataSource);
 
 #endif /* types_h */

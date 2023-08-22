@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "fromParallel.h"
 
@@ -110,6 +111,8 @@ int main(int argc, char **argv) {
 	CharAccumulator_initialize(&errorMsg);
 	CharAccumulator_initialize(&errorIndicator);
 	
+	CharAccumulator_initialize(&objectFiles);
+	
 	CharAccumulator full_build_directoryCA = {100, 0, 0};
 	CharAccumulator_initialize(&full_build_directoryCA);
 	CharAccumulator_appendChars(&full_build_directoryCA, path);
@@ -126,9 +129,85 @@ int main(int argc, char **argv) {
 		}
 	}
 	
+	ModuleInformation coreModule = {
+		.path = NULL,
+		.currentSource = NULL,
+		.topLevelConstantSource = NULL,
+		.LLVMmetadataSource = NULL,
+		
+		.stringCount = 0,
+		.metadataCount = 0,
+		
+		.level = 0,
+		
+		.context = {0},
+		.importedModules = NULL,
+		
+		.debugInformationCompileUnitID = 0,
+		.debugInformationFileScopeID = 0
+	};
+	coreModulePointer = &coreModule;
+	addContextBinding_simpleType(&coreModule.context[0], "Void", "void", 0, 4);
+	addContextBinding_simpleType(&coreModule.context[0], "Int8", "i8", 1, 4);
+	addContextBinding_simpleType(&coreModule.context[0], "Int16", "i16", 2, 4);
+	addContextBinding_simpleType(&coreModule.context[0], "Int32", "i32", 4, 4);
+	addContextBinding_simpleType(&coreModule.context[0], "Int64", "i64", 8, 4);
+	// how much space should be made for an i1?
+	// I will do one byte for now
+	addContextBinding_simpleType(&coreModule.context[0], "Bool", "i1", 1, 4);
+	addContextBinding_simpleType(&coreModule.context[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	
 	full_build_directory = full_build_directoryCA.data;
 	
-	compileModule(compilerMode, path);
+	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
+	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(topLevelConstantSource);
+
+	CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
+	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(LLVMmetadataSource);
+	
+	ModuleInformation *MI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
+	ModuleInformation **coreModulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
+	*coreModulePointerData = coreModulePointer;
+	compileModule(MI, compilerMode, path);
+	linkedList_freeList(&MI->context[0]);
+	
+	CharAccumulator clang_command = {100, 0, 0};
+	CharAccumulator_initialize(&clang_command);
+	CharAccumulator_appendChars(&clang_command, clang_path);
+	CharAccumulator_appendChars(&clang_command, " ");
+//	CharAccumulator_appendChars(&clang_command, getcwdBuffer);
+//	CharAccumulator_appendChars(&clang_command, "/");
+	CharAccumulator_appendChars(&clang_command, objectFiles.data);
+	CharAccumulator_appendChars(&clang_command, "-o ");
+	CharAccumulator_appendChars(&clang_command, full_build_directory);
+	CharAccumulator_appendChars(&clang_command, "/binary");
+	
+	if (compilerOptions.verbose) {
+		printf("clang_command: %s\n", clang_command.data);
+	}
+	
+	int clang_status = system(clang_command.data);
+
+	int clang_exitCode = WEXITSTATUS(clang_status);
+
+	if (clang_exitCode != 0) {
+		printf("clang error\n");
+		exit(1);
+	}
+	
+	CharAccumulator_free(&clang_command);
+	
+	if (compilerMode == CompilerMode_run) {
+		abort();
+//		printf("Running program at: %s\n", outputFilePath.data);
+//		int program_status = system(outputFilePath.data);
+//
+//		int program_exitCode = WEXITSTATUS(program_status);
+//
+//		printf("Program ended with exit code: %d\n", program_exitCode);
+	}
 	
 	free(globalConfigPath);
 	free(globalConfigJSON);

@@ -174,9 +174,9 @@ void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource)
 //	printf("Source (%s): %s\n", path, MI->currentSource);
 	
 	linkedList_Node *tokens = lex(MI);
-	if (compilerOptions.verbose) {
-		printTokens(tokens);
-	}
+//	if (compilerOptions.verbose) {
+//		printTokens(tokens);
+//	}
 	
 	linkedList_Node *currentToken = tokens;
 	
@@ -185,7 +185,9 @@ void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource)
 	buildLLVM(MI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
 }
 
-void compileModule(CompilerMode compilerMode, char *path) {
+void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path) {
+	printf("Compiling module '%s'.\n", path);
+	
 	char *name = NULL;
 	linkedList_Node *file_paths = NULL;
 	
@@ -221,46 +223,6 @@ void compileModule(CompilerMode compilerMode, char *path) {
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
 	
-	CharAccumulator LLVMconstantSource = {100, 0, 0};
-	CharAccumulator_initialize(&LLVMconstantSource);
-	
-	CharAccumulator LLVMmetadataSource = {100, 0, 0};
-	CharAccumulator_initialize(&LLVMmetadataSource);
-	
-	ModuleInformation MI = {
-		path,
-		NULL,
-		&LLVMconstantSource,
-		&LLVMmetadataSource,
-		// metadataCount
-		0,
-		
-		// stringCount
-		0,
-		
-		// level is -1 so that it starts at 0 for the first iteration
-		-1,
-		
-		// context
-		{0},
-		
-		//debugInformationCompileUnitID
-		0,
-		
-		// debugInformationFileScopeID
-		0
-	};
-	
-	addContextBinding_simpleType(&MI.context[0], "Void", "void", 0, 4);
-	addContextBinding_simpleType(&MI.context[0], "Int8", "i8", 1, 4);
-	addContextBinding_simpleType(&MI.context[0], "Int16", "i16", 2, 4);
-	addContextBinding_simpleType(&MI.context[0], "Int32", "i32", 4, 4);
-	addContextBinding_simpleType(&MI.context[0], "Int64", "i64", 8, 4);
-	// how much space should be made for an i1?
-	// I will do one byte for now
-	addContextBinding_simpleType(&MI.context[0], "Bool", "i1", 1, 4);
-	addContextBinding_simpleType(&MI.context[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
-	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		linkedList_Node *currentFilePath = file_paths;
 		while (currentFilePath != NULL) {
@@ -271,64 +233,49 @@ void compileModule(CompilerMode compilerMode, char *path) {
 			CharAccumulator_appendChars(&fullFilePath, (char *)currentFilePath->data);
 			
 			if (compilerOptions.includeDebugInformation) {
-				CharAccumulator_appendChars(&LLVMmetadataSource, "\n!");
-				CharAccumulator_appendInt(&LLVMmetadataSource, MI.metadataCount);
-				CharAccumulator_appendChars(&LLVMmetadataSource, " = !DIFile(filename: \"");
-				CharAccumulator_appendChars(&LLVMmetadataSource, (char *)currentFilePath->data);
-				CharAccumulator_appendChars(&LLVMmetadataSource, "\", directory: \"");
-				CharAccumulator_appendChars(&LLVMmetadataSource, path);
-				CharAccumulator_appendChars(&LLVMmetadataSource, "\")");
-				MI.debugInformationFileScopeID = MI.metadataCount;
-				MI.metadataCount++;
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\n!");
+				CharAccumulator_appendInt(MI->LLVMmetadataSource, MI->metadataCount);
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, " = !DIFile(filename: \"");
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, (char *)currentFilePath->data);
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\", directory: \"");
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, path);
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\")");
+				MI->debugInformationFileScopeID = MI->metadataCount;
+				MI->metadataCount++;
 				
-				CharAccumulator_appendChars(&LLVMmetadataSource, "\n!");
-				CharAccumulator_appendInt(&LLVMmetadataSource, MI.metadataCount);
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\n!");
+				CharAccumulator_appendInt(MI->LLVMmetadataSource, MI->metadataCount);
 				// TODO: the language field is required, but I cannot find any documentation on it (DW_LANG_C11 works)
-				CharAccumulator_appendChars(&LLVMmetadataSource, " = distinct !DICompileUnit(language: DW_LANG_C11, file: !");
-				CharAccumulator_appendInt(&LLVMmetadataSource, MI.debugInformationFileScopeID);
-				CharAccumulator_appendChars(&LLVMmetadataSource, ", runtimeVersion: 0, emissionKind: FullDebug)");
-				
-				MI.debugInformationCompileUnitID = MI.metadataCount;
-				
-				MI.metadataCount++;
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, " = distinct !DICompileUnit(language: DW_LANG_C11, file: !");
+				CharAccumulator_appendInt(MI->LLVMmetadataSource, MI->debugInformationFileScopeID);
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, ", runtimeVersion: 0, emissionKind: FullDebug)");
+				MI->debugInformationCompileUnitID = MI->metadataCount;
+				MI->metadataCount++;
 			}
 			
-			printf("Compiling file: %s\n", (char *)currentFilePath->data);
-			compileFile(fullFilePath.data, &MI, &LLVMsource);
+			compileFile(fullFilePath.data, MI, &LLVMsource);
 			
 			CharAccumulator_free(&fullFilePath);
 			
 			currentFilePath = currentFilePath->next;
 		}
 	} else {
-		compileFile(path, &MI, &LLVMsource);
+		compileFile(path, MI, &LLVMsource);
 	}
 	
-	CharAccumulator_appendChars(&LLVMsource, LLVMconstantSource.data);
-	CharAccumulator_appendChars(&LLVMsource, LLVMmetadataSource.data);
+	CharAccumulator_appendChars(&LLVMsource, MI->topLevelConstantSource->data);
+	CharAccumulator_appendChars(&LLVMsource, MI->LLVMmetadataSource->data);
 	
-	CharAccumulator_appendChars(&LLVMsource, "\n!llvm.module.flags = !{!");
-	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount);
-	CharAccumulator_appendChars(&LLVMsource, ", !");
-	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount + 1);
-	CharAccumulator_appendChars(&LLVMsource, "}\n!");
-	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount);
-	CharAccumulator_appendChars(&LLVMsource, " = !{i32 7, !\"Dwarf Version\", i32 4}\n!");
-	CharAccumulator_appendInt(&LLVMsource, MI.metadataCount + 1);
-	CharAccumulator_appendChars(&LLVMsource, " = !{i32 2, !\"Debug Info Version\", i32 3}");
+	CharAccumulator_free(MI->topLevelConstantSource);
+	CharAccumulator_free(MI->LLVMmetadataSource);
 	
 	if (compilerOptions.includeDebugInformation) {
 		CharAccumulator_appendChars(&LLVMsource, "\n!llvm.dbg.cu = !{!");
-		CharAccumulator_appendInt(&LLVMsource, MI.debugInformationCompileUnitID);
+		CharAccumulator_appendInt(&LLVMsource, MI->debugInformationCompileUnitID);
 		CharAccumulator_appendChars(&LLVMsource, "}");
+		
+		MI->metadataCount++;
 	}
-	
-	MI.metadataCount += 2;
-	
-	CharAccumulator_free(&LLVMconstantSource);
-	CharAccumulator_free(&LLVMmetadataSource);
-	
-	linkedList_freeList(&MI.context[0]);
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		if (compilerOptions.verbose) {
@@ -362,49 +309,11 @@ void compileModule(CompilerMode compilerMode, char *path) {
 			exit(1);
 		}
 		
+		CharAccumulator_appendChars(&objectFiles, outputFilePath.data);
+		CharAccumulator_appendChars(&objectFiles, ".o ");
+		
 		if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {
-			char getcwdBuffer[1000];
-			if (getcwd(getcwdBuffer, sizeof(getcwdBuffer)) == NULL) {
-				printf("getcwd error\n");
-				exit(1);
-			}
 			
-			// now I understand why swift and JavaScript have built-in string formatting
-			CharAccumulator clang_command = {100, 0, 0};
-			CharAccumulator_initialize(&clang_command);
-			CharAccumulator_appendChars(&clang_command, clang_path);
-			CharAccumulator_appendChars(&clang_command, " ");
-			CharAccumulator_appendChars(&clang_command, getcwdBuffer);
-			CharAccumulator_appendChars(&clang_command, "/");
-			CharAccumulator_appendChars(&clang_command, outputFilePath.data);
-			CharAccumulator_appendChars(&clang_command, ".o -o ");
-			CharAccumulator_appendChars(&clang_command, getcwdBuffer);
-			CharAccumulator_appendChars(&clang_command, "/");
-			CharAccumulator_appendChars(&clang_command, full_build_directory);
-			CharAccumulator_appendChars(&clang_command, "/");
-			CharAccumulator_appendChars(&clang_command, name);
-			
-			int clang_status = system(clang_command.data);
-			
-			int clang_exitCode = WEXITSTATUS(clang_status);
-			
-			if (clang_exitCode != 0) {
-				printf("clang error\n");
-				exit(1);
-			}
-			
-			CharAccumulator_free(&clang_command);
-			
-			printf("Program saved to: %s\n", outputFilePath.data);
-			
-			if (compilerMode == CompilerMode_run) {
-				printf("Running program at: %s\n", outputFilePath.data);
-				int program_status = system(outputFilePath.data);
-				
-				int program_exitCode = WEXITSTATUS(program_status);
-				
-				printf("Program ended with exit code: %d\n", program_exitCode);
-			}
 		} else {
 			printf("Object file saved to saved to %s.o\n", outputFilePath.data);
 		}

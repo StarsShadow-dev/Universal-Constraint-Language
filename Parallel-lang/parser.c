@@ -295,14 +295,14 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 			case TokenType_word: {
 				// import statement
 				if (SubString_string_cmp(&token->subString, "import") == 0) {
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					Token *nameToken = ((Token *)((*current)->data));
-					
-					if (nameToken->type != TokenType_word) {
-						addStringToErrorIndicator("expected word after import keyword");
-						compileError(MI, nameToken->location);
-					}
+//					*current = (*current)->next;
+//					endIfCurrentIsEmpty()
+//					Token *nameToken = ((Token *)((*current)->data));
+//
+//					if (nameToken->type != TokenType_word) {
+//						addStringToErrorIndicator("expected word after import keyword");
+//						compileError(MI, nameToken->location);
+//					}
 					
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
@@ -318,7 +318,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					data->nodeType = ASTnodeType_import;
 					data->location = token->location;
 					
-					((ASTnode_import *)data->value)->name = &nameToken->subString;
+//					((ASTnode_import *)data->value)->name = &nameToken->subString;
 					((ASTnode_import *)data->value)->path = &pathString->subString;
 					
 					*current = (*current)->next;

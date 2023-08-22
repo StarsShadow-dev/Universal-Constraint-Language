@@ -58,6 +58,30 @@ ContextBinding *getContextBindingFromString(ModuleInformation *MI, char *key) {
 		index--;
 	}
 	
+	linkedList_Node *currentModule = MI->importedModules;
+	while (currentModule != NULL) {
+		ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+		
+		int index = moduleInformation->level;
+		while (index >= 0) {
+			linkedList_Node *current = moduleInformation->context[index];
+			
+			while (current != NULL) {
+				ContextBinding *binding = ((ContextBinding *)current->data);
+				
+				if (SubString_string_cmp(binding->key, key) == 0) {
+					return binding;
+				}
+				
+				current = current->next;
+			}
+			
+			index--;
+		}
+		
+		currentModule = currentModule->next;
+	}
+	
 	return NULL;
 }
 
@@ -77,6 +101,25 @@ ContextBinding *getContextBindingFromSubString(ModuleInformation *MI, SubString 
 		}
 		
 		index--;
+	}
+	
+	linkedList_Node *currentModule = MI->importedModules;
+	while (currentModule != NULL) {
+		ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+		
+		linkedList_Node *current = moduleInformation->context[0];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			if (SubString_SubString_cmp(binding->key, key) == 0) {
+				return binding;
+			}
+			
+			current = current->next;
+		}
+		
+		currentModule = currentModule->next;
 	}
 	
 	return NULL;
@@ -251,34 +294,42 @@ BuilderType getTypeFroMInding(ContextBinding *binding) {
 	return (BuilderType){binding};
 }
 
-void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, ContextBinding_function *function, ASTnode *node) {
-	ASTnode_function *data = (ASTnode_function *)node->value;
-	
-	if (data->external) {
-		CharAccumulator_appendSubString(outerSource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
+void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, ContextBinding_function *function, ASTnode *node, int defineNew) {
+	if (defineNew) {
+		ASTnode_function *data = (ASTnode_function *)node->value;
+		
+		if (data->external) {
+			CharAccumulator_appendSubString(outerSource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
+			return;
+		}
 	}
 	
-	else {
-		char *LLVMreturnType = getLLVMtypeFromASTnode(MI, data->returnType);
-		
+	char *LLVMreturnType = getLLVMtypeFromBuilderType(MI, &function->returnType);
+	
+	if (defineNew) {
 		CharAccumulator_appendChars(outerSource, "\n\ndefine ");
-		CharAccumulator_appendChars(outerSource, LLVMreturnType);
-		CharAccumulator_appendChars(outerSource, " @");
-		CharAccumulator_appendChars(outerSource, function->LLVMname);
-		CharAccumulator_appendChars(outerSource, "(");
-		
-		CharAccumulator functionSource = {100, 0, 0};
-		CharAccumulator_initialize(&functionSource);
-		
-		linkedList_Node *currentArgumentType = data->argumentTypes;
-		linkedList_Node *currentArgumentName = data->argumentNames;
-		if (currentArgumentType != NULL) {
-			int argumentCount =  linkedList_getCount(&data->argumentTypes);
-			while (1) {
-				ContextBinding *argumentTypeBinding = getContextBindingFromSubString(MI, ((ASTnode_type *)((ASTnode *)currentArgumentType->data)->value)->name);
-				
-				char *currentArgumentLLVMtype = getLLVMtypeFromASTnode(MI, (ASTnode *)currentArgumentType->data);
-				CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
+	} else {
+		CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
+	}
+	CharAccumulator_appendChars(outerSource, LLVMreturnType);
+	CharAccumulator_appendChars(outerSource, " @");
+	CharAccumulator_appendChars(outerSource, function->LLVMname);
+	CharAccumulator_appendChars(outerSource, "(");
+	
+	CharAccumulator functionSource = {100, 0, 0};
+	CharAccumulator_initialize(&functionSource);
+	
+	linkedList_Node *currentArgumentType = function->argumentTypes;
+	linkedList_Node *currentArgumentName = function->argumentNames;
+	if (currentArgumentType != NULL) {
+		int argumentCount =  linkedList_getCount(&function->argumentTypes);
+		while (1) {
+			ContextBinding *argumentTypeBinding = ((BuilderType *)currentArgumentType->data)->binding;
+			
+			char *currentArgumentLLVMtype = getLLVMtypeFromBuilderType(MI, (BuilderType *)currentArgumentType->data);
+			CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
+			
+			if (defineNew) {
 				CharAccumulator_appendChars(outerSource, " %");
 				CharAccumulator_appendInt(outerSource, function->registerCount);
 				
@@ -300,7 +351,7 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 				
 				expectUnusedName(MI, (SubString *)currentArgumentName->data, node->location);
 				
-				BuilderType type = getTypeFromASTnode(MI, (ASTnode *)currentArgumentType->data);
+				BuilderType type = *(BuilderType *)currentArgumentType->data;
 				
 				ContextBinding *argumentVariableData = linkedList_addNode(&MI->context[MI->level + 1], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
@@ -314,22 +365,27 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 				((ContextBinding_variable *)argumentVariableData->value)->type = type;
 				
 				function->registerCount++;
-				
-				if (currentArgumentType->next == NULL) {
-					break;
-				}
-				
-				CharAccumulator_appendChars(outerSource, ", ");
-				currentArgumentType = currentArgumentType->next;
-				currentArgumentName = currentArgumentName->next;
 			}
 			
-			function->registerCount += argumentCount;
+			if (currentArgumentType->next == NULL) {
+				break;
+			}
+			
+			CharAccumulator_appendChars(outerSource, ", ");
+			currentArgumentType = currentArgumentType->next;
+			currentArgumentName = currentArgumentName->next;
 		}
+		
+		if (defineNew) function->registerCount += argumentCount;
+	}
+	
+	CharAccumulator_appendChars(outerSource, ")");
+	
+	if (defineNew) {
+		ASTnode_function *data = (ASTnode_function *)node->value;
 		
 		function->registerCount++;
 		
-		CharAccumulator_appendChars(outerSource, ")");
 		if (compilerOptions.includeDebugInformation) {
 			CharAccumulator_appendChars(outerSource, " !dbg !");
 			CharAccumulator_appendInt(outerSource, function->debugInformationScopeID);
@@ -348,15 +404,15 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 		}
 		
 		CharAccumulator_appendChars(outerSource, "\n}");
-		
-		CharAccumulator_free(&functionSource);
 	}
+	
+	CharAccumulator_free(&functionSource);
 }
 
 int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
 	MI->level++;
-	if (MI->level > maxVariablesLevel) {
-		printf("level (%i) > maxVariablesLevel (%i)\n", MI->level, maxVariablesLevel);
+	if (MI->level > maxContextLevel) {
+		printf("level (%i) > maxContextLevel (%i)\n", MI->level, maxContextLevel);
 		abort();
 	}
 	
@@ -416,6 +472,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				((ContextBinding_function *)functionData->value)->LLVMname = functionLLVMname;
 				((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
+				((ContextBinding_function *)functionData->value)->argumentNames = data->argumentNames;
 				((ContextBinding_function *)functionData->value)->argumentTypes = argumentTypes;
 				((ContextBinding_function *)functionData->value)->returnType = returnType;
 				((ContextBinding_function *)functionData->value)->registerCount = 0;
@@ -520,9 +577,22 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						expectTypeExists(MI, ((ASTnode_type *)memberData->returnType->value)->name, memberData->returnType->location);
 						
 						// make sure that the types of all arguments actually exist
+//						linkedList_Node *currentArgument = memberData->argumentTypes;
+//						while (currentArgument != NULL) {
+//							expectTypeExists(MI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
+//
+//							currentArgument = currentArgument->next;
+//						}
+//
+						linkedList_Node *argumentTypes = NULL;
+						
+						// make sure that the types of all arguments actually exist
 						linkedList_Node *currentArgument = memberData->argumentTypes;
 						while (currentArgument != NULL) {
-							expectTypeExists(MI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
+							ContextBinding *currentArgumentBinding = expectTypeExists(MI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
+							
+							BuilderType *data = linkedList_addNode(&argumentTypes, sizeof(BuilderType));
+							data->binding = currentArgumentBinding;
 							
 							currentArgument = currentArgument->next;
 						}
@@ -547,7 +617,8 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						
 						((ContextBinding_function *)functionData->value)->LLVMname = functionLLVMname;
 						((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
-						((ContextBinding_function *)functionData->value)->argumentTypes = memberData->argumentTypes;
+						((ContextBinding_function *)functionData->value)->argumentNames = memberData->argumentNames;
+						((ContextBinding_function *)functionData->value)->argumentTypes = argumentTypes;
 						((ContextBinding_function *)functionData->value)->returnType = returnType;
 						((ContextBinding_function *)functionData->value)->registerCount = 0;
 					} else {
@@ -579,7 +650,40 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				char *path = safeMalloc(pathSize);
 				snprintf(path, pathSize, "%.*s/%s", (int)strlen(MI->path), MI->path, data->path->start);
 				
-				compileModule(CompilerMode_build_objectFile, path);
+				CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
+				(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
+				CharAccumulator_initialize(topLevelConstantSource);
+
+				CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
+				(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
+				CharAccumulator_initialize(LLVMmetadataSource);
+				
+				ModuleInformation *newMI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
+				ModuleInformation **coreModulePointerData = linkedList_addNode(&newMI->importedModules, sizeof(void *));
+				*coreModulePointerData = coreModulePointer;
+				compileModule(newMI, CompilerMode_build_objectFile, path);
+				ModuleInformation **modulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
+				*modulePointerData = newMI;
+				
+				linkedList_Node *currentModule = MI->importedModules;
+				while (currentModule != NULL) {
+					ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+					
+					linkedList_Node *current = moduleInformation->context[0];
+					
+					while (current != NULL) {
+						ContextBinding *binding = ((ContextBinding *)current->data);
+						
+						if (binding->type == ContextBindingType_function) {
+							ContextBinding_function *function = (ContextBinding_function *)binding->value;
+							generateFunction(MI, outerSource, function, NULL, 0);
+						}
+						
+						current = current->next;
+					}
+					
+					currentModule = currentModule->next;
+				}
 				
 				break;
 			}
@@ -596,7 +700,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				if (functionBinding == NULL || functionBinding->type != ContextBindingType_function) abort();
 				ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
 				
-				generateFunction(MI, outerSource, function, node);
+				generateFunction(MI, outerSource, function, node, 1);
 				
 				break;
 			}
@@ -620,7 +724,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					ContextBinding *memberBinding = (ContextBinding *)currentMemberBinding->data;
 					
 					if (memberBinding->type == ContextBindingType_function) {
-						generateFunction(MI, outerSource, (ContextBinding_function *)memberBinding->value, memberNode);
+						generateFunction(MI, outerSource, (ContextBinding_function *)memberBinding->value, memberNode, 1);
 					}
 					
 					currentMember = currentMember->next;

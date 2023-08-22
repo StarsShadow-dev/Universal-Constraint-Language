@@ -10,5 +10,3 @@ function printLine(string: Pointer): Void {
 	
 	return;
 }
-
-// export { printLine };

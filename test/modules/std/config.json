@@ -1,5 +1,5 @@
 {
-	"name": "standardLibrary",
+	"name": "std",
 
 	"file_paths": [
 		"printLine.parallel"

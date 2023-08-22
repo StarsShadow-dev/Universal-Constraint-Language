@@ -1,31 +1,33 @@
-// import { printLine } from "./standardLibrary/config.json" as std
-import std "modules/standardLibrary"
+// import { printLine } from "modules/std"
+import "modules/std"
 
 function main(): Int8 {
 	// std.printLine("testing");
+	// std::printLine("testing");
+	printLine("testing");
 
 	return 0;
 }
 
-function safeMalloc(size: Int64): Pointer {
-	var pointer: Pointer = malloc(size);
-	// if (pointer == 0) {
-	// 	printf("safeMalloc: malloc failed");
-	// 	abort();
-	// }
-	return pointer;
-}
+// function safeMalloc(size: Int64): Pointer {
+// 	var pointer: Pointer = malloc(size);
+// 	// if (pointer == 0) {
+// 	// 	printf("safeMalloc: malloc failed");
+// 	// 	abort();
+// 	// }
+// 	return pointer;
+// }
 
-struct Point {
-	var x: Int32;
-	var y: Int32;
-	var z: Int32;
-}
+// struct Point {
+// 	var x: Int32;
+// 	var y: Int32;
+// 	var z: Int32;
+// }
 
-struct Triangle {
-	var p1: Point;
-	var p2: Point;
-	var p3: Point;
-}
+// struct Triangle {
+// 	var p1: Point;
+// 	var p2: Point;
+// 	var p3: Point;
+// }
 
-function malloc(size: Int64): Pointer "declare ptr @malloc(i64 noundef) allocsize(0)"
+// function malloc(size: Int64): Pointer "declare ptr @malloc(i64 noundef) allocsize(0)"

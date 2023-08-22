@@ -13,27 +13,10 @@ typedef enum {
 	CompilerMode_compilerTesting
 } CompilerMode;
 
-typedef struct {
-	char *path;
-	char *currentSource;
-	CharAccumulator *topLevelConstantSource;
-	CharAccumulator *LLVMmetadataSource;
-	
-	int metadataCount;
-	
-	int stringCount;
-	
-	int level;
-	linkedList_Node *context[maxVariablesLevel];
-	
-	int debugInformationCompileUnitID;
-	int debugInformationFileScopeID;
-} ModuleInformation;
-
 char *readFile(const char *path);
 
 char *getJsmnString(char *buffer, jsmntok_t *t, int start, int count, char *key);
 
-void compileModule(CompilerMode compilerMode, char *path);
+void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path);
 
 #endif /* compiler_h */

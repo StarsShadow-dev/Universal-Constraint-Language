@@ -194,3 +194,29 @@ void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number) {
 void CharAccumulator_free(CharAccumulator *accumulator) {
 	free(accumulator->data);
 }
+
+
+ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *LLVMmetadataSource) {
+	ModuleInformation *MI = safeMalloc(sizeof(ModuleInformation));
+	
+	*MI = (ModuleInformation){
+		.path = path,
+		.currentSource = NULL,
+		.topLevelConstantSource = topLevelConstantSource,
+		.LLVMmetadataSource = LLVMmetadataSource,
+		
+		.stringCount = 0,
+		.metadataCount = 0,
+		
+		// level is -1 so that it starts at 0 for the first iteration
+		.level = -1,
+		
+		.context = {0},
+		.importedModules = NULL,
+		
+		.debugInformationCompileUnitID = 0,
+		.debugInformationFileScopeID = 0
+	};
+
+	return MI;
+}

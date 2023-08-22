@@ -2,13 +2,14 @@
 #define globals_h
 
 #include "types.h"
+#include "compiler.h"
 
 #define CURRENT_VERSION "beta.6"
 
-// 8 bytes on a 64 bit machine
+// 8 bytes (on a 64 bit machine)
 #define pointer_byteSize 8
 
-#define maxVariablesLevel 10
+extern CharAccumulator objectFiles;
 
 typedef struct {
 	int includeDebugInformation;
@@ -20,5 +21,7 @@ extern CompilerOptions compilerOptions;
 extern char *LLC_path;
 extern char *clang_path;
 extern char *full_build_directory;
+
+extern ModuleInformation *coreModulePointer;
 
 #endif /* globals_h */
