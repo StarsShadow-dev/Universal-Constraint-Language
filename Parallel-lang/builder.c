@@ -58,30 +58,31 @@ ContextBinding *getContextBindingFromString(ModuleInformation *MI, char *key) {
 		index--;
 	}
 	
+	// the __core__ module can be implicitly accessed
 	linkedList_Node *currentModule = MI->importedModules;
 	while (currentModule != NULL) {
 		ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
 		
-		int index = moduleInformation->level;
-		while (index >= 0) {
-			linkedList_Node *current = moduleInformation->context[index];
-			
-			while (current != NULL) {
-				ContextBinding *binding = ((ContextBinding *)current->data);
-				
-				if (SubString_string_cmp(binding->key, key) == 0) {
-					return binding;
-				}
-				
-				current = current->next;
-			}
-			
-			index--;
+		if (strcmp(moduleInformation->name, "__core__") != 0) {
+			currentModule = currentModule->next;
+			continue;
 		}
 		
-		currentModule = currentModule->next;
+		linkedList_Node *current = moduleInformation->context[0];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			if (SubString_string_cmp(binding->key, key) == 0) {
+				return binding;
+			}
+			
+			current = current->next;
+		}
+		
+		break;
 	}
-	
+
 	return NULL;
 }
 
@@ -103,9 +104,15 @@ ContextBinding *getContextBindingFromSubString(ModuleInformation *MI, SubString 
 		index--;
 	}
 	
+	// the __core__ module can be implicitly accessed
 	linkedList_Node *currentModule = MI->importedModules;
 	while (currentModule != NULL) {
 		ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+		
+		if (strcmp(moduleInformation->name, "__core__") != 0) {
+			currentModule = currentModule->next;
+			continue;
+		}
 		
 		linkedList_Node *current = moduleInformation->context[0];
 		
@@ -119,7 +126,7 @@ ContextBinding *getContextBindingFromSubString(ModuleInformation *MI, SubString 
 			current = current->next;
 		}
 		
-		currentModule = currentModule->next;
+		break;
 	}
 	
 	return NULL;
@@ -409,6 +416,10 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 	CharAccumulator_free(&functionSource);
 }
 
+//void generateStruct(ModuleInformation *MI, CharAccumulator *outerSource, ContextBinding_struct *structToGenerate, ASTnode *node, int defineNew) {
+//	
+//}
+
 int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
 	MI->level++;
 	if (MI->level > maxContextLevel) {
@@ -562,7 +573,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						variableBinding->byteSize = typeBinding->byteSize;
 						variableBinding->byteAlign = typeBinding->byteSize;
 						
-						// TODO: LLVMRegister
 						((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
 						((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
 						((ContextBinding_variable *)variableBinding->value)->type = type;
@@ -1189,6 +1199,65 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					
 					CharAccumulator_free(&leftInnerSource);
 					CharAccumulator_free(&rightInnerSource);
+					break;
+				}
+				
+				else if (data->operatorType == ASTnode_operatorType_scopeResolution) {
+					ASTnode *leftNode = (ASTnode *)data->left->data;
+					ASTnode *rightNode = (ASTnode *)data->right->data;
+					
+					// for now just assume everything is a variable
+					if (leftNode->nodeType != ASTnodeType_variable) abort();
+					if (rightNode->nodeType != ASTnodeType_variable) abort();
+					
+					SubString *leftSubString = ((ASTnode_variable *)leftNode->value)->name;
+					SubString *rightSubString = ((ASTnode_variable *)rightNode->value)->name;
+					
+					// find the module
+					linkedList_Node *currentModule = MI->importedModules;
+					while (1) {
+						if (currentModule == NULL) {
+							addStringToErrorMsg("not an imported module");
+							
+							addStringToErrorIndicator("no imported module named '");
+							addSubStringToErrorIndicator(leftSubString);
+							addStringToErrorIndicator("'");
+							compileError(MI, leftNode->location);
+						}
+						ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+						
+						if (SubString_string_cmp(leftSubString, moduleInformation->name) != 0) {
+							currentModule = currentModule->next;
+							continue;
+						}
+						
+						linkedList_Node *current = moduleInformation->context[0];
+						
+						while (1) {
+							if (current == NULL) {
+								addStringToErrorMsg("value does not exist in this modules scope");
+								
+								addStringToErrorIndicator("nothing in module '");
+								addSubStringToErrorIndicator(leftSubString);
+								addStringToErrorIndicator("' with name '");
+								addSubStringToErrorIndicator(rightSubString);
+								addStringToErrorIndicator("'");
+								compileError(MI, rightNode->location);
+							}
+							ContextBinding *binding = ((ContextBinding *)current->data);
+							
+							if (SubString_SubString_cmp(binding->key, rightSubString) == 0) {
+								// success
+								addTypeFromBinding(MI, types, binding);
+								break;
+							}
+							
+							current = current->next;
+						}
+						
+						break;
+					}
+					
 					break;
 				}
 				

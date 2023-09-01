@@ -11,11 +11,11 @@
 #define numberStart (character >= '0' && character <= '9')
 #define numberContinue (character >= '0' && character <= '9')
 
-#define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
-
 // periods are considered operators because they perform an operation
 #define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '.'
-#define operator_2chars character == '=' && MI->currentSource[index+1] == '='
+#define operator_2chars character == '=' && MI->currentSource[index+1] == '=' || character == ':' && MI->currentSource[index+1] == ':'
+
+#define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
 linkedList_Node *lex(ModuleInformation *MI) {
 	linkedList_Node *tokens = 0;
@@ -79,15 +79,6 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			data->subString.length = end - start;
 		}
 		
-		else if (separator) {
-			Token *data = linkedList_addNode(&tokens, sizeof(Token));
-			
-			data->type = TokenType_separator;
-			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = MI->currentSource + index;
-			data->subString.length = 1;
-		}
-		
 		else if (operator_2chars) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
@@ -104,6 +95,15 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_operator;
+			data->location = (SourceLocation){line, column, column + 1};
+			data->subString.start = MI->currentSource + index;
+			data->subString.length = 1;
+		}
+		
+		else if (separator) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_separator;
 			data->location = (SourceLocation){line, column, column + 1};
 			data->subString.start = MI->currentSource + index;
 			data->subString.length = 1;

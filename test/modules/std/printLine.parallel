@@ -1,10 +1,8 @@
-import "./../libc_bindings"
+import "../libc_bindings"
 
 function printLine(string: Pointer): Void {
-	printf(string);
-	putchar(10); // \n
-
-	abc
+	libc_bindings::printf(string);
+	libc_bindings::putchar(10); // \n
 	
 	return;
 }

@@ -3,11 +3,9 @@ import "modules/std"
 import "modules/libc_bindings"
 
 function main(): Int8 {
-	// std.printLine("testing");
-	// std::printLine("testing");
-	printLine("testing (printLine)");
-	printf("testing (printf)\n");
-
+	std::printLine("testing (std::printLine)");
+	libc_bindings::printf("testing (libc_bindings::printf)\n");
+	
 	return 0;
 }
 

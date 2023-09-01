@@ -174,9 +174,7 @@ void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource)
 //	printf("Source (%s): %s\n", path, MI->currentSource);
 	
 	linkedList_Node *tokens = lex(MI);
-//	if (compilerOptions.verbose) {
-//		printTokens(tokens);
-//	}
+//	printTokens(tokens);
 	
 	linkedList_Node *currentToken = tokens;
 	

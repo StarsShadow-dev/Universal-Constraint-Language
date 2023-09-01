@@ -185,6 +185,10 @@ int getOperatorPrecedence(SubString *subString) {
 		return 7;
 	}
 	
+	else if (SubString_string_cmp(subString, "::") == 0) {
+		return 8;
+	}
+	
 	else {
 		abort();
 	}
@@ -229,6 +233,8 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_subtract;
 			} else if (SubString_string_cmp(&operator->subString, ".") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_memberAccess;
+			} else if (SubString_string_cmp(&operator->subString, "::") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_scopeResolution;
 			} else {
 				abort();
 			}
