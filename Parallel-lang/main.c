@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 	compileModule(MI, compilerMode, path);
 	linkedList_freeList(&MI->context[0]);
 	
-	if (compilerMode != CompilerMode_compilerTesting) {
+	if (compilerMode == CompilerMode_build_binary) {
 		CharAccumulator clang_command = {100, 0, 0};
 		CharAccumulator_initialize(&clang_command);
 		CharAccumulator_appendChars(&clang_command, clang_path);
