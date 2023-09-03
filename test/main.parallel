@@ -6,17 +6,22 @@ function main(): Int8 {
 	std::printLine("testing (std::printLine)");
 	libc_bindings::printf("testing (libc_bindings::printf)\n");
 	
+	var i: Int32 = 0;
+	while (i < 5) {
+		i = i + 1;
+	}
+	
 	return 0;
 }
 
-// function safeMalloc(size: Int64): Pointer {
-// 	var pointer: Pointer = malloc(size);
-// 	// if (pointer == 0) {
-// 	// 	printf("safeMalloc: malloc failed");
-// 	// 	abort();
-// 	// }
-// 	return pointer;
-// }
+function safeMalloc(size: Int64): Pointer {
+	var pointer: Pointer = libc_bindings::malloc(size);
+	// if (pointer == NULL) {
+	// 	libc_bindings::printf("safeMalloc: malloc failed");
+	// 	libc_bindings::abort();
+	// }
+	return pointer;
+}
 
 // struct Point {
 // 	var x: Int32;
@@ -29,5 +34,3 @@ function main(): Int8 {
 // 	var p2: Point;
 // 	var p3: Point;
 // }
-
-// function malloc(size: Int64): Pointer "declare ptr @malloc(i64 noundef) allocsize(0)"

@@ -176,8 +176,8 @@ char *getLLVMtypeFromBuilderType(ModuleInformation *MI, BuilderType *type) {
 	abort();
 }
 
-int ifTypeIsNamed(BuilderType *expectedType, char *actualTypeString) {
-	if (SubString_string_cmp(expectedType->binding->key, actualTypeString) != 0) {
+int ifTypeIsNamed(BuilderType *actualType, char *expectedTypeString) {
+	if (SubString_string_cmp(actualType->binding->key, expectedTypeString) == 0) {
 		return 1;
 	}
 	
@@ -979,7 +979,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
 				if (data->expression == NULL) {
-					if (ifTypeIsNamed(&outerFunction->returnType, "Void")) {
+					if (!ifTypeIsNamed(&outerFunction->returnType, "Void")) {
 						printf("Returning Void in a function that does not return Void.\n");
 						compileError(MI, node->location);
 					}
@@ -1284,24 +1284,30 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					
 					buildLLVM(MI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0, 0);
 					if (
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
+						!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
+						!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
+						!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
 					) {
-						if (ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
-							printf("operator expected a number\n");
+						if (
+							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")
+//							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Pointer")
+						) {
+							printf("left side of operator expected a number\n");
 							compileError(MI, node->location);
 						}
 						
 						linkedList_freeList(&expectedTypeForLeftAndRight);
 						buildLLVM(MI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0, 0);
 						if (
-							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
-							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
-							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
+							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
+							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
+							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
 						) {
-							if (ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
-								printf("operator expected a number\n");
+							if (
+								!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")
+								// ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Pointer")
+							) {
+								printf("right side of operator expected a number\n");
 								compileError(MI, node->location);
 							}
 							
@@ -1395,7 +1401,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			}
 			
 			case ASTnodeType_true: {
-				if (ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
+				if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
 					printf("unexpected Bool\n");
 					compileError(MI, node->location);
 				}
@@ -1410,7 +1416,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			}
 
 			case ASTnodeType_false: {
-				if (ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
+				if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
 					printf("unexpected Bool\n");
 					compileError(MI, node->location);
 				}
@@ -1433,10 +1439,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				
 				if (
-					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int8") &&
-					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int16") &&
-					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int32") &&
-					ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int64")
+					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int8") &&
+					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int16") &&
+					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int32") &&
+					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int64")
 				) {
 					addStringToErrorMsg("unexpected type");
 					
@@ -1473,7 +1479,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
+				if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
 					addStringToErrorMsg("unexpected type");
 					
 					addStringToErrorIndicator("expected type '");
