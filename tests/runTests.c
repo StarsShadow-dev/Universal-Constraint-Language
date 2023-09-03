@@ -12,8 +12,8 @@ int testsFailed = 0;
 extern char **environ;
 
 #define BUFFER_SIZE 1024
-#define testPath_fail "./tests/fail/"
-#define testPath_succeed "./tests/succeed/"
+#define testPath_fail "tests/fail/"
+#define testPath_succeed "tests/succeed/"
 #define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
 // #define target_triple "arm64-apple-macosx13.0.0"
 
