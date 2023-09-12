@@ -2,6 +2,6 @@
 	"name": "std",
 
 	"file_paths": [
-		"printLine.parallel"
+		"loging.parallel"
 	]
 }
