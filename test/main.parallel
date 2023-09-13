@@ -3,22 +3,20 @@ import "modules/std"
 import "modules/libc_bindings"
 
 function main(): Int8 {
-	std::printLine("testing (std::printLine)");
-	libc_bindings::printf("testing (libc_bindings::printf)\n");
-	
-	#std::print_test_macro();
+	// std::printLine("testing (std::printLine)");
+	// libc_bindings::printf("testing (libc_bindings::printf)\n");
 	
 	return 0;
 }
 
-function safeMalloc(size: Int64): Pointer {
-	var pointer: Pointer = libc_bindings::malloc(size);
-	// if (pointer == NULL) {
-	// 	libc_bindings::printf("safeMalloc: malloc failed");
-	// 	libc_bindings::abort();
-	// }
-	return pointer;
-}
+// function safeMalloc(size: Int64): Pointer {
+// 	var pointer: Pointer = libc_bindings::malloc(size);
+// 	// if (pointer == NULL) {
+// 	// 	libc_bindings::printf("safeMalloc: malloc failed");
+// 	// 	libc_bindings::abort();
+// 	// }
+// 	return pointer;
+// }
 
 // struct Point {
 // 	var x: Int32;

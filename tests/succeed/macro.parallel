@@ -1,0 +1,11 @@
+function main(): Int8 {
+	#test();
+
+	return 0;
+}
+
+macro test {
+	printf("macro test\n");
+}
+
+function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"

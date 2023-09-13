@@ -215,14 +215,14 @@ linkedList_Node *typeToList(BuilderType type) {
 	return list;
 }
 
-void expectSameType(ModuleInformation *MI, BuilderType *expectedType, BuilderType actualType, SourceLocation location) {
-	if (expectedType->binding != actualType.binding) {
+void expectSameBinding(ModuleInformation *MI, ContextBinding *expectedTypeBinding, ContextBinding *actualTypeBinding, SourceLocation location) {
+	if (expectedTypeBinding != actualTypeBinding) {
 		addStringToErrorMsg("unexpected type");
 		
 		addStringToErrorIndicator("expected type '");
-		addSubStringToErrorIndicator(expectedType->binding->key);
+		addSubStringToErrorIndicator(expectedTypeBinding->key);
 		addStringToErrorIndicator("' but got type '");
-		addSubStringToErrorIndicator(actualType.binding->key);
+		addSubStringToErrorIndicator(actualTypeBinding->key);
 		addStringToErrorIndicator("'");
 		compileError(MI, location);
 	}
@@ -819,7 +819,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				
 				if (expectedTypes != NULL) {
-					expectSameType(MI, (BuilderType *)expectedTypes->data, functionToCall->returnType, node->location);
+					expectSameBinding(MI, ((BuilderType *)expectedTypes->data)->binding, functionToCall->returnType.binding, node->location);
 				}
 				
 				if (types == NULL) {
@@ -1600,8 +1600,13 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					addStringToErrorIndicator("'");
 					compileError(MI, node->location);
 				}
+				
 				if (variableBinding->type == ContextBindingType_variable) {
 					ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
+					
+					if (expectedTypes != NULL) {
+						expectSameBinding(MI, ((BuilderType *)expectedTypes->data)->binding, variable->type.binding, node->location);
+					}
 					
 					if (types != NULL) {
 						addTypeFromBuilderType(MI, types, &variable->type);
