@@ -11,6 +11,8 @@
 #define numberStart (character >= '0' && character <= '9')
 #define numberContinue (character >= '0' && character <= '9')
 
+#define ellipsis character == '.' && MI->currentSource[index+1] == '.' && MI->currentSource[index+2] == '.'
+
 // periods are considered operators because they perform an operation
 #define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '.'
 #define operator_2chars character == '=' && MI->currentSource[index+1] == '=' || character == ':' && MI->currentSource[index+1] == ':'
@@ -79,6 +81,56 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			data->subString.length = end - start;
 		}
 		
+		else if (numberStart) {
+			int start = index;
+			int columnStart = column;
+			int end = 0;
+			
+			while (1) {
+				char character = MI->currentSource[index];
+				
+				if (character != 0 && numberContinue) {
+					index++;
+					column++;
+					continue;
+				}
+				
+				end = index;
+				
+				index--;
+				column--;
+				break;
+			}
+			
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_number;
+			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
+			data->subString.start = MI->currentSource + start;
+			data->subString.length = end - start;
+		}
+		
+		else if (character == '#') {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_pound;
+			data->location = (SourceLocation){line, column, column + 1};
+			data->subString.start = MI->currentSource + index;
+			data->subString.length = 1;
+		}
+		
+		else if (ellipsis) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_ellipsis;
+			data->location = (SourceLocation){line, column, column + 3};
+			data->subString.start = MI->currentSource + index;
+			data->subString.length = 3;
+			
+			index += 2;
+			column += 2;
+		}
+		
 		else if (operator_2chars) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
@@ -107,35 +159,6 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			data->location = (SourceLocation){line, column, column + 1};
 			data->subString.start = MI->currentSource + index;
 			data->subString.length = 1;
-		}
-		
-		else if (numberStart) {
-			int start = index;
-			int columnStart = column;
-			int end = 0;
-			
-			while (1) {
-				char character = MI->currentSource[index];
-				
-				if (character != 0 && numberContinue) {
-					index++;
-					column++;
-					continue;
-				}
-				
-				end = index;
-				
-				index--;
-				column--;
-				break;
-			}
-			
-			Token *data = linkedList_addNode(&tokens, sizeof(Token));
-			
-			data->type = TokenType_number;
-			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			data->subString.start = MI->currentSource + start;
-			data->subString.length = end - start;
 		}
 		
 		else if (character == '"') {

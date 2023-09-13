@@ -43,12 +43,64 @@ int SubString_SubString_cmp(SubString *subString1, SubString *subString2);
 #define SubString_print(subString) printf("%.*s", (subString)->length, (subString)->start)
 
 //
+// CharAccumulator
+//
+
+typedef struct {
+	size_t maxSize;
+	size_t size;
+	char *data;
+} CharAccumulator;
+
+void CharAccumulator_initialize(CharAccumulator *accumulator);
+
+void CharAccumulator_appendChar(CharAccumulator *accumulator, char character);
+
+void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars, unsigned long count);
+
+void CharAccumulator_appendChars(CharAccumulator *accumulator, char *chars);
+
+#define CharAccumulator_appendSubString(accumulator, subString) CharAccumulator_appendCharsCount(accumulator, (subString)->start, (subString)->length)
+
+void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number);
+
+void CharAccumulator_free(CharAccumulator *accumulator);
+
+#define maxContextLevel 10
+
+typedef struct {
+	linkedList_Node *bindings[maxContextLevel];
+	linkedList_Node *importedModules;
+} ModuleContext;
+
+typedef struct {
+	char *name;
+	char *path;
+	char *currentSource;
+	char *currentFilePath;
+	CharAccumulator *topLevelConstantSource;
+	CharAccumulator *LLVMmetadataSource;
+	
+	int stringCount;
+	int metadataCount;
+	
+	int level;
+	ModuleContext context;
+	
+	int debugInformationCompileUnitID;
+	int debugInformationFileScopeID;
+} ModuleInformation;
+
+ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *LLVMmetadataSource);
+
+//
 // context
 //
 
 typedef enum {
 	ContextBindingType_simpleType,
 	ContextBindingType_function,
+	ContextBindingType_macro,
 	ContextBindingType_variable,
 	ContextBindingType_struct
 } ContextBindingType;
@@ -83,10 +135,12 @@ typedef struct {
 	int registerCount;
 	
 	int debugInformationScopeID;
-	
-//	int wasCalled;
-//	char *addToLLVMTopOnCall;
 } ContextBinding_function;
+
+typedef struct {
+	ModuleInformation *originModule;
+	linkedList_Node *codeBlock;
+} ContextBinding_macro;
 
 typedef struct {
 	int LLVMRegister;
@@ -117,9 +171,11 @@ typedef struct {
 
 typedef enum {
 	TokenType_word,
+	TokenType_number,
+	TokenType_pound, // #
+	TokenType_ellipsis, // ...
 	TokenType_separator,
 	TokenType_operator,
-	TokenType_number,
 	TokenType_string
 } TokenType;
 
@@ -135,6 +191,8 @@ typedef enum {
 	ASTnodeType_struct,
 	ASTnodeType_function,
 	ASTnodeType_call,
+	ASTnodeType_macro,
+	ASTnodeType_runMacro,
 	ASTnodeType_while,
 	ASTnodeType_if,
 	ASTnodeType_return,
@@ -188,6 +246,16 @@ typedef struct {
 } ASTnode_call;
 
 typedef struct {
+	SubString *name;
+	linkedList_Node *codeBlock;
+} ASTnode_macro;
+
+typedef struct {
+	linkedList_Node *left;
+	linkedList_Node *arguments;
+} ASTnode_runMacro;
+
+typedef struct {
 	linkedList_Node *expression;
 	linkedList_Node *codeBlock;
 } ASTnode_while;
@@ -237,52 +305,5 @@ typedef struct {
 typedef struct {
 	SubString *name;
 } ASTnode_variable;
-
-//
-// CharAccumulator
-//
-
-typedef struct {
-	size_t maxSize;
-	size_t size;
-	char *data;
-} CharAccumulator;
-
-void CharAccumulator_initialize(CharAccumulator *accumulator);
-
-void CharAccumulator_appendChar(CharAccumulator *accumulator, char character);
-
-void CharAccumulator_appendCharsCount(CharAccumulator *accumulator, char *chars, unsigned long count);
-
-void CharAccumulator_appendChars(CharAccumulator *accumulator, char *chars);
-
-#define CharAccumulator_appendSubString(accumulator, subString) CharAccumulator_appendCharsCount(accumulator, (subString)->start, (subString)->length)
-
-void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number);
-
-void CharAccumulator_free(CharAccumulator *accumulator);
-
-#define maxContextLevel 10
-
-typedef struct {
-	char *name;
-	char *path;
-	char *currentSource;
-	char *currentFilePath;
-	CharAccumulator *topLevelConstantSource;
-	CharAccumulator *LLVMmetadataSource;
-	
-	int stringCount;
-	int metadataCount;
-	
-	int level;
-	linkedList_Node *context[maxContextLevel];
-	linkedList_Node *importedModules;
-	
-	int debugInformationCompileUnitID;
-	int debugInformationFileScopeID;
-} ModuleInformation;
-
-ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *LLVMmetadataSource);
 
 #endif /* types_h */

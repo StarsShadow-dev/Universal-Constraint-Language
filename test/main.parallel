@@ -6,6 +6,8 @@ function main(): Int8 {
 	std::printLine("testing (std::printLine)");
 	libc_bindings::printf("testing (libc_bindings::printf)\n");
 	
+	#std::print_test_macro();
+	
 	return 0;
 }
 

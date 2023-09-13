@@ -188,7 +188,7 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	linkedList_Node *file_paths = NULL;
 	
 	// add the coreModule to this module's importedModules list
-	ModuleInformation **coreModulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
+	ModuleInformation **coreModulePointerData = linkedList_addNode(&MI->context.importedModules, sizeof(void *));
 	*coreModulePointerData = coreModulePointer;
 	
 	if (compilerMode != CompilerMode_compilerTesting) {

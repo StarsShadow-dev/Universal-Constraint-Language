@@ -212,9 +212,10 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 		
 		// level is -1 so that it starts at 0 for the first iteration
 		.level = -1,
-		
-		.context = {0},
-		.importedModules = NULL,
+		.context = {
+			.bindings = {0},
+			.importedModules = NULL,
+		},
 		
 		.debugInformationCompileUnitID = 0,
 		.debugInformationFileScopeID = 0

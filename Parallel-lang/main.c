@@ -145,23 +145,24 @@ int main(int argc, char **argv) {
 		.metadataCount = 0,
 		
 		.level = 0,
-		
-		.context = {0},
-		.importedModules = NULL,
+		.context = {
+			.bindings = {0},
+			.importedModules = NULL,
+		},
 		
 		.debugInformationCompileUnitID = 0,
 		.debugInformationFileScopeID = 0
 	};
 	coreModulePointer = &coreModule;
-	addContextBinding_simpleType(&coreModule.context[0], "Void", "void", 0, 4);
-	addContextBinding_simpleType(&coreModule.context[0], "Int8", "i8", 1, 4);
-	addContextBinding_simpleType(&coreModule.context[0], "Int16", "i16", 2, 4);
-	addContextBinding_simpleType(&coreModule.context[0], "Int32", "i32", 4, 4);
-	addContextBinding_simpleType(&coreModule.context[0], "Int64", "i64", 8, 4);
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Void", "void", 0, 4);
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int8", "i8", 1, 4);
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int16", "i16", 2, 4);
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int32", "i32", 4, 4);
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int64", "i64", 8, 4);
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addContextBinding_simpleType(&coreModule.context[0], "Bool", "i1", 1, 4);
-	addContextBinding_simpleType(&coreModule.context[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Bool", "i1", 1, 4);
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
@@ -173,7 +174,7 @@ int main(int argc, char **argv) {
 	
 	ModuleInformation *MI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
 	compileModule(MI, compilerMode, path);
-	linkedList_freeList(&MI->context[0]);
+	linkedList_freeList(&MI->context.bindings[0]);
 	
 	if (compilerMode == CompilerMode_build_binary) {
 		CharAccumulator clang_command = {100, 0, 0};

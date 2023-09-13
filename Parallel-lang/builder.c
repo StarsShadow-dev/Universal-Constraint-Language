@@ -43,7 +43,7 @@ void addContextBinding_simpleType(linkedList_Node **context, char *name, char *L
 ContextBinding *getContextBindingFromString(ModuleInformation *MI, char *key) {
 	int index = MI->level;
 	while (index >= 0) {
-		linkedList_Node *current = MI->context[index];
+		linkedList_Node *current = MI->context.bindings[index];
 		
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
@@ -59,7 +59,7 @@ ContextBinding *getContextBindingFromString(ModuleInformation *MI, char *key) {
 	}
 	
 	// the __core__ module can be implicitly accessed
-	linkedList_Node *currentModule = MI->importedModules;
+	linkedList_Node *currentModule = MI->context.importedModules;
 	while (currentModule != NULL) {
 		ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
 		
@@ -68,7 +68,7 @@ ContextBinding *getContextBindingFromString(ModuleInformation *MI, char *key) {
 			continue;
 		}
 		
-		linkedList_Node *current = moduleInformation->context[0];
+		linkedList_Node *current = moduleInformation->context.bindings[0];
 		
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
@@ -89,7 +89,7 @@ ContextBinding *getContextBindingFromString(ModuleInformation *MI, char *key) {
 ContextBinding *getContextBindingFromSubString(ModuleInformation *MI, SubString *key) {
 	int index = MI->level;
 	while (index >= 0) {
-		linkedList_Node *current = MI->context[index];
+		linkedList_Node *current = MI->context.bindings[index];
 		
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
@@ -105,7 +105,7 @@ ContextBinding *getContextBindingFromSubString(ModuleInformation *MI, SubString 
 	}
 	
 	// the __core__ module can be implicitly accessed
-	linkedList_Node *currentModule = MI->importedModules;
+	linkedList_Node *currentModule = MI->context.importedModules;
 	while (currentModule != NULL) {
 		ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
 		
@@ -114,7 +114,7 @@ ContextBinding *getContextBindingFromSubString(ModuleInformation *MI, SubString 
 			continue;
 		}
 		
-		linkedList_Node *current = moduleInformation->context[0];
+		linkedList_Node *current = moduleInformation->context.bindings[0];
 		
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
@@ -360,7 +360,7 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 				
 				BuilderType type = *(BuilderType *)currentArgumentType->data;
 				
-				ContextBinding *argumentVariableData = linkedList_addNode(&MI->context[MI->level + 1], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
+				ContextBinding *argumentVariableData = linkedList_addNode(&MI->context.bindings[MI->level + 1], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
 				argumentVariableData->key = (SubString *)currentArgumentName->data;
 				argumentVariableData->type = ContextBindingType_variable;
@@ -469,7 +469,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				BuilderType returnType = getTypeFromASTnode(MI, data->returnType);
 				
-				ContextBinding *functionData = linkedList_addNode(&MI->context[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_function));
+				ContextBinding *functionData = linkedList_addNode(&MI->context.bindings[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_function));
 				
 				char *functionLLVMname = safeMalloc(data->name->length + 1);
 				memcpy(functionLLVMname, data->name->start, data->name->length);
@@ -509,10 +509,28 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 			}
 			
+			else if (node->nodeType == ASTnodeType_macro) {
+				ASTnode_macro *data = (ASTnode_macro *)node->value;
+				
+				// make sure that the name is not already used
+				expectUnusedName(MI, data->name, node->location);
+				
+				ContextBinding *macroData = linkedList_addNode(&MI->context.bindings[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_macro));
+				
+				macroData->key = data->name;
+				macroData->type = ContextBindingType_macro;
+				// I do not think I need to set byteSize or byteAlign to anything specific
+				macroData->byteSize = 0;
+				macroData->byteAlign = 0;
+				
+				((ContextBinding_macro *)macroData->value)->originModule = MI;
+				((ContextBinding_macro *)macroData->value)->codeBlock = data->codeBlock;
+			}
+			
 			else if (node->nodeType == ASTnodeType_struct) {
 				ASTnode_struct *data = (ASTnode_struct *)node->value;
 				
-				ContextBinding *structBinding = linkedList_addNode(&MI->context[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
+				ContextBinding *structBinding = linkedList_addNode(&MI->context.bindings[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
 				structBinding->key = data->name;
 				structBinding->type = ContextBindingType_struct;
 				structBinding->byteSize = 0;
@@ -671,7 +689,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				ModuleInformation *newMI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
 				compileModule(newMI, CompilerMode_build_objectFile, path);
 				
-				linkedList_Node *current = newMI->context[0];
+				linkedList_Node *current = newMI->context.bindings[0];
 				
 				while (current != NULL) {
 					ContextBinding *binding = ((ContextBinding *)current->data);
@@ -687,29 +705,12 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				
 				// add the new module to importedModules
-				ModuleInformation **modulePointerData = linkedList_addNode(&MI->importedModules, sizeof(void *));
+				ModuleInformation **modulePointerData = linkedList_addNode(&MI->context.importedModules, sizeof(void *));
 				*modulePointerData = newMI;
 				
 				break;
 			}
-			
-			case ASTnodeType_function: {
-				if (MI->level != 0) {
-					printf("function definitions are only allowed at top level\n");
-					compileError(MI, node->location);
-				}
 				
-				ASTnode_function *data = (ASTnode_function *)node->value;
-				
-				ContextBinding *functionBinding = getContextBindingFromSubString(MI, data->name);
-				if (functionBinding == NULL || functionBinding->type != ContextBindingType_function) abort();
-				ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
-				
-				generateFunction(MI, outerSource, function, node, 1);
-				
-				break;
-			}
-			
 			case ASTnodeType_struct: {
 				if (MI->level != 0) {
 					printf("struct definitions are only allowed at top level\n");
@@ -736,6 +737,48 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					currentMemberBinding = currentMemberBinding->next;
 				}
 				
+				break;
+			}
+			
+			case ASTnodeType_function: {
+				if (MI->level != 0) {
+					printf("function definitions are only allowed at top level\n");
+					compileError(MI, node->location);
+				}
+				
+				ASTnode_function *data = (ASTnode_function *)node->value;
+				
+				ContextBinding *functionBinding = getContextBindingFromSubString(MI, data->name);
+				if (functionBinding == NULL || functionBinding->type != ContextBindingType_function) abort();
+				ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
+				
+				generateFunction(MI, outerSource, function, node, 1);
+				
+				break;
+			}
+				
+			case ASTnodeType_macro: {
+				break;
+			}
+				
+			case ASTnodeType_runMacro: {
+				ASTnode_runMacro *data = (ASTnode_runMacro *)node->value;
+				
+				linkedList_Node *leftTypes = NULL;
+				buildLLVM(MI, outerFunction, outerSource, NULL, NULL, &leftTypes, data->left, 1, 0, 0);
+				
+				ContextBinding *macroToRunBinding = ((BuilderType *)leftTypes->data)->binding;
+				if (macroToRunBinding == NULL) {
+					addStringToErrorMsg("macro does not exist");
+					compileError(MI, node->location);
+				}
+				ContextBinding_macro *macroToRun = (ContextBinding_macro *)macroToRunBinding->value;
+				
+				// TODO: remove hack?
+				ModuleContext originalModuleContext = MI->context;
+				MI->context = macroToRun->originModule->context;
+				buildLLVM(MI, outerFunction, outerSource, NULL, NULL, NULL, macroToRun->codeBlock, 0, 0, 0);
+				MI->context = originalModuleContext;
 				break;
 			}
 			
@@ -816,6 +859,8 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					
 					CharAccumulator_free(&newInnerSource);
 				}
+				
+				CharAccumulator_free(&leftSource);
 				
 				break;
 			}
@@ -1045,7 +1090,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				BuilderType type = getTypeFromASTnode(MI, data->type);
 				
-				ContextBinding *variableData = linkedList_addNode(&MI->context[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
+				ContextBinding *variableData = linkedList_addNode(&MI->context.bindings[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
 				variableData->key = data->name;
 				variableData->type = ContextBindingType_variable;
@@ -1214,7 +1259,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					SubString *rightSubString = ((ASTnode_variable *)rightNode->value)->name;
 					
 					// find the module
-					linkedList_Node *currentModule = MI->importedModules;
+					linkedList_Node *currentModule = MI->context.importedModules;
 					while (1) {
 						if (currentModule == NULL) {
 							addStringToErrorMsg("not an imported module");
@@ -1231,7 +1276,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 							continue;
 						}
 						
-						linkedList_Node *current = moduleInformation->context[0];
+						linkedList_Node *current = moduleInformation->context.bindings[0];
 						
 						while (1) {
 							if (current == NULL) {
@@ -1593,12 +1638,16 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					if (types != NULL) {
 						addTypeFromBinding(MI, types, variableBinding);
 					}
+				} else if (variableBinding->type == ContextBindingType_macro) {
+					if (types != NULL) {
+						addTypeFromBinding(MI, types, variableBinding);
+					}
 				} else {
-					addStringToErrorMsg("value exists but is not a variable or function");
+					addStringToErrorMsg("value exists but is not a variable, function or macro");
 					
 					addStringToErrorIndicator("'");
 					addSubStringToErrorIndicator(data->name);
-					addStringToErrorIndicator("' is not a variable or function");
+					addStringToErrorIndicator("' is not a variable, function or macro");
 					compileError(MI, node->location);
 				}
 				
@@ -1623,7 +1672,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 	}
 	
 	if (MI->level != 0) {
-		linkedList_freeList(&MI->context[MI->level]);
+		linkedList_freeList(&MI->context.bindings[MI->level]);
 	}
 	
 	MI->level--;
