@@ -6,6 +6,12 @@ function main(): Int8 {
 	// std::printLine("testing (std::printLine)");
 	// libc_bindings::printf("testing (libc_bindings::printf)\n");
 	
+	std::printLine("start");
+	
+	#std::print();
+	
+	std::printLine("end");
+	
 	return 0;
 }
 

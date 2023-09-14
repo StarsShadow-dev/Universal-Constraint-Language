@@ -120,10 +120,10 @@ void printSpaces(int count) {
 void compileError(ModuleInformation *MI, SourceLocation location) {
 	if (errorMsg.size > 0) {
 		// \x1B[31m \x1B[0m
-		if (MI->name == NULL || MI->currentFilePath == NULL) {
+		if (MI->name == NULL || MI->context.currentFilePath == NULL) {
 			printf("error: %s\n", errorMsg.data);
 		} else {
-			printf("\nerror: %s\n at %s:%s:%d\n", errorMsg.data, MI->name, MI->currentFilePath, location.line);
+			printf("\nerror: %s\n at %s:%s:%d\n", errorMsg.data, MI->name, MI->context.currentFilePath, location.line);
 		}
 		CharAccumulator_initialize(&errorMsg);
 	}
@@ -133,7 +133,7 @@ void compileError(ModuleInformation *MI, SourceLocation location) {
 	int index = 0;
 	int line = 1;
 	while (1) {
-		char character = MI->currentSource[index];
+		char character = MI->context.currentSource[index];
 		
 		if (character == 0) {
 			putchar('\n');
@@ -147,7 +147,7 @@ void compileError(ModuleInformation *MI, SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLine(MI->currentSource, &index);
+			printLine(MI->context.currentSource, &index);
 			line++;
 		} else if (line == location.line) {
 			printf("%d", line);
@@ -156,7 +156,7 @@ void compileError(ModuleInformation *MI, SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLineWithIndicator(MI->currentSource, &index, location.columnStart, location.columnEnd, maxLineSize + 2);
+			printLineWithIndicator(MI->context.currentSource, &index, location.columnStart, location.columnEnd, maxLineSize + 2);
 			line++;
 		} else if (line == location.line + 1) {
 			printf("%d", line);
@@ -165,7 +165,7 @@ void compileError(ModuleInformation *MI, SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLine(MI->currentSource, &index);
+			printLine(MI->context.currentSource, &index);
 			break;
 		} else if (character == '\n') {
 			line++;

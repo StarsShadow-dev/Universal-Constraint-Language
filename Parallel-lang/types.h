@@ -69,6 +69,9 @@ void CharAccumulator_free(CharAccumulator *accumulator);
 #define maxContextLevel 10
 
 typedef struct {
+	char *currentSource;
+	char *currentFilePath;
+	
 	linkedList_Node *bindings[maxContextLevel];
 	linkedList_Node *importedModules;
 } ModuleContext;
@@ -76,8 +79,6 @@ typedef struct {
 typedef struct {
 	char *name;
 	char *path;
-	char *currentSource;
-	char *currentFilePath;
 	CharAccumulator *topLevelConstantSource;
 	CharAccumulator *LLVMmetadataSource;
 	

@@ -1,5 +1,11 @@
 import "../libc_bindings"
 
+macro test {}
+
+macro print {
+	test("print test");
+}
+
 function printLine(string: Pointer): Void {
 	libc_bindings::printf(string);
 	libc_bindings::putchar(10); // \n

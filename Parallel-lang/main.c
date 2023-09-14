@@ -136,8 +136,6 @@ int main(int argc, char **argv) {
 	ModuleInformation coreModule = {
 		.name = "__core__",
 		.path = NULL,
-		.currentSource = NULL,
-		.currentFilePath = NULL,
 		.topLevelConstantSource = NULL,
 		.LLVMmetadataSource = NULL,
 		
@@ -146,6 +144,9 @@ int main(int argc, char **argv) {
 		
 		.level = 0,
 		.context = {
+			.currentSource = NULL,
+			.currentFilePath = NULL,
+			
 			.bindings = {0},
 			.importedModules = NULL,
 		},
@@ -163,6 +164,10 @@ int main(int argc, char **argv) {
 	// I will do one byte for now
 	addContextBinding_simpleType(&coreModule.context.bindings[0], "Bool", "i1", 1, 4);
 	addContextBinding_simpleType(&coreModule.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
+	// if "macro_and_it_should_not_be_in_IR" ever shows up in the IR then I know that something went horribly wrong...
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Macro", "macro_and_it_should_not_be_in_IR", 0, 0);
 	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};

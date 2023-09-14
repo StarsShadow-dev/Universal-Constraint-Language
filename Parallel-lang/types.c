@@ -202,8 +202,6 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 	*MI = (ModuleInformation){
 		.name = NULL,
 		.path = path,
-		.currentSource = NULL,
-		.currentFilePath = NULL,
 		.topLevelConstantSource = topLevelConstantSource,
 		.LLVMmetadataSource = LLVMmetadataSource,
 		
@@ -213,6 +211,9 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 		// level is -1 so that it starts at 0 for the first iteration
 		.level = -1,
 		.context = {
+			.currentSource = NULL,
+			.currentFilePath = NULL,
+			
 			.bindings = {0},
 			.importedModules = NULL,
 		},

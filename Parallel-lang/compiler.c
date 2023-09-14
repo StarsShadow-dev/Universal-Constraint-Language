@@ -170,7 +170,7 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 }
 
 void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource) {
-	MI->currentSource = readFile(path);
+	MI->context.currentSource = readFile(path);
 //	printf("Source (%s): %s\n", path, MI->currentSource);
 	
 	linkedList_Node *tokens = lex(MI);
@@ -243,19 +243,19 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	if (compilerMode != CompilerMode_compilerTesting) {
 		linkedList_Node *currentFilePath = file_paths;
 		while (currentFilePath != NULL) {
-			MI->currentFilePath = (char *)currentFilePath->data;
+			MI->context.currentFilePath = (char *)currentFilePath->data;
 			
 			CharAccumulator fullFilePath = {100, 0, 0};
 			CharAccumulator_initialize(&fullFilePath);
 			CharAccumulator_appendChars(&fullFilePath, path);
 			CharAccumulator_appendChars(&fullFilePath, "/");
-			CharAccumulator_appendChars(&fullFilePath, MI->currentFilePath);
+			CharAccumulator_appendChars(&fullFilePath, MI->context.currentFilePath);
 			
 			if (compilerOptions.includeDebugInformation) {
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\n!");
 				CharAccumulator_appendInt(MI->LLVMmetadataSource, MI->metadataCount);
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, " = !DIFile(filename: \"");
-				CharAccumulator_appendChars(MI->LLVMmetadataSource, MI->currentFilePath);
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, MI->context.currentFilePath);
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\", directory: \"");
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, path);
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\")");
@@ -264,8 +264,8 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 				
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\n!");
 				CharAccumulator_appendInt(MI->LLVMmetadataSource, MI->metadataCount);
-				// TODO: the language field is required, but I cannot find any documentation on it (DW_LANG_C11 works)
-				CharAccumulator_appendChars(MI->LLVMmetadataSource, " = distinct !DICompileUnit(language: DW_LANG_C11, file: !");
+				// the language field is required
+				CharAccumulator_appendChars(MI->LLVMmetadataSource, " = distinct !DICompileUnit(language: DW_LANG_C, file: !");
 				CharAccumulator_appendInt(MI->LLVMmetadataSource, MI->debugInformationFileScopeID);
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, ", runtimeVersion: 0, emissionKind: FullDebug)");
 				MI->debugInformationCompileUnitID = MI->metadataCount;
@@ -346,7 +346,7 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 		
 		CharAccumulator_free(&outputFilePath);
 		
-		linkedList_freeList(&file_paths);
+//		linkedList_freeList(&file_paths);
 		
 //		free(name);
 	} else {

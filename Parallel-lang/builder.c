@@ -757,31 +757,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				break;
 			}
 				
-			case ASTnodeType_macro: {
-				break;
-			}
-				
-			case ASTnodeType_runMacro: {
-				ASTnode_runMacro *data = (ASTnode_runMacro *)node->value;
-				
-				linkedList_Node *leftTypes = NULL;
-				buildLLVM(MI, outerFunction, outerSource, NULL, NULL, &leftTypes, data->left, 1, 0, 0);
-				
-				ContextBinding *macroToRunBinding = ((BuilderType *)leftTypes->data)->binding;
-				if (macroToRunBinding == NULL) {
-					addStringToErrorMsg("macro does not exist");
-					compileError(MI, node->location);
-				}
-				ContextBinding_macro *macroToRun = (ContextBinding_macro *)macroToRunBinding->value;
-				
-				// TODO: remove hack?
-				ModuleContext originalModuleContext = MI->context;
-				MI->context = macroToRun->originModule->context;
-				buildLLVM(MI, outerFunction, outerSource, NULL, NULL, NULL, macroToRun->codeBlock, 0, 0, 0);
-				MI->context = originalModuleContext;
-				break;
-			}
-			
 			case ASTnodeType_call: {
 				if (outerFunction == NULL) {
 					printf("function calls are only allowed in a function\n");
@@ -793,8 +768,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator leftSource = {100, 0, 0};
 				CharAccumulator_initialize(&leftSource);
 				
+				linkedList_Node *expectedTypesForCall = NULL;
+				addTypeFromString(MI, &expectedTypesForCall, "Function");
+				
 				linkedList_Node *leftTypes = NULL;
-				buildLLVM(MI, outerFunction, outerSource, &leftSource, NULL, &leftTypes, data->left, 1, 0, 0);
+				buildLLVM(MI, outerFunction, outerSource, &leftSource, expectedTypesForCall, &leftTypes, data->left, 1, 0, 0);
 				
 				ContextBinding *functionToCallBinding = ((BuilderType *)leftTypes->data)->binding;
 				ContextBinding_function *functionToCall = (ContextBinding_function *)functionToCallBinding->value;
@@ -862,6 +840,34 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				CharAccumulator_free(&leftSource);
 				
+				break;
+			}
+				
+			case ASTnodeType_macro: {
+				break;
+			}
+				
+			case ASTnodeType_runMacro: {
+				ASTnode_runMacro *data = (ASTnode_runMacro *)node->value;
+				
+				linkedList_Node *expectedTypesForRunMacro = NULL;
+				addTypeFromString(MI, &expectedTypesForRunMacro, "__Macro");
+				
+				linkedList_Node *leftTypes = NULL;
+				buildLLVM(MI, outerFunction, outerSource, NULL, expectedTypesForRunMacro, &leftTypes, data->left, 1, 0, 0);
+				
+				ContextBinding *macroToRunBinding = ((BuilderType *)leftTypes->data)->binding;
+				if (macroToRunBinding == NULL) {
+					addStringToErrorMsg("macro does not exist");
+					compileError(MI, node->location);
+				}
+				ContextBinding_macro *macroToRun = (ContextBinding_macro *)macroToRunBinding->value;
+				
+				// TODO: remove hack?
+				ModuleContext originalModuleContext = MI->context;
+				MI->context = macroToRun->originModule->context;
+				buildLLVM(MI, outerFunction, outerSource, NULL, NULL, NULL, macroToRun->codeBlock, 0, 0, 0);
+				MI->context = originalModuleContext;
 				break;
 			}
 				
@@ -1591,6 +1597,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			case ASTnodeType_variable: {
 				ASTnode_variable *data = (ASTnode_variable *)node->value;
 				
+				if (expectedTypes == NULL) {
+					addStringToErrorMsg("unexpected value");
+					compileError(MI, node->location);
+				}
+				
 				ContextBinding *variableBinding = getContextBindingFromVariableNode(MI, node);
 				if (variableBinding == NULL) {
 					addStringToErrorMsg("value not in scope");
@@ -1604,9 +1615,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				if (variableBinding->type == ContextBindingType_variable) {
 					ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
 					
-					if (expectedTypes != NULL) {
-						expectSameBinding(MI, ((BuilderType *)expectedTypes->data)->binding, variable->type.binding, node->location);
-					}
+					expectSameBinding(MI, ((BuilderType *)expectedTypes->data)->binding, variable->type.binding, node->location);
 					
 					if (types != NULL) {
 						addTypeFromBuilderType(MI, types, &variable->type);
@@ -1638,12 +1647,28 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						}
 					}
 				} else if (variableBinding->type == ContextBindingType_function) {
-//					ContextBinding_function *function = (ContextBinding_function *)variableBinding->value;
+					if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Function")) {
+						addStringToErrorMsg("unexpected type");
+						
+						addStringToErrorIndicator("expected type '");
+						addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+						addStringToErrorIndicator("' but got a function");
+						compileError(MI, node->location);
+					}
 					
 					if (types != NULL) {
 						addTypeFromBinding(MI, types, variableBinding);
 					}
 				} else if (variableBinding->type == ContextBindingType_macro) {
+					if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "__Macro")) {
+						addStringToErrorMsg("unexpected type");
+						
+						addStringToErrorIndicator("expected type '");
+						addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+						addStringToErrorIndicator("' but got a macro");
+						compileError(MI, node->location);
+					}
+					
 					if (types != NULL) {
 						addTypeFromBinding(MI, types, variableBinding);
 					}
