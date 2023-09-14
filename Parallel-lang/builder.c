@@ -1597,11 +1597,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			case ASTnodeType_variable: {
 				ASTnode_variable *data = (ASTnode_variable *)node->value;
 				
-				if (expectedTypes == NULL) {
-					addStringToErrorMsg("unexpected value");
-					compileError(MI, node->location);
-				}
-				
 				ContextBinding *variableBinding = getContextBindingFromVariableNode(MI, node);
 				if (variableBinding == NULL) {
 					addStringToErrorMsg("value not in scope");
@@ -1615,7 +1610,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				if (variableBinding->type == ContextBindingType_variable) {
 					ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
 					
-					expectSameBinding(MI, ((BuilderType *)expectedTypes->data)->binding, variable->type.binding, node->location);
+					if (expectedTypes != NULL) {
+						expectSameBinding(MI, ((BuilderType *)expectedTypes->data)->binding, variable->type.binding, node->location);
+					}
 					
 					if (types != NULL) {
 						addTypeFromBuilderType(MI, types, &variable->type);
@@ -1647,26 +1644,30 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						}
 					}
 				} else if (variableBinding->type == ContextBindingType_function) {
-					if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Function")) {
-						addStringToErrorMsg("unexpected type");
-						
-						addStringToErrorIndicator("expected type '");
-						addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
-						addStringToErrorIndicator("' but got a function");
-						compileError(MI, node->location);
+					if (expectedTypes != NULL) {
+						if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Function")) {
+							addStringToErrorMsg("unexpected type");
+							
+							addStringToErrorIndicator("expected type '");
+							addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+							addStringToErrorIndicator("' but got a function");
+							compileError(MI, node->location);
+						}
 					}
 					
 					if (types != NULL) {
 						addTypeFromBinding(MI, types, variableBinding);
 					}
 				} else if (variableBinding->type == ContextBindingType_macro) {
-					if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "__Macro")) {
-						addStringToErrorMsg("unexpected type");
-						
-						addStringToErrorIndicator("expected type '");
-						addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
-						addStringToErrorIndicator("' but got a macro");
-						compileError(MI, node->location);
+					if (expectedTypes != NULL) {
+						if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "__Macro")) {
+							addStringToErrorMsg("unexpected type");
+							
+							addStringToErrorIndicator("expected type '");
+							addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+							addStringToErrorIndicator("' but got a macro");
+							compileError(MI, node->location);
+						}
 					}
 					
 					if (types != NULL) {
