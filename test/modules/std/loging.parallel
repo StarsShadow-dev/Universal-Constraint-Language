@@ -1,9 +1,8 @@
 import "../libc_bindings"
 
-macro test {}
-
 macro print {
-	test("print test");
+	#error("error message", "error indicator");
+	printLine("print test");
 }
 
 function printLine(string: Pointer): Void {

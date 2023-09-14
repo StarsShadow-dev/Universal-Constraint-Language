@@ -7,6 +7,8 @@
 
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
 
+void addContextBinding_macro(ModuleInformation *MI, char *name);
+
 int buildLLVM(
 	ModuleInformation *MI,
 	ContextBinding_function *outerFunction,

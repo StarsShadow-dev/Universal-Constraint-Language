@@ -169,6 +169,8 @@ int main(int argc, char **argv) {
 	// if "macro_and_it_should_not_be_in_IR" ever shows up in the IR then I know that something went horribly wrong...
 	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Macro", "macro_and_it_should_not_be_in_IR", 0, 0);
 	
+	addContextBinding_macro(&coreModule, "error");
+	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(topLevelConstantSource);

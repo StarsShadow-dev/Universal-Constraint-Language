@@ -20,10 +20,10 @@ extern char **environ;
 #define SEC_TO_MS(sec) ((sec)*1000)
 #define NS_TO_MS(ns) ((ns)/1000000)
 uint64_t getMilliseconds() {
-    struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
-    uint64_t ms = SEC_TO_MS((uint64_t)ts.tv_sec) + NS_TO_MS((uint64_t)ts.tv_nsec);
-    return ms;
+	struct timespec ts;
+	timespec_get(&ts, TIME_UTC);
+	uint64_t ms = SEC_TO_MS((uint64_t)ts.tv_sec) + NS_TO_MS((uint64_t)ts.tv_nsec);
+	return ms;
 }
 
 char *readFile(const char *path) {

@@ -40,6 +40,23 @@ void addContextBinding_simpleType(linkedList_Node **context, char *name, char *L
 	((ContextBinding_simpleType *)data->value)->LLVMtype = LLVMtype;
 }
 
+void addContextBinding_macro(ModuleInformation *MI, char *name) {
+	SubString *key = safeMalloc(sizeof(SubString));
+	key->start = name;
+	key->length = (int)strlen(name);
+	
+	ContextBinding *macroData = linkedList_addNode(&MI->context.bindings[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_macro));
+
+	macroData->key = key;
+	macroData->type = ContextBindingType_macro;
+	// I do not think I need to set byteSize or byteAlign to anything specific
+	macroData->byteSize = 0;
+	macroData->byteAlign = 0;
+
+	((ContextBinding_macro *)macroData->value)->originModule = MI;
+	((ContextBinding_macro *)macroData->value)->codeBlock = NULL;
+}
+
 ContextBinding *getContextBindingFromString(ModuleInformation *MI, char *key) {
 	int index = MI->level;
 	while (index >= 0) {
@@ -863,11 +880,38 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				ContextBinding_macro *macroToRun = (ContextBinding_macro *)macroToRunBinding->value;
 				
-				// TODO: remove hack?
-				ModuleContext originalModuleContext = MI->context;
-				MI->context = macroToRun->originModule->context;
-				buildLLVM(MI, outerFunction, outerSource, NULL, NULL, NULL, macroToRun->codeBlock, 0, 0, 0);
-				MI->context = originalModuleContext;
+				if (macroToRun->originModule->name != NULL && strcmp(macroToRun->originModule->name, "__core__") == 0) {
+					// from the __core__ module, so this is a special case
+					if (SubString_string_cmp(macroToRunBinding->key, "error") == 0) {
+						int argumentCount = linkedList_getCount(&data->arguments);
+						if (argumentCount != 2) {
+							addStringToErrorMsg("#error(message:String, indicator:String) expected 2 arguments");
+							compileError(MI, node->location);
+						}
+						
+						ASTnode *message = (ASTnode *)data->arguments->data;
+						if (message->nodeType != ASTnodeType_string) {
+							addStringToErrorMsg("message must be a string");
+							compileError(MI, message->location);
+						}
+						
+						ASTnode *indicator = (ASTnode *)data->arguments->next->data;
+						if (indicator->nodeType != ASTnodeType_string) {
+							addStringToErrorMsg("indicator must be a string");
+							compileError(MI, indicator->location);
+						}
+						
+						addSubStringToErrorMsg(((ASTnode_string *)message->value)->value);
+						addSubStringToErrorIndicator(((ASTnode_string *)indicator->value)->value);
+						compileError(MI, node->location);
+					}
+				} else {
+					// TODO: remove hack?
+					ModuleContext originalModuleContext = MI->context;
+					MI->context = macroToRun->originModule->context;
+					buildLLVM(MI, outerFunction, outerSource, NULL, NULL, NULL, macroToRun->codeBlock, 0, 0, 0);
+					MI->context = originalModuleContext;
+				}
 				break;
 			}
 				
