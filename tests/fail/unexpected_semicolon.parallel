@@ -1,0 +1,11 @@
+/*
+unexpected separator: ';'
+9  |function main(): Int8 {
+10 |    ;
+        ^
+11 |}
+*/
+
+function main(): Int8 {
+	;
+}
