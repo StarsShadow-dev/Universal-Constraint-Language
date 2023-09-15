@@ -1,16 +1,8 @@
-// import { printLine } from "modules/std"
 import "modules/std"
 import "modules/libc_bindings"
 
 function main(): Int8 {
-	// std::printLine("testing (std::printLine)");
-	// libc_bindings::printf("testing (libc_bindings::printf)\n");
-	
-	std::printLine("start");
-	
-	#std::print();
-	
-	std::printLine("end");
+	std::printLine("test");
 	
 	return 0;
 }

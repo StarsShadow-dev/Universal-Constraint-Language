@@ -5,7 +5,7 @@
 #include "error.h"
 
 #define endIfCurrentIsEmpty()\
-if (current == NULL) {\
+if (*current == NULL) {\
 	printf("unexpected end of file\n");\
 	compileError(MI, token->location);\
 }
@@ -212,14 +212,6 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 			data->location = operator->location;
 			
 			if (SubString_string_cmp(&operator->subString, "=") == 0) {
-				Token *token = (Token *)((*current)->data);
-				
-				if (CURRENT_IS_NOT_SEMICOLON) {
-					printf("expected ';' after variable assignment\n");
-					compileError(MI, token->location);
-				}
-				*current = (*current)->next;
-				
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_assignment;
 			} else if (SubString_string_cmp(&operator->subString, "==") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_equivalent;
@@ -267,15 +259,6 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					*current = (*current)->next;
 					linkedList_Node *arguments = parse(MI, current, ParserMode_arguments);
 					
-					endIfCurrentIsEmpty()
-					if (parserMode == ParserMode_normal) {
-						if (CURRENT_IS_NOT_SEMICOLON) {
-							printf("expected ';' after function call\n");
-							compileError(MI, token->location);
-						}
-						*current = (*current)->next;
-					}
-					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
 					
 					data->nodeType = ASTnodeType_call;
@@ -288,6 +271,15 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 				}
 				if (parserMode == ParserMode_expression) {
 					return AST;
+				}
+				
+				if (parserMode == ParserMode_normal) {
+					endIfCurrentIsEmpty()
+					if (CURRENT_IS_NOT_SEMICOLON) {
+						printf("expected ';' after statement\n");
+						compileError(MI, token->location);
+					}
+					*current = (*current)->next;
 				}
 				// there might be an operator right after this operator
 				// so go back to the top of the while loop
@@ -318,6 +310,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					((ASTnode_import *)data->value)->path = &pathString->subString;
 					
 					*current = (*current)->next;
+					continue;
 				}
 				
 				// function definition
@@ -399,6 +392,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 						printf("function definition expected an openingBracket or a quotation mark\n");
 						compileError(MI, codeStart->location);
 					}
+					continue;
 				}
 				
 				// macro definition
@@ -429,6 +423,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					
 					((ASTnode_macro *)data->value)->name = &nameToken->subString;
 					((ASTnode_macro *)data->value)->codeBlock = codeBlock;
+					continue;
 				}
 				
 				// struct
@@ -460,6 +455,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					
 					((ASTnode_struct *)data->value)->name = &nameToken->subString;
 					((ASTnode_struct *)data->value)->block = block;
+					continue;
 				}
 				
 				// return statement
@@ -468,13 +464,6 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					if (CURRENT_IS_NOT_SEMICOLON) {
 						linkedList_Node *expression = parse(MI, current, ParserMode_expression);
 						
-						endIfCurrentIsEmpty()
-						if (CURRENT_IS_NOT_SEMICOLON) {
-							printf("expected ';' after return statement\n");
-							compileError(MI, token->location);
-						}
-						*current = (*current)->next;
-						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
 						
 						data->nodeType = ASTnodeType_return;
@@ -482,8 +471,6 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 						
 						((ASTnode_return *)data->value)->expression = expression;
 					} else {
-						*current = (*current)->next;
-						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_return));
 						
 						data->nodeType = ASTnodeType_return;
@@ -528,12 +515,6 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 						*current = (*current)->next;
 						expression = parse(MI, current, ParserMode_expression);
 					}
-					
-					if (CURRENT_IS_NOT_SEMICOLON) {
-						printf("expected ';' after variable definition\n");
-						compileError(MI, token->location);
-					}
-					*current = (*current)->next;
 					
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variableDefinition));
 					
@@ -613,6 +594,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 							} else {
 								((ASTnode_if *)data->value)->falseCodeBlock = NULL;
 							}
+							continue;
 						}
 						
 						// while loop
@@ -645,21 +627,13 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 							
 							((ASTnode_while *)data->value)->expression = expression;
 							((ASTnode_while *)data->value)->codeBlock = codeBlock;
+							continue;
 						}
 						
 						// function call
 						else {
 							*current = (*current)->next;
 							linkedList_Node *arguments = parse(MI, current, ParserMode_arguments);
-							
-							endIfCurrentIsEmpty()
-							if (parserMode == ParserMode_normal) {
-								if (CURRENT_IS_NOT_SEMICOLON) {
-									printf("expected ';' after function call\n");
-									compileError(MI, token->location);
-								}
-								*current = (*current)->next;
-							}
 							
 							linkedList_Node *left = NULL;
 							
@@ -704,15 +678,6 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 				
 				*current = (*current)->next;
 				linkedList_Node *arguments = parse(MI, current, ParserMode_arguments);
-				
-				endIfCurrentIsEmpty()
-				if (parserMode == ParserMode_normal) {
-					if (CURRENT_IS_NOT_SEMICOLON) {
-						printf("expected ';'\n");
-						compileError(MI, token->location);
-					}
-					*current = (*current)->next;
-				}
 				
 				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_runMacro));
 				
@@ -776,6 +741,15 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 				compileError(MI, token->location);
 				break;
 			}
+		}
+		
+		if (parserMode == ParserMode_normal) {
+			endIfCurrentIsEmpty()
+			if (CURRENT_IS_NOT_SEMICOLON) {
+				printf("expected ';' after statement\n");
+				compileError(MI, token->location);
+			}
+			*current = (*current)->next;
 		}
 		
 		if (parserMode == ParserMode_expression || parserMode == ParserMode_noOperatorChecking) {
