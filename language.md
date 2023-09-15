@@ -1,6 +1,6 @@
 # Parallel Language Design
 
-**Note, that not all of these features are currently implemented.**
+**Note, that not all of these features are currently implemented/working.**
 
 ## Functions
 
@@ -11,14 +11,6 @@ main function:
 function main(): Int32 {
 	return 0;
 }
-```
-
-external function:
-```parallel
-// when there is a string after the return type this is an external function and the string is placed into the LLVM input
-function putchar(char: Int32): Int32 "
-	declare i32 @putchar(i32 noundef) #1
-"
 ```
 
 ## Variables

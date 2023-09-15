@@ -291,11 +291,7 @@ ContextBinding *expectTypeExists(ModuleInformation *MI, SubString *name, SourceL
 	}
 	
 	if (binding->type != ContextBindingType_simpleType && binding->type != ContextBindingType_struct) {
-		if (binding->type == ContextBindingType_function) {
-			addStringToErrorMsg("expected type but got a function");
-		} else {
-			abort();
-		}
+		addStringToErrorMsg("expected type");
 		
 		addStringToErrorIndicator("'");
 		addSubStringToErrorIndicator(name);
