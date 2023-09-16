@@ -42,3 +42,29 @@ Bool
 Pointer
 ```
 
+Add "Never"?
+
+## macros
+
+Macro definition:
+
+```parallel
+macro nameOfMacro {
+	// ...
+}
+```
+
+Macro use:
+
+```parallel
+#nameOfMacro();
+```
+
+## constraints
+
+Syntax idea:
+
+```parallel
+typedef Degrees Float [ x >= -360, x <= 360 ]
+typedef Window Pointer [ x != 0 ]
+```
