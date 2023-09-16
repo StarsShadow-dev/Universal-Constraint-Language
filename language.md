@@ -64,7 +64,24 @@ Macro use:
 
 Syntax idea:
 
+Should `$` be self?
+
+<!-- ```parallel
+typedef Degrees: Float [ $ >= -360, $ <= 360 ]
+``` -->
+
+
 ```parallel
-typedef Degrees Float [ x >= -360, x <= 360 ]
-typedef Window Pointer [ x != 0 ]
+function getRand0_100(): Int8 [ $ >= 0, $ <= 100 ] {
+	// ...
+}
+```
+
+```parallel
+typedef Window: Pointer;
+var window: Window;
+
+function useWindow() [ window != 0 ]: Void {}
+
+function useWindow(): Void [ window != 0 ] {}
 ```
