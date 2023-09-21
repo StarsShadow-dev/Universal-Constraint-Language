@@ -1,4 +1,4 @@
-// ~/.Parallel_Lang/Parallel-lang build_objectFile arm64-apple-macosx13.0.0 Parallel-lang/parallel/config.json
+// ~/.Parallel_Lang/Parallel-lang build_objectFile Parallel-lang/parallel
 
 function printHelp(): Void {
 	printf("Usage: parallel-lang <command> [<command_arguments>] [<options>]\n");
@@ -8,12 +8,12 @@ function printHelp(): Void {
 	printf("parallel-lang build_objectFile <target_triple> <config_path> [<options>]\n");
 	printf("    creates an object file\n");
 	printf("\n");
-	printf("parallel-lang build_binary <target_triple> <config_path> [<options>]\n");
-	printf("    build_objectFile and links the object file using clang (clang also links the C standard library)\n");
-	printf("\n");
-	printf("parallel-lang run <target_triple> <config_path> [<options>]\n");
-	printf("    build_binary and runs the binary\n");
-	printf("\n");
+	// printf("parallel-lang build_binary <target_triple> <config_path> [<options>]\n");
+	// printf("    build_objectFile and links the object file using clang (clang also links the C standard library)\n");
+	// printf("\n");
+	// printf("parallel-lang run <target_triple> <config_path> [<options>]\n");
+	// printf("    build_binary and runs the binary\n");
+	// printf("\n");
 	printf("All of the above commands support the following options:\n");
 	printf("\n");
 	printf("-d\n");

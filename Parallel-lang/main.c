@@ -36,11 +36,15 @@ int main(int argc, char **argv) {
 	}
 	
 	else if (strcmp(argv[1], "build_binary") == 0) {
-		compilerMode = CompilerMode_build_binary;
+		printf("CompilerMode_build_binary is not available right now\n");
+		exit(1);
+//		compilerMode = CompilerMode_build_binary;
 	}
 	
 	else if (strcmp(argv[1], "run") == 0) {
-		compilerMode = CompilerMode_run;
+		printf("CompilerMode_run is not available right now\n");
+		exit(1);
+//		compilerMode = CompilerMode_run;
 	}
 	
 	else if (strcmp(argv[1], "compilerTesting") == 0) {
@@ -183,10 +187,7 @@ int main(int argc, char **argv) {
 	compileModule(MI, compilerMode, path);
 	linkedList_freeList(&MI->context.bindings[0]);
 	
-	if (compilerMode == CompilerMode_build_binary) {
-		printf("CompilerMode_build_binary is not available right now");
-		exit(1);
-		
+//	if (compilerMode == CompilerMode_build_binary) {
 //		CharAccumulator clang_command = {100, 0, 0};
 //		CharAccumulator_initialize(&clang_command);
 //		CharAccumulator_appendChars(&clang_command, clang_path);
@@ -214,18 +215,16 @@ int main(int argc, char **argv) {
 //		printf("Binary saved to %s/binary\n", full_build_directory);
 //		
 //		CharAccumulator_free(&clang_command);
-	}
+//	}
 	
-	if (compilerMode == CompilerMode_run) {
-		printf("CompilerMode_run is not available right now");
-		exit(1);
+//	if (compilerMode == CompilerMode_run) {
 //		printf("Running program at: %s\n", outputFilePath.data);
 //		int program_status = system(outputFilePath.data);
 //
 //		int program_exitCode = WEXITSTATUS(program_status);
 //
 //		printf("Program ended with exit code: %d\n", program_exitCode);
-	}
+//	}
 	
 	free(globalConfigPath);
 	free(globalConfigJSON);
