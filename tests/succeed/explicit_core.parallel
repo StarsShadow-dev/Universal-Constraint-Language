@@ -1,0 +1,5 @@
+function main(): __core__::Int8 {
+	var number: __core__::Int8 = 10;
+	
+	return number;
+}

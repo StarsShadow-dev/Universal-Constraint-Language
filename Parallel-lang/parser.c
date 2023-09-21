@@ -109,7 +109,7 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 			}
 			
 			*current = (*current)->next;
-			linkedList_Node *right = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), nextPrecedence, 0);
+			linkedList_Node *right = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), nextPrecedence, ignoreEquals);
 			
 			ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_operator));
 			
@@ -139,7 +139,7 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 			((ASTnode_operator *)data->value)->left = left;
 			((ASTnode_operator *)data->value)->right = right;
 			
-			return parseOperators(MI, current, AST, precedence, 0);
+			return parseOperators(MI, current, AST, precedence, ignoreEquals);
 		}
 	}
 	
