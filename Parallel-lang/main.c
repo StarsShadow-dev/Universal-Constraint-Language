@@ -184,37 +184,41 @@ int main(int argc, char **argv) {
 	linkedList_freeList(&MI->context.bindings[0]);
 	
 	if (compilerMode == CompilerMode_build_binary) {
-		CharAccumulator clang_command = {100, 0, 0};
-		CharAccumulator_initialize(&clang_command);
-		CharAccumulator_appendChars(&clang_command, clang_path);
-		CharAccumulator_appendChars(&clang_command, " ");
-	//	CharAccumulator_appendChars(&clang_command, getcwdBuffer);
-	//	CharAccumulator_appendChars(&clang_command, "/");
-		CharAccumulator_appendChars(&clang_command, objectFiles.data);
-		CharAccumulator_appendChars(&clang_command, "-o ");
-		CharAccumulator_appendChars(&clang_command, full_build_directory);
-		CharAccumulator_appendChars(&clang_command, "/binary");
+		printf("CompilerMode_build_binary is not available right now");
+		exit(1);
 		
-		if (compilerOptions.verbose) {
-			printf("clang_command: %s\n", clang_command.data);
-		}
-		
-		printf("Binary saved to %s/binary\n", full_build_directory);
-		
-		int clang_status = system(clang_command.data);
-
-		int clang_exitCode = WEXITSTATUS(clang_status);
-
-		if (clang_exitCode != 0) {
-			printf("clang error\n");
-			exit(1);
-		}
-		
-		CharAccumulator_free(&clang_command);
+//		CharAccumulator clang_command = {100, 0, 0};
+//		CharAccumulator_initialize(&clang_command);
+//		CharAccumulator_appendChars(&clang_command, clang_path);
+//		CharAccumulator_appendChars(&clang_command, " ");
+//	//	CharAccumulator_appendChars(&clang_command, getcwdBuffer);
+//	//	CharAccumulator_appendChars(&clang_command, "/");
+//		CharAccumulator_appendChars(&clang_command, objectFiles.data);
+//		CharAccumulator_appendChars(&clang_command, "-o ");
+//		CharAccumulator_appendChars(&clang_command, full_build_directory);
+//		CharAccumulator_appendChars(&clang_command, "/binary");
+//		
+//		if (compilerOptions.verbose) {
+//			printf("clang_command: %s\n", clang_command.data);
+//		}
+//		
+//		int clang_status = system(clang_command.data);
+//
+//		int clang_exitCode = WEXITSTATUS(clang_status);
+//
+//		if (clang_exitCode != 0) {
+//			printf("clang error\n");
+//			exit(1);
+//		}
+//		
+//		printf("Binary saved to %s/binary\n", full_build_directory);
+//		
+//		CharAccumulator_free(&clang_command);
 	}
 	
 	if (compilerMode == CompilerMode_run) {
-		abort();
+		printf("CompilerMode_run is not available right now");
+		exit(1);
 //		printf("Running program at: %s\n", outputFilePath.data);
 //		int program_status = system(outputFilePath.data);
 //

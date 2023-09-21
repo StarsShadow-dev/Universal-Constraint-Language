@@ -1,5 +1,9 @@
 import "../libc_bindings"
 
+struct Thing {
+	var string: Pointer;
+}
+
 macro print {
 	#error("error message", "error indicator");
 	printLine("print test");

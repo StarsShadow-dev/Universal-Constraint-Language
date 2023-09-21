@@ -150,9 +150,9 @@ ContextBinding *getContextBindingFromSubString(ModuleInformation *MI, SubString 
 }
 
 /// if the node is a memberAccess operator the function calls itself until it gets to the end of the memberAccess operators
-ContextBinding *getContextBindingFromVariableNode(ModuleInformation *MI, ASTnode *node) {
-	if (node->nodeType == ASTnodeType_variable) {
-		ASTnode_variable *data = (ASTnode_variable *)node->value;
+ContextBinding *getContextBindingFromIdentifierNode(ModuleInformation *MI, ASTnode *node) {
+	if (node->nodeType == ASTnodeType_identifier) {
+		ASTnode_identifier *data = (ASTnode_identifier *)node->value;
 		
 		return getContextBindingFromSubString(MI, data->name);
 	} else if (node->nodeType == ASTnodeType_operator) {
@@ -161,36 +161,12 @@ ContextBinding *getContextBindingFromVariableNode(ModuleInformation *MI, ASTnode
 		if (data->operatorType != ASTnode_operatorType_memberAccess) abort();
 		
 		// more recursion!
-		return getContextBindingFromVariableNode(MI, (ASTnode *)data->left->data);
+		return getContextBindingFromIdentifierNode(MI, (ASTnode *)data->left->data);
 	} else {
 		abort();
 	}
 	
 	return NULL;
-}
-
-char *getLLVMtypeFromASTnode(ModuleInformation *MI, ASTnode *node) {
-	if (node->nodeType != ASTnodeType_type) abort();
-	
-	ContextBinding *binding = getContextBindingFromSubString(MI, ((ASTnode_type *)node->value)->name);
-	
-	if (binding->type == ContextBindingType_simpleType) {
-		return ((ContextBinding_simpleType *)binding->value)->LLVMtype;
-	} else if (binding->type == ContextBindingType_struct) {
-		return ((ContextBinding_struct *)binding->value)->LLVMname;
-	}
-	
-	abort();
-}
-
-char *getLLVMtypeFromBuilderType(ModuleInformation *MI, BuilderType *type) {
-	if (type->binding->type == ContextBindingType_simpleType) {
-		return ((ContextBinding_simpleType *)type->binding->value)->LLVMtype;
-	} else if (type->binding->type == ContextBindingType_struct) {
-		return ((ContextBinding_struct *)type->binding->value)->LLVMname;
-	}
-	
-	abort();
 }
 
 int ifTypeIsNamed(BuilderType *actualType, char *expectedTypeString) {
@@ -279,38 +255,39 @@ void expectUnusedName(ModuleInformation *MI, SubString *name, SourceLocation loc
 	}
 }
 
-ContextBinding *expectTypeExists(ModuleInformation *MI, SubString *name, SourceLocation location) {
-	ContextBinding *binding = getContextBindingFromSubString(MI, name);
-	if (binding == NULL) {
-		addStringToErrorMsg("use of undeclared type");
-		
-		addStringToErrorIndicator("nothing named '");
-		addSubStringToErrorIndicator(name);
-		addStringToErrorIndicator("'");
-		compileError(MI, location);
-	}
+ContextBinding *expectTypeExists(ModuleInformation *MI, ASTnode *node) {
+	if (node->nodeType != ASTnodeType_constrainedType) abort();
+	linkedList_Node *returnTypeList = NULL;
+	buildLLVM(MI, NULL, NULL, NULL, NULL, &returnTypeList, ((ASTnode_constrainedType *)(node->value))->type, 0, 0, 0);
 	
-	if (binding->type != ContextBindingType_simpleType && binding->type != ContextBindingType_struct) {
+	if (returnTypeList == NULL) abort();
+	
+	if (
+		((BuilderType *)returnTypeList->data)->binding->type != ContextBindingType_simpleType &&
+		((BuilderType *)returnTypeList->data)->binding->type != ContextBindingType_struct
+	) {
 		addStringToErrorMsg("expected type");
 		
 		addStringToErrorIndicator("'");
-		addSubStringToErrorIndicator(name);
+		addSubStringToErrorIndicator(((BuilderType *)returnTypeList->data)->binding->key);
 		addStringToErrorIndicator("' is not a type");
-		compileError(MI, location);
+		compileError(MI, node->location);
 	}
 	
-	return binding;
+	return ((BuilderType *)returnTypeList->data)->binding;
 }
 
-BuilderType getTypeFromASTnode(ModuleInformation *MI, ASTnode *node) {
-	if (node->nodeType != ASTnodeType_type) abort();
+char *getLLVMtypeFromBinding(ModuleInformation *MI, ContextBinding *binding) {
+	if (binding->type == ContextBindingType_simpleType) {
+		return ((ContextBinding_simpleType *)binding->value)->LLVMtype;
+	} else if (binding->type == ContextBindingType_struct) {
+		return ((ContextBinding_struct *)binding->value)->LLVMname;
+	}
 	
-	ContextBinding *binding = expectTypeExists(MI, ((ASTnode_type *)node->value)->name, node->location);
-	
-	return (BuilderType){binding};
+	abort();
 }
 
-BuilderType getTypeFroMInding(ContextBinding *binding) {
+BuilderType getTypeFromBinding(ContextBinding *binding) {
 	return (BuilderType){binding};
 }
 
@@ -324,14 +301,12 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 		}
 	}
 	
-	char *LLVMreturnType = getLLVMtypeFromBuilderType(MI, &function->returnType);
-	
 	if (defineNew) {
 		CharAccumulator_appendChars(outerSource, "\n\ndefine ");
 	} else {
 		CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
 	}
-	CharAccumulator_appendChars(outerSource, LLVMreturnType);
+	CharAccumulator_appendChars(outerSource, function->LLVMreturnType);
 	CharAccumulator_appendChars(outerSource, " @");
 	CharAccumulator_appendChars(outerSource, function->LLVMname);
 	CharAccumulator_appendChars(outerSource, "(");
@@ -346,7 +321,7 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 		while (1) {
 			ContextBinding *argumentTypeBinding = ((BuilderType *)currentArgumentType->data)->binding;
 			
-			char *currentArgumentLLVMtype = getLLVMtypeFromBuilderType(MI, (BuilderType *)currentArgumentType->data);
+			char *currentArgumentLLVMtype = getLLVMtypeFromBinding(MI, ((BuilderType *)currentArgumentType->data)->binding);
 			CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
 			
 			if (defineNew) {
@@ -463,14 +438,14 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				expectUnusedName(MI, data->name, node->location);
 				
 				// make sure that the return type actually exists
-				expectTypeExists(MI, ((ASTnode_type *)data->returnType->value)->name, data->returnType->location);
+				ContextBinding* returnType = expectTypeExists(MI, data->returnType);
 				
 				linkedList_Node *argumentTypes = NULL;
 				
 				// make sure that the types of all arguments actually exist
 				linkedList_Node *currentArgument = data->argumentTypes;
 				while (currentArgument != NULL) {
-					ContextBinding *currentArgumentBinding = expectTypeExists(MI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
+					ContextBinding *currentArgumentBinding = expectTypeExists(MI, (ASTnode *)currentArgument->data);
 					
 					BuilderType *data = linkedList_addNode(&argumentTypes, sizeof(BuilderType));
 					data->binding = currentArgumentBinding;
@@ -478,9 +453,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					currentArgument = currentArgument->next;
 				}
 				
-				char *LLVMreturnType = getLLVMtypeFromASTnode(MI, data->returnType);
-				
-				BuilderType returnType = getTypeFromASTnode(MI, data->returnType);
+				char *LLVMreturnType = getLLVMtypeFromBinding(MI, returnType);
 				
 				ContextBinding *functionData = linkedList_addNode(&MI->context.bindings[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_function));
 				
@@ -498,7 +471,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
 				((ContextBinding_function *)functionData->value)->argumentNames = data->argumentNames;
 				((ContextBinding_function *)functionData->value)->argumentTypes = argumentTypes;
-				((ContextBinding_function *)functionData->value)->returnType = returnType;
+				((ContextBinding_function *)functionData->value)->returnType = getTypeFromBinding(returnType);
 				((ContextBinding_function *)functionData->value)->registerCount = 0;
 				
 				if (compilerOptions.includeDebugInformation) {
@@ -576,9 +549,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						
 						expectUnusedMemberBindingName(MI, (ContextBinding_struct *)structBinding->value, memberData->name, node->location);
 						
-						char *LLVMtype = getLLVMtypeFromASTnode(MI, memberData->type);
+						// make sure the type actually exists
+						ContextBinding* typeBinding = expectTypeExists(MI, memberData->type);
 						
-						ContextBinding *typeBinding = expectTypeExists(MI, ((ASTnode_type *)memberData->type->value)->name, memberData->type->location);
+						char *LLVMtype = getLLVMtypeFromBinding(MI, typeBinding);
 						
 						// if there is a pointer anywhere in the struct then the struct should be aligned by pointer_byteSize
 						if (strcmp(LLVMtype, "ptr") == 0) {
@@ -595,8 +569,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						SubString *nameData = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberNames, sizeof(SubString));
 						memcpy(nameData, memberData->name, sizeof(SubString));
 						
-						BuilderType type = getTypeFromASTnode(MI, memberData->type);
-						
 						ContextBinding *variableBinding = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 						
 						variableBinding->key = memberData->name;
@@ -606,7 +578,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						
 						((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
 						((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
-						((ContextBinding_variable *)variableBinding->value)->type = type;
+						((ContextBinding_variable *)variableBinding->value)->type = getTypeFromBinding(typeBinding);
 						
 						addComma = 1;
 					} else if (node->nodeType == ASTnodeType_function) {
@@ -615,22 +587,14 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						expectUnusedMemberBindingName(MI, (ContextBinding_struct *)structBinding->value, memberData->name, node->location);
 						
 						// make sure that the return type actually exists
-						expectTypeExists(MI, ((ASTnode_type *)memberData->returnType->value)->name, memberData->returnType->location);
+						ContextBinding* returnTypeBinding = expectTypeExists(MI, memberData->returnType);
 						
-						// make sure that the types of all arguments actually exist
-//						linkedList_Node *currentArgument = memberData->argumentTypes;
-//						while (currentArgument != NULL) {
-//							expectTypeExists(MI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
-//
-//							currentArgument = currentArgument->next;
-//						}
-//
 						linkedList_Node *argumentTypes = NULL;
 						
 						// make sure that the types of all arguments actually exist
 						linkedList_Node *currentArgument = memberData->argumentTypes;
 						while (currentArgument != NULL) {
-							ContextBinding *currentArgumentBinding = expectTypeExists(MI, ((ASTnode_type *)((ASTnode *)currentArgument->data)->value)->name, ((ASTnode *)currentArgument->data)->location);
+							ContextBinding *currentArgumentBinding = expectTypeExists(MI, (ASTnode *)currentArgument->data);
 							
 							BuilderType *data = linkedList_addNode(&argumentTypes, sizeof(BuilderType));
 							data->binding = currentArgumentBinding;
@@ -638,7 +602,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 							currentArgument = currentArgument->next;
 						}
 						
-						char *LLVMreturnType = getLLVMtypeFromASTnode(MI, memberData->returnType);
+						char *LLVMreturnType = getLLVMtypeFromBinding(MI, returnTypeBinding);
 						
 						SubString *nameData = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberNames, sizeof(SubString));
 						memcpy(nameData, memberData->name, sizeof(SubString));
@@ -647,7 +611,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						char *functionLLVMname = safeMalloc(functionLLVMnameLength + 1);
 						snprintf(functionLLVMname, functionLLVMnameLength + 1, "%.*s.%s", data->name->length, data->name->start, memberData->name->start);
 						
-						BuilderType returnType = getTypeFromASTnode(MI, memberData->returnType);
+						BuilderType returnType = getTypeFromBinding(returnTypeBinding);
 						
 						ContextBinding *functionData = linkedList_addNode(&((ContextBinding_struct *)structBinding->value)->memberBindings, sizeof(ContextBinding) + sizeof(ContextBinding_function));
 						
@@ -1109,14 +1073,14 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				expectUnusedName(MI, data->name, node->location);
 				
-				ContextBinding* typeBinding = expectTypeExists(MI, ((ASTnode_type *)data->type->value)->name, data->type->location);
+				ContextBinding* typeBinding = expectTypeExists(MI, data->type);
 				
-				char *LLVMtype = getLLVMtypeFromASTnode(MI, data->type);
+				char *LLVMtype = getLLVMtypeFromBinding(MI, typeBinding);
 				
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
 				
-				buildLLVM(MI, outerFunction, outerSource, &expressionSource, typeToList(getTypeFroMInding(typeBinding)), NULL, data->expression, 1, 1, 0);
+				buildLLVM(MI, outerFunction, outerSource, &expressionSource, typeToList(getTypeFromBinding(typeBinding)), NULL, data->expression, 1, 1, 0);
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
 				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
@@ -1134,7 +1098,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					CharAccumulator_appendInt(outerSource, typeBinding->byteAlign);
 				}
 				
-				BuilderType type = getTypeFromASTnode(MI, data->type);
+				BuilderType type = getTypeFromBinding(typeBinding);
 				
 				ContextBinding *variableData = linkedList_addNode(&MI->context.bindings[MI->level], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
@@ -1169,7 +1133,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						compileError(MI, node->location);
 					}
 					
-					ContextBinding *leftVariable = getContextBindingFromVariableNode(MI, (ASTnode *)data->left->data);
+					ContextBinding *leftVariable = getContextBindingFromIdentifierNode(MI, (ASTnode *)data->left->data);
 					
 					CharAccumulator leftSource = {100, 0, 0};
 					CharAccumulator_initialize(&leftSource);
@@ -1197,12 +1161,12 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					ASTnode *leftNode = (ASTnode *)data->left->data;
 					ASTnode *rightNode = (ASTnode *)data->right->data;
 					
-					// make sure that both sides of the member access are a variable
-					if (leftNode->nodeType != ASTnodeType_variable) abort();
-					if (rightNode->nodeType != ASTnodeType_variable) {
-						addStringToErrorMsg("right side of memberAccess must be a word");
+					// make sure that both sides of the member access are an identifier
+					if (leftNode->nodeType != ASTnodeType_identifier) abort();
+					if (rightNode->nodeType != ASTnodeType_identifier) {
+						addStringToErrorMsg("right side of memberAccess must be an identifier");
 						
-						addStringToErrorIndicator("right side of memberAccess is not a word");
+						addStringToErrorIndicator("right side of memberAccess is not an identifier");
 						compileError(MI, rightNode->location);
 					};
 					
@@ -1213,7 +1177,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					if (structBinding->type != ContextBindingType_struct) abort();
 					ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
 					
-					ASTnode_variable *rightData = (ASTnode_variable *)rightNode->value;
+					ASTnode_identifier *rightData = (ASTnode_identifier *)rightNode->value;
 					
 					int index = 0;
 					
@@ -1297,12 +1261,12 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					ASTnode *leftNode = (ASTnode *)data->left->data;
 					ASTnode *rightNode = (ASTnode *)data->right->data;
 					
-					// for now just assume everything is a variable
-					if (leftNode->nodeType != ASTnodeType_variable) abort();
-					if (rightNode->nodeType != ASTnodeType_variable) abort();
+					// for now just assume everything is an identifier
+					if (leftNode->nodeType != ASTnodeType_identifier) abort();
+					if (rightNode->nodeType != ASTnodeType_identifier) abort();
 					
-					SubString *leftSubString = ((ASTnode_variable *)leftNode->value)->name;
-					SubString *rightSubString = ((ASTnode_variable *)rightNode->value)->name;
+					SubString *leftSubString = ((ASTnode_identifier *)leftNode->value)->name;
+					SubString *rightSubString = ((ASTnode_identifier *)rightNode->value)->name;
 					
 					// find the module
 					linkedList_Node *currentModule = MI->context.importedModules;
@@ -1360,7 +1324,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				
 				linkedList_Node *expectedTypeForLeftAndRight = NULL;
-				char *expectedLLVMtype = getLLVMtypeFromBuilderType(MI, (BuilderType *)expectedTypes->data);
+				char *expectedLLVMtype = getLLVMtypeFromBinding(MI, ((BuilderType *)expectedTypes->data)->binding);
 				
 				// all of these operators are very similar and even use the same 'icmp' instruction
 				// https://llvm.org/docs/LangRef.html#fcmp-instruction
@@ -1437,7 +1401,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						abort();
 					}
 					
-					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBuilderType(MI, (BuilderType *)expectedTypeForLeftAndRight->data));
+					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBinding(MI, ((BuilderType *)expectedTypeForLeftAndRight->data)->binding));
 				}
 				
 				// +
@@ -1555,7 +1519,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					}
 				}
 				
-				char *LLVMtype = getLLVMtypeFromBuilderType(MI, (BuilderType *)(*currentExpectedType)->data);
+				char *LLVMtype = getLLVMtypeFromBinding(MI, ((BuilderType *)(*currentExpectedType)->data)->binding);
 				
 				if (withTypes) {
 					CharAccumulator_appendChars(innerSource, LLVMtype);
@@ -1634,10 +1598,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				break;
 			}
 			
-			case ASTnodeType_variable: {
-				ASTnode_variable *data = (ASTnode_variable *)node->value;
+			case ASTnodeType_identifier: {
+				ASTnode_identifier *data = (ASTnode_identifier *)node->value;
 				
-				ContextBinding *variableBinding = getContextBindingFromVariableNode(MI, node);
+				ContextBinding *variableBinding = getContextBindingFromIdentifierNode(MI, node);
 				if (variableBinding == NULL) {
 					addStringToErrorMsg("value not in scope");
 					
@@ -1647,7 +1611,14 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					compileError(MI, node->location);
 				}
 				
-				if (variableBinding->type == ContextBindingType_variable) {
+				if (
+					variableBinding->type == ContextBindingType_simpleType ||
+					variableBinding->type == ContextBindingType_struct
+				) {
+					if (types != NULL) {
+						addTypeFromBinding(MI, types, variableBinding);
+					}
+				} else if (variableBinding->type == ContextBindingType_variable) {
 					ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
 					
 					if (expectedTypes != NULL) {
@@ -1714,12 +1685,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						addTypeFromBinding(MI, types, variableBinding);
 					}
 				} else {
-					addStringToErrorMsg("value exists but is not a variable, function or macro");
-					
-					addStringToErrorIndicator("'");
-					addSubStringToErrorIndicator(data->name);
-					addStringToErrorIndicator("' is not a variable, function or macro");
-					compileError(MI, node->location);
+					abort();
 				}
 				
 				break;

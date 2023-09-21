@@ -1,11 +1,19 @@
-import "modules/std"
-import "modules/libc_bindings"
+// import "modules/std"
+// import "modules/libc_bindings"
 
 function main(): Int8 {
-	std::printLine("test");
+	// var thing: std::Thing;
+	// thing.string = "string test";
+	
+	var number: Int32 = 97;
 	
 	return 0;
 }
+
+// function printThing(thing: std::Thing): Void {
+// 	std::printLine(thing.string);
+// 	return;
+// }
 
 // function safeMalloc(size: Int64): Pointer {
 // 	var pointer: Pointer = libc_bindings::malloc(size);

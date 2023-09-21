@@ -23,29 +23,6 @@ int64_t intPow(int64_t base, int64_t exponent) {
 	return result;
 }
 
-linkedList_Node *parseType(ModuleInformation *MI, linkedList_Node **current) {
-	linkedList_Node *AST = NULL;
-	
-	Token *token = ((Token *)((*current)->data));
-	endIfCurrentIsEmpty()
-	if (token->type != TokenType_word) {
-		printf("not a word in a type expression\n");
-		compileError(MI, token->location);
-	}
-	
-//	Token *nextToken = ((Token *)((*current)->next->data));
-//	if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "<") == 0) {
-//		
-//	}
-	
-	ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_type));
-	data->nodeType = ASTnodeType_type;
-	data->location = token->location;
-	((ASTnode_type *)data->value)->name = &token->subString;
-	
-	return AST;
-}
-
 ASTnode_number parseInt(ModuleInformation *MI, linkedList_Node **current) {
 	ASTnode_number node = {};
 	
@@ -68,88 +45,6 @@ ASTnode_number parseInt(ModuleInformation *MI, linkedList_Node **current) {
 	node.value = accumulator;
 	
 	return node;
-}
-
-typedef struct {
-	linkedList_Node *list1;
-	linkedList_Node *list2;
-} linkedList_Node_tuple;
-
-linkedList_Node_tuple parseFunctionArguments(ModuleInformation *MI, linkedList_Node **current) {
-	linkedList_Node *argumentNames = NULL;
-	linkedList_Node *argumentTypes = NULL;
-	
-	while (1) {
-		if (*current == NULL) {
-			printf("unexpected end of file at function arguments\n");
-			exit(1);
-		}
-		
-		Token *token = ((Token *)((*current)->data));
-		
-		switch (token->type) {
-			case TokenType_word: {
-				*current = (*current)->next;
-				endIfCurrentIsEmpty()
-				Token *colon = ((Token *)((*current)->data));
-				
-				if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
-					printf("function argument expected a colon\n");
-					compileError(MI, colon->location);
-				}
-				
-				*current = (*current)->next;
-				linkedList_Node *type = parseType(MI, current);
-				
-				SubString *nameSubString = linkedList_addNode(&argumentNames, sizeof(SubString));
-				nameSubString->start = token->subString.start;
-				nameSubString->length = token->subString.length;
-				
-				// join type to argumentTypes
-				linkedList_join(&argumentTypes, &type);
-				
-				*current = (*current)->next;
-				token = ((Token *)((*current)->data));
-				endIfCurrentIsEmpty()
-				if (token->type != TokenType_separator || SubString_string_cmp(&token->subString, ",") != 0) {
-					if (token->type == TokenType_separator) {
-						if (SubString_string_cmp(&token->subString, ")") == 0) {
-							return (linkedList_Node_tuple){argumentNames, argumentTypes};
-						} else {
-							printf("unexpected separator: '");
-							SubString_print(&token->subString);
-							printf("'\n");
-							compileError(MI, token->location);
-						}
-					}
-					printf("expected a comma\n");
-					compileError(MI, token->location);
-				}
-				
-				break;
-			}
-				
-			case TokenType_separator: {
-				if (SubString_string_cmp(&token->subString, ")") == 0) {
-					return (linkedList_Node_tuple){argumentNames, argumentTypes};
-				} else {
-					printf("unexpected separator: '");
-					SubString_print(&token->subString);
-					printf("'\n");
-					compileError(MI, token->location);
-				}
-				break;
-			}
-				
-			default: {
-				printf("unexpected token type: %u inside of function arguments\n", token->type);
-				compileError(MI, token->location);
-				break;
-			}
-		}
-		
-		*current = (*current)->next;
-	}
 }
 
 int getOperatorPrecedence(SubString *subString) {
@@ -190,11 +85,12 @@ int getOperatorPrecedence(SubString *subString) {
 	}
 	
 	else {
+		printf("getOperatorPrecedence error");
 		abort();
 	}
 }
 
-linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current, linkedList_Node *left, int precedence) {
+linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current, linkedList_Node *left, int precedence, int ignoreEquals) {
 	Token *operator = ((Token *)((*current)->data));
 	
 	if (operator->type == TokenType_operator) {
@@ -203,8 +99,17 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 		if (nextPrecedence > precedence) {
 			linkedList_Node *AST = NULL;
 			
+			// to fix variable definitions
+			if (
+				ignoreEquals &&
+				operator->type == TokenType_operator &&
+				SubString_string_cmp(&operator->subString, "=") == 0
+			) {
+				return left;
+			}
+			
 			*current = (*current)->next;
-			linkedList_Node *right = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), nextPrecedence);
+			linkedList_Node *right = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), nextPrecedence, 0);
 			
 			ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_operator));
 			
@@ -234,11 +139,109 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 			((ASTnode_operator *)data->value)->left = left;
 			((ASTnode_operator *)data->value)->right = right;
 			
-			return parseOperators(MI, current, AST, precedence);
+			return parseOperators(MI, current, AST, precedence, 0);
 		}
 	}
 	
 	return left;
+}
+
+linkedList_Node *parseType(ModuleInformation *MI, linkedList_Node **current) {
+	linkedList_Node *AST = NULL;
+	
+//	Token *nextToken = ((Token *)((*current)->next->data));
+//	if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "<") == 0) {
+//
+//	}
+	
+	ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_constrainedType));
+	data->nodeType = ASTnodeType_constrainedType;
+	data->location = ((Token *)((*current)->data))->location;
+	
+	((ASTnode_constrainedType *)data->value)->type = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0, 1);
+	
+	return AST;
+}
+
+typedef struct {
+	linkedList_Node *list1;
+	linkedList_Node *list2;
+} linkedList_Node_tuple;
+
+linkedList_Node_tuple parseFunctionArguments(ModuleInformation *MI, linkedList_Node **current) {
+	linkedList_Node *argumentNames = NULL;
+	linkedList_Node *argumentTypes = NULL;
+	
+	while (1) {
+		if (*current == NULL) {
+			printf("unexpected end of file at function arguments\n");
+			exit(1);
+		}
+		
+		Token *token = (Token *)((*current)->data);
+		
+		switch (token->type) {
+			case TokenType_word: {
+				*current = (*current)->next;
+				endIfCurrentIsEmpty()
+				Token *colon = ((Token *)((*current)->data));
+				
+				if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
+					printf("function argument expected a colon\n");
+					compileError(MI, colon->location);
+				}
+				
+				*current = (*current)->next;
+				linkedList_Node *type = parseType(MI, current);
+				
+				SubString *nameSubString = linkedList_addNode(&argumentNames, sizeof(SubString));
+				nameSubString->start = token->subString.start;
+				nameSubString->length = token->subString.length;
+				
+				// join type to argumentTypes
+				linkedList_join(&argumentTypes, &type);
+				
+				token = ((Token *)((*current)->data));
+				endIfCurrentIsEmpty()
+				if (token->type != TokenType_separator || SubString_string_cmp(&token->subString, ",") != 0) {
+					if (token->type == TokenType_separator) {
+						if (SubString_string_cmp(&token->subString, ")") == 0) {
+							return (linkedList_Node_tuple){argumentNames, argumentTypes};
+						} else {
+							printf("unexpected separator: '");
+							SubString_print(&token->subString);
+							printf("'\n");
+							compileError(MI, token->location);
+						}
+					}
+					printf("expected a comma\n");
+					compileError(MI, token->location);
+				}
+				
+				break;
+			}
+			
+			case TokenType_separator: {
+				if (SubString_string_cmp(&token->subString, ")") == 0) {
+					return (linkedList_Node_tuple){argumentNames, argumentTypes};
+				} else {
+					printf("unexpected separator: '");
+					SubString_print(&token->subString);
+					printf("'\n");
+					compileError(MI, token->location);
+				}
+				break;
+			}
+			
+			default: {
+				printf("unexpected token type: %u inside of function arguments\n", token->type);
+				compileError(MI, token->location);
+				break;
+			}
+		}
+		
+		*current = (*current)->next;
+	}
 }
 
 linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserMode parserMode) {
@@ -253,7 +256,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 			Token *nextToken = (Token *)((*current)->next->data);
 			
 			if (nextToken->type == TokenType_operator) {
-				linkedList_Node *operatorAST = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0);
+				linkedList_Node *operatorAST = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0, 0);
 				Token *token = (Token *)((*current)->data);
 				if (token->type == TokenType_separator && SubString_string_cmp(&token->subString, "(") == 0) {
 					*current = (*current)->next;
@@ -351,8 +354,6 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					*current = (*current)->next;
 					ASTnode *returnType = (ASTnode *)parseType(MI, current)->data;
 					
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
 					Token *codeStart = ((Token *)((*current)->data));
 					
 					if (codeStart->type == TokenType_separator && SubString_string_cmp(&codeStart->subString, "{") == 0) {
@@ -508,8 +509,6 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					
 					linkedList_Node *expression = NULL;
 					
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
 					Token *equals = ((Token *)((*current)->data));
 					if (equals->type == TokenType_operator && SubString_string_cmp(&equals->subString, "=") == 0) {
 						*current = (*current)->next;
@@ -637,11 +636,11 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 							
 							linkedList_Node *left = NULL;
 							
-							ASTnode *leftData = linkedList_addNode(&left, sizeof(ASTnode) + sizeof(ASTnode_variable));
+							ASTnode *leftData = linkedList_addNode(&left, sizeof(ASTnode) + sizeof(ASTnode_identifier));
 							
-							leftData->nodeType = ASTnodeType_variable;
+							leftData->nodeType = ASTnodeType_identifier;
 							leftData->location = token->location;
-							((ASTnode_variable *)leftData->value)->name = &token->subString;
+							((ASTnode_identifier *)leftData->value)->name = &token->subString;
 							
 							ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
 							
@@ -655,11 +654,11 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					
 					// variable
 					else {
-						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_variable));
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_identifier));
 						
-						data->nodeType = ASTnodeType_variable;
+						data->nodeType = ASTnodeType_identifier;
 						data->location = token->location;
-						((ASTnode_variable *)data->value)->name = &token->subString;
+						((ASTnode_identifier *)data->value)->name = &token->subString;
 					}
 				}
 				break;
@@ -667,7 +666,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 				
 			case TokenType_pound: {
 				*current = (*current)->next;
-				linkedList_Node *left = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0);
+				linkedList_Node *left = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0, 1);
 				
 				endIfCurrentIsEmpty()
 				Token *openingParentheses = ((Token *)((*current)->data));

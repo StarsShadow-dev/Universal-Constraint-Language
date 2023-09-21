@@ -188,7 +188,7 @@ typedef struct {
 
 typedef enum {
 	ASTnodeType_import,
-	ASTnodeType_type,
+	ASTnodeType_constrainedType,
 	ASTnodeType_struct,
 	ASTnodeType_function,
 	ASTnodeType_call,
@@ -208,7 +208,7 @@ typedef enum {
 	ASTnodeType_number,
 	ASTnodeType_string,
 	
-	ASTnodeType_variable
+	ASTnodeType_identifier
 } ASTnodeType;
 
 typedef struct {
@@ -218,13 +218,13 @@ typedef struct {
 } ASTnode;
 
 typedef struct {
-//	SubString *name;
 	SubString *path;
 } ASTnode_import;
 
 typedef struct {
-	SubString *name;
-} ASTnode_type;
+	linkedList_Node *type;
+//	linkedList_Node *constraints;
+} ASTnode_constrainedType;
 
 typedef struct {
 	SubString *name;
@@ -305,6 +305,6 @@ typedef struct {
 
 typedef struct {
 	SubString *name;
-} ASTnode_variable;
+} ASTnode_identifier;
 
 #endif /* types_h */

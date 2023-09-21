@@ -1,5 +1,5 @@
 /*
-error: use of undeclared type
+error: value not in scope
 9  |function main(): Int8 {
 10 |    var a: notAType = 0;
                ^^^^^^^^ nothing named 'notAType'

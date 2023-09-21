@@ -6,7 +6,7 @@ function main(): Int8 {
 }
 
 function printAlphabet(): Void {
-	var i:Int32 = 97;
+	var i: Int32 = 97;
 	while (i < 123) {
 		putchar(i);
 		i = i + 1;
