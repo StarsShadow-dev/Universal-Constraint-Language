@@ -13,7 +13,7 @@
 #include "compiler.h"
 #include "globals.h"
 #include "builder.h"
-#include "error.h"
+#include "report.h"
 #include "utilities.h"
 
 void addDILocation(CharAccumulator *source, int ID, SourceLocation location) {
@@ -210,13 +210,13 @@ linkedList_Node *typeToList(BuilderType type) {
 
 void expectSameBinding(ModuleInformation *MI, ContextBinding *expectedTypeBinding, ContextBinding *actualTypeBinding, SourceLocation location) {
 	if (expectedTypeBinding != actualTypeBinding) {
-		addStringToErrorMsg("unexpected type");
+		addStringToReportMsg("unexpected type");
 		
-		addStringToErrorIndicator("expected type '");
-		addSubStringToErrorIndicator(expectedTypeBinding->key);
-		addStringToErrorIndicator("' but got type '");
-		addSubStringToErrorIndicator(actualTypeBinding->key);
-		addStringToErrorIndicator("'");
+		addStringToReportIndicator("expected type '");
+		addSubStringToReportIndicator(expectedTypeBinding->key);
+		addStringToReportIndicator("' but got type '");
+		addSubStringToReportIndicator(actualTypeBinding->key);
+		addStringToReportIndicator("'");
 		compileError(MI, location);
 	}
 }
@@ -227,13 +227,13 @@ void expectUnusedMemberBindingName(ModuleInformation *MI, ContextBinding_struct 
 		ContextBinding *memberBinding = (ContextBinding *)currentMemberBinding->data;
 		
 		if (SubString_SubString_cmp(memberBinding->key, name) == 0) {
-			addStringToErrorMsg("the name '");
-			addSubStringToErrorMsg(name);
-			addStringToErrorMsg("' is defined multiple times inside a struct");
+			addStringToReportMsg("the name '");
+			addSubStringToReportMsg(name);
+			addStringToReportMsg("' is defined multiple times inside a struct");
 			
-//			addStringToErrorIndicator("'");
-//			addSubStringToErrorIndicator(name);
-//			addStringToErrorIndicator("' redefined here");
+//			addStringToReportIndicator("'");
+//			addSubStringToReportIndicator(name);
+//			addStringToReportIndicator("' redefined here");
 			compileError(MI, location);
 		}
 		
@@ -244,13 +244,13 @@ void expectUnusedMemberBindingName(ModuleInformation *MI, ContextBinding_struct 
 void expectUnusedName(ModuleInformation *MI, SubString *name, SourceLocation location) {
 	ContextBinding *binding = getContextBindingFromSubString(MI, name);
 	if (binding != NULL) {
-		addStringToErrorMsg("the name '");
-		addSubStringToErrorMsg(name);
-		addStringToErrorMsg("' is defined multiple times");
+		addStringToReportMsg("the name '");
+		addSubStringToReportMsg(name);
+		addStringToReportMsg("' is defined multiple times");
 		
-		addStringToErrorIndicator("'");
-		addSubStringToErrorIndicator(name);
-		addStringToErrorIndicator("' redefined here");
+		addStringToReportIndicator("'");
+		addSubStringToReportIndicator(name);
+		addStringToReportIndicator("' redefined here");
 		compileError(MI, location);
 	}
 }
@@ -267,11 +267,11 @@ ContextBinding *expectTypeExists(ModuleInformation *MI, ASTnode *node) {
 		((BuilderType *)returnTypeList->data)->binding->type != ContextBindingType_simpleType &&
 		((BuilderType *)returnTypeList->data)->binding->type != ContextBindingType_struct
 	) {
-		addStringToErrorMsg("expected type");
+		addStringToReportMsg("expected type");
 		
-		addStringToErrorIndicator("'");
-		addSubStringToErrorIndicator(((BuilderType *)returnTypeList->data)->binding->key);
-		addStringToErrorIndicator("' is not a type");
+		addStringToReportIndicator("'");
+		addSubStringToReportIndicator(((BuilderType *)returnTypeList->data)->binding->key);
+		addStringToReportIndicator("' is not a type");
 		compileError(MI, node->location);
 	}
 	
@@ -454,11 +454,11 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 		int functionHasReturned = buildLLVM(MI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
 		
 		if (!functionHasReturned) {
-			addStringToErrorMsg("function did not return");
+			addStringToReportMsg("function did not return");
 			
-			addStringToErrorIndicator("the compiler cannot guarantee that function '");
-			addSubStringToErrorIndicator(data->name);
-			addStringToErrorIndicator("' returns");
+			addStringToReportIndicator("the compiler cannot guarantee that function '");
+			addSubStringToReportIndicator(data->name);
+			addStringToReportIndicator("' returns");
 			compileError(MI, node->location);
 		}
 		
@@ -652,7 +652,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 		switch (node->nodeType) {
 			case ASTnodeType_import: {
 				if (MI->level != 0) {
-					addStringToErrorMsg("import statements are only allowed at top level");
+					addStringToReportMsg("import statements are only allowed at top level");
 					compileError(MI, node->location);
 				}
 				
@@ -703,7 +703,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 			case ASTnodeType_struct: {
 				if (MI->level != 0) {
-					addStringToErrorMsg("struct definitions are only allowed at top level");
+					addStringToReportMsg("struct definitions are only allowed at top level");
 					compileError(MI, node->location);
 				}
 				
@@ -834,7 +834,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				ContextBinding *macroToRunBinding = ((BuilderType *)leftTypes->data)->binding;
 				if (macroToRunBinding == NULL) {
-					addStringToErrorMsg("macro does not exist");
+					addStringToReportMsg("macro does not exist");
 					compileError(MI, node->location);
 				}
 				ContextBinding_macro *macroToRun = (ContextBinding_macro *)macroToRunBinding->value;
@@ -844,24 +844,24 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					if (SubString_string_cmp(macroToRunBinding->key, "error") == 0) {
 						int argumentCount = linkedList_getCount(&data->arguments);
 						if (argumentCount != 2) {
-							addStringToErrorMsg("#error(message:String, indicator:String) expected 2 arguments");
+							addStringToReportMsg("#error(message:String, indicator:String) expected 2 arguments");
 							compileError(MI, node->location);
 						}
 						
 						ASTnode *message = (ASTnode *)data->arguments->data;
 						if (message->nodeType != ASTnodeType_string) {
-							addStringToErrorMsg("message must be a string");
+							addStringToReportMsg("message must be a string");
 							compileError(MI, message->location);
 						}
 						
 						ASTnode *indicator = (ASTnode *)data->arguments->next->data;
 						if (indicator->nodeType != ASTnodeType_string) {
-							addStringToErrorMsg("indicator must be a string");
+							addStringToReportMsg("indicator must be a string");
 							compileError(MI, indicator->location);
 						}
 						
-						addSubStringToErrorMsg(((ASTnode_string *)message->value)->value);
-						addSubStringToErrorIndicator(((ASTnode_string *)indicator->value)->value);
+						addSubStringToReportMsg(((ASTnode_string *)message->value)->value);
+						addSubStringToReportIndicator(((ASTnode_string *)indicator->value)->value);
 						compileError(MI, node->location);
 					}
 				} else {
@@ -1163,9 +1163,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					// make sure that both sides of the member access are an identifier
 					if (leftNode->nodeType != ASTnodeType_identifier) abort();
 					if (rightNode->nodeType != ASTnodeType_identifier) {
-						addStringToErrorMsg("right side of memberAccess must be an identifier");
+						addStringToReportMsg("right side of memberAccess must be an identifier");
 						
-						addStringToErrorIndicator("right side of memberAccess is not an identifier");
+						addStringToReportIndicator("right side of memberAccess is not an identifier");
 						compileError(MI, rightNode->location);
 					};
 					
@@ -1271,11 +1271,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					linkedList_Node *currentModule = MI->context.importedModules;
 					while (1) {
 						if (currentModule == NULL) {
-							addStringToErrorMsg("not an imported module");
+							addStringToReportMsg("not an imported module");
 							
-							addStringToErrorIndicator("no imported module named '");
-							addSubStringToErrorIndicator(leftSubString);
-							addStringToErrorIndicator("'");
+							addStringToReportIndicator("no imported module named '");
+							addSubStringToReportIndicator(leftSubString);
+							addStringToReportIndicator("'");
 							compileError(MI, leftNode->location);
 						}
 						ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
@@ -1289,13 +1289,13 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						
 						while (1) {
 							if (current == NULL) {
-								addStringToErrorMsg("value does not exist in this modules scope");
+								addStringToReportMsg("value does not exist in this modules scope");
 								
-								addStringToErrorIndicator("nothing in module '");
-								addSubStringToErrorIndicator(leftSubString);
-								addStringToErrorIndicator("' with name '");
-								addSubStringToErrorIndicator(rightSubString);
-								addStringToErrorIndicator("'");
+								addStringToReportIndicator("nothing in module '");
+								addSubStringToReportIndicator(leftSubString);
+								addStringToReportIndicator("' with name '");
+								addSubStringToReportIndicator(rightSubString);
+								addStringToReportIndicator("'");
 								compileError(MI, rightNode->location);
 							}
 							ContextBinding *binding = ((ContextBinding *)current->data);
@@ -1316,9 +1316,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				
 				if (expectedTypes == NULL) {
-					addStringToErrorMsg("unexpected operator");
+					addStringToReportMsg("unexpected operator");
 					
-					addStringToErrorIndicator("the return value of this operator is not used");
+					addStringToReportIndicator("the return value of this operator is not used");
 					compileError(MI, node->location);
 				}
 				
@@ -1498,22 +1498,22 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int32") &&
 					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int64")
 				) {
-					addStringToErrorMsg("unexpected type");
+					addStringToReportMsg("unexpected type");
 					
-					addStringToErrorIndicator("expected type '");
-					addSubStringToErrorIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
-					addStringToErrorIndicator("' but got a number.");
+					addStringToReportIndicator("expected type '");
+					addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
+					addStringToReportIndicator("' but got a number.");
 					compileError(MI, node->location);
 				} else {
 					ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
 					
 					if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
-						addStringToErrorMsg("integer overflow detected");
+						addStringToReportMsg("integer overflow detected");
 						
-						CharAccumulator_appendInt(&errorIndicator, data->value);
-						addStringToErrorIndicator(" is larger than the maximum size of the type '");
-						addSubStringToErrorIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
-						addStringToErrorIndicator("'");
+						CharAccumulator_appendInt(&reportIndicator, data->value);
+						addStringToReportIndicator(" is larger than the maximum size of the type '");
+						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
+						addStringToReportIndicator("'");
 						compileError(MI, node->location);
 					}
 				}
@@ -1534,11 +1534,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
 				if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
-					addStringToErrorMsg("unexpected type");
+					addStringToReportMsg("unexpected type");
 					
-					addStringToErrorIndicator("expected type '");
-					addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
-					addStringToErrorIndicator("' but got a string");
+					addStringToReportIndicator("expected type '");
+					addSubStringToReportIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+					addStringToReportIndicator("' but got a string");
 					compileError(MI, node->location);
 				}
 				
@@ -1602,11 +1602,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				ContextBinding *variableBinding = getContextBindingFromIdentifierNode(MI, node);
 				if (variableBinding == NULL) {
-					addStringToErrorMsg("value not in scope");
+					addStringToReportMsg("value not in scope");
 					
-					addStringToErrorIndicator("nothing named '");
-					addSubStringToErrorIndicator(data->name);
-					addStringToErrorIndicator("'");
+					addStringToReportIndicator("nothing named '");
+					addSubStringToReportIndicator(data->name);
+					addStringToReportIndicator("'");
 					compileError(MI, node->location);
 				}
 				
@@ -1656,11 +1656,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				} else if (variableBinding->type == ContextBindingType_function) {
 					if (expectedTypes != NULL) {
 						if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Function")) {
-							addStringToErrorMsg("unexpected type");
+							addStringToReportMsg("unexpected type");
 							
-							addStringToErrorIndicator("expected type '");
-							addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
-							addStringToErrorIndicator("' but got a function");
+							addStringToReportIndicator("expected type '");
+							addSubStringToReportIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+							addStringToReportIndicator("' but got a function");
 							compileError(MI, node->location);
 						}
 					}
@@ -1671,11 +1671,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				} else if (variableBinding->type == ContextBindingType_macro) {
 					if (expectedTypes != NULL) {
 						if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "__Macro")) {
-							addStringToErrorMsg("unexpected type");
+							addStringToReportMsg("unexpected type");
 							
-							addStringToErrorIndicator("expected type '");
-							addSubStringToErrorIndicator(((BuilderType *)expectedTypes->data)->binding->key);
-							addStringToErrorIndicator("' but got a macro");
+							addStringToReportIndicator("expected type '");
+							addSubStringToReportIndicator(((BuilderType *)expectedTypes->data)->binding->key);
+							addStringToReportIndicator("' but got a macro");
 							compileError(MI, node->location);
 						}
 					}

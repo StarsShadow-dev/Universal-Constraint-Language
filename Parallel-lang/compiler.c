@@ -9,6 +9,7 @@
 #include "parser.h"
 #include "builder.h"
 #include "utilities.h"
+#include "report.h"
 
 /// print the tokens to standard out in a form resembling JSON
 void printTokens(linkedList_Node *head) {
@@ -278,6 +279,11 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 			
 			currentFilePath = currentFilePath->next;
 		}
+		
+//		if (warningCount > 0) {
+//			printf("warningCount: %d\n", warningCount);
+//			warningCount = 0;
+//		}
 	} else {
 		compileFile(path, MI, &LLVMsource);
 	}

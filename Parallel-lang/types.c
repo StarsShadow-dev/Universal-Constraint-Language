@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "types.h"
-#include "error.h"
+#include "report.h"
 #include "utilities.h"
 
 //
@@ -106,6 +106,8 @@ void CharAccumulator_initialize(CharAccumulator *accumulator) {
 		free(accumulator->data);
 	}
 	accumulator->data = safeMalloc(accumulator->maxSize);
+	
+	accumulator->size = 0;
 	
 	// add a NULL bite
 	*accumulator->data = 0;

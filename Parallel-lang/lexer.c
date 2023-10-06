@@ -3,7 +3,7 @@
 
 #include "lexer.h"
 #include "globals.h"
-#include "error.h"
+#include "report.h"
 
 #define wordStart (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || character == '_'
 #define wordContinue wordStart || (character >= '0' && character <= '9')
@@ -26,6 +26,8 @@ linkedList_Node *lex(ModuleInformation *MI) {
 	int line = 1;
 	int column = 0;
 	
+	int lineBreaksInARow = 0;
+	
 	if (MI->context.currentSource == NULL) {
 		return NULL;
 	}
@@ -45,14 +47,28 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			column = 0;
 			
 			index++;
+			
+			lineBreaksInARow++;
+			if (lineBreaksInARow == 5) {
+				// warning test
+				addStringToReportMsg("4 empty lines in a row");
+				compileWarning(MI, (SourceLocation){line, 0, 0}, WarningType_format);
+			}
+			
 			continue;
 		}
 		
 		// ignore space and tab
-		else if (character == ' ' || character == '\t') {}
+		else if (character == ' ' || character == '\t') {
+			index++;
+			column++;
+			continue;
+		}
+		
+		lineBreaksInARow = 0;
 		
 		// start of a word
-		else if (wordStart) {
+		if (wordStart) {
 			int start = index;
 			int columnStart = column;
 			int end = 0;

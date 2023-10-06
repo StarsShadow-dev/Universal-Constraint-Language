@@ -14,7 +14,7 @@
 #include "fromParallel.h"
 
 #include "jsmn.h"
-#include "error.h"
+#include "report.h"
 #include "main.h"
 #include "types.h"
 #include "globals.h"
@@ -112,8 +112,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	CharAccumulator_initialize(&errorMsg);
-	CharAccumulator_initialize(&errorIndicator);
+	CharAccumulator_initialize(&reportMsg);
+	CharAccumulator_initialize(&reportIndicator);
 	
 	CharAccumulator_initialize(&objectFiles);
 	

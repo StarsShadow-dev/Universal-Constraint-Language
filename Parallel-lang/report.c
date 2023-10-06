@@ -1,27 +1,31 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "error.h"
+#include "report.h"
 #include "globals.h"
 
-CharAccumulator errorMsg = {100, 0, 0};
+//
+// shared
+//
 
-void addStringToErrorMsg(char *string) {
-	CharAccumulator_appendChars(&errorMsg, string);
+CharAccumulator reportMsg = {100, 0, 0};
+
+void addStringToReportMsg(char *string) {
+	CharAccumulator_appendChars(&reportMsg, string);
 }
 
-void addSubStringToErrorMsg(SubString *subString) {
-	CharAccumulator_appendSubString(&errorMsg, subString);
+void addSubStringToReportMsg(SubString *subString) {
+	CharAccumulator_appendSubString(&reportMsg, subString);
 }
 
-CharAccumulator errorIndicator = {100, 0, 0};
+CharAccumulator reportIndicator = {100, 0, 0};
 
-void addStringToErrorIndicator(char *string) {
-	CharAccumulator_appendChars(&errorIndicator, string);
+void addStringToReportIndicator(char *string) {
+	CharAccumulator_appendChars(&reportIndicator, string);
 }
 
-void addSubStringToErrorIndicator(SubString *subString) {
-	CharAccumulator_appendSubString(&errorIndicator, subString);
+void addSubStringToReportIndicator(SubString *subString) {
+	CharAccumulator_appendSubString(&reportIndicator, subString);
 }
 
 // there might be a simpler way of doing this
@@ -100,9 +104,9 @@ void printLineWithIndicator(char *source, int *index, int columnStart, int colum
 		(*index) += 1;
 	}
 	
-	if (errorIndicator.size > 0) {
-		printf("%s %s\n", indicator.data, errorIndicator.data);
-		CharAccumulator_initialize(&errorIndicator);
+	if (reportIndicator.size > 0) {
+		printf("%s %s\n", indicator.data, reportIndicator.data);
+		CharAccumulator_initialize(&reportIndicator);
 	} else {
 		printf("%s\n", indicator.data);
 	}
@@ -117,17 +121,7 @@ void printSpaces(int count) {
 	}
 }
 
-void compileError(ModuleInformation *MI, SourceLocation location) {
-	if (errorMsg.size > 0) {
-		// \x1B[31m \x1B[0m
-		if (MI->name == NULL || MI->context.currentFilePath == NULL) {
-			printf("error: %s\n", errorMsg.data);
-		} else {
-			printf("\nerror: %s\n at %s:%s:%d\n", errorMsg.data, MI->name, MI->context.currentFilePath, location.line);
-		}
-		CharAccumulator_initialize(&errorMsg);
-	}
-	
+void printSourceCode(ModuleInformation *MI, SourceLocation location) {
 	int maxLineSize = getSizeOfUint(location.line + 1);
 	
 	int index = 0;
@@ -156,7 +150,11 @@ void compileError(ModuleInformation *MI, SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLineWithIndicator(MI->context.currentSource, &index, location.columnStart, location.columnEnd, maxLineSize + 2);
+			if (location.columnStart == 0 && location.columnEnd == 0) {
+				printLine(MI->context.currentSource, &index);
+			} else {
+				printLineWithIndicator(MI->context.currentSource, &index, location.columnStart, location.columnEnd, maxLineSize + 2);
+			}
 			line++;
 		} else if (line == location.line + 1) {
 			printf("%d", line);
@@ -173,6 +171,47 @@ void compileError(ModuleInformation *MI, SourceLocation location) {
 		
 		index++;
 	}
+}
+
+//
+// warnings
+//
+
+void compileWarning(ModuleInformation *MI, SourceLocation location, WarningType warningType) {
+	if (reportMsg.size > 0) {
+		if (MI->name == NULL || MI->context.currentFilePath == NULL) {
+			printf("warning: %s\n", reportMsg.data);
+		} else {
+			printf("\nwarning: %s\n at %s:%s:%d\n", reportMsg.data, MI->name, MI->context.currentFilePath, location.line);
+		}
+		// clear the character accumulator
+		CharAccumulator_initialize(&reportMsg);
+	}
 	
+	printSourceCode(MI, location);
+	
+//	warningCount++;
+}
+
+
+//
+// errors
+//
+
+void compileError(ModuleInformation *MI, SourceLocation location) {
+	if (reportMsg.size > 0) {
+		// \x1B[31m \x1B[0m
+		if (MI->name == NULL || MI->context.currentFilePath == NULL) {
+			printf("error: %s\n", reportMsg.data);
+		} else {
+			printf("\nerror: %s\n at %s:%s:%d\n", reportMsg.data, MI->name, MI->context.currentFilePath, location.line);
+		}
+		// clear the character accumulator
+		CharAccumulator_initialize(&reportMsg);
+	}
+	
+	printSourceCode(MI, location);
+	
+	// stop compiling
 	exit(1);
 }

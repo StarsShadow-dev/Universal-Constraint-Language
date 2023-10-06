@@ -7,15 +7,26 @@ import "modules/std"
 
 function main(): Int8 {
 	var thing: std::Thing;
-	thing.string = "string test";
+	thing.strings = "string test";
 	
 	return 0;
 }
+
+
+
+
 
 // function printThing(thing: std::Thing): Void {
 // 	std::printLine(thing.string);
 // 	return;
 // }
+
+
+
+
+
+
+
 
 // function safeMalloc(size: Int64): Pointer {
 // 	var pointer: Pointer = libc_bindings::malloc(size);

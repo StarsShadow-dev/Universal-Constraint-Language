@@ -11,7 +11,7 @@
 		0203001B2A1AC0420082A063 /* globals.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203001A2A1AC0420082A063 /* globals.c */; };
 		0203001E2A1AD5C40082A063 /* types.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203001D2A1AD5C40082A063 /* types.c */; };
 		020300212A1D08840082A063 /* lexer.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300202A1D08840082A063 /* lexer.c */; };
-		020300242A1D0BB70082A063 /* error.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300232A1D0BB70082A063 /* error.c */; };
+		020300242A1D0BB70082A063 /* report.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300232A1D0BB70082A063 /* report.c */; };
 		020300272A1EBA4A0082A063 /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300262A1EBA4A0082A063 /* parser.c */; };
 		0203002E2A24F49C0082A063 /* builder.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203002D2A24F49C0082A063 /* builder.c */; };
 		028BE7EA2A88FAED0049431E /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = 028BE7E92A88FAED0049431E /* utilities.c */; };
@@ -43,8 +43,8 @@
 		0203001D2A1AD5C40082A063 /* types.c */ = {isa = PBXFileReference; indentWidth = 4; lastKnownFileType = sourcecode.c.c; path = types.c; sourceTree = "<group>"; };
 		0203001F2A1D08840082A063 /* lexer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lexer.h; sourceTree = "<group>"; };
 		020300202A1D08840082A063 /* lexer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lexer.c; sourceTree = "<group>"; };
-		020300222A1D0BB70082A063 /* error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
-		020300232A1D0BB70082A063 /* error.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = error.c; sourceTree = "<group>"; };
+		020300222A1D0BB70082A063 /* report.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = report.h; sourceTree = "<group>"; };
+		020300232A1D0BB70082A063 /* report.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = report.c; sourceTree = "<group>"; };
 		020300252A1EBA4A0082A063 /* parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = parser.h; sourceTree = "<group>"; };
 		020300262A1EBA4A0082A063 /* parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = parser.c; sourceTree = "<group>"; };
 		0203002B2A2031CA0082A063 /* jsmn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jsmn.h; sourceTree = "<group>"; };
@@ -114,8 +114,8 @@
 				020300152A1A7A940082A063 /* old */,
 				020300162A1A7AD90082A063 /* main.h */,
 				020300172A1A7AD90082A063 /* main.c */,
-				020300222A1D0BB70082A063 /* error.h */,
-				020300232A1D0BB70082A063 /* error.c */,
+				020300222A1D0BB70082A063 /* report.h */,
+				020300232A1D0BB70082A063 /* report.c */,
 				020300192A1AC0420082A063 /* globals.h */,
 				0203001A2A1AC0420082A063 /* globals.c */,
 				028BE7E82A88FAED0049431E /* utilities.h */,
@@ -210,7 +210,7 @@
 				020300272A1EBA4A0082A063 /* parser.c in Sources */,
 				028BE7EA2A88FAED0049431E /* utilities.c in Sources */,
 				028F23A12A707CBB00279ECC /* compiler.c in Sources */,
-				020300242A1D0BB70082A063 /* error.c in Sources */,
+				020300242A1D0BB70082A063 /* report.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

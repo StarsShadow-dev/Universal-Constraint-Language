@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "parser.h"
-#include "error.h"
+#include "report.h"
 
 #define endIfCurrentIsEmpty()\
 if (*current == NULL) {\
@@ -301,7 +301,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					Token *pathString = ((Token *)((*current)->data));
 					
 					if (pathString->type != TokenType_string) {
-						addStringToErrorIndicator("expected string as part of import keyword");
+						addStringToReportIndicator("expected string as part of import keyword");
 						compileError(MI, pathString->location);
 					}
 					
@@ -688,7 +688,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 			}
 				
 			case TokenType_ellipsis: {
-				addStringToErrorMsg("unexpected ellipsis");
+				addStringToReportMsg("unexpected ellipsis");
 				compileError(MI, token->location);
 				break;
 			}
@@ -707,7 +707,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 			}
 				
 			case TokenType_operator: {
-				addStringToErrorMsg("unexpected operator");
+				addStringToReportMsg("unexpected operator");
 				compileError(MI, token->location);
 				break;
 			}
