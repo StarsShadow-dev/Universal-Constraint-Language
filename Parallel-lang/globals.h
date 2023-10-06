@@ -4,7 +4,7 @@
 #include "types.h"
 #include "compiler.h"
 
-#define CURRENT_VERSION "beta.6"
+#define CURRENT_VERSION "beta.7"
 
 // 8 bytes (on a 64 bit machine)
 #define pointer_byteSize 8
