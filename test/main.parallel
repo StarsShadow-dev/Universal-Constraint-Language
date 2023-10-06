@@ -1,11 +1,13 @@
-// import "modules/std"
+import "modules/std"
 // import "modules/libc_bindings"
 
+// struct Thing {
+// 	var string: Pointer;
+// }
+
 function main(): Int8 {
-	// var thing: std::Thing;
-	// thing.string = "string test";
-	
-	var number: Int32 = 97;
+	var thing: std::Thing;
+	thing.string = "string test";
 	
 	return 0;
 }

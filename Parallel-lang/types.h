@@ -80,6 +80,7 @@ typedef struct {
 	char *name;
 	char *path;
 	CharAccumulator *topLevelConstantSource;
+	CharAccumulator *topLevelFunctionSource;
 	CharAccumulator *LLVMmetadataSource;
 	
 	int stringCount;
@@ -92,7 +93,7 @@ typedef struct {
 	int debugInformationFileScopeID;
 } ModuleInformation;
 
-ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *LLVMmetadataSource);
+ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource);
 
 //
 // context

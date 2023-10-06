@@ -141,6 +141,7 @@ int main(int argc, char **argv) {
 		.name = "__core__",
 		.path = NULL,
 		.topLevelConstantSource = NULL,
+		.topLevelFunctionSource = NULL,
 		.LLVMmetadataSource = NULL,
 		
 		.stringCount = 0,
@@ -178,12 +179,16 @@ int main(int argc, char **argv) {
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(topLevelConstantSource);
+	
+	CharAccumulator *topLevelFunctionSource = safeMalloc(sizeof(CharAccumulator));
+	(*topLevelFunctionSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(topLevelFunctionSource);
 
 	CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
 	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
-	ModuleInformation *MI = ModuleInformation_new(path, topLevelConstantSource, LLVMmetadataSource);
+	ModuleInformation *MI = ModuleInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
 	compileModule(MI, compilerMode, path);
 	linkedList_freeList(&MI->context.bindings[0]);
 	

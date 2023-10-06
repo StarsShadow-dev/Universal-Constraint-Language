@@ -196,13 +196,14 @@ void CharAccumulator_free(CharAccumulator *accumulator) {
 }
 
 
-ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *LLVMmetadataSource) {
+ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource) {
 	ModuleInformation *MI = safeMalloc(sizeof(ModuleInformation));
 	
 	*MI = (ModuleInformation){
 		.name = NULL,
 		.path = path,
 		.topLevelConstantSource = topLevelConstantSource,
+		.topLevelFunctionSource = topLevelFunctionSource,
 		.LLVMmetadataSource = LLVMmetadataSource,
 		
 		.stringCount = 0,

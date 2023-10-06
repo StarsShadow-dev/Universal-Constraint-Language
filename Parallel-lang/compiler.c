@@ -283,9 +283,11 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	}
 	
 	CharAccumulator_appendChars(&LLVMsource, MI->topLevelConstantSource->data);
+	CharAccumulator_appendChars(&LLVMsource, MI->topLevelFunctionSource->data);
 	CharAccumulator_appendChars(&LLVMsource, MI->LLVMmetadataSource->data);
 	
 	CharAccumulator_free(MI->topLevelConstantSource);
+	CharAccumulator_free(MI->topLevelFunctionSource);
 	CharAccumulator_free(MI->LLVMmetadataSource);
 	
 	if (compilerOptions.includeDebugInformation) {

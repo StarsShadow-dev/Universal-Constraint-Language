@@ -2,6 +2,10 @@ import "../libc_bindings"
 
 struct Thing {
 	var string: Pointer;
+	
+	function test(): Void {
+		return;
+	}
 }
 
 macro print {
