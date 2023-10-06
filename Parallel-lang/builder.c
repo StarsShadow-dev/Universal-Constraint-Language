@@ -651,6 +651,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 		
 		switch (node->nodeType) {
 			case ASTnodeType_import: {
+				if (MI->level != 0) {
+					addStringToErrorMsg("import statements are only allowed at top level");
+					compileError(MI, node->location);
+				}
+				
 				ASTnode_import *data = (ASTnode_import *)node->value;
 				
 				int pathSize = (int)strlen(MI->path) + 1 + data->path->length + 1;
@@ -698,15 +703,15 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 			case ASTnodeType_struct: {
 				if (MI->level != 0) {
-					printf("struct definitions are only allowed at top level\n");
+					addStringToErrorMsg("struct definitions are only allowed at top level");
 					compileError(MI, node->location);
 				}
 				
-				ASTnode_struct *data = (ASTnode_struct *)node->value;
-				
-				ContextBinding *structBinding = getContextBindingFromSubString(MI, data->name);
-				if (structBinding == NULL || structBinding->type != ContextBindingType_struct) abort();
-				ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
+//				ASTnode_struct *data = (ASTnode_struct *)node->value;
+//				
+//				ContextBinding *structBinding = getContextBindingFromSubString(MI, data->name);
+//				if (structBinding == NULL || structBinding->type != ContextBindingType_struct) abort();
+//				ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
 				
 				break;
 			}
