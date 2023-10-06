@@ -589,7 +589,51 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 		while (preLoopCurrent != NULL) {
 			ASTnode *node = ((ASTnode *)preLoopCurrent->data);
 			
-			if (node->nodeType == ASTnodeType_function) {
+			if (node->nodeType == ASTnodeType_import) {
+				ASTnode_import *data = (ASTnode_import *)node->value;
+				
+				int pathSize = (int)strlen(MI->path) + 1 + data->path->length + 1;
+				char *path = safeMalloc(pathSize);
+				snprintf(path, pathSize, "%.*s/%s", (int)strlen(MI->path), MI->path, data->path->start);
+				
+				CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
+				(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
+				CharAccumulator_initialize(topLevelConstantSource);
+				
+				CharAccumulator *topLevelFunctionSource = safeMalloc(sizeof(CharAccumulator));
+				(*topLevelFunctionSource) = (CharAccumulator){100, 0, 0};
+				CharAccumulator_initialize(topLevelFunctionSource);
+				
+				CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
+				(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
+				CharAccumulator_initialize(LLVMmetadataSource);
+				
+				ModuleInformation *newMI = ModuleInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+				compileModule(newMI, CompilerMode_build_objectFile, path);
+				
+				linkedList_Node *current = newMI->context.bindings[0];
+				
+				while (current != NULL) {
+					ContextBinding *binding = ((ContextBinding *)current->data);
+					
+					expectUnusedName(MI, binding->key, node->location);
+					
+					if (binding->type == ContextBindingType_struct) {
+						generateStruct(MI, outerSource, binding, NULL, 0);
+					} else if (binding->type == ContextBindingType_function) {
+						ContextBinding_function *function = (ContextBinding_function *)binding->value;
+						generateFunction(MI, outerSource, function, NULL, 0);
+					}
+					
+					current = current->next;
+				}
+				
+				// add the new module to importedModules
+				ModuleInformation **modulePointerData = linkedList_addNode(&MI->context.importedModules, sizeof(void *));
+				*modulePointerData = newMI;
+			}
+			
+			else if (node->nodeType == ASTnodeType_function) {
 				// make sure that the name is not already used
 				expectUnusedName(MI, ((ASTnode_function *)node->value)->name, node->location);
 				
@@ -656,48 +700,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					compileError(MI, node->location);
 				}
 				
-				ASTnode_import *data = (ASTnode_import *)node->value;
-				
-				int pathSize = (int)strlen(MI->path) + 1 + data->path->length + 1;
-				char *path = safeMalloc(pathSize);
-				snprintf(path, pathSize, "%.*s/%s", (int)strlen(MI->path), MI->path, data->path->start);
-				
-				CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
-				(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
-				CharAccumulator_initialize(topLevelConstantSource);
-				
-				CharAccumulator *topLevelFunctionSource = safeMalloc(sizeof(CharAccumulator));
-				(*topLevelFunctionSource) = (CharAccumulator){100, 0, 0};
-				CharAccumulator_initialize(topLevelFunctionSource);
-				
-				CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
-				(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
-				CharAccumulator_initialize(LLVMmetadataSource);
-				
-				ModuleInformation *newMI = ModuleInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
-				compileModule(newMI, CompilerMode_build_objectFile, path);
-				
-				linkedList_Node *current = newMI->context.bindings[0];
-				
-				while (current != NULL) {
-					ContextBinding *binding = ((ContextBinding *)current->data);
-					
-					expectUnusedName(MI, binding->key, node->location);
-					
-					if (binding->type == ContextBindingType_struct) {
-						generateStruct(MI, outerSource, binding, NULL, 0);
-					} else if (binding->type == ContextBindingType_function) {
-						ContextBinding_function *function = (ContextBinding_function *)binding->value;
-						generateFunction(MI, outerSource, function, NULL, 0);
-					}
-					
-					current = current->next;
-				}
-				
-				// add the new module to importedModules
-				ModuleInformation **modulePointerData = linkedList_addNode(&MI->context.importedModules, sizeof(void *));
-				*modulePointerData = newMI;
-				
 				break;
 			}
 				
@@ -735,7 +737,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 			case ASTnodeType_call: {
 				if (outerFunction == NULL) {
-					printf("function calls are only allowed in a function\n");
+					addStringToReportMsg("function calls are only allowed in a function");
 					compileError(MI, node->location);
 				}
 				

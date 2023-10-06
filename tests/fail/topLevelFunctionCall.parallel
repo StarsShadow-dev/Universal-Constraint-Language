@@ -1,0 +1,9 @@
+/*
+error: function calls are only allowed in a function
+8  |
+9  |test();
+    ^^^^
+
+*/
+
+test();
