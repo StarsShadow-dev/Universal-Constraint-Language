@@ -459,6 +459,37 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					continue;
 				}
 				
+				else if (SubString_string_cmp(&token->subString, "impl") == 0) {
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *nameToken = ((Token *)((*current)->data));
+					
+					if (nameToken->type != TokenType_word) {
+						addStringToReportMsg("expected word after impl keyword");
+						compileError(MI, nameToken->location);
+					}
+					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *openingBracket = ((Token *)((*current)->data));
+					if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
+						addStringToReportMsg("impl expected '{'");
+						compileError(MI, openingBracket->location);
+					}
+					
+					*current = (*current)->next;
+					linkedList_Node *block = parse(MI, current, ParserMode_normal);
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_implement));
+					
+					data->nodeType = ASTnodeType_implement;
+					data->location = token->location;
+					
+					((ASTnode_implement *)data->value)->name = &nameToken->subString;
+					((ASTnode_implement *)data->value)->block = block;
+					continue;
+				}
+				
 				// return statement
 				else if (SubString_string_cmp(&token->subString, "return") == 0) {
 					*current = (*current)->next;

@@ -14,7 +14,7 @@
 #define ellipsis character == '.' && MI->context.currentSource[index+1] == '.' && MI->context.currentSource[index+2] == '.'
 
 // periods are considered operators because they perform an operation
-#define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '.'
+#define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '*' || character == '/' || character == '.'
 #define operator_2chars character == '=' && MI->context.currentSource[index+1] == '=' || character == ':' && MI->context.currentSource[index+1] == ':'
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
@@ -147,6 +147,53 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			column += 2;
 		}
 		
+		// comment
+		else if (character == '/' && MI->context.currentSource[index+1] == '/') {
+			index++;
+			column++;
+			
+			while (1) {
+				char character = MI->context.currentSource[index];
+				
+				if (character != 0 && character != '\n') {
+					index++;
+					column++;
+					continue;
+				}
+				
+				index--;
+				column--;
+				break;
+			}
+		}
+		
+		// block comment
+		else if (character == '/' && MI->context.currentSource[index+1] == '*') {
+			index++;
+			column++;
+			
+			while (1) {
+				char character = MI->context.currentSource[index];
+				
+				if (character == 0) {
+					index--;
+					column--;
+					break;
+				}
+				
+				if (character == '\n') {
+					line++;
+				} else if (character == '*' && MI->context.currentSource[index+1] == '/') {
+					index++;
+					column++;
+					break;
+				}
+				
+				index++;
+				column++;
+			}
+		}
+		
 		else if (operator_2chars) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
@@ -218,53 +265,6 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			data->location = (SourceLocation){line, columnStart - 1, columnStart + end - start + 1};
 			data->subString.start = MI->context.currentSource + start;
 			data->subString.length = end - start;
-		}
-		
-		// comment
-		else if (character == '/' && MI->context.currentSource[index+1] == '/') {
-			index++;
-			column++;
-			
-			while (1) {
-				char character = MI->context.currentSource[index];
-				
-				if (character != 0 && character != '\n') {
-					index++;
-					column++;
-					continue;
-				}
-				
-				index--;
-				column--;
-				break;
-			}
-		}
-		
-		// block comment
-		else if (character == '/' && MI->context.currentSource[index+1] == '*') {
-			index++;
-			column++;
-			
-			while (1) {
-				char character = MI->context.currentSource[index];
-				
-				if (character == 0) {
-					index--;
-					column--;
-					break;
-				}
-				
-				if (character == '\n') {
-					line++;
-				} else if (character == '*' && MI->context.currentSource[index+1] == '/') {
-					index++;
-					column++;
-					break;
-				}
-				
-				index++;
-				column++;
-			}
 		}
 		
 		else {

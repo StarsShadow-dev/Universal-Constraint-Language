@@ -152,10 +152,9 @@ typedef struct {
 
 typedef struct {
 	char *LLVMname;
-	/// SubString
-	linkedList_Node *memberNames;
-	/// for properties and methods
-	linkedList_Node *memberBindings;
+	linkedList_Node *propertyBindings;
+	// ContextBinding (should all be ContextBinding_function)
+	linkedList_Node *methodBindings;
 } ContextBinding_struct;
 
 //
@@ -191,6 +190,7 @@ typedef enum {
 	ASTnodeType_import,
 	ASTnodeType_constrainedType,
 	ASTnodeType_struct,
+	ASTnodeType_implement,
 	ASTnodeType_function,
 	ASTnodeType_call,
 	ASTnodeType_macro,
@@ -231,6 +231,11 @@ typedef struct {
 	SubString *name;
 	linkedList_Node *block;
 } ASTnode_struct;
+
+typedef struct {
+	SubString *name;
+	linkedList_Node *block;
+} ASTnode_implement;
 
 typedef struct {
 	SubString *name;
