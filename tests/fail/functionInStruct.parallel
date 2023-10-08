@@ -1,0 +1,13 @@
+/*
+error: only variable definitions are allowed in a struct
+9  |struct test {
+10 |    function inTest(): Void {
+                 ^^^^^^
+11 |		return;
+*/
+
+struct test {
+	function inTest(): Void {
+		return;
+	}
+}
