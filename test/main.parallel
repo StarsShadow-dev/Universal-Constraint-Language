@@ -1,5 +1,7 @@
-import "modules/std"
+// import "modules/std"
 // import "modules/libc_bindings"
+
+import "~/.Parallel_Lang/modules/std"
 
 struct Rectangle {
 	var width: Int32;

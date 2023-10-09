@@ -563,9 +563,24 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			if (node->nodeType == ASTnodeType_import) {
 				ASTnode_import *data = (ASTnode_import *)node->value;
 				
-				int pathSize = (int)strlen(MI->path) + 1 + data->path->length + 1;
-				char *path = safeMalloc(pathSize);
-				snprintf(path, pathSize, "%.*s/%s", (int)strlen(MI->path), MI->path, data->path->start);
+				if (data->path->length == 0) {
+					addStringToReportMsg("empty import path");
+					addStringToReportIndicator("import statements require a path");
+					compileError(MI, node->location);
+				}
+				
+				// TODO: hack to make "~" work on macOS
+				char *path;
+				if (data->path->start[0] == '~') {
+					char *homePath = getenv("HOME");
+					int pathSize = (int)strlen(homePath) + data->path->length;
+					path = safeMalloc(pathSize);
+					snprintf(path, pathSize, "%.*s%s", (int)strlen(homePath), homePath, data->path->start + 1);
+				} else {
+					int pathSize = (int)strlen(MI->path) + 1 + data->path->length + 1;
+					path = safeMalloc(pathSize);
+					snprintf(path, pathSize, "%.*s/%s", (int)strlen(MI->path), MI->path, data->path->start);
+				}
 				
 				CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 				(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
