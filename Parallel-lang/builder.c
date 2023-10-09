@@ -1198,8 +1198,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					ASTnode *leftNode = (ASTnode *)data->left->data;
 					ASTnode *rightNode = (ASTnode *)data->right->data;
 					
-					// make sure that both sides of the member access are an identifier
-					if (leftNode->nodeType != ASTnodeType_identifier) abort();
 					if (rightNode->nodeType != ASTnodeType_identifier) {
 						addStringToReportMsg("right side of memberAccess must be an identifier");
 						
@@ -1260,8 +1258,13 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 									outerFunction->registerCount++;
 								}
 								
-								CharAccumulator_appendChars(innerSource, "%");
-								CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+								if (innerSource) {
+									CharAccumulator_appendChars(innerSource, "%");
+									CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+								} else {
+									addStringToReportMsg("unused member access");
+									compileWarning(MI, rightNode->location, WarningType_unused);
+								}
 								
 								outerFunction->registerCount++;
 							} else {

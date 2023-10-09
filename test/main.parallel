@@ -34,15 +34,3 @@ function main(): Int8 {
 // 	// }
 // 	return pointer;
 // }
-
-// struct Point {
-// 	var x: Int32;
-// 	var y: Int32;
-// 	var z: Int32;
-// }
-
-// struct Triangle {
-// 	var p1: Point;
-// 	var p2: Point;
-// 	var p3: Point;
-// }
