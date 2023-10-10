@@ -6,7 +6,7 @@
 
 #define endIfCurrentIsEmpty()\
 if (*current == NULL) {\
-	printf("unexpected end of file\n");\
+	addStringToReportMsg("unexpected end of file");\
 	compileError(MI, token->location);\
 }
 

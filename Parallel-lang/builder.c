@@ -929,7 +929,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 			case ASTnodeType_while: {
 				if (outerFunction == NULL) {
-					printf("while loops are only allowed in a function\n");
+					addStringToReportMsg("while loops are only allowed in a function");
 					compileError(MI, node->location);
 				}
 				
@@ -990,7 +990,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			
 			case ASTnodeType_if: {
 				if (outerFunction == NULL) {
-					printf("if statements are only allowed in a function\n");
+					addStringToReportMsg("if statements are only allowed in a function");
 					compileError(MI, node->location);
 				}
 				
@@ -1079,7 +1079,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			
 			case ASTnodeType_return: {
 				if (outerFunction == NULL) {
-					printf("return statements are only allowed in a function\n");
+					addStringToReportMsg("return statements are only allowed in a function");
 					compileError(MI, node->location);
 				}
 				
@@ -1087,7 +1087,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				if (data->expression == NULL) {
 					if (!ifTypeIsNamed(&outerFunction->returnType, "Void")) {
-						printf("Returning Void in a function that does not return Void.\n");
+						addStringToReportMsg("returning Void in a function that does not return Void.");
 						compileError(MI, node->location);
 					}
 					CharAccumulator_appendChars(outerSource, "\n\tret void");
@@ -1117,7 +1117,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 			case ASTnodeType_variableDefinition: {
 				if (outerFunction == NULL) {
-					printf("variable definitions are only allowed in a function\n");
+					addStringToReportMsg("variable definitions are only allowed in a function");
 					compileError(MI, node->location);
 				}
 				
@@ -1181,7 +1181,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				if (data->operatorType == ASTnode_operatorType_assignment) {
 					if (outerFunction == NULL) {
-						printf("variable assignments are only allowed in a function\n");
+						addStringToReportMsg("variable assignments are only allowed in a function");
 						compileError(MI, node->location);
 					}
 					
@@ -1210,7 +1210,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				
 				else if (data->operatorType == ASTnode_operatorType_memberAccess) {
-					ASTnode *leftNode = (ASTnode *)data->left->data;
 					ASTnode *rightNode = (ASTnode *)data->right->data;
 					
 					if (rightNode->nodeType != ASTnodeType_identifier) {
@@ -1414,7 +1413,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")
 //							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Pointer")
 						) {
-							printf("left side of operator expected a number\n");
+							addStringToReportMsg("left side of operator expected a number");
 							compileError(MI, node->location);
 						}
 						
@@ -1429,7 +1428,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 								!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")
 								// ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Pointer")
 							) {
-								printf("right side of operator expected a number\n");
+								addStringToReportMsg("right side of operator expected a number");
 								compileError(MI, node->location);
 							}
 							

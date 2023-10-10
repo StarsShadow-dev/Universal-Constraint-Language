@@ -40,8 +40,6 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			break;
 		}
 		
-//		printf("character: %c\n", character);
-		
 		if (character == '\n') {
 			line++;
 			column = 0;
