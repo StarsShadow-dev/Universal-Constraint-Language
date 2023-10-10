@@ -1,0 +1,9 @@
+/*
+error: empty import path
+8  |
+9  |import ""
+    ^^^^^^ import statements require a path
+
+*/
+
+import ""
