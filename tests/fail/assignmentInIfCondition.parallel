@@ -1,0 +1,13 @@
+/*
+error: if statement condition expected a bool but got nothing
+10 |	var number: Int8 = 0;
+11 |    if (number = 0) {}
+        ^^ did you mean to use two equals?
+12 |	return number;
+*/
+
+function main(): Int8 {
+	var number: Int8 = 0;
+	if (number = 0) {}
+	return number;
+}

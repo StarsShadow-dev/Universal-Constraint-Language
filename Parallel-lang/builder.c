@@ -1080,7 +1080,24 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
 				
-				buildLLVM(MI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, NULL, data->expression, 1, 1, 0);
+				linkedList_Node *types = NULL;
+				buildLLVM(MI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, &types, data->expression, 1, 1, 0);
+				
+				int typesCount = linkedList_getCount(&types);
+				
+				if (typesCount == 0) {
+					addStringToReportMsg("if statement condition expected a bool but got nothing");
+					
+					if (((ASTnode_operator *)((ASTnode *)data->expression->data)->value)->operatorType == ASTnode_operatorType_assignment) {
+						addStringToReportIndicator("did you mean to use two equals?");
+					}
+					
+					compileError(MI, node->location);
+				} else if (typesCount > 1) {
+					addStringToReportMsg("if statement condition got more than one type");
+					
+					compileError(MI, node->location);
+				}
 				
 				if (((ASTnode *)data->expression->data)->nodeType == ASTnodeType_operator) {
 					applyFacts(MI, (ASTnode_operator *)((ASTnode *)data->expression->data)->value);
@@ -1155,6 +1172,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				CharAccumulator_free(&trueCodeBlockSource);
 				CharAccumulator_free(&falseCodeBlockSource);
+				
+				linkedList_freeList(&expectedTypesForIf);
+				linkedList_freeList(&types);
 				
 				break;
 			}
@@ -1548,6 +1568,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						abort();
 					}
 					
+					if (types != NULL) {
+						addTypeFromString(MI, types, "Bool");
+					}
+					
 					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBinding(MI, ((BuilderType *)expectedTypeForLeftAndRight->data)->binding));
 				}
 				
@@ -1618,6 +1642,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				CharAccumulator_appendChars(innerSource, "true");
 				
+				if (types != NULL) {
+					addTypeFromString(MI, types, "Bool");
+				}
+				
 				break;
 			}
 			
@@ -1636,6 +1664,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				
 				CharAccumulator_appendChars(innerSource, "false");
+				
+				if (types != NULL) {
+					addTypeFromString(MI, types, "Bool");
+				}
 				
 				break;
 			}
