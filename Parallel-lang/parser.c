@@ -751,7 +751,9 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 				
 			case TokenType_separator: {
 				if (SubString_string_cmp(&token->subString, ")") == 0 || SubString_string_cmp(&token->subString, "}") == 0) {
-					*current = (*current)->next;
+					if (parserMode != ParserMode_expression) {
+						*current = (*current)->next;
+					}
 					return AST;
 				} else {
 					printf("unexpected separator: '");

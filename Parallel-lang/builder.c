@@ -1088,7 +1088,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				if (typesCount == 0) {
 					addStringToReportMsg("if statement condition expected a bool but got nothing");
 					
-					if (((ASTnode_operator *)((ASTnode *)data->expression->data)->value)->operatorType == ASTnode_operatorType_assignment) {
+					if (data->expression == NULL) {
+						addStringToReportIndicator("if statement condition is empty");
+					} else if (((ASTnode_operator *)((ASTnode *)data->expression->data)->value)->operatorType == ASTnode_operatorType_assignment) {
 						addStringToReportIndicator("did you mean to use two equals?");
 					}
 					

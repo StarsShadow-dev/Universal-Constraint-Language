@@ -1,0 +1,14 @@
+/*
+error: if statement condition expected a bool but got nothing
+9  |function main(): Int8 {
+10 |    if () {
+        ^^ if statement condition is empty
+11 |		
+*/
+
+function main(): Int8 {
+	if () {
+		
+	}
+	return 0;
+}
