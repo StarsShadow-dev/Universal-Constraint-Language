@@ -146,19 +146,44 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 	return left;
 }
 
+linkedList_Node *parseConstraintList(ModuleInformation *MI, linkedList_Node **current) {
+	linkedList_Node *AST = NULL;
+	
+	while (1) {
+		if (*current == NULL) {
+			printf("unexpected end of file at constraint list\n");
+			exit(1);
+		}
+		
+		Token *token = (Token *)((*current)->data);
+		if (token->type == TokenType_separator && SubString_string_cmp(&token->subString, "]") == 0) {
+			*current = (*current)->next;
+			return AST;
+		}
+		
+		linkedList_Node *operatorAST = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0, 0);
+		linkedList_join(&AST, &operatorAST);
+	}
+}
+
 linkedList_Node *parseType(ModuleInformation *MI, linkedList_Node **current) {
 	linkedList_Node *AST = NULL;
 	
-//	Token *nextToken = ((Token *)((*current)->next->data));
-//	if (nextToken->type == TokenType_operator && SubString_string_cmp(&nextToken->subString, "<") == 0) {
-//
-//	}
+	linkedList_Node *type = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0, 1);
+	
+	linkedList_Node *constraints = NULL;
+	Token *token = (Token *)((*current)->data);
+	if (token->type == TokenType_separator && SubString_string_cmp(&token->subString, "[") == 0) {
+		*current = (*current)->next;
+		constraints = parseConstraintList(MI, current);
+	}
 	
 	ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_constrainedType));
 	data->nodeType = ASTnodeType_constrainedType;
 	data->location = ((Token *)((*current)->data))->location;
 	
-	((ASTnode_constrainedType *)data->value)->type = parseOperators(MI, current, parse(MI, current, ParserMode_noOperatorChecking), 0, 1);
+	((ASTnode_constrainedType *)data->value)->type = type;
+	((ASTnode_constrainedType *)data->value)->constraints = constraints;
 	
 	return AST;
 }
@@ -765,7 +790,17 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 				*current = (*current)->next;
 				break;
 			}
+			
+			case TokenType_selfReference: {
+				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
 				
+				data->nodeType = ASTnodeType_selfReference;
+				data->location = token->location;
+				
+				*current = (*current)->next;
+				break;
+			}
+			
 			default: {
 				printf("unknown token type: %u\n", token->type);
 				compileError(MI, token->location);

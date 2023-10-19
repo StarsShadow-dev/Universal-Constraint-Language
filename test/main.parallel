@@ -1,29 +1,23 @@
 // import "modules/std"
 // import "modules/libc_bindings"
 
-import "~/.Parallel_Lang/modules/std"
+// function maybeGet5(): Int8 {
+// 	return 5;
+// }
 
-struct Rectangle {
-	var width: Int32;
-	var height: Int32;
+function get5(): Int8[$ == 5] {
+	return 5;
 }
 
-impl Rectangle {
-	function test(): Void {
-		std::printLine("testing things in the test function");
-		return;
-	}
-	// function area(self: Rectangle): Int32 {
-	// 	return self.width * self.height;
-	// }
+function use5(number: Int8[$ == 5]): Void {
+	return;
 }
 
 function main(): Int8 {
-	var rectangle: Rectangle;
-	rectangle.width = 10;
-	rectangle.height = 5;
-	
-	rectangle.test();
+	var number: Int8 = get5();
+	if (number == 5) {
+		use5(number);
+	}
 	
 	return 0;
 }

@@ -32,7 +32,6 @@ void *linkedList_addNode(linkedList_Node **head, unsigned long size) {
 	return newNode->data;
 }
 
-/// THIS FUNCTION HAS NOT BEEN THOROUGHLY TESTED
 void linkedList_join(linkedList_Node **head1, linkedList_Node **head2) {
 	if (head2 == NULL) return;
 	
@@ -196,7 +195,6 @@ void CharAccumulator_appendInt(CharAccumulator *accumulator, int64_t number) {
 void CharAccumulator_free(CharAccumulator *accumulator) {
 	free(accumulator->data);
 }
-
 
 ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource) {
 	ModuleInformation *MI = safeMalloc(sizeof(ModuleInformation));

@@ -18,7 +18,6 @@ typedef struct linkedList_Node linkedList_Node;
 
 void *linkedList_addNode(linkedList_Node **head, unsigned long size);
 
-/// THIS FUNCTION HAS NOT BEEN THOROUGHLY TESTED
 void linkedList_join(linkedList_Node **head1, linkedList_Node **head2);
 
 int linkedList_getCount(linkedList_Node **head);
@@ -96,68 +95,6 @@ typedef struct {
 ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource);
 
 //
-// context
-//
-
-typedef enum {
-	ContextBindingType_simpleType,
-	ContextBindingType_function,
-	ContextBindingType_macro,
-	ContextBindingType_variable,
-	ContextBindingType_struct
-} ContextBindingType;
-
-typedef struct {
-	SubString *key;
-	ContextBindingType type;
-	int byteSize;
-	int byteAlign;
-	
-	uint8_t value[] WORD_ALIGNED;
-} ContextBinding;
-
-typedef struct {
-	ContextBinding *binding;
-} BuilderType;
-
-typedef struct {
-	char *LLVMtype;
-} ContextBinding_simpleType;
-
-typedef struct {
-	char *LLVMname;
-	char *LLVMreturnType;
-	/// BuilderType
-	linkedList_Node *argumentNames;
-	/// BuilderType
-	linkedList_Node *argumentTypes;
-	BuilderType returnType;
-	
-	// for LLVM registers
-	int registerCount;
-	
-	int debugInformationScopeID;
-} ContextBinding_function;
-
-typedef struct {
-	ModuleInformation *originModule;
-	linkedList_Node *codeBlock;
-} ContextBinding_macro;
-
-typedef struct {
-	int LLVMRegister;
-	char *LLVMtype;
-	BuilderType type;
-} ContextBinding_variable;
-
-typedef struct {
-	char *LLVMname;
-	linkedList_Node *propertyBindings;
-	// ContextBinding (should all be ContextBinding_function)
-	linkedList_Node *methodBindings;
-} ContextBinding_struct;
-
-//
 // lexer, parser and builder
 //
 
@@ -177,7 +114,8 @@ typedef enum {
 	TokenType_ellipsis, // ...
 	TokenType_separator,
 	TokenType_operator,
-	TokenType_string
+	TokenType_string,
+	TokenType_selfReference
 } TokenType;
 
 typedef struct {
@@ -209,7 +147,9 @@ typedef enum {
 	ASTnodeType_number,
 	ASTnodeType_string,
 	
-	ASTnodeType_identifier
+	ASTnodeType_identifier,
+	
+	ASTnodeType_selfReference
 } ASTnodeType;
 
 typedef struct {
@@ -224,7 +164,7 @@ typedef struct {
 
 typedef struct {
 	linkedList_Node *type;
-//	linkedList_Node *constraints;
+	linkedList_Node *constraints;
 } ASTnode_constrainedType;
 
 typedef struct {
@@ -312,5 +252,95 @@ typedef struct {
 typedef struct {
 	SubString *name;
 } ASTnode_identifier;
+
+//
+// facts
+//
+
+typedef enum {
+	FactType_expression,
+	FactType_if
+} FactType;
+
+typedef struct {
+	FactType type;
+	uint8_t value[] WORD_ALIGNED;
+} Fact;
+
+typedef struct {
+	ASTnode_operatorType operatorType;
+	ASTnode *left;
+	ASTnode *rightConstant;
+} Fact_expression;
+
+typedef struct {
+	ASTnode *condition;
+	linkedList_Node *trueFacts;
+	linkedList_Node *falseFacts;
+} Fact_if;
+
+//
+// context
+//
+
+typedef enum {
+	ContextBindingType_simpleType,
+	ContextBindingType_function,
+	ContextBindingType_macro,
+	ContextBindingType_variable,
+	ContextBindingType_struct
+} ContextBindingType;
+
+typedef struct {
+	SubString *key;
+	ContextBindingType type;
+	int byteSize;
+	int byteAlign;
+	
+	uint8_t value[] WORD_ALIGNED;
+} ContextBinding;
+
+typedef struct {
+	ContextBinding *binding;
+	linkedList_Node *constraintNodes;
+} BuilderType;
+
+typedef struct {
+	char *LLVMtype;
+} ContextBinding_simpleType;
+
+typedef struct {
+	char *LLVMname;
+	char *LLVMreturnType;
+	/// BuilderType
+	linkedList_Node *argumentNames;
+	/// BuilderType
+	linkedList_Node *argumentTypes;
+	BuilderType returnType;
+	
+	// for LLVM registers
+	int registerCount;
+	
+	int debugInformationScopeID;
+} ContextBinding_function;
+
+typedef struct {
+	ModuleInformation *originModule;
+	linkedList_Node *codeBlock;
+} ContextBinding_macro;
+
+typedef struct {
+	int LLVMRegister;
+	char *LLVMtype;
+	BuilderType type;
+	linkedList_Node *factStack[maxContextLevel];
+} ContextBinding_variable;
+
+typedef struct {
+	char *LLVMname;
+	linkedList_Node *propertyBindings;
+	// ContextBinding (should all be ContextBinding_function)
+	linkedList_Node *methodBindings;
+} ContextBinding_struct;
 
 #endif /* types_h */

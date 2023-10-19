@@ -11,6 +11,8 @@
 #define numberStart (character >= '0' && character <= '9')
 #define numberContinue (character >= '0' && character <= '9')
 
+#define selfReference character == '$'
+
 #define ellipsis character == '.' && MI->context.currentSource[index+1] == '.' && MI->context.currentSource[index+2] == '.'
 
 // periods are considered operators because they perform an operation
@@ -122,6 +124,15 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
 			data->subString.start = MI->context.currentSource + start;
 			data->subString.length = end - start;
+		}
+		
+		else if (selfReference) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_selfReference;
+			data->location = (SourceLocation){line, column, column + 1};
+			data->subString.start = MI->context.currentSource + index;
+			data->subString.length = 1;
 		}
 		
 		else if (character == '#') {
