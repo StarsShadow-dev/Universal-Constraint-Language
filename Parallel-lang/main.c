@@ -173,6 +173,7 @@ int main(int argc, char **argv) {
 	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Macro", "macro_and_it_should_not_be_in_IR", 0, 0);
 	
 	addContextBinding_macro(&coreModule, "error");
+	addContextBinding_macro(&coreModule, "describe");
 	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};

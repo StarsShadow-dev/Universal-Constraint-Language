@@ -342,6 +342,67 @@ BuilderType getTypeFromBinding(ContextBinding *binding) {
 	return (BuilderType){binding};
 }
 
+void getTypeDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, BuilderType *builderType) {}
+
+void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, ContextBinding *variableBinding) {
+	if (variableBinding->type != ContextBindingType_variable) abort();
+	ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
+	
+	CharAccumulator_appendChars(charAccumulator, "variable description for '");
+	CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
+	CharAccumulator_appendChars(charAccumulator, "'\nbyteSize = ");
+	CharAccumulator_appendInt(charAccumulator, variableBinding->byteSize);
+	CharAccumulator_appendChars(charAccumulator, "\nbyteAlign = ");
+	CharAccumulator_appendInt(charAccumulator, variableBinding->byteAlign);
+	CharAccumulator_appendChars(charAccumulator, "\n\n");
+	
+	int index = 0;
+	while (index < MI->level) {
+		linkedList_Node *currentFact = variable->factStack[index];
+		
+		if (currentFact == NULL) {
+			index++;
+			continue;
+		}
+		
+		CharAccumulator_appendChars(charAccumulator, "level ");
+		CharAccumulator_appendInt(charAccumulator, index);
+		CharAccumulator_appendChars(charAccumulator, ": ");
+		
+		while (currentFact != NULL) {
+			Fact *fact = (Fact *)currentFact->data;
+			
+			if (fact->type == FactType_expression) {
+				Fact_expression *expressionFact = (Fact_expression *)fact->value;
+				if (expressionFact->left->nodeType != ASTnodeType_identifier) abort();
+				if (expressionFact->rightConstant->nodeType != ASTnodeType_number) abort();
+				
+				CharAccumulator_appendChars(charAccumulator, "(");
+				
+				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
+					CharAccumulator_appendSubString(charAccumulator, ((ASTnode_identifier *)expressionFact->left->value)->name);
+					CharAccumulator_appendChars(charAccumulator, " == ");
+					CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)expressionFact->rightConstant->value)->value);
+				} else {
+					abort();
+				}
+				
+				CharAccumulator_appendChars(charAccumulator, ")");
+			} else {
+				abort();
+			}
+			
+			currentFact = currentFact->next;
+		}
+		
+		CharAccumulator_appendChars(charAccumulator, "\n");
+		
+		index++;
+	}
+	
+	CharAccumulator_appendChars(charAccumulator, "\n");
+}
+
 ContextBinding *addFunctionToList(char *LLVMname, ModuleInformation *MI, linkedList_Node **list, ASTnode *node) {
 	ASTnode_function *data = (ASTnode_function *)node->value;
 	
@@ -994,6 +1055,25 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						addSubStringToReportMsg(((ASTnode_string *)message->value)->value);
 						addSubStringToReportIndicator(((ASTnode_string *)indicator->value)->value);
 						compileError(MI, node->location);
+					} else if (SubString_string_cmp(macroToRunBinding->key, "describe") == 0) {
+						int argumentCount = linkedList_getCount(&data->arguments);
+						if (argumentCount != 1) {
+							addStringToReportMsg("#error(variable) expected 1 argument");
+							compileError(MI, node->location);
+						}
+						
+						ContextBinding *variableBinding = getContextBindingFromIdentifierNode(MI, (ASTnode *)data->arguments->data);
+						
+						CharAccumulator variableDescription = {100, 0, 0};
+						CharAccumulator_initialize(&variableDescription);
+						
+						getVariableDescription(MI, &variableDescription, variableBinding);
+						
+						printf("%.*s", (int)variableDescription.size, variableDescription.data);
+						
+						CharAccumulator_free(&variableDescription);
+					} else {
+						abort();
 					}
 				} else {
 					// TODO: remove hack?

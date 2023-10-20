@@ -16,6 +16,7 @@ function use5(number: Int8[$ == 5]): Void {
 function main(): Int8 {
 	var number: Int8 = get5();
 	if (number == 5) {
+		#describe(number);
 		use5(number);
 	}
 	
