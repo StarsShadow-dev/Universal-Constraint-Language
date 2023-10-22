@@ -1,0 +1,20 @@
+/*
+variable description for 'number'
+byteSize = 8
+byteAlign = 8
+
+level 1: (number == 5)
+*/
+
+function maybeGet5(): Int8 {
+	return 5;
+}
+
+function main(): Int8 {
+	var number: Int8 = maybeGet5();
+	if (number == 5) {
+		#describe(number);
+	}
+	
+	return 0;
+}

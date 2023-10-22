@@ -14,6 +14,7 @@ extern char **environ;
 #define BUFFER_SIZE 1024
 #define testPath_fail "tests/fail/"
 #define testPath_succeed "tests/succeed/"
+#define testPath_describe "tests/describe/"
 #define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
 // #define target_triple "arm64-apple-macosx13.0.0"
 
@@ -81,7 +82,7 @@ char *read_stdout(int filedes) {
 }
 
 int checkTestOutput(char *stdout, char *testFileData) {
-	if (stdout == NULL) abort();
+	if (stdout == NULL) return 0;
 	char *startOfBlockCommentText = testFileData + 3;
 	char *endOfBlockComment = strstr(testFileData, "*/");
 	size_t lengthOfTestExpectation = endOfBlockComment - startOfBlockCommentText;
@@ -89,14 +90,13 @@ int checkTestOutput(char *stdout, char *testFileData) {
 	return strncmp(stdout, startOfBlockCommentText, lengthOfTestExpectation) == 0;
 }
 
-void runTest(char* filePath, int shouldSucceed) {
+void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput) {
 	printf("\nRuning: %s\n", filePath);
 
 	char *text = readFile(filePath);
 
 	// printf("file contains:\n%s\n", text);
 
-	int status;
 	pid_t pid;
 	int out[2];
 	posix_spawn_file_actions_t action;
@@ -109,8 +109,7 @@ void runTest(char* filePath, int shouldSucceed) {
 	posix_spawn_file_actions_adddup2(&action, out[1], STDOUT_FILENO);
 	posix_spawn_file_actions_addclose(&action, out[0]);
 
-	status = posix_spawn(&pid, args[0], &action, NULL, args, environ);
-
+	int status = posix_spawn(&pid, args[0], &action, NULL, args, environ);
 
 	if (status != 0) {
 		printf("posix_spawn error: %s\n", strerror(status));
@@ -143,24 +142,35 @@ void runTest(char* filePath, int shouldSucceed) {
 				printf("\x1B[0m"); // reset
 
 				testsFailed++;
-			} else {
-				printf("    \x1B[32mTest succeeded.\x1B[0m\n");
-				testsSucceeded++;
+				free(compiler_stdout);
+				posix_spawn_file_actions_destroy(&action);
+				free(text);
+				return;
 			}
-		} else {
+		}
+		
+		if (shouldCheckTestOutput) {
 			if (!checkTestOutput(compiler_stdout, text)) {
 				printf("\x1B[31m"); // red
 				printf("Test failed.\n");
-				printf("compiler_stdout:\n%s", compiler_stdout);
+				printf("Wrong test output.\n");
+				if (compiler_stdout == NULL) {
+					printf("No compiler standard out.\n");
+				} else {
+					printf("compiler_stdout:\n%s", compiler_stdout);
+				}
 				printf("\x1B[0m"); // reset
 
 				testsFailed++;
-			} else {
-				printf("    \x1B[32mTest succeeded.\x1B[0m\n");
-				testsSucceeded++;
+				free(compiler_stdout);
+				posix_spawn_file_actions_destroy(&action);
+				free(text);
+				return;
 			}
-			
 		}
+		
+		printf("    \x1B[32mTest succeeded.\x1B[0m\n");
+		testsSucceeded++;
 
 		free(compiler_stdout);
 	}
@@ -179,6 +189,28 @@ int main(int argc, char **argv) {
 	DIR *d;
 
 	uint64_t startMilliseconds = getMilliseconds();
+	
+	//
+	// testPath_fail
+	//
+
+	pathLength = strlen(testPath_fail);
+	snprintf(path, pathLength + 1, "%s", testPath_fail);
+	d = opendir(path);
+	if (d == NULL) {
+		printf("Could not open \"%s\"\n", path);
+		return 0;
+	}
+	while ((dir = readdir(d)) != NULL) {
+		if (*dir->d_name == '.') {
+			continue;
+		}
+		
+		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
+
+		runTest(path, 0, 1);
+	}
+	closedir(d);
 
 	//
 	// testPath_succeed
@@ -199,16 +231,16 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 1);
+		runTest(path, 1, 0);
 	}
 	closedir(d);
-
+	
 	//
-	// testPath_fail
+	// testPath_describe
 	//
-
-	pathLength = strlen(testPath_fail);
-	snprintf(path, pathLength + 1, "%s", testPath_fail);
+	
+	pathLength = strlen(testPath_describe);
+	snprintf(path, pathLength + 1, "%s", testPath_describe);
 	d = opendir(path);
 	if (d == NULL) {
 		printf("Could not open \"%s\"\n", path);
@@ -221,7 +253,7 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 0);
+		runTest(path, 1, 1);
 	}
 	closedir(d);
 

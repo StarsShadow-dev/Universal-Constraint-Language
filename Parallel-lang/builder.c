@@ -400,7 +400,7 @@ void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumula
 		index++;
 	}
 	
-	CharAccumulator_appendChars(charAccumulator, "\n");
+//	CharAccumulator_appendChars(charAccumulator, "\n");
 }
 
 ContextBinding *addFunctionToList(char *LLVMname, ModuleInformation *MI, linkedList_Node **list, ASTnode *node) {
