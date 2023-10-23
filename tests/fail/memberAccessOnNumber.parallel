@@ -1,0 +1,16 @@
+/*
+error: left side of member access is not a struct
+10 |	var number: Int8 = 10;
+11 |    if (number.test == 10) {
+            ^^^^^^
+12 |		
+*/
+
+function main(): Int8 {
+	var number: Int8 = 10;
+	if (number.test == 10) {
+		
+	}
+	
+	return 0;
+}

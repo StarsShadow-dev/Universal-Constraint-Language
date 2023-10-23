@@ -1406,7 +1406,10 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					buildLLVM(MI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypes, data->left, 0, 0, 0);
 					
 					ContextBinding *structBinding = ((BuilderType *)leftTypes->data)->binding;
-					if (structBinding->type != ContextBindingType_struct) abort();
+					if (structBinding->type != ContextBindingType_struct) {
+						addStringToReportMsg("left side of member access is not a struct");
+						compileError(MI, ((ASTnode *)data->left->data)->location);
+					}
 					ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
 					
 					ASTnode_identifier *rightData = (ASTnode_identifier *)rightNode->value;
