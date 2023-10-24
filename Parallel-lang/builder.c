@@ -467,16 +467,14 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 		ASTnode_function *data = (ASTnode_function *)node->value;
 		
 		if (data->external) {
-			CharAccumulator_appendSubString(outerSource, ((ASTnode_string *)(((ASTnode *)(data->codeBlock)->data)->value))->value);
-			return;
+			CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
+		} else {
+			CharAccumulator_appendChars(outerSource, "\n\ndefine ");
 		}
-	}
-	
-	if (defineNew) {
-		CharAccumulator_appendChars(outerSource, "\n\ndefine ");
 	} else {
 		CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
 	}
+	
 	CharAccumulator_appendChars(outerSource, function->LLVMreturnType);
 	CharAccumulator_appendChars(outerSource, " @");
 	CharAccumulator_appendChars(outerSource, function->LLVMname);
@@ -551,26 +549,28 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 	if (defineNew) {
 		ASTnode_function *data = (ASTnode_function *)node->value;
 		
-		function->registerCount++;
-		
-		if (compilerOptions.includeDebugInformation) {
-			CharAccumulator_appendChars(outerSource, " !dbg !");
-			CharAccumulator_appendInt(outerSource, function->debugInformationScopeID);
-		}
-		CharAccumulator_appendChars(outerSource, " {");
-		CharAccumulator_appendChars(outerSource, functionSource.data);
-		int functionHasReturned = buildLLVM(MI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
-		
-		if (!functionHasReturned) {
-			addStringToReportMsg("function did not return");
+		if (!data->external) {
+			function->registerCount++;
 			
-			addStringToReportIndicator("the compiler cannot guarantee that function '");
-			addSubStringToReportIndicator(data->name);
-			addStringToReportIndicator("' returns");
-			compileError(MI, node->location);
+			if (compilerOptions.includeDebugInformation) {
+				CharAccumulator_appendChars(outerSource, " !dbg !");
+				CharAccumulator_appendInt(outerSource, function->debugInformationScopeID);
+			}
+			CharAccumulator_appendChars(outerSource, " {");
+			CharAccumulator_appendChars(outerSource, functionSource.data);
+			int functionHasReturned = buildLLVM(MI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
+			
+			if (!functionHasReturned) {
+				addStringToReportMsg("function did not return");
+				
+				addStringToReportIndicator("the compiler cannot guarantee that function '");
+				addSubStringToReportIndicator(data->name);
+				addStringToReportIndicator("' returns");
+				compileError(MI, node->location);
+			}
+			
+			CharAccumulator_appendChars(outerSource, "\n}");
 		}
-		
-		CharAccumulator_appendChars(outerSource, "\n}");
 	}
 	
 	CharAccumulator_free(&functionSource);

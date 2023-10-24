@@ -1,7 +1,6 @@
 import "../libc_bindings"
 
 macro print {
-	#error("error message", "error indicator");
 	printLine("print test");
 }
 

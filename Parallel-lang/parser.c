@@ -396,7 +396,9 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 						((ASTnode_function *)data->value)->argumentNames = argumentNames;
 						((ASTnode_function *)data->value)->argumentTypes = argumentTypes;
 						((ASTnode_function *)data->value)->codeBlock = codeBlock;
-					} else if (codeStart->type == TokenType_string) {
+					} else if (codeStart->type == TokenType_separator && SubString_string_cmp(&codeStart->subString, ";") == 0) {
+						*current = (*current)->next;
+						
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
 						data->nodeType = ASTnodeType_function;
@@ -407,15 +409,9 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 						((ASTnode_function *)data->value)->returnType = returnType;
 						((ASTnode_function *)data->value)->argumentNames = argumentNames;
 						((ASTnode_function *)data->value)->argumentTypes = argumentTypes;
-						
-						ASTnode *codeBlockData = linkedList_addNode(&(((ASTnode_function *)data->value)->codeBlock), sizeof(ASTnode) + sizeof(ASTnode_string));
-						codeBlockData->nodeType = ASTnodeType_string;
-						codeBlockData->location = codeStart->location;
-						((ASTnode_string *)codeBlockData->value)->value = &codeStart->subString;
-						
-						*current = (*current)->next;
+						((ASTnode_function *)data->value)->codeBlock = NULL;
 					} else {
-						printf("function definition expected an openingBracket or a quotation mark\n");
+						printf("function definition expected an openingBracket or a semicolon\n");
 						compileError(MI, codeStart->location);
 					}
 					continue;

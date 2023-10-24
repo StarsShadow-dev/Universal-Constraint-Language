@@ -20,6 +20,8 @@ function main(): Int8 {
 	// 	use5(number);
 	// }
 	
+	std::printLine("testing printing is it working?");
+	
 	return 500;
 }
 
