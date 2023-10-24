@@ -276,8 +276,10 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			data->subString.length = end - start;
 		}
 		
+		else if (character == '\r') {}
+		
 		else {
-			printf("unexpected character '%c'\n", character);
+			printf("unexpected character '%c' (%d)\n", character, character);
 			compileError(MI, (SourceLocation){line, column, column + 1});
 		}
 		
