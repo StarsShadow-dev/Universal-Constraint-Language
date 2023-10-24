@@ -20,5 +20,5 @@ function printLine(string: Pointer): Void {
 	return;
 }
 
-function putchar(char: Int32): Int32 "declare i32 @putchar(i32 noundef)"
-function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
+function putchar(char: Int32): Int32;
+function printf(pointer: Pointer): Int32;

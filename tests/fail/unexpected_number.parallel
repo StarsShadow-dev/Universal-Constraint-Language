@@ -12,4 +12,4 @@ function main(): Int8 {
 	return 0;
 }
 
-function printf(pointer: Pointer): Int32 "declare i32 @printf(ptr noundef, ...)"
+function printf(pointer: Pointer): Int32;
