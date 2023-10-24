@@ -177,22 +177,48 @@ void printSourceCode(ModuleInformation *MI, SourceLocation location) {
 // warnings
 //
 
-void compileWarning(ModuleInformation *MI, SourceLocation location, WarningType warningType) {
-	if (reportMsg.size > 0) {
-		if (MI->name == NULL || MI->context.currentFilePath == NULL) {
-			printf("warning: %s\n", reportMsg.data);
-		} else {
-			printf("\nwarning: %s\n at %s:%s:%d\n", reportMsg.data, MI->name, MI->context.currentFilePath, location.line);
-		}
-		// clear the character accumulator
-		CharAccumulator_initialize(&reportMsg);
+char *getWarningTypeAsString(WarningType warningType) {
+	switch (warningType) {
+		case WarningType_format:
+			return "format";
+			
+		case WarningType_unused:
+			return "unused";
+			
+		case WarningType_redundant:
+			return "redundant";
+			
+		case WarningType_unsafe:
+			return "unsafe";
+			
+		case WarningType_deprecated:
+			return "deprecated";
+			
+		default:
+			abort();
 	}
-	
-	printSourceCode(MI, location);
-	
-//	warningCount++;
 }
 
+void compileWarning(ModuleInformation *MI, SourceLocation location, WarningType warningType) {
+	if (compilerMode == CompilerMode_check) {
+		if (reportMsg.size > 0) {
+			if (MI->name == NULL || MI->context.currentFilePath == NULL) {
+				printf("warning: %s\n", reportMsg.data);
+			} else {
+				printf("\nwarning (%s): %s\n at %s:%s:%d\n", getWarningTypeAsString(warningType), reportMsg.data, MI->name, MI->context.currentFilePath, location.line);
+			}
+			// clear the character accumulator
+			CharAccumulator_initialize(&reportMsg);
+		}
+		
+		printSourceCode(MI, location);
+	}
+	
+	warningCount++;
+	
+	// clear the character accumulator
+	CharAccumulator_initialize(&reportMsg);
+}
 
 //
 // errors

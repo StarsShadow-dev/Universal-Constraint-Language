@@ -20,6 +20,7 @@ void addSubStringToReportIndicator(SubString *subString);
 // warnings
 //
 
+// remember to update getWarningTypeAsString when this is changed
 typedef enum {
 	WarningType_format,
 	WarningType_unused,

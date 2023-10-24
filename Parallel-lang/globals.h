@@ -2,12 +2,21 @@
 #define globals_h
 
 #include "types.h"
-#include "compiler.h"
 
 #define CURRENT_VERSION "beta.7"
 
 // 8 bytes (on a 64 bit machine)
 #define pointer_byteSize 8
+
+typedef enum {
+	CompilerMode_build_objectFile,
+	CompilerMode_build_binary,
+	CompilerMode_run,
+	CompilerMode_compilerTesting,
+	CompilerMode_check
+} CompilerMode;
+
+extern CompilerMode compilerMode;
 
 extern CharAccumulator objectFiles;
 
@@ -25,5 +34,7 @@ extern char *full_build_directory;
 extern ModuleInformation *coreModulePointer;
 
 extern linkedList_Node *alreadyCompiledModules;
+
+extern int warningCount;
 
 #endif /* globals_h */

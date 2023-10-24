@@ -22,8 +22,6 @@
 #include "utilities.h"
 
 int main(int argc, char **argv) {
-	CompilerMode compilerMode;
-	
 	if (argc == 1) {
 		printf("Compiler version: %s\n", CURRENT_VERSION);
 		printf("\n");
@@ -49,6 +47,10 @@ int main(int argc, char **argv) {
 		compilerMode = CompilerMode_compilerTesting;
 	}
 	
+	else if (strcmp(argv[1], "check") == 0) {
+		compilerMode = CompilerMode_check;
+	}
+	
 	else {
 		printf("Unexpected compiler mode: %s\n", argv[1]);
 		exit(1);
@@ -60,6 +62,10 @@ int main(int argc, char **argv) {
 		char *arg = argv[i];
 //		printf("arg %d: %s\n", i, arg);
 		if (strcmp(arg, "-d") == 0) {
+			if (compilerMode == CompilerMode_check) {
+				printf("'-d' is not allowed with check mode\n");
+				exit(1);
+			}
 			compilerOptions.includeDebugInformation = 1;
 		}
 		
@@ -191,7 +197,7 @@ int main(int argc, char **argv) {
 	compileModule(MI, compilerMode, path);
 	linkedList_freeList(&MI->context.bindings[0]);
 	
-	if (compilerMode == CompilerMode_build_binary) {
+	if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {
 		CharAccumulator clang_command = {100, 0, 0};
 		CharAccumulator_initialize(&clang_command);
 		CharAccumulator_appendChars(&clang_command, clang_path);
@@ -229,6 +235,17 @@ int main(int argc, char **argv) {
 //
 //		printf("Program ended with exit code: %d\n", program_exitCode);
 //	}
+	
+	if (compilerMode == CompilerMode_check) {
+		printf("\nChecking complete.\n");
+		if (warningCount == 1) {
+			printf("1 warning generated.\n");
+		} else if (warningCount > 1) {
+			printf("%d warnings generated.\n", warningCount);
+		} else {
+			printf("No warnings generated.\n");
+		}
+	}
 	
 	free(globalConfigPath);
 	free(globalConfigJSON);

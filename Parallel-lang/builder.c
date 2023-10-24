@@ -728,7 +728,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator_initialize(LLVMmetadataSource);
 				
 				ModuleInformation *newMI = ModuleInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
-				compileModule(newMI, CompilerMode_build_objectFile, path);
+				if (compilerMode == CompilerMode_check) {
+					compileModule(newMI, CompilerMode_check, path);
+				} else {
+					compileModule(newMI, CompilerMode_build_objectFile, path);
+				}
 				
 				linkedList_Node *current = newMI->context.bindings[0];
 				
@@ -1787,7 +1791,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						addStringToReportIndicator(" is larger than the maximum size of the type '");
 						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
 						addStringToReportIndicator("'");
-						compileError(MI, node->location);
+						compileWarning(MI, node->location, WarningType_unsafe);
 					}
 				}
 				

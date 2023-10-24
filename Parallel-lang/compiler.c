@@ -279,11 +279,6 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 			
 			currentFilePath = currentFilePath->next;
 		}
-		
-//		if (warningCount > 0) {
-//			printf("warningCount: %d\n", warningCount);
-//			warningCount = 0;
-//		}
 	} else {
 		compileFile(path, MI, &LLVMsource);
 	}
@@ -315,61 +310,57 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 		MI->metadataCount++;
 	}
 	
-	if (compilerMode != CompilerMode_compilerTesting) {
-		if (compilerOptions.verbose) {
-			printf("LLVMsource: %s\n", LLVMsource.data);
-		}
-		
-		CharAccumulator outputFilePath = {100, 0, 0};
-		CharAccumulator_initialize(&outputFilePath);
-		CharAccumulator_appendChars(&outputFilePath, full_build_directory);
-		CharAccumulator_appendChars(&outputFilePath, "/");
-		CharAccumulator_appendChars(&outputFilePath, name);
-		
-		CharAccumulator LLC_command = {100, 0, 0};
-		CharAccumulator_initialize(&LLC_command);
-		CharAccumulator_appendChars(&LLC_command, LLC_path);
-		// -mtriple=<target triple> Override the target triple specified in the input file with the specified string.
-//		CharAccumulator_appendChars(&LLC_command, " -mtriple=\"");
-//		CharAccumulator_appendChars(&LLC_command, target_triple);
-//		CharAccumulator_appendChars(&LLC_command, "\"");
-		CharAccumulator_appendChars(&LLC_command, " -filetype=obj -o ");
-		CharAccumulator_appendChars(&LLC_command, outputFilePath.data);
-		CharAccumulator_appendChars(&LLC_command, ".o");
-		FILE *fp = popen(LLC_command.data, "w");
-		fprintf(fp, "%s", LLVMsource.data);
-		int LLC_status = pclose(fp);
-		int LLC_exitCode = WEXITSTATUS(LLC_status);
-		CharAccumulator_free(&LLC_command);
-		
-		if (LLC_exitCode != 0) {
-			printf("llc error\n");
-			exit(1);
-		}
-		
-		CharAccumulator_appendChars(&objectFiles, outputFilePath.data);
-		CharAccumulator_appendChars(&objectFiles, ".o ");
-		
-		printf("Object file saved to %s.o\n", outputFilePath.data);
-		
-		CharAccumulator_free(&outputFilePath);
-		
-//		linkedList_freeList(&file_paths);
-		
-//		free(name);
+	if (compilerMode == CompilerMode_check) {
+		printf("Finished checking module %s\n", name);
 	} else {
-		CharAccumulator LLC_command = {100, 0, 0};
-		CharAccumulator_initialize(&LLC_command);
-		CharAccumulator_appendChars(&LLC_command, LLC_path);
-		CharAccumulator_appendChars(&LLC_command, " > /dev/null");
-		FILE *fp = popen(LLC_command.data, "w");
-		fprintf(fp, "%s", LLVMsource.data);
-		int LLC_status = pclose(fp);
-		int LLC_exitCode = WEXITSTATUS(LLC_status);
-		CharAccumulator_free(&LLC_command);
-		
-		if (LLC_exitCode != 0) {
-			abort();
+		if (compilerMode != CompilerMode_compilerTesting) {
+			if (compilerOptions.verbose) {
+				printf("LLVMsource: %s\n", LLVMsource.data);
+			}
+			
+			CharAccumulator outputFilePath = {100, 0, 0};
+			CharAccumulator_initialize(&outputFilePath);
+			CharAccumulator_appendChars(&outputFilePath, full_build_directory);
+			CharAccumulator_appendChars(&outputFilePath, "/");
+			CharAccumulator_appendChars(&outputFilePath, name);
+			
+			CharAccumulator LLC_command = {100, 0, 0};
+			CharAccumulator_initialize(&LLC_command);
+			CharAccumulator_appendChars(&LLC_command, LLC_path);
+			CharAccumulator_appendChars(&LLC_command, " -filetype=obj -o ");
+			CharAccumulator_appendChars(&LLC_command, outputFilePath.data);
+			CharAccumulator_appendChars(&LLC_command, ".o");
+			FILE *fp = popen(LLC_command.data, "w");
+			fprintf(fp, "%s", LLVMsource.data);
+			int LLC_status = pclose(fp);
+			int LLC_exitCode = WEXITSTATUS(LLC_status);
+			CharAccumulator_free(&LLC_command);
+			
+			if (LLC_exitCode != 0) {
+				printf("llc error\n");
+				exit(1);
+			}
+			
+			CharAccumulator_appendChars(&objectFiles, outputFilePath.data);
+			CharAccumulator_appendChars(&objectFiles, ".o ");
+			
+			printf("Object file saved to %s.o\n", outputFilePath.data);
+			
+			CharAccumulator_free(&outputFilePath);
+		} else {
+			CharAccumulator LLC_command = {100, 0, 0};
+			CharAccumulator_initialize(&LLC_command);
+			CharAccumulator_appendChars(&LLC_command, LLC_path);
+			CharAccumulator_appendChars(&LLC_command, " > /dev/null");
+			FILE *fp = popen(LLC_command.data, "w");
+			fprintf(fp, "%s", LLVMsource.data);
+			int LLC_status = pclose(fp);
+			int LLC_exitCode = WEXITSTATUS(LLC_status);
+			CharAccumulator_free(&LLC_command);
+			
+			if (LLC_exitCode != 0) {
+				abort();
+			}
 		}
 	}
 	
