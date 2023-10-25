@@ -1048,6 +1048,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				if (macroToRun->originModule->name != NULL && strcmp(macroToRun->originModule->name, "__core__") == 0) {
 					// from the __core__ module, so this is a special case
+					
 					if (SubString_string_cmp(macroToRunBinding->key, "error") == 0) {
 						int argumentCount = linkedList_getCount(&data->arguments);
 						if (argumentCount != 2) {
@@ -1070,7 +1071,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						addSubStringToReportMsg(((ASTnode_string *)message->value)->value);
 						addSubStringToReportIndicator(((ASTnode_string *)indicator->value)->value);
 						compileError(MI, node->location);
-					} else if (SubString_string_cmp(macroToRunBinding->key, "describe") == 0) {
+					}
+					
+					else if (SubString_string_cmp(macroToRunBinding->key, "describe") == 0) {
 						int argumentCount = linkedList_getCount(&data->arguments);
 						if (argumentCount != 1) {
 							addStringToReportMsg("#error(variable) expected 1 argument");
@@ -1087,7 +1090,33 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						printf("%.*s", (int)variableDescription.size, variableDescription.data);
 						
 						CharAccumulator_free(&variableDescription);
-					} else {
+					}
+					
+					else if (SubString_string_cmp(macroToRunBinding->key, "warning") == 0) {
+						int argumentCount = linkedList_getCount(&data->arguments);
+						if (argumentCount != 2) {
+							addStringToReportMsg("#warning(message:String, indicator:String) expected 2 arguments");
+							compileError(MI, node->location);
+						}
+						
+						ASTnode *message = (ASTnode *)data->arguments->data;
+						if (message->nodeType != ASTnodeType_string) {
+							addStringToReportMsg("message must be a string");
+							compileError(MI, message->location);
+						}
+						
+						ASTnode *indicator = (ASTnode *)data->arguments->next->data;
+						if (indicator->nodeType != ASTnodeType_string) {
+							addStringToReportMsg("indicator must be a string");
+							compileError(MI, indicator->location);
+						}
+						
+						addSubStringToReportMsg(((ASTnode_string *)message->value)->value);
+						addSubStringToReportIndicator(((ASTnode_string *)indicator->value)->value);
+						compileWarning(MI, node->location, WarningType_other);
+					}
+					
+					else {
 						abort();
 					}
 				} else {

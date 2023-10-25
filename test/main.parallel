@@ -20,10 +20,7 @@ function main(): Int8 {
 	// 	use5(number);
 	// }
 	
-	std::printLine("testing printing is it working?");
-	
-	var thing: std::Thing;
-	thing.test();
+	#std::print();
 	
 	return 500;
 }

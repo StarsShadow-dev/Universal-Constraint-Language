@@ -26,7 +26,8 @@ typedef enum {
 	WarningType_unused,
 	WarningType_redundant,
 	WarningType_unsafe,
-	WarningType_deprecated
+	WarningType_deprecated,
+	WarningType_other
 } WarningType;
 
 void compileWarning(ModuleInformation *MI, SourceLocation location, WarningType warningType);

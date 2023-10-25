@@ -11,6 +11,7 @@ impl Thing {
 }
 
 macro print {
+	#warning("this macro is not very useful right now", "");
 	printLine("print test");
 }
 

@@ -194,6 +194,9 @@ char *getWarningTypeAsString(WarningType warningType) {
 		case WarningType_deprecated:
 			return "deprecated";
 			
+		case WarningType_other:
+			return "other";
+			
 		default:
 			abort();
 	}
