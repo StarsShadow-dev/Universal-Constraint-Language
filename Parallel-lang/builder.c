@@ -665,6 +665,17 @@ void generateStruct(ModuleInformation *MI, CharAccumulator *outerSource, Context
 			
 			currentPropertyBinding = currentPropertyBinding->next;
 		}
+		
+		linkedList_Node *currentMethod = structToGenerate->methodBindings;
+		while (currentMethod != NULL) {
+			ContextBinding *methodBinding = (ContextBinding *)currentMethod->data;
+			if (methodBinding->type != ContextBindingType_function) abort();
+			ContextBinding_function *function = (ContextBinding_function *)methodBinding->value;
+			
+			generateFunction(MI, MI->topLevelFunctionSource, function, NULL, 0);
+			
+			currentMethod = currentMethod->next;
+		}
 	}
 	
 	CharAccumulator_appendChars(outerSource, " }");

@@ -1,5 +1,15 @@
 import "../libc_bindings"
 
+struct Thing {
+	var number: Int32;
+}
+
+impl Thing {
+	function test(): Void {
+		return;
+	}
+}
+
 macro print {
 	printLine("print test");
 }

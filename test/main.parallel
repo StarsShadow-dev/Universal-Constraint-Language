@@ -22,6 +22,9 @@ function main(): Int8 {
 	
 	std::printLine("testing printing is it working?");
 	
+	var thing: std::Thing;
+	thing.test();
+	
 	return 500;
 }
 
