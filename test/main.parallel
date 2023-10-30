@@ -1,28 +1,16 @@
-import "modules/std"
-import "modules/libc_bindings"
+// import "modules/std"
+// import "modules/libc_bindings"
 
-// function maybeGet5(): Int8 {
-// 	return 5;
-// }
-
-// function get5(): Int8[$ == 5] {
-// 	return 5;
-// }
-
-// function use5(number: Int8[$ == 5]): Void {
-// 	return;
+// function recursiveFibonacci(n: Int64): Int64 {
+// 	if (n < 2) {
+// 		return n;
+// 	} else {
+// 		return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
+// 	}
 // }
 
 function main(): Int8 {
-	// var number: Int8 = get5();
-	// if (number == 5) {
-	// 	#describe(number);
-	// 	use5(number);
-	// }
-	
-	#std::print();
-	
-	return 500;
+	return 0;
 }
 
 // function safeMalloc(size: Int64): Pointer {

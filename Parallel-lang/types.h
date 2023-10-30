@@ -24,6 +24,10 @@ int linkedList_getCount(linkedList_Node **head);
 
 void linkedList_freeList(linkedList_Node **head);
 
+linkedList_Node *linkedList_getLast(linkedList_Node *head);
+
+linkedList_Node *linkedList_popLast(linkedList_Node **head);
+
 //
 // SubString
 //

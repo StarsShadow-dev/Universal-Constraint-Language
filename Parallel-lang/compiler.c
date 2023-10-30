@@ -179,7 +179,7 @@ void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource)
 	
 	linkedList_Node *currentToken = tokens;
 	
-	linkedList_Node *AST = parse(MI, &currentToken, ParserMode_normal);
+	linkedList_Node *AST = parse(MI, &currentToken, ParserMode_codeBlock, 0, 0);
 	
 	buildLLVM(MI, NULL, LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
 }

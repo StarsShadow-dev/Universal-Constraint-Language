@@ -76,6 +76,44 @@ void linkedList_freeList(linkedList_Node **head) {
 	*head = NULL;
 }
 
+linkedList_Node *linkedList_getLast(linkedList_Node *head) {
+	if (head == NULL) {
+		abort();
+//		return NULL;
+	}
+	
+	linkedList_Node *current = head;
+	while (1) {
+		if (current->next == NULL) {
+			return current;
+		}
+		current = current->next;
+	}
+}
+
+linkedList_Node *linkedList_popLast(linkedList_Node **head) {
+	if (head == NULL) {
+		return NULL;
+	}
+	
+	linkedList_Node *current = *head;
+	
+	if ((*head)->next == NULL) {
+		*head = NULL;
+		return current;
+	}
+	
+	while (1) {
+		linkedList_Node *next = current->next;
+		// if next is the last node
+		if (next->next == NULL) {
+			current->next = NULL;
+			return next;
+		}
+		current = next;
+	}
+}
+
 //
 // SubString
 //
