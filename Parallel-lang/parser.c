@@ -124,7 +124,12 @@ linkedList_Node *parseOperators(ModuleInformation *MI, linkedList_Node **current
 			}
 			
 			*current = (*current)->next;
-			linkedList_Node *right = parseOperators(MI, current, parse(MI, current, ParserMode_expression, 1, 0), nextPrecedence, ignoreEquals);
+			linkedList_Node *right;
+			if (SubString_string_cmp(&operator->subString, ".") == 0 || SubString_string_cmp(&operator->subString, "::") == 0) {
+				right = parseOperators(MI, current, parse(MI, current, ParserMode_expression, 1, 1), nextPrecedence, ignoreEquals);
+			} else {
+				right = parseOperators(MI, current, parse(MI, current, ParserMode_expression, 1, 0), nextPrecedence, ignoreEquals);
+			}
 			
 			ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_operator));
 			
@@ -653,6 +658,7 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 					*current = (*current)->next;
 				}
 				
+				// identifier
 				else {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_identifier));
 					data->nodeType = ASTnodeType_identifier;
@@ -805,6 +811,14 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 				compileError(MI, lastNode->location);
 			}
 			*current = (*current)->next;
+		}
+		
+		if (
+			!returnAtOpeningParentheses &&
+			((Token *)((*current)->data))->type == TokenType_separator &&
+			SubString_string_cmp(&((Token *)((*current)->data))->subString, "(") == 0
+		) {
+			continue;
 		}
 		
 		int nextTokenWillMoveLastNode = ((Token *)((*current)->data))->type == TokenType_operator ||

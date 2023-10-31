@@ -1,13 +1,16 @@
 // import "modules/std"
 // import "modules/libc_bindings"
 
-// function recursiveFibonacci(n: Int64): Int64 {
-// 	if (n < 2) {
-// 		return n;
-// 	} else {
-// 		return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
-// 	}
-// }
+function recursiveFibonacci(n: Int64): Int64 {
+	if (n < 2) {
+		return n;
+	} else {
+		return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
+	}
+	
+	// unreachable
+	return 0;
+}
 
 function main(): Int8 {
 	return 0;
