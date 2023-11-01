@@ -182,6 +182,8 @@ int main(int argc, char **argv) {
 	addContextBinding_macro(&coreModule, "describe");
 	addContextBinding_macro(&coreModule, "warning");
 	
+	addContextBinding_macro(&coreModule, "insertLLVMIR");
+	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(topLevelConstantSource);

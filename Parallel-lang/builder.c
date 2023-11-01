@@ -1116,6 +1116,22 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						compileWarning(MI, node->location, WarningType_other);
 					}
 					
+					else if (SubString_string_cmp(macroToRunBinding->key, "insertLLVMIR") == 0) {
+						int argumentCount = linkedList_getCount(&data->arguments);
+						if (argumentCount != 1) {
+							addStringToReportMsg("#insertLLVMIR(LLVMIR:String) expected 1 argument");
+							compileError(MI, node->location);
+						}
+						
+						ASTnode *message = (ASTnode *)data->arguments->data;
+						if (message->nodeType != ASTnodeType_string) {
+							addStringToReportMsg("LLVMIR must be a string");
+							compileError(MI, message->location);
+						}
+						
+						CharAccumulator_appendSubString(outerSource, ((ASTnode_string *)message->value)->value);
+					}
+					
 					else {
 						abort();
 					}

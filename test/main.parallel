@@ -1,4 +1,4 @@
-// import "modules/std"
+import "modules/std"
 // import "modules/libc_bindings"
 
 function recursiveFibonacci(n: Int64): Int64 {
