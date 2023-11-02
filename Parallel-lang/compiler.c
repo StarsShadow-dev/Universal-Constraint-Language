@@ -236,6 +236,8 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 		MI->name = name;
 		
 		printf("Compiling module %s\n", name);
+	} else {
+		MI->name = "compilerTest";
 	}
 	
 	CharAccumulator LLVMsource = {100, 0, 0};
