@@ -476,9 +476,9 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 	}
 	
 	CharAccumulator_appendChars(outerSource, function->LLVMreturnType);
-	CharAccumulator_appendChars(outerSource, " @");
+	CharAccumulator_appendChars(outerSource, " @\"");
 	CharAccumulator_appendChars(outerSource, function->LLVMname);
-	CharAccumulator_appendChars(outerSource, "(");
+	CharAccumulator_appendChars(outerSource, "\"(");
 	
 	CharAccumulator functionSource = {100, 0, 0};
 	CharAccumulator_initialize(&functionSource);
@@ -797,9 +797,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				// make sure that the name is not already used
 				expectUnusedName(MI, ((ASTnode_function *)node->value)->name, node->location);
 				
-				char *LLVMname = safeMalloc(data->name->length + 1);
-				memcpy(LLVMname, data->name->start, data->name->length);
-				LLVMname[data->name->length] = 0;
+				int LLVMnameSize = (int)strlen(MI->name) + 2 + data->name->length + 1;
+				char *LLVMname = safeMalloc(LLVMnameSize);
+				snprintf(LLVMname, LLVMnameSize, "%.*s::%s", (int)strlen(MI->name), MI->name, data->name->start);
 				
 				addFunctionToList(LLVMname, MI, &MI->context.bindings[MI->level], node);
 			}
@@ -1008,9 +1008,9 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						CharAccumulator_appendChars(outerSource, "\n\tcall ");
 					}
 					CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
-					CharAccumulator_appendChars(outerSource, " @");
+					CharAccumulator_appendChars(outerSource, " @\"");
 					CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
-					CharAccumulator_appendChars(outerSource, "(");
+					CharAccumulator_appendChars(outerSource, "\"(");
 					CharAccumulator_appendChars(outerSource, newInnerSource.data);
 					CharAccumulator_appendChars(outerSource, ")");
 					
