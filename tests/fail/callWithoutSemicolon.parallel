@@ -1,0 +1,12 @@
+/*
+error: expected ';' after statement
+9  |function main(): Int8 {
+10 |    test("a string")
+        ^^^^
+11 |	return 0;
+*/
+
+function main(): Int8 {
+	test("a string")
+	return 0;
+}
