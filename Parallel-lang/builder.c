@@ -172,29 +172,45 @@ int ifTypeIsNamed(BuilderType *actualType, char *expectedTypeString) {
 	return 0;
 }
 
+// in the future this could do more than return type->binding->key
 SubString *getTypeAsSubString(BuilderType *type) {
 	return type->binding->key;
 }
 
-void addTypeFromString(ModuleInformation *MI, linkedList_Node **list, char *string) {
+void addTypeFromString(ModuleInformation *MI, linkedList_Node **list, char *string, ASTnode *node) {
 	ContextBinding *binding = getContextBindingFromString(MI, string);
 	if (binding == NULL) abort();
 
-	BuilderType *data = linkedList_addNode(list, sizeof(BuilderType));
-	data->binding = binding;
-	data->constraintNodes = NULL;
+	BuilderType *typeData = linkedList_addNode(list, sizeof(BuilderType));
+	*typeData = (BuilderType){
+		.binding = binding,
+		.constraintNodes = NULL,
+		.factStack = {0}
+	};
+	
+	Fact *factData = linkedList_addNode(&typeData->factStack[MI->level - 1], sizeof(Fact) + sizeof(Fact_expression));
+	factData->type = FactType_expression;
+	((Fact_expression *)factData->value)->operatorType = ASTnode_operatorType_equivalent;
+	((Fact_expression *)factData->value)->left = NULL;
+	((Fact_expression *)factData->value)->rightConstant = node;
 }
 
 void addTypeFromBuilderType(ModuleInformation *MI, linkedList_Node **list, BuilderType *type) {
 	BuilderType *data = linkedList_addNode(list, sizeof(BuilderType));
-	data->binding = type->binding;
-	data->constraintNodes = type->constraintNodes;
+	*data = (BuilderType){
+		.binding = type->binding,
+		.constraintNodes = type->constraintNodes,
+		.factStack = {0}
+	};
 }
 
 void addTypeFromBinding(ModuleInformation *MI, linkedList_Node **list, ContextBinding *binding) {
 	BuilderType *data = linkedList_addNode(list, sizeof(BuilderType));
-	data->binding = binding;
-	data->constraintNodes = NULL;
+	*data = (BuilderType){
+		.binding = binding,
+		.constraintNodes = NULL,
+		.factStack = {0}
+	};
 }
 
 linkedList_Node *typeToList(BuilderType type) {
@@ -255,11 +271,11 @@ void applyFacts(ModuleInformation *MI, ASTnode_operator *operator) {
 	
 	ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
 	
-	Fact *fact = linkedList_addNode(&variable->factStack[MI->level], sizeof(Fact) + sizeof(Fact_expression));
+	Fact *fact = linkedList_addNode(&variable->type.factStack[MI->level], sizeof(Fact) + sizeof(Fact_expression));
 	
 	fact->type = FactType_expression;
 	((Fact_expression *)fact->value)->operatorType = operator->operatorType;
-	((Fact_expression *)fact->value)->left = (ASTnode *)operator->left->data;
+	((Fact_expression *)fact->value)->left = NULL;
 	((Fact_expression *)fact->value)->rightConstant = (ASTnode *)operator->right->data;
 }
 
@@ -276,7 +292,7 @@ int isExpressionTrue(ModuleInformation *MI, ContextBinding_variable *self, ASTno
 		if (leftNode->nodeType == ASTnodeType_selfReference && rightNode->nodeType == ASTnodeType_number) {
 			int index = MI->level;
 			while (index > 0) {
-				linkedList_Node *currentFact = self->factStack[index];
+				linkedList_Node *currentFact = self->type.factStack[index];
 				
 				while (currentFact != NULL) {
 					Fact *fact = (Fact *)currentFact->data;
@@ -328,6 +344,23 @@ void expectType(ModuleInformation *MI, ContextBinding_variable *self, BuilderTyp
 	}
 }
 
+void expectTypeNameOnMacro(ModuleInformation *MI, linkedList_Node **currentType, linkedList_Node **currentArgument, char* name) {
+	if (!ifTypeIsNamed((BuilderType *)(*currentType)->data, name)) {
+		addStringToReportMsg("unexpected type");
+		
+		addStringToReportIndicator("expected type '");
+		addStringToReportIndicator(name);
+		addStringToReportIndicator("' but got type '");
+		addSubStringToReportIndicator(((BuilderType *)(*currentType)->data)->binding->key);
+		addStringToReportIndicator("'");
+		
+		compileError(MI, ((ASTnode *)(*currentArgument)->data)->location);
+	}
+	
+	*currentType = (*currentType)->next;
+	*currentArgument = (*currentArgument)->next;
+}
+
 char *getLLVMtypeFromBinding(ModuleInformation *MI, ContextBinding *binding) {
 	if (binding->type == ContextBindingType_simpleType) {
 		return ((ContextBinding_simpleType *)binding->value)->LLVMtype;
@@ -342,7 +375,13 @@ BuilderType getTypeFromBinding(ContextBinding *binding) {
 	return (BuilderType){binding};
 }
 
-void getTypeDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, BuilderType *builderType) {}
+void getFact(ModuleInformation *MI, BuilderType type) {
+	
+}
+
+void getTypeDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, BuilderType *builderType) {
+	
+}
 
 void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, ContextBinding *variableBinding) {
 	if (variableBinding->type != ContextBindingType_variable) abort();
@@ -357,8 +396,8 @@ void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumula
 	CharAccumulator_appendChars(charAccumulator, "\n\n");
 	
 	int index = 0;
-	while (index < MI->level) {
-		linkedList_Node *currentFact = variable->factStack[index];
+	while (index <= MI->level) {
+		linkedList_Node *currentFact = variable->type.factStack[index];
 		
 		if (currentFact == NULL) {
 			index++;
@@ -374,15 +413,21 @@ void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumula
 			
 			if (fact->type == FactType_expression) {
 				Fact_expression *expressionFact = (Fact_expression *)fact->value;
-				if (expressionFact->left->nodeType != ASTnodeType_identifier) abort();
-				if (expressionFact->rightConstant->nodeType != ASTnodeType_number) abort();
 				
 				CharAccumulator_appendChars(charAccumulator, "(");
 				
 				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
-					CharAccumulator_appendSubString(charAccumulator, ((ASTnode_identifier *)expressionFact->left->value)->name);
+					if (expressionFact->left == NULL) {
+						CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
+					} else {
+						abort();
+					}
 					CharAccumulator_appendChars(charAccumulator, " == ");
-					CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)expressionFact->rightConstant->value)->value);
+					if (expressionFact->rightConstant->nodeType == ASTnodeType_number) {
+						CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)expressionFact->rightConstant->value)->value);
+					} else {
+						CharAccumulator_appendChars(charAccumulator, "/*can not print*/");
+					}
 				} else {
 					abort();
 				}
@@ -399,8 +444,6 @@ void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumula
 		
 		index++;
 	}
-	
-//	CharAccumulator_appendChars(charAccumulator, "\n");
 }
 
 ContextBinding *addFunctionToList(char *LLVMname, ModuleInformation *MI, linkedList_Node **list, ASTnode *node) {
@@ -527,7 +570,6 @@ void generateFunction(ModuleInformation *MI, CharAccumulator *outerSource, Conte
 				((ContextBinding_variable *)argumentVariableData->value)->LLVMRegister = function->registerCount + argumentCount + 1;
 				((ContextBinding_variable *)argumentVariableData->value)->LLVMtype = currentArgumentLLVMtype;
 				((ContextBinding_variable *)argumentVariableData->value)->type = type;
-				memset(((ContextBinding_variable *)argumentVariableData->value)->factStack, 0, sizeof(linkedList_Node *[maxContextLevel]));
 				
 				function->registerCount++;
 			}
@@ -641,7 +683,6 @@ void generateStruct(ModuleInformation *MI, CharAccumulator *outerSource, Context
 			((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
 			((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
 			((ContextBinding_variable *)variableBinding->value)->type = *type;
-			memset(((ContextBinding_variable *)variableBinding->value)->factStack, 0, sizeof(linkedList_Node *[maxContextLevel]));
 			
 			addComma = 1;
 			
@@ -950,18 +991,13 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator_initialize(&leftSource);
 				
 				linkedList_Node *expectedTypesForCall = NULL;
-				addTypeFromString(MI, &expectedTypesForCall, "Function");
+				addTypeFromString(MI, &expectedTypesForCall, "Function", NULL);
 				
 				linkedList_Node *leftTypes = NULL;
 				buildLLVM(MI, outerFunction, outerSource, &leftSource, expectedTypesForCall, &leftTypes, data->left, 1, 0, 0);
 				
 				ContextBinding *functionToCallBinding = ((BuilderType *)leftTypes->data)->binding;
 				ContextBinding_function *functionToCall = (ContextBinding_function *)functionToCallBinding->value;
-				
-				if (types != NULL) {
-					addTypeFromBuilderType(MI, types, &functionToCall->returnType);
-					break;
-				}
 				
 				int expectedArgumentCount = linkedList_getCount(&functionToCall->argumentTypes);
 				int actualArgumentCount = linkedList_getCount(&data->arguments);
@@ -983,43 +1019,43 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				
 				if (types != NULL) {
 					addTypeFromBuilderType(MI, types, &functionToCall->returnType);
-				} else {
-					CharAccumulator newInnerSource = {100, 0, 0};
-					CharAccumulator_initialize(&newInnerSource);
-					
-					buildLLVM(MI, outerFunction, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1, 1);
-					
-					if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
-						CharAccumulator_appendChars(outerSource, "\n\t%");
-						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-						CharAccumulator_appendChars(outerSource, " = call ");
-						
-						if (innerSource != NULL) {
-							if (withTypes) {
-								CharAccumulator_appendChars(innerSource, functionToCall->LLVMreturnType);
-								CharAccumulator_appendChars(innerSource, " ");
-							}
-							CharAccumulator_appendChars(innerSource, "%");
-							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
-						}
-						
-						outerFunction->registerCount++;
-					} else {
-						CharAccumulator_appendChars(outerSource, "\n\tcall ");
-					}
-					CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
-					CharAccumulator_appendChars(outerSource, " @\"");
-					CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
-					CharAccumulator_appendChars(outerSource, "\"(");
-					CharAccumulator_appendChars(outerSource, newInnerSource.data);
-					CharAccumulator_appendChars(outerSource, ")");
-					
-					if (compilerOptions.includeDebugInformation) {
-						addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
-					}
-					
-					CharAccumulator_free(&newInnerSource);
 				}
+				
+				CharAccumulator newInnerSource = {100, 0, 0};
+				CharAccumulator_initialize(&newInnerSource);
+				
+				buildLLVM(MI, outerFunction, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1, 1);
+				
+				if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendChars(outerSource, " = call ");
+					
+					if (innerSource != NULL) {
+						if (withTypes) {
+							CharAccumulator_appendChars(innerSource, functionToCall->LLVMreturnType);
+							CharAccumulator_appendChars(innerSource, " ");
+						}
+						CharAccumulator_appendChars(innerSource, "%");
+						CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+					}
+					
+					outerFunction->registerCount++;
+				} else {
+					CharAccumulator_appendChars(outerSource, "\n\tcall ");
+				}
+				CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
+				CharAccumulator_appendChars(outerSource, " @\"");
+				CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
+				CharAccumulator_appendChars(outerSource, "\"(");
+				CharAccumulator_appendChars(outerSource, newInnerSource.data);
+				CharAccumulator_appendChars(outerSource, ")");
+				
+				if (compilerOptions.includeDebugInformation) {
+					addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
+				}
+				
+				CharAccumulator_free(&newInnerSource);
 				
 				CharAccumulator_free(&leftSource);
 				
@@ -1034,7 +1070,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				ASTnode_runMacro *data = (ASTnode_runMacro *)node->value;
 				
 				linkedList_Node *expectedTypesForRunMacro = NULL;
-				addTypeFromString(MI, &expectedTypesForRunMacro, "__Macro");
+				addTypeFromString(MI, &expectedTypesForRunMacro, "__Macro", NULL);
 				
 				linkedList_Node *leftTypes = NULL;
 				buildLLVM(MI, outerFunction, outerSource, NULL, expectedTypesForRunMacro, &leftTypes, data->left, 1, 0, 0);
@@ -1046,12 +1082,18 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				}
 				ContextBinding_macro *macroToRun = (ContextBinding_macro *)macroToRunBinding->value;
 				
+				linkedList_Node *types = NULL;
+				buildLLVM(MI, outerFunction, outerSource, NULL, NULL, &types, data->arguments, 0, 0, 0);
+				int typeCount = linkedList_getCount(&types);
+				
 				if (macroToRun->originModule->name != NULL && strcmp(macroToRun->originModule->name, "__core__") == 0) {
-					// from the __core__ module, so this is a special case
+					// the macro is from the __core__ module, so this is a special case
+					
+					linkedList_Node **currentType = &types;
+					linkedList_Node **currentArgument = &data->arguments;
 					
 					if (SubString_string_cmp(macroToRunBinding->key, "error") == 0) {
-						int argumentCount = linkedList_getCount(&data->arguments);
-						if (argumentCount != 2) {
+						if (typeCount != 2) {
 							addStringToReportMsg("#error(message:String, indicator:String) expected 2 arguments");
 							compileError(MI, node->location);
 						}
@@ -1073,28 +1115,8 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						compileError(MI, node->location);
 					}
 					
-					else if (SubString_string_cmp(macroToRunBinding->key, "describe") == 0) {
-						int argumentCount = linkedList_getCount(&data->arguments);
-						if (argumentCount != 1) {
-							addStringToReportMsg("#error(variable) expected 1 argument");
-							compileError(MI, node->location);
-						}
-						
-						ContextBinding *variableBinding = getContextBindingFromIdentifierNode(MI, (ASTnode *)data->arguments->data);
-						
-						CharAccumulator variableDescription = {100, 0, 0};
-						CharAccumulator_initialize(&variableDescription);
-						
-						getVariableDescription(MI, &variableDescription, variableBinding);
-						
-						printf("%.*s", (int)variableDescription.size, variableDescription.data);
-						
-						CharAccumulator_free(&variableDescription);
-					}
-					
 					else if (SubString_string_cmp(macroToRunBinding->key, "warning") == 0) {
-						int argumentCount = linkedList_getCount(&data->arguments);
-						if (argumentCount != 2) {
+						if (typeCount != 2) {
 							addStringToReportMsg("#warning(message:String, indicator:String) expected 2 arguments");
 							compileError(MI, node->location);
 						}
@@ -1116,20 +1138,31 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 						compileWarning(MI, node->location, WarningType_other);
 					}
 					
+					else if (SubString_string_cmp(macroToRunBinding->key, "describe") == 0) {
+						if (typeCount != 1) {
+							addStringToReportMsg("#error(variable) expected 1 argument");
+							compileError(MI, node->location);
+						}
+						
+						ContextBinding *variableBinding = getContextBindingFromIdentifierNode(MI, (ASTnode *)data->arguments->data);
+						
+						CharAccumulator variableDescription = {100, 0, 0};
+						CharAccumulator_initialize(&variableDescription);
+						
+						getVariableDescription(MI, &variableDescription, variableBinding);
+						
+						printf("%.*s", (int)variableDescription.size, variableDescription.data);
+						
+						CharAccumulator_free(&variableDescription);
+					}
+					
 					else if (SubString_string_cmp(macroToRunBinding->key, "insertLLVMIR") == 0) {
-						int argumentCount = linkedList_getCount(&data->arguments);
-						if (argumentCount != 1) {
+						if (typeCount != 1) {
 							addStringToReportMsg("#insertLLVMIR(LLVMIR:String) expected 1 argument");
 							compileError(MI, node->location);
 						}
 						
-						ASTnode *message = (ASTnode *)data->arguments->data;
-						if (message->nodeType != ASTnodeType_string) {
-							addStringToReportMsg("LLVMIR must be a string");
-							compileError(MI, message->location);
-						}
-						
-						CharAccumulator_appendSubString(outerSource, ((ASTnode_string *)message->value)->value);
+						expectTypeNameOnMacro(MI, currentType, currentArgument, "Pointer");
 					}
 					
 					else {
@@ -1154,7 +1187,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				ASTnode_while *data = (ASTnode_while *)node->value;
 				
 				linkedList_Node *expectedTypesForWhile = NULL;
-				addTypeFromString(MI, &expectedTypesForWhile, "Bool");
+				addTypeFromString(MI, &expectedTypesForWhile, "Bool", NULL);
 				
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
@@ -1215,7 +1248,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				ASTnode_if *data = (ASTnode_if *)node->value;
 				
 				linkedList_Node *expectedTypesForIf = NULL;
-				addTypeFromString(MI, &expectedTypesForIf, "Bool");
+				addTypeFromString(MI, &expectedTypesForIf, "Bool", NULL);
 				
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
@@ -1376,7 +1409,12 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
 				
-				buildLLVM(MI, outerFunction, outerSource, &expressionSource, typeToList(*type), NULL, data->expression, 1, 1, 0);
+				linkedList_Node *types = NULL;
+				buildLLVM(MI, outerFunction, outerSource, &expressionSource, typeToList(*type), &types, data->expression, 1, 1, 0);
+				
+				if (types != NULL) {
+					memcpy(type->factStack, ((BuilderType *)types->data)->factStack, sizeof(type->factStack));
+				}
 				
 				CharAccumulator_appendChars(outerSource, "\n\t%");
 				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
@@ -1404,7 +1442,6 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				((ContextBinding_variable *)variableBinding->value)->LLVMRegister = outerFunction->registerCount;
 				((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
 				((ContextBinding_variable *)variableBinding->value)->type = *type;
-				memset(((ContextBinding_variable *)variableBinding->value)->factStack, 0, sizeof(linkedList_Node *[maxContextLevel]));
 				
 				outerFunction->registerCount++;
 				
@@ -1680,7 +1717,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 							
 							// default to Int32
 							linkedList_freeList(&expectedTypeForLeftAndRight);
-							addTypeFromString(MI, &expectedTypeForLeftAndRight, "Int32");
+							addTypeFromString(MI, &expectedTypeForLeftAndRight, "Int32", NULL);
 						}
 					}
 					
@@ -1714,7 +1751,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 					}
 					
 					if (types != NULL) {
-						addTypeFromString(MI, types, "Bool");
+						addTypeFromString(MI, types, "Bool", NULL);
 					}
 					
 					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBinding(MI, ((BuilderType *)expectedTypeForLeftAndRight->data)->binding));
@@ -1788,7 +1825,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator_appendChars(innerSource, "true");
 				
 				if (types != NULL) {
-					addTypeFromString(MI, types, "Bool");
+					addTypeFromString(MI, types, "Bool", node);
 				}
 				
 				break;
@@ -1811,7 +1848,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator_appendChars(innerSource, "false");
 				
 				if (types != NULL) {
-					addTypeFromString(MI, types, "Bool");
+					addTypeFromString(MI, types, "Bool", node);
 				}
 				
 				break;
@@ -1821,8 +1858,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				ASTnode_number *data = (ASTnode_number *)node->value;
 				
 				if (types != NULL) {
-					addTypeFromString(MI, types, "__Number");
-					break;
+					addTypeFromString(MI, types, "__Number", node);
 				}
 				
 				if (
@@ -1866,7 +1902,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
+				if (expectedTypes != NULL && !ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -1917,15 +1953,21 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 				CharAccumulator_appendChars(MI->topLevelConstantSource, string.data);
 				CharAccumulator_appendChars(MI->topLevelConstantSource, "\\00\""); // the \00 is the NULL byte
 				
-				if (withTypes) {
-					CharAccumulator_appendChars(innerSource, "ptr ");
+				if (innerSource != NULL) {
+					if (withTypes) {
+						CharAccumulator_appendChars(innerSource, "ptr ");
+					}
+					CharAccumulator_appendChars(innerSource, "@.str.");
+					CharAccumulator_appendInt(innerSource, MI->stringCount);
 				}
-				CharAccumulator_appendChars(innerSource, "@.str.");
-				CharAccumulator_appendInt(innerSource, MI->stringCount);
 				
 				MI->stringCount++;
 				
 				CharAccumulator_free(&string);
+				
+				if (types != NULL) {
+					addTypeFromString(MI, types, "Pointer", node);
+				}
 				
 				break;
 			}
@@ -1967,7 +2009,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 							CharAccumulator_appendChars(innerSource, " ");
 						}
 						
-						CharAccumulator_appendChars(innerSource, "%");
+						if (innerSource != NULL) CharAccumulator_appendChars(innerSource, "%");
 						
 						if (loadVariables) {
 							CharAccumulator_appendChars(outerSource, "\n\t%");
@@ -1979,11 +2021,11 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 							CharAccumulator_appendChars(outerSource, ", align ");
 							CharAccumulator_appendInt(outerSource, variableBinding->byteAlign);
 							
-							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+							if (innerSource != NULL) CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 							
 							outerFunction->registerCount++;
 						} else {
-							CharAccumulator_appendInt(innerSource, variable->LLVMRegister);
+							if (innerSource != NULL) CharAccumulator_appendInt(innerSource, variable->LLVMRegister);
 						}
 					}
 				} else if (variableBinding->type == ContextBindingType_function) {
@@ -2030,7 +2072,7 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 			}
 		}
 		
-		if (withCommas && current->next != NULL) {
+		if (innerSource != NULL && withCommas && current->next != NULL) {
 			CharAccumulator_appendChars(innerSource, ",");
 		}
 		

@@ -307,6 +307,8 @@ typedef struct {
 typedef struct {
 	ContextBinding *binding;
 	linkedList_Node *constraintNodes;
+	// Fact
+	linkedList_Node *factStack[maxContextLevel];
 } BuilderType;
 
 typedef struct {
@@ -337,7 +339,6 @@ typedef struct {
 	int LLVMRegister;
 	char *LLVMtype;
 	BuilderType type;
-	linkedList_Node *factStack[maxContextLevel];
 } ContextBinding_variable;
 
 typedef struct {

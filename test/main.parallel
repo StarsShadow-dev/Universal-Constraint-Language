@@ -1,20 +1,20 @@
-import "modules/std"
+// import "modules/std"
 // import "modules/libc_bindings"
 
-function recursiveFibonacci(n: Int64): Int64 {
-	if (n < 2) {
-		return n;
-	} else {
-		return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
-	}
+function main(): Int8 {
+	var number: Int8 = 5;
+	#describe(number);
 	
-	// unreachable
+	var string: Pointer = "A string!";
+	#describe(string);
+	
 	return 0;
 }
 
-function main(): Int8 {
-	return 0;
-}
+// function main(): Int8 {
+// 	#insertLLVMIR("test");
+// 	return 0;
+// }
 
 // function safeMalloc(size: Int64): Pointer {
 // 	var pointer: Pointer = libc_bindings::malloc(size);

@@ -81,7 +81,7 @@ function getRand0_100(): Int8 [ $ >= 0, $ <= 100 ] {
 typedef Window: Pointer;
 var window: Window;
 
+function [ window != 0 ] useWindow(): Void {}
+// or
 function useWindow() [ window != 0 ]: Void {}
-
-function useWindow(): Void [ window != 0 ] {}
 ```

@@ -175,12 +175,14 @@ int main(int argc, char **argv) {
 	addContextBinding_simpleType(&coreModule.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
 	addContextBinding_simpleType(&coreModule.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
-	// if "macro_and_it_should_not_be_in_IR" ever shows up in the IR then I know that something went horribly wrong...
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Macro", "macro_and_it_should_not_be_in_IR", 0, 0);
+	// if "__Macro_and_it_should_not_be_in_IR" ever shows up in the IR then I know that something went horribly wrong...
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Macro", "__Macro_and_it_should_not_be_in_IR", 0, 0);
+	// same for "__Number_and_it_should_not_be_in_IR"
+	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Number", "__Number_and_it_should_not_be_in_IR", 0, 0);
 	
 	addContextBinding_macro(&coreModule, "error");
-	addContextBinding_macro(&coreModule, "describe");
 	addContextBinding_macro(&coreModule, "warning");
+	addContextBinding_macro(&coreModule, "describe");
 	
 	addContextBinding_macro(&coreModule, "insertLLVMIR");
 	

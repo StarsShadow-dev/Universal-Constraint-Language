@@ -73,10 +73,6 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "./tests/succeed/macro.parallel"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
             argument = "-d"
             isEnabled = "NO">
          </CommandLineArgument>
