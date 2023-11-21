@@ -257,6 +257,8 @@ typedef struct {
 	SubString *name;
 } ASTnode_identifier;
 
+void getASTnodeDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, ASTnode *node);
+
 //
 // facts
 //

@@ -263,3 +263,28 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 
 	return MI;
 }
+
+//
+// lexer, parser and builder
+//
+
+void getASTnodeDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, ASTnode *node) {
+	switch (node->nodeType) {
+		case ASTnodeType_number: {
+			CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)node->value)->value);
+			return;
+		}
+			
+		case ASTnodeType_string: {
+			CharAccumulator_appendChars(charAccumulator, "\"");
+			CharAccumulator_appendSubString(charAccumulator, ((ASTnode_string *)node->value)->value);
+			CharAccumulator_appendChars(charAccumulator, "\"");
+			return;
+		}
+			
+		default: {
+			CharAccumulator_appendChars(charAccumulator, "/*can not print*/");
+			return;
+		}
+	}
+}

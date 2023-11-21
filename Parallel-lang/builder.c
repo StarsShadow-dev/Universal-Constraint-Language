@@ -423,11 +423,7 @@ void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumula
 						abort();
 					}
 					CharAccumulator_appendChars(charAccumulator, " == ");
-					if (expressionFact->rightConstant->nodeType == ASTnodeType_number) {
-						CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)expressionFact->rightConstant->value)->value);
-					} else {
-						CharAccumulator_appendChars(charAccumulator, "/*can not print*/");
-					}
+					getASTnodeDescription(MI, charAccumulator, expressionFact->rightConstant);
 				} else {
 					abort();
 				}
