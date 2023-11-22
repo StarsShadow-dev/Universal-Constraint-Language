@@ -1,0 +1,14 @@
+/*
+variable description for 'number'
+byteSize = 8
+byteAlign = 8
+
+level 1: (number == 1234)
+*/
+
+function main(): Int8 {
+	var number: Int8 = 1234;
+	#describe(number);
+	
+	return 0;
+}
