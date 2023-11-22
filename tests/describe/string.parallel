@@ -1,0 +1,14 @@
+/*
+variable description for 'string'
+byteSize = 8
+byteAlign = 8
+
+level 1: (string == "A string!")
+*/
+
+function main(): Int8 {
+	var string: Pointer = "A string!";
+	#describe(string);
+	
+	return 0;
+}
