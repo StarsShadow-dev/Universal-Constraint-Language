@@ -180,11 +180,13 @@ int main(int argc, char **argv) {
 	// same for "__Number_and_it_should_not_be_in_IR"
 	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Number", "__Number_and_it_should_not_be_in_IR", 0, 0);
 	
+	addContextBinding_compileTimeSetting(&coreModule.context.bindings[0], "__functionSymbol");
+	
 	addContextBinding_macro(&coreModule, "error");
 	addContextBinding_macro(&coreModule, "warning");
 	addContextBinding_macro(&coreModule, "describe");
-	
 	addContextBinding_macro(&coreModule, "insertLLVMIR");
+	addContextBinding_macro(&coreModule, "set");
 	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};

@@ -1,4 +1,4 @@
+#set("__functionSymbol", "putchar");
 function putchar(char: Int32): Int32;
+#set("__functionSymbol", "printf");
 function printf(pointer: Pointer): Int32;
-
-// export { putchar, printf };

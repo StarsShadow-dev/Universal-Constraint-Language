@@ -294,6 +294,7 @@ typedef enum {
 	ContextBindingType_function,
 	ContextBindingType_macro,
 	ContextBindingType_variable,
+	ContextBindingType_compileTimeSetting,
 	ContextBindingType_struct
 } ContextBindingType;
 
@@ -342,6 +343,10 @@ typedef struct {
 	char *LLVMtype;
 	BuilderType type;
 } ContextBinding_variable;
+
+typedef struct {
+	SubString *value;
+} ContextBinding_compileTimeSetting;
 
 typedef struct {
 	char *LLVMname;

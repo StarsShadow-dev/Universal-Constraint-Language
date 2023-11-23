@@ -1,13 +1,9 @@
-// import "modules/std"
-// import "modules/libc_bindings"
+import "modules/std"
+import "modules/libc_bindings"
 
+#set("__functionSymbol", "main");
 function main(): Int8 {
-	var number: Int8 = 5;
-	#describe(number);
-	
-	var string: Pointer = "A string!";
-	#describe(string);
-	
+	libc_bindings::printf("testing!\n");
 	return 0;
 }
 
