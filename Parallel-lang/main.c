@@ -51,14 +51,33 @@ int main(int argc, char **argv) {
 		compilerMode = CompilerMode_check;
 	}
 	
+	else if (strcmp(argv[1], "query") == 0) {
+		compilerMode = CompilerMode_query;
+		if (argc < 7) {
+			printf("not (argc < 7)");
+			exit(1);
+		}
+		queryPath = argv[3];
+		queryTextLength = atoi(argv[4]);
+		queryLine = atoi(argv[5]);
+		queryColumn = atoi(argv[6]);
+	}
+	
 	else {
 		printf("Unexpected compiler mode: %s\n", argv[1]);
 		exit(1);
 	}
 	
-	char *path = argv[2];
+	char *modulePath = argv[2];
 	
-	for (int i = 3; i < argc; i++) {
+	int i = 3;
+	if (compilerMode == CompilerMode_query) {
+		queryText = safeMalloc(queryTextLength);
+		fread(queryText, queryTextLength, 1, stdin);
+		i = 7;
+	}
+	
+	for (; i < argc; i++) {
 		char *arg = argv[i];
 //		printf("arg %d: %s\n", i, arg);
 		if (strcmp(arg, "-d") == 0) {
@@ -79,7 +98,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	if (compilerMode != CompilerMode_compilerTesting) {
+	if (compilerMode != CompilerMode_compilerTesting && compilerMode != CompilerMode_query) {
 		printf("Compiler version: %s\n", CURRENT_VERSION);
 	}
 	
@@ -123,7 +142,7 @@ int main(int argc, char **argv) {
 	
 	CharAccumulator full_build_directoryCA = {100, 0, 0};
 	CharAccumulator_initialize(&full_build_directoryCA);
-	CharAccumulator_appendChars(&full_build_directoryCA, path);
+	CharAccumulator_appendChars(&full_build_directoryCA, modulePath);
 	CharAccumulator_appendChars(&full_build_directoryCA, "/build");
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
@@ -200,8 +219,8 @@ int main(int argc, char **argv) {
 	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
-	ModuleInformation *MI = ModuleInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
-	compileModule(MI, compilerMode, path);
+	ModuleInformation *MI = ModuleInformation_new(modulePath, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+	compileModule(MI, compilerMode, modulePath);
 	linkedList_freeList(&MI->context.bindings[0]);
 	
 	if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {

@@ -13,8 +13,15 @@ typedef enum {
 	CompilerMode_build_binary,
 	CompilerMode_run,
 	CompilerMode_compilerTesting,
-	CompilerMode_check
+	CompilerMode_check,
+	CompilerMode_query
 } CompilerMode;
+
+extern char *queryPath;
+extern int queryTextLength;
+extern int queryLine;
+extern int queryColumn;
+extern char *queryText;
 
 extern CompilerMode compilerMode;
 

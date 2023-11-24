@@ -53,7 +53,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "build_objectFile"
+            argument = "build_binary"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -61,16 +61,8 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "arm64-apple-macosx13.0.0"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "test"
+            argument = "./test"
             isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "compilerTesting"
-            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d"

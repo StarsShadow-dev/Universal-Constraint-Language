@@ -171,8 +171,12 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 }
 
 void compileFile(char *path, ModuleInformation *MI, CharAccumulator *LLVMsource) {
-	MI->context.currentSource = readFile(path);
-//	printf("Source (%s): %s\n", path, MI->currentSource);
+	if (compilerMode == CompilerMode_query && strcmp(path, queryPath) == 0) {
+		MI->context.currentSource = queryText;
+	} else {
+		MI->context.currentSource = readFile(path);
+	}
+//	printf("Source (%s): %s\n", path, MI->context.currentSource);
 	
 	linkedList_Node *tokens = lex(MI);
 //	printTokens(tokens);
@@ -235,7 +239,7 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 		
 		MI->name = name;
 		
-		printf("Compiling module %s\n", name);
+		if (queryText == NULL) printf("Compiling module %s\n", name);
 	} else {
 		MI->name = "compilerTest";
 	}
@@ -243,7 +247,9 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
 	
-	if (compilerMode != CompilerMode_compilerTesting) {
+	if (compilerMode == CompilerMode_compilerTesting) {
+		compileFile(path, MI, &LLVMsource);
+	} else {
 		linkedList_Node *currentFilePath = file_paths;
 		while (currentFilePath != NULL) {
 			MI->context.currentFilePath = (char *)currentFilePath->data;
@@ -281,8 +287,6 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 			
 			currentFilePath = currentFilePath->next;
 		}
-	} else {
-		compileFile(path, MI, &LLVMsource);
 	}
 	
 	CharAccumulator_appendChars(&LLVMsource, MI->topLevelConstantSource->data);
@@ -315,7 +319,7 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 	if (compilerMode == CompilerMode_check) {
 		printf("Finished checking module %s\n", name);
 	} else {
-		if (compilerMode != CompilerMode_compilerTesting) {
+		if (compilerMode != CompilerMode_compilerTesting && compilerMode != CompilerMode_query) {
 			if (compilerOptions.verbose) {
 				printf("LLVMsource: %s\n", LLVMsource.data);
 			}
@@ -346,7 +350,7 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 			CharAccumulator_appendChars(&objectFiles, outputFilePath.data);
 			CharAccumulator_appendChars(&objectFiles, ".o ");
 			
-			printf("Object file saved to %s.o\n", outputFilePath.data);
+			if (queryText == NULL) printf("Object file saved to %s.o\n", outputFilePath.data);
 			
 			CharAccumulator_free(&outputFilePath);
 		} else {
