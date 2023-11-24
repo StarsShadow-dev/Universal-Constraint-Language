@@ -1,3 +1,5 @@
 {
+	// this is to override the compilerPath for the parallel-lang VScode extension
+	// it makes the extension use the latest build
 	"conf.parallel.compilerPath": "/DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
 }
