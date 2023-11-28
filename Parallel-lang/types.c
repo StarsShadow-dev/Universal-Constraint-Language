@@ -252,6 +252,7 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 		.context = {
 			.currentSource = NULL,
 			.currentFilePath = NULL,
+			.currentFullFilePath = NULL,
 			
 			.bindings = {0},
 			.importedModules = NULL,

@@ -17,11 +17,18 @@ typedef enum {
 	CompilerMode_query
 } CompilerMode;
 
+typedef enum {
+	QueryMode_hover,
+	QueryMode_suggestions
+} QueryMode;
+
+extern QueryMode queryMode;
 extern char *queryPath;
 extern int queryTextLength;
 extern int queryLine;
 extern int queryColumn;
 extern char *queryText;
+extern int addedQueryLocation;
 
 extern CompilerMode compilerMode;
 

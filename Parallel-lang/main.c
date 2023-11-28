@@ -29,57 +29,93 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	if (strcmp(argv[1], "build_objectFile") == 0) {
+	// the current argument
+	int currentArg = 1;
+	
+	char *modulePath = NULL;
+	
+	if (strcmp(argv[currentArg], "build_objectFile") == 0) {
+		currentArg++;
 		compilerMode = CompilerMode_build_objectFile;
+		
+		modulePath = argv[currentArg];
+		currentArg++;
 	}
 	
-	else if (strcmp(argv[1], "build_binary") == 0) {
+	else if (strcmp(argv[currentArg], "build_binary") == 0) {
+		currentArg++;
 		compilerMode = CompilerMode_build_binary;
+		
+		modulePath = argv[currentArg];
+		currentArg++;
 	}
 	
-	else if (strcmp(argv[1], "run") == 0) {
+	else if (strcmp(argv[currentArg], "run") == 0) {
 		printf("CompilerMode_run is not available right now\n");
 		exit(1);
+//		currentArg++;
 //		compilerMode = CompilerMode_run;
+		
+//		modulePath = argv[currentArg];
+//		currentArg++;
 	}
 	
-	else if (strcmp(argv[1], "compilerTesting") == 0) {
+	else if (strcmp(argv[currentArg], "compilerTesting") == 0) {
+		currentArg++;
 		compilerMode = CompilerMode_compilerTesting;
+		
+		modulePath = argv[currentArg];
+		currentArg++;
 	}
 	
-	else if (strcmp(argv[1], "check") == 0) {
+	else if (strcmp(argv[currentArg], "check") == 0) {
+		currentArg++;
 		compilerMode = CompilerMode_check;
+		
+		modulePath = argv[currentArg];
+		currentArg++;
 	}
 	
-	else if (strcmp(argv[1], "query") == 0) {
+	else if (strcmp(argv[currentArg], "query") == 0) {
+		currentArg++;
 		compilerMode = CompilerMode_query;
-		if (argc < 7) {
-			printf("not (argc < 7)");
+		if (argc < 8) {
+			printf("not (argc < 8)");
 			exit(1);
 		}
-		queryPath = argv[3];
-		queryTextLength = atoi(argv[4]);
-		queryLine = atoi(argv[5]);
-		queryColumn = atoi(argv[6]);
+		
+		if (strcmp(argv[currentArg], "hover") == 0) {
+			queryMode = QueryMode_hover;
+		} else if (strcmp(argv[currentArg], "suggestions") == 0) {
+			queryMode = QueryMode_suggestions;
+		} else {
+			abort();
+		}
+		currentArg++;
+		
+		modulePath = argv[currentArg];
+		currentArg++;
+		
+		queryPath = argv[currentArg];
+		currentArg++;
+		queryTextLength = atoi(argv[currentArg]);
+		currentArg++;
+		queryLine = atoi(argv[currentArg]);
+		currentArg++;
+		queryColumn = atoi(argv[currentArg]);
+		currentArg++;
+		queryText = safeMalloc(queryTextLength);
+		fread(queryText, queryTextLength, 1, stdin);
 	}
 	
 	else {
-		printf("Unexpected compiler mode: %s\n", argv[1]);
+		printf("Unexpected compiler mode: %s\n", argv[currentArg]);
 		exit(1);
 	}
 	
-	char *modulePath = argv[2];
-	
-	int i = 3;
-	if (compilerMode == CompilerMode_query) {
-		queryText = safeMalloc(queryTextLength);
-		fread(queryText, queryTextLength, 1, stdin);
-		i = 7;
-	}
-	
-	for (; i < argc; i++) {
-		char *arg = argv[i];
-//		printf("arg %d: %s\n", i, arg);
+	for (; currentArg < argc; currentArg++) {
+		char *arg = argv[currentArg];
+		printf("arg %d: %s\n", currentArg, arg);
 		if (strcmp(arg, "-d") == 0) {
 			if (compilerMode == CompilerMode_check) {
 				printf("'-d' is not allowed with check mode\n");
@@ -174,6 +210,7 @@ int main(int argc, char **argv) {
 		.context = {
 			.currentSource = NULL,
 			.currentFilePath = NULL,
+			.currentFullFilePath = NULL,
 			
 			.bindings = {0},
 			.importedModules = NULL,

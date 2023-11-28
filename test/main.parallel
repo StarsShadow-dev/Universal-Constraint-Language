@@ -1,22 +1,8 @@
-import "modules/std"
-import "modules/libc_bindings"
+// import "modules/std"
+// import "modules/libc_bindings"
 
 #set("__functionSymbol", "main");
 function main(): Int8 {
-	libc_bindings::printf("testing!\n");
+	
 	return 0;
 }
-
-// function main(): Int8 {
-// 	#insertLLVMIR("test");
-// 	return 0;
-// }
-
-// function safeMalloc(size: Int64): Pointer {
-// 	var pointer: Pointer = libc_bindings::malloc(size);
-// 	// if (pointer == NULL) {
-// 	// 	libc_bindings::printf("safeMalloc: malloc failed");
-// 	// 	libc_bindings::abort();
-// 	// }
-// 	return pointer;
-// }

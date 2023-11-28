@@ -259,6 +259,7 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 			CharAccumulator_appendChars(&fullFilePath, path);
 			CharAccumulator_appendChars(&fullFilePath, "/");
 			CharAccumulator_appendChars(&fullFilePath, MI->context.currentFilePath);
+			MI->context.currentFullFilePath = fullFilePath.data;
 			
 			if (compilerOptions.includeDebugInformation) {
 				CharAccumulator_appendChars(MI->LLVMmetadataSource, "\n!");
@@ -282,8 +283,6 @@ void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path)
 			}
 			
 			compileFile(fullFilePath.data, MI, &LLVMsource);
-			
-			CharAccumulator_free(&fullFilePath);
 			
 			currentFilePath = currentFilePath->next;
 		}

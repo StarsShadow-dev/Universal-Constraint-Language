@@ -74,6 +74,7 @@ void CharAccumulator_free(CharAccumulator *accumulator);
 typedef struct {
 	char *currentSource;
 	char *currentFilePath;
+	char *currentFullFilePath;
 	
 	linkedList_Node *bindings[maxContextLevel];
 	linkedList_Node *importedModules;
@@ -129,6 +130,7 @@ typedef struct {
 } Token;
 
 typedef enum {
+	ASTnodeType_queryLocation,
 	ASTnodeType_import,
 	ASTnodeType_constrainedType,
 	ASTnodeType_struct,

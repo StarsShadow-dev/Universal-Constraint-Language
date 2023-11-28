@@ -513,6 +513,33 @@ void getVariableDescription(ModuleInformation *MI, CharAccumulator *charAccumula
 	}
 }
 
+int printComma = 0;
+
+void printKeyword(int type, char *name, char *documentation) {
+	if (printComma) {
+		putchar(',');
+	}
+	printComma = 1;
+	printf("[%d, \"%s\", \"Parallel-Lang Keyword\\n\\n%s\"]", type, name, documentation);
+}
+
+void printKeywords(ModuleInformation *MI) {
+	printf("[");
+	if (MI->level == 0) {
+		printKeyword(13, "import", "");
+		printKeyword(13, "macro", "");
+		printKeyword(13, "struct", "");
+		printKeyword(13, "impl", "");
+		printKeyword(13, "function", "");
+	} else {
+		printKeyword(13, "while", "");
+		printKeyword(13, "if", "If statement syntax:\\n```\\nif (/*condition*/) {\\n\\t// code\\n}\\n```");
+		printKeyword(13, "return", "");
+		printKeyword(13, "var", "");
+	}
+	printf("]");
+}
+
 ContextBinding *addFunctionToList(char *LLVMname, ModuleInformation *MI, linkedList_Node **list, ASTnode *node) {
 	ASTnode_function *data = (ASTnode_function *)node->value;
 	
@@ -812,6 +839,12 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 		ASTnode *node = ((ASTnode *)mainLoopCurrent->data);
 		
 		switch (node->nodeType) {
+			case ASTnodeType_queryLocation: {
+				printKeywords(MI);
+				exit(0);
+				break;
+			}
+				
 			case ASTnodeType_import: {
 				if (MI->level != 0) {
 					addStringToReportMsg("import statements are only allowed at top level");

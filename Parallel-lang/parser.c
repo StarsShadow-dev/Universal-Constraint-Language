@@ -289,15 +289,32 @@ linkedList_Node_tuple parseFunctionArguments(ModuleInformation *MI, linkedList_N
 	}
 }
 
+void addQueryLocation(linkedList_Node **AST) {
+	ASTnode *data = linkedList_addNode(AST, sizeof(ASTnode));
+	
+	data->nodeType = ASTnodeType_queryLocation;
+	data->location = (SourceLocation){0};
+	addedQueryLocation = 1;
+}
+
 linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserMode parserMode, int returnAtNonScopeResolutionOperator, int returnAtOpeningParentheses) {
 	linkedList_Node *AST = NULL;
 	
 	while (1) {
 		if (*current == NULL) {
+			if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
+				addQueryLocation(&AST);
+			}
 			return AST;
 		}
 		
 		Token *token = (Token *)((*current)->data);
+		
+		if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
+			if (strcmp(MI->context.currentFullFilePath, queryPath) == 0 && token->location.line >= queryLine) {
+				addQueryLocation(&AST);
+			}
+		}
 		
 		switch (token->type) {
 			case TokenType_word: {
@@ -787,6 +804,9 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 			if (getIfNodeShouldHaveSemicolon(lastNode)) {
 				addStringToReportMsg("expected ';' after statement, but the file ended");
 				compileError(MI, lastNode->location);
+			}
+			if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
+				addQueryLocation(&AST);
 			}
 			return AST;
 		}
