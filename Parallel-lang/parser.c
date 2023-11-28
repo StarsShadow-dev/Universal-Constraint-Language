@@ -310,9 +310,14 @@ linkedList_Node *parse(ModuleInformation *MI, linkedList_Node **current, ParserM
 		
 		Token *token = (Token *)((*current)->data);
 		
-		if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
-			if (strcmp(MI->context.currentFullFilePath, queryPath) == 0 && token->location.line >= queryLine) {
+		if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions) {
+			if (!addedQueryLocation && strcmp(MI->context.currentFullFilePath, queryPath) == 0 && token->location.line >= queryLine) {
 				addQueryLocation(&AST);
+			}
+			
+			if (token->location.line == queryLine) {
+				*current = (*current)->next;
+				continue;
 			}
 		}
 		
