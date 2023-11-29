@@ -15,6 +15,7 @@ extern char **environ;
 #define testPath_fail "tests/fail/"
 #define testPath_succeed "tests/succeed/"
 #define testPath_describe "tests/describe/"
+#define testPath_check "tests/check/"
 #define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
 // #define target_triple "arm64-apple-macosx13.0.0"
 
@@ -90,7 +91,7 @@ int checkTestOutput(char *stdout, char *testFileData) {
 	return strncmp(stdout, startOfBlockCommentText, lengthOfTestExpectation) == 0;
 }
 
-void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput) {
+void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput, int checkMode) {
 	printf("\nRuning: %s\n", filePath);
 
 	char *text = readFile(filePath);
@@ -100,7 +101,15 @@ void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput) {
 	pid_t pid;
 	int out[2];
 	posix_spawn_file_actions_t action;
-	char *args[] = {compilerPath, "compilerTesting", filePath, NULL};
+	
+	char *compilerMode;
+	if (checkMode) {
+		compilerMode = "check";
+	} else {
+		compilerMode = "compilerTesting";
+	}
+	
+	char *args[] = {compilerPath, compilerMode, filePath, NULL};
 
 	posix_spawn_file_actions_init(&action);
 
@@ -208,7 +217,7 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 0, 1);
+		runTest(path, 0, 1, 0);
 	}
 	closedir(d);
 
@@ -231,7 +240,7 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 1, 0);
+		runTest(path, 1, 0, 0);
 	}
 	closedir(d);
 	
@@ -253,9 +262,31 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 1, 1);
+		runTest(path, 1, 1, 0);
 	}
 	closedir(d);
+	
+	//
+	// testPath_check
+	//
+	
+	// pathLength = strlen(testPath_check);
+	// snprintf(path, pathLength + 1, "%s", testPath_check);
+	// d = opendir(path);
+	// if (d == NULL) {
+	// 	printf("Could not open \"%s\"\n", path);
+	// 	return 0;
+	// }
+	// while ((dir = readdir(d)) != NULL) {
+	// 	if (*dir->d_name == '.') {
+	// 		continue;
+	// 	}
+		
+	// 	snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
+
+	// 	runTest(path, 1, 1, 1);
+	// }
+	// closedir(d);
 
 	if (testsFailed > 0) {
 		printf("\nRan all tests in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
