@@ -523,8 +523,52 @@ void printKeyword(int type, char *name, char *documentation) {
 	printf("[%d, \"%s\", \"Parallel-Lang Keyword\\n\\n%s\"]", type, name, documentation);
 }
 
+void printBinding(ContextBinding *binding) {
+	int type;
+	SubString *name = binding->key;
+	char *documentation = "";
+	
+	switch (binding->type) {
+		case ContextBindingType_simpleType: {
+			type = 13;
+			break;
+		}
+		
+		case ContextBindingType_function: {
+			type = 2;
+			break;
+		}
+		
+		case ContextBindingType_macro: {
+			type = 11;
+			break;
+		}
+		
+		case ContextBindingType_variable: {
+			type = 5;
+			break;
+		}
+		
+		case ContextBindingType_compileTimeSetting: {
+			return;
+		}
+		
+		case ContextBindingType_struct: {
+			type = 21;
+			break;
+		}
+		
+	}
+	
+	if (printComma) {
+		putchar(',');
+	}
+	printComma = 1;
+	
+	printf("[%d, \"%.*s\", \"%s\"]", type, name->length, name->start, documentation);
+}
+
 void printKeywords(ModuleInformation *MI) {
-	printf("[");
 	if (MI->level == 0) {
 		printKeyword(13, "import", "");
 		printKeyword(13, "macro", "");
@@ -537,7 +581,46 @@ void printKeywords(ModuleInformation *MI) {
 		printKeyword(13, "return", "");
 		printKeyword(13, "var", "");
 	}
-	printf("]");
+}
+
+void printBindings(ModuleInformation *MI) {
+	int index = MI->level;
+	while (index >= 0) {
+		linkedList_Node *current = MI->context.bindings[index];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			printBinding(binding);
+			
+			current = current->next;
+		}
+		
+		index--;
+	}
+	
+	// the __core__ module can be implicitly accessed
+	linkedList_Node *currentModule = MI->context.importedModules;
+	while (currentModule != NULL) {
+		ModuleInformation *moduleInformation = *(ModuleInformation **)currentModule->data;
+		
+		if (strcmp(moduleInformation->name, "__core__") != 0) {
+			currentModule = currentModule->next;
+			continue;
+		}
+		
+		linkedList_Node *current = moduleInformation->context.bindings[0];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			printBinding(binding);
+			
+			current = current->next;
+		}
+		
+		break;
+	}
 }
 
 ContextBinding *addFunctionToList(char *LLVMname, ModuleInformation *MI, linkedList_Node **list, ASTnode *node) {
@@ -840,11 +923,14 @@ int buildLLVM(ModuleInformation *MI, ContextBinding_function *outerFunction, Cha
 		
 		switch (node->nodeType) {
 			case ASTnodeType_queryLocation: {
+				printf("[");
 				printKeywords(MI);
+				printBindings(MI);
+				printf("]");
 				exit(0);
 				break;
 			}
-				
+			
 			case ASTnodeType_import: {
 				if (MI->level != 0) {
 					addStringToReportMsg("import statements are only allowed at top level");
