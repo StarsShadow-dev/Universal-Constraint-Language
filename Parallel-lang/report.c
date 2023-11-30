@@ -205,7 +205,7 @@ char *getWarningTypeAsString(WarningType warningType) {
 void compileWarning(FileInformation *FI, SourceLocation location, WarningType warningType) {
 	if (compilerMode == CompilerMode_check) {
 		if (reportMsg.size > 0) {
-			if (FI->context.path == NULL) {
+			if (compilerMode == CompilerMode_compilerTesting || FI->context.path == NULL) {
 				printf("warning: %s\n", reportMsg.data);
 			} else {
 				printf("\nwarning (%s): %s\n at %s:%d\n", getWarningTypeAsString(warningType), reportMsg.data, FI->context.path, location.line);
@@ -230,7 +230,7 @@ void compileWarning(FileInformation *FI, SourceLocation location, WarningType wa
 void compileError(FileInformation *FI, SourceLocation location) {
 	if (reportMsg.size > 0) {
 		// \x1B[31m \x1B[0m
-		if (FI->context.path == NULL) {
+		if (compilerMode == CompilerMode_compilerTesting || FI->context.path == NULL) {
 			printf("error: %s\n", reportMsg.data);
 		} else {
 			printf("\nerror: %s\n at %s:%d\n", reportMsg.data, FI->context.path, location.line);

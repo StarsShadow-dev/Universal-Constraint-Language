@@ -184,7 +184,6 @@ void compileFile(FileInformation *FI) {
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, " = !DIFile(filename: \"");
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, FI->context.path);
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, "\", directory: \"");
-		// TODO
 //		CharAccumulator_appendChars(FI->LLVMmetadataSource, path);
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, "\")");
 		FI->debugInformationFileScopeID = FI->metadataCount;
