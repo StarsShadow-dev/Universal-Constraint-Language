@@ -23,7 +23,6 @@ typedef enum {
 } QueryMode;
 
 extern QueryMode queryMode;
-extern char *queryPath;
 extern int queryTextLength;
 extern int queryLine;
 extern int queryColumn;
@@ -44,6 +43,7 @@ extern CompilerOptions compilerOptions;
 extern char *LLC_path;
 extern char *clang_path;
 extern char *buildDirectory;
+extern char *startFilePath;
 
 extern FileInformation *coreFilePointer;
 

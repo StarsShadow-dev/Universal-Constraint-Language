@@ -7,7 +7,6 @@ CharAccumulator objectFiles = {100, 0, 0};
 CompilerOptions compilerOptions = {};
 
 QueryMode queryMode;
-char *queryPath = NULL;
 int queryTextLength = 0;
 int queryLine = 0;
 int queryColumn = 0;
@@ -17,6 +16,7 @@ int addedQueryLocation = 0;
 char *LLC_path = NULL;
 char *clang_path = NULL;
 char *buildDirectory = NULL;
+char *startFilePath = NULL;
 
 FileInformation *coreFilePointer;
 

@@ -60,7 +60,7 @@ char *readFile(const char *path) {
 	char *buffer = safeMalloc(fileSize + 1);
 	
 	if (fread(buffer, sizeof(char), fileSize, file) != fileSize) {
-		printf("fread failed\n");
+		printf("fread failed, path = %s\n", path);
 		exit(1);
 	}
 	buffer[fileSize] = 0;
@@ -182,9 +182,9 @@ void compileFile(FileInformation *FI) {
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, "\n!");
 		CharAccumulator_appendInt(FI->LLVMmetadataSource, FI->metadataCount);
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, " = !DIFile(filename: \"");
-		CharAccumulator_appendChars(FI->LLVMmetadataSource, FI->context.path);
+		CharAccumulator_appendChars(FI->LLVMmetadataSource, basename(FI->context.path));
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, "\", directory: \"");
-//		CharAccumulator_appendChars(FI->LLVMmetadataSource, path);
+		CharAccumulator_appendChars(FI->LLVMmetadataSource, dirname(FI->context.path));
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, "\")");
 		FI->debugInformationFileScopeID = FI->metadataCount;
 		FI->metadataCount++;
@@ -199,7 +199,7 @@ void compileFile(FileInformation *FI) {
 		FI->metadataCount++;
 	}
 	
-	if (compilerMode == CompilerMode_query && strcmp(FI->context.path, queryPath) == 0) {
+	if (compilerMode == CompilerMode_query && strcmp(FI->context.path, startFilePath) == 0) {
 		FI->context.currentSource = queryText;
 	} else {
 		FI->context.currentSource = readFile(FI->context.path);

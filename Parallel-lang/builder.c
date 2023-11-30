@@ -102,7 +102,7 @@ ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
 			current = current->next;
 		}
 		
-		break;
+		currentFile = currentFile->next;
 	}
 
 	return NULL;
@@ -142,7 +142,7 @@ ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *k
 			current = current->next;
 		}
 		
-		break;
+		currentFile = currentFile->next;
 	}
 	
 	return NULL;

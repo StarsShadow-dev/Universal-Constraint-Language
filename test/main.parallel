@@ -1,5 +1,7 @@
+import "modules/libc_bindings/stdio.parallel"
+
 #set("__functionSymbol", "main");
 function main(): Int32 {
-	
+	printf("testing the new import!\n");
 	return 0;
 }

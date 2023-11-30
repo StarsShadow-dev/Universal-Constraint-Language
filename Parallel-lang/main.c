@@ -33,8 +33,6 @@ int main(int argc, char **argv) {
 	// the current argument
 	int currentArg = 1;
 	
-	char *startFilePath = NULL;
-	
 	if (strcmp(argv[currentArg], "build_objectFile") == 0) {
 		currentArg++;
 		compilerMode = CompilerMode_build_objectFile;
@@ -75,7 +73,7 @@ int main(int argc, char **argv) {
 	else if (strcmp(argv[currentArg], "query") == 0) {
 		currentArg++;
 		compilerMode = CompilerMode_query;
-		if (argc < 8) {
+		if (argc < 7) {
 			printf("not (argc < 8)");
 			exit(1);
 		}
@@ -90,9 +88,6 @@ int main(int argc, char **argv) {
 		currentArg++;
 		
 		startFilePath = argv[currentArg];
-		currentArg++;
-		
-		queryPath = argv[currentArg];
 		currentArg++;
 		queryTextLength = atoi(argv[currentArg]);
 		currentArg++;
@@ -172,21 +167,23 @@ int main(int argc, char **argv) {
 	
 	CharAccumulator_initialize(&objectFiles);
 	
-	CharAccumulator buildDirectoryCA = {100, 0, 0};
-	CharAccumulator_initialize(&buildDirectoryCA);
-	CharAccumulator_appendChars(&buildDirectoryCA, dirname(startFilePath));
-	CharAccumulator_appendChars(&buildDirectoryCA, "/build");
-	buildDirectory = buildDirectoryCA.data;
-	
-	if (compilerMode != CompilerMode_compilerTesting) {
-		struct stat stat_buffer = {0};
-		if (stat(buildDirectory, &stat_buffer) == -1) {
-			printf("The buildDirectory (%s) does not exist.\n", buildDirectory);
-			exit(1);
-		} else {
-			if (!S_ISDIR(stat_buffer.st_mode)) {
-				printf("The buildDirectory (%s) exists but is not a directory.\n", buildDirectory);
+	if (compilerMode != CompilerMode_query) {
+		CharAccumulator buildDirectoryCA = {100, 0, 0};
+		CharAccumulator_initialize(&buildDirectoryCA);
+		CharAccumulator_appendChars(&buildDirectoryCA, dirname(startFilePath));
+		CharAccumulator_appendChars(&buildDirectoryCA, "/build");
+		buildDirectory = buildDirectoryCA.data;
+		
+		if (compilerMode != CompilerMode_compilerTesting) {
+			struct stat stat_buffer = {0};
+			if (stat(buildDirectory, &stat_buffer) == -1) {
+				printf("The buildDirectory (%s) does not exist.\n", buildDirectory);
 				exit(1);
+			} else {
+				if (!S_ISDIR(stat_buffer.st_mode)) {
+					printf("The buildDirectory (%s) exists but is not a directory.\n", buildDirectory);
+					exit(1);
+				}
 			}
 		}
 	}
@@ -203,7 +200,7 @@ int main(int argc, char **argv) {
 		.level = 0,
 		.context = {
 			.currentSource = NULL,
-			.path = startFilePath,
+			.path = NULL,
 			
 			.bindings = {0},
 			.importedFiles = NULL,
@@ -308,8 +305,6 @@ int main(int argc, char **argv) {
 	
 	free(LLC_path);
 	free(clang_path);
-	
-	CharAccumulator_free(&buildDirectoryCA);
 	
 	return 0;
 }

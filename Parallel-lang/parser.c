@@ -311,7 +311,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 		Token *token = (Token *)((*current)->data);
 		
 		if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions) {
-			if (!addedQueryLocation && strcmp(FI->context.path, queryPath) == 0 && token->location.line >= queryLine) {
+			if (!addedQueryLocation && strcmp(FI->context.path, startFilePath) == 0 && token->location.line >= queryLine) {
 				addQueryLocation(&AST);
 			}
 			
