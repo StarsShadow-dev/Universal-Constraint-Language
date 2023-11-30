@@ -7,12 +7,12 @@
 
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
 
-void addContextBinding_macro(ModuleInformation *MI, char *name);
+void addContextBinding_macro(FileInformation *FI, char *name);
 
 void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name);
 
 int buildLLVM(
-	ModuleInformation *MI,
+	FileInformation *FI,
 	ContextBinding_function *outerFunction,
 	CharAccumulator *outerSource,
 	CharAccumulator *innerSource,

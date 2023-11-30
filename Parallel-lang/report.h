@@ -30,12 +30,12 @@ typedef enum {
 	WarningType_other
 } WarningType;
 
-void compileWarning(ModuleInformation *MI, SourceLocation location, WarningType warningType);
+void compileWarning(FileInformation *FI, SourceLocation location, WarningType warningType);
 
 //
 // errors
 //
 
-void compileError(ModuleInformation *MI, SourceLocation location) __dead2;
+void compileError(FileInformation *FI, SourceLocation location) __dead2;
 
 #endif /* report_h */

@@ -1,7 +1,7 @@
 /*
  This file has the main function.
  
- The main function has a simple command line argument parser and then calls compileModule from "compiler.c".
+ The main function has a simple command line argument parser and then calls compileFile from "compiler.c".
  
  The printHelp function comes from "help.parallel" (#include "fromParallel.h");
  */
@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include "fromParallel.h"
 
@@ -32,13 +33,13 @@ int main(int argc, char **argv) {
 	// the current argument
 	int currentArg = 1;
 	
-	char *modulePath = NULL;
+	char *startFilePath = NULL;
 	
 	if (strcmp(argv[currentArg], "build_objectFile") == 0) {
 		currentArg++;
 		compilerMode = CompilerMode_build_objectFile;
 		
-		modulePath = argv[currentArg];
+		startFilePath = argv[currentArg];
 		currentArg++;
 	}
 	
@@ -46,25 +47,20 @@ int main(int argc, char **argv) {
 		currentArg++;
 		compilerMode = CompilerMode_build_binary;
 		
-		modulePath = argv[currentArg];
+		startFilePath = argv[currentArg];
 		currentArg++;
 	}
 	
 	else if (strcmp(argv[currentArg], "run") == 0) {
 		printf("CompilerMode_run is not available right now\n");
 		exit(1);
-//		currentArg++;
-//		compilerMode = CompilerMode_run;
-		
-//		modulePath = argv[currentArg];
-//		currentArg++;
 	}
 	
 	else if (strcmp(argv[currentArg], "compilerTesting") == 0) {
 		currentArg++;
 		compilerMode = CompilerMode_compilerTesting;
 		
-		modulePath = argv[currentArg];
+		startFilePath = argv[currentArg];
 		currentArg++;
 	}
 	
@@ -72,7 +68,7 @@ int main(int argc, char **argv) {
 		currentArg++;
 		compilerMode = CompilerMode_check;
 		
-		modulePath = argv[currentArg];
+		startFilePath = argv[currentArg];
 		currentArg++;
 	}
 	
@@ -93,7 +89,7 @@ int main(int argc, char **argv) {
 		}
 		currentArg++;
 		
-		modulePath = argv[currentArg];
+		startFilePath = argv[currentArg];
 		currentArg++;
 		
 		queryPath = argv[currentArg];
@@ -176,29 +172,27 @@ int main(int argc, char **argv) {
 	
 	CharAccumulator_initialize(&objectFiles);
 	
-	CharAccumulator full_build_directoryCA = {100, 0, 0};
-	CharAccumulator_initialize(&full_build_directoryCA);
-	CharAccumulator_appendChars(&full_build_directoryCA, modulePath);
-	CharAccumulator_appendChars(&full_build_directoryCA, "/build");
+	CharAccumulator buildDirectoryCA = {100, 0, 0};
+	CharAccumulator_initialize(&buildDirectoryCA);
+	CharAccumulator_appendChars(&buildDirectoryCA, dirname(startFilePath));
+	CharAccumulator_appendChars(&buildDirectoryCA, "/build");
+	buildDirectory = buildDirectoryCA.data;
 	
 	if (compilerMode != CompilerMode_compilerTesting) {
 		struct stat stat_buffer = {0};
-		if (stat(full_build_directoryCA.data, &stat_buffer) == -1) {
-			printf("The \"build_directory\" (%s) does not exist.\n", full_build_directoryCA.data);
+		if (stat(buildDirectory, &stat_buffer) == -1) {
+			printf("The buildDirectory (%s) does not exist.\n", buildDirectory);
 			exit(1);
 		} else {
 			if (!S_ISDIR(stat_buffer.st_mode)) {
-				printf("The \"build_directory\" (%s) exists but is not a directory.\n", full_build_directoryCA.data);
+				printf("The buildDirectory (%s) exists but is not a directory.\n", buildDirectory);
 				exit(1);
 			}
 		}
-		
-		full_build_directory = full_build_directoryCA.data;
 	}
 	
-	ModuleInformation coreModule = {
-		.name = "__core__",
-		.path = NULL,
+	FileInformation coreFile = {
+		.ID = 0,
 		.topLevelConstantSource = NULL,
 		.topLevelFunctionSource = NULL,
 		.LLVMmetadataSource = NULL,
@@ -209,40 +203,39 @@ int main(int argc, char **argv) {
 		.level = 0,
 		.context = {
 			.currentSource = NULL,
-			.currentFilePath = NULL,
-			.currentFullFilePath = NULL,
+			.path = startFilePath,
 			
 			.bindings = {0},
-			.importedModules = NULL,
+			.importedFiles = NULL,
 		},
 		
 		.debugInformationCompileUnitID = 0,
 		.debugInformationFileScopeID = 0
 	};
-	coreModulePointer = &coreModule;
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Void", "void", 0, 4);
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int8", "i8", 1, 4);
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int16", "i16", 2, 4);
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int32", "i32", 4, 4);
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Int64", "i64", 8, 4);
+	coreFilePointer = &coreFile;
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Void", "void", 0, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int8", "i8", 1, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int16", "i16", 2, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int32", "i32", 4, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int64", "i64", 8, 4);
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Bool", "i1", 1, 4);
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Bool", "i1", 1, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
 	// if "__Macro_and_it_should_not_be_in_IR" ever shows up in the IR then I know that something went horribly wrong...
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Macro", "__Macro_and_it_should_not_be_in_IR", 0, 0);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "__Macro", "__Macro_and_it_should_not_be_in_IR", 0, 0);
 	// same for "__Number_and_it_should_not_be_in_IR"
-	addContextBinding_simpleType(&coreModule.context.bindings[0], "__Number", "__Number_and_it_should_not_be_in_IR", 0, 0);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "__Number", "__Number_and_it_should_not_be_in_IR", 0, 0);
 	
-	addContextBinding_compileTimeSetting(&coreModule.context.bindings[0], "__functionSymbol");
+	addContextBinding_compileTimeSetting(&coreFile.context.bindings[0], "__functionSymbol");
 	
-	addContextBinding_macro(&coreModule, "error");
-	addContextBinding_macro(&coreModule, "warning");
-	addContextBinding_macro(&coreModule, "describe");
-	addContextBinding_macro(&coreModule, "insertLLVMIR");
-	addContextBinding_macro(&coreModule, "set");
+	addContextBinding_macro(&coreFile, "error");
+	addContextBinding_macro(&coreFile, "warning");
+	addContextBinding_macro(&coreFile, "describe");
+	addContextBinding_macro(&coreFile, "insertLLVMIR");
+	addContextBinding_macro(&coreFile, "set");
 	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
@@ -256,9 +249,9 @@ int main(int argc, char **argv) {
 	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
-	ModuleInformation *MI = ModuleInformation_new(modulePath, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
-	compileModule(MI, compilerMode, modulePath);
-	linkedList_freeList(&MI->context.bindings[0]);
+	FileInformation *FI = FileInformation_new(startFilePath, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+	compileFile(FI);
+	linkedList_freeList(&FI->context.bindings[0]);
 	
 	if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {
 		CharAccumulator clang_command = {100, 0, 0};
@@ -269,7 +262,7 @@ int main(int argc, char **argv) {
 	//	CharAccumulator_appendChars(&clang_command, "/");
 		CharAccumulator_appendChars(&clang_command, objectFiles.data);
 		CharAccumulator_appendChars(&clang_command, "-o ");
-		CharAccumulator_appendChars(&clang_command, full_build_directory);
+		CharAccumulator_appendChars(&clang_command, buildDirectory);
 		CharAccumulator_appendChars(&clang_command, "/binary");
 		
 		if (compilerOptions.verbose) {
@@ -285,7 +278,7 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		
-		printf("Binary saved to %s/binary\n", full_build_directory);
+		printf("Binary saved to %s/binary\n", buildDirectory);
 		
 		CharAccumulator_free(&clang_command);
 	}
@@ -316,7 +309,7 @@ int main(int argc, char **argv) {
 	free(LLC_path);
 	free(clang_path);
 	
-	CharAccumulator_free(&full_build_directoryCA);
+	CharAccumulator_free(&buildDirectoryCA);
 	
 	return 0;
 }

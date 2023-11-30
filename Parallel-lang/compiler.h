@@ -10,6 +10,6 @@ char *readFile(const char *path);
 
 char *getJsmnString(char *buffer, jsmntok_t *t, int start, int count, char *key);
 
-void compileModule(ModuleInformation *MI, CompilerMode compilerMode, char *path);
+void compileFile(FileInformation *FI);
 
 #endif /* compiler_h */

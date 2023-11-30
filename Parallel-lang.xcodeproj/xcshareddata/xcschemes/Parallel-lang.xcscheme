@@ -53,6 +53,10 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
+            argument = "build_objectFile"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "build_binary"
             isEnabled = "YES">
          </CommandLineArgument>
@@ -61,12 +65,16 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "./test"
+            argument = "./test/main.parallel"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-d"
             isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-v"
+            isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>

@@ -13,15 +13,15 @@
 
 #define selfReference character == '$'
 
-#define ellipsis character == '.' && MI->context.currentSource[index+1] == '.' && MI->context.currentSource[index+2] == '.'
+#define ellipsis character == '.' && FI->context.currentSource[index+1] == '.' && FI->context.currentSource[index+2] == '.'
 
 // periods are considered operators because they perform an operation
 #define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '*' || character == '/' || character == '.'
-#define operator_2chars character == '=' && MI->context.currentSource[index+1] == '=' || character == ':' && MI->context.currentSource[index+1] == ':'
+#define operator_2chars character == '=' && FI->context.currentSource[index+1] == '=' || character == ':' && FI->context.currentSource[index+1] == ':'
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
-linkedList_Node *lex(ModuleInformation *MI) {
+linkedList_Node *lex(FileInformation *FI) {
 	linkedList_Node *tokens = 0;
 	
 	int index = 0;
@@ -30,12 +30,12 @@ linkedList_Node *lex(ModuleInformation *MI) {
 	
 	int lineBreaksInARow = 0;
 	
-	if (MI->context.currentSource == NULL) {
+	if (FI->context.currentSource == NULL) {
 		return NULL;
 	}
 	
 	while (1) {
-		char character = MI->context.currentSource[index];
+		char character = FI->context.currentSource[index];
 		
 		// if character is a NULL byte, then the string is over
 		if (character == 0) {
@@ -52,7 +52,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			if (lineBreaksInARow == 5) {
 				// warning test
 				addStringToReportMsg("4 empty lines in a row");
-				compileWarning(MI, (SourceLocation){line, 0, 0}, WarningType_format);
+				compileWarning(FI, (SourceLocation){line, 0, 0}, WarningType_format);
 			}
 			
 			continue;
@@ -74,7 +74,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			int end = 0;
 			
 			while (1) {
-				char character = MI->context.currentSource[index];
+				char character = FI->context.currentSource[index];
 				
 				if (character != 0 && wordContinue) {
 					index++;
@@ -93,7 +93,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_word;
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			data->subString.start = MI->context.currentSource + start;
+			data->subString.start = FI->context.currentSource + start;
 			data->subString.length = end - start;
 		}
 		
@@ -103,7 +103,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			int end = 0;
 			
 			while (1) {
-				char character = MI->context.currentSource[index];
+				char character = FI->context.currentSource[index];
 				
 				if (character != 0 && numberContinue) {
 					index++;
@@ -122,7 +122,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_number;
 			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
-			data->subString.start = MI->context.currentSource + start;
+			data->subString.start = FI->context.currentSource + start;
 			data->subString.length = end - start;
 		}
 		
@@ -131,7 +131,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_selfReference;
 			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = MI->context.currentSource + index;
+			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
 		
@@ -140,7 +140,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_pound;
 			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = MI->context.currentSource + index;
+			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
 		
@@ -149,7 +149,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_ellipsis;
 			data->location = (SourceLocation){line, column, column + 3};
-			data->subString.start = MI->context.currentSource + index;
+			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 3;
 			
 			index += 2;
@@ -157,12 +157,12 @@ linkedList_Node *lex(ModuleInformation *MI) {
 		}
 		
 		// comment
-		else if (character == '/' && MI->context.currentSource[index+1] == '/') {
+		else if (character == '/' && FI->context.currentSource[index+1] == '/') {
 			index++;
 			column++;
 			
 			while (1) {
-				char character = MI->context.currentSource[index];
+				char character = FI->context.currentSource[index];
 				
 				if (character != 0 && character != '\n') {
 					index++;
@@ -177,12 +177,12 @@ linkedList_Node *lex(ModuleInformation *MI) {
 		}
 		
 		// block comment
-		else if (character == '/' && MI->context.currentSource[index+1] == '*') {
+		else if (character == '/' && FI->context.currentSource[index+1] == '*') {
 			index++;
 			column++;
 			
 			while (1) {
-				char character = MI->context.currentSource[index];
+				char character = FI->context.currentSource[index];
 				
 				if (character == 0) {
 					index--;
@@ -192,7 +192,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 				
 				if (character == '\n') {
 					line++;
-				} else if (character == '*' && MI->context.currentSource[index+1] == '/') {
+				} else if (character == '*' && FI->context.currentSource[index+1] == '/') {
 					index++;
 					column++;
 					break;
@@ -208,7 +208,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_operator;
 			data->location = (SourceLocation){line, column, column + 2};
-			data->subString.start = MI->context.currentSource + index;
+			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 2;
 			
 			index++;
@@ -220,7 +220,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_operator;
 			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = MI->context.currentSource + index;
+			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
 		
@@ -229,7 +229,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_separator;
 			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = MI->context.currentSource + index;
+			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
 		
@@ -243,7 +243,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			int end = 0;
 			
 			while (1) {
-				char character = MI->context.currentSource[index];
+				char character = FI->context.currentSource[index];
 				
 				if (character != 0 && character != '"') {
 					index++;
@@ -272,7 +272,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 			
 			data->type = TokenType_string;
 			data->location = (SourceLocation){line, columnStart - 1, columnStart + end - start + 1};
-			data->subString.start = MI->context.currentSource + start;
+			data->subString.start = FI->context.currentSource + start;
 			data->subString.length = end - start;
 		}
 		
@@ -280,7 +280,7 @@ linkedList_Node *lex(ModuleInformation *MI) {
 		
 		else {
 			printf("unexpected character '%c' (%d)\n", character, character);
-			compileError(MI, (SourceLocation){line, column, column + 1});
+			compileError(FI, (SourceLocation){line, column, column + 1});
 		}
 		
 		index++;

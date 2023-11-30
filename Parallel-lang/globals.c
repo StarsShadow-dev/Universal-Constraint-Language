@@ -16,10 +16,10 @@ int addedQueryLocation = 0;
 
 char *LLC_path = NULL;
 char *clang_path = NULL;
-char *full_build_directory = NULL;
+char *buildDirectory = NULL;
 
-ModuleInformation *coreModulePointer;
+FileInformation *coreFilePointer;
 
-linkedList_Node *alreadyCompiledModules = NULL;
+linkedList_Node *alreadyCompiledFiles = NULL;
 
 int warningCount = 0;

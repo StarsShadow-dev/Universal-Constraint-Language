@@ -234,12 +234,13 @@ void CharAccumulator_free(CharAccumulator *accumulator) {
 	free(accumulator->data);
 }
 
-ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource) {
-	ModuleInformation *MI = safeMalloc(sizeof(ModuleInformation));
+int nextFileID = 1;
+
+FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource) {
+	FileInformation *FI = safeMalloc(sizeof(FileInformation));
 	
-	*MI = (ModuleInformation){
-		.name = NULL,
-		.path = path,
+	*FI = (FileInformation){
+		.ID = nextFileID,
 		.topLevelConstantSource = topLevelConstantSource,
 		.topLevelFunctionSource = topLevelFunctionSource,
 		.LLVMmetadataSource = LLVMmetadataSource,
@@ -251,25 +252,26 @@ ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelCo
 		.level = -1,
 		.context = {
 			.currentSource = NULL,
-			.currentFilePath = NULL,
-			.currentFullFilePath = NULL,
+			.path = path,
 			
 			.bindings = {0},
-			.importedModules = NULL,
+			.importedFiles = NULL,
 		},
 		
 		.debugInformationCompileUnitID = 0,
 		.debugInformationFileScopeID = 0
 	};
+	
+	nextFileID++;
 
-	return MI;
+	return FI;
 }
 
 //
 // lexer, parser and builder
 //
 
-void getASTnodeDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, ASTnode *node) {
+void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator, ASTnode *node) {
 	switch (node->nodeType) {
 		case ASTnodeType_number: {
 			CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)node->value)->value);

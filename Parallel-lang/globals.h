@@ -43,11 +43,11 @@ extern CompilerOptions compilerOptions;
 
 extern char *LLC_path;
 extern char *clang_path;
-extern char *full_build_directory;
+extern char *buildDirectory;
 
-extern ModuleInformation *coreModulePointer;
+extern FileInformation *coreFilePointer;
 
-extern linkedList_Node *alreadyCompiledModules;
+extern linkedList_Node *alreadyCompiledFiles;
 
 extern int warningCount;
 

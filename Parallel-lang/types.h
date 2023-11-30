@@ -73,16 +73,14 @@ void CharAccumulator_free(CharAccumulator *accumulator);
 
 typedef struct {
 	char *currentSource;
-	char *currentFilePath;
-	char *currentFullFilePath;
+	char *path;
 	
 	linkedList_Node *bindings[maxContextLevel];
-	linkedList_Node *importedModules;
-} ModuleContext;
+	linkedList_Node *importedFiles;
+} FileContext;
 
 typedef struct {
-	char *name;
-	char *path;
+	int ID;
 	CharAccumulator *topLevelConstantSource;
 	CharAccumulator *topLevelFunctionSource;
 	CharAccumulator *LLVMmetadataSource;
@@ -91,13 +89,13 @@ typedef struct {
 	int metadataCount;
 	
 	int level;
-	ModuleContext context;
+	FileContext context;
 	
 	int debugInformationCompileUnitID;
 	int debugInformationFileScopeID;
-} ModuleInformation;
+} FileInformation;
 
-ModuleInformation *ModuleInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource);
+FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource);
 
 //
 // lexer, parser and builder
@@ -259,7 +257,7 @@ typedef struct {
 	SubString *name;
 } ASTnode_identifier;
 
-void getASTnodeDescription(ModuleInformation *MI, CharAccumulator *charAccumulator, ASTnode *node);
+void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator, ASTnode *node);
 
 //
 // facts
@@ -336,7 +334,7 @@ typedef struct {
 } ContextBinding_function;
 
 typedef struct {
-	ModuleInformation *originModule;
+	FileInformation *originFile;
 	linkedList_Node *codeBlock;
 } ContextBinding_macro;
 

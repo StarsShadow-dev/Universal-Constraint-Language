@@ -121,13 +121,13 @@ void printSpaces(int count) {
 	}
 }
 
-void printSourceCode(ModuleInformation *MI, SourceLocation location) {
+void printSourceCode(FileInformation *FI, SourceLocation location) {
 	int maxLineSize = getSizeOfUint(location.line + 1);
 	
 	int index = 0;
 	int line = 1;
 	while (1) {
-		char character = MI->context.currentSource[index];
+		char character = FI->context.currentSource[index];
 		
 		if (character == 0) {
 			putchar('\n');
@@ -141,7 +141,7 @@ void printSourceCode(ModuleInformation *MI, SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLine(MI->context.currentSource, &index);
+			printLine(FI->context.currentSource, &index);
 			line++;
 		} else if (line == location.line) {
 			printf("%d", line);
@@ -151,9 +151,9 @@ void printSourceCode(ModuleInformation *MI, SourceLocation location) {
 			}
 			printf(" |");
 			if (location.columnStart == 0 && location.columnEnd == 0) {
-				printLine(MI->context.currentSource, &index);
+				printLine(FI->context.currentSource, &index);
 			} else {
-				printLineWithIndicator(MI->context.currentSource, &index, location.columnStart, location.columnEnd, maxLineSize + 2);
+				printLineWithIndicator(FI->context.currentSource, &index, location.columnStart, location.columnEnd, maxLineSize + 2);
 			}
 			line++;
 		} else if (line == location.line + 1) {
@@ -163,7 +163,7 @@ void printSourceCode(ModuleInformation *MI, SourceLocation location) {
 				printSpaces(maxLineSize - lineSize);
 			}
 			printf(" |");
-			printLine(MI->context.currentSource, &index);
+			printLine(FI->context.currentSource, &index);
 			break;
 		} else if (character == '\n') {
 			line++;
@@ -202,19 +202,19 @@ char *getWarningTypeAsString(WarningType warningType) {
 	}
 }
 
-void compileWarning(ModuleInformation *MI, SourceLocation location, WarningType warningType) {
+void compileWarning(FileInformation *FI, SourceLocation location, WarningType warningType) {
 	if (compilerMode == CompilerMode_check) {
 		if (reportMsg.size > 0) {
-			if (MI->name == NULL || MI->context.currentFilePath == NULL) {
+			if (FI->context.path == NULL) {
 				printf("warning: %s\n", reportMsg.data);
 			} else {
-				printf("\nwarning (%s): %s\n at %s:%s:%d\n", getWarningTypeAsString(warningType), reportMsg.data, MI->name, MI->context.currentFilePath, location.line);
+				printf("\nwarning (%s): %s\n at %s:%d\n", getWarningTypeAsString(warningType), reportMsg.data, FI->context.path, location.line);
 			}
 			// clear the character accumulator
 			CharAccumulator_initialize(&reportMsg);
 		}
 		
-		printSourceCode(MI, location);
+		printSourceCode(FI, location);
 	}
 	
 	warningCount++;
@@ -227,19 +227,19 @@ void compileWarning(ModuleInformation *MI, SourceLocation location, WarningType 
 // errors
 //
 
-void compileError(ModuleInformation *MI, SourceLocation location) {
+void compileError(FileInformation *FI, SourceLocation location) {
 	if (reportMsg.size > 0) {
 		// \x1B[31m \x1B[0m
-		if (MI->name == NULL || MI->context.currentFilePath == NULL) {
+		if (FI->context.path == NULL) {
 			printf("error: %s\n", reportMsg.data);
 		} else {
-			printf("\nerror: %s\n at %s:%s:%d\n", reportMsg.data, MI->name, MI->context.currentFilePath, location.line);
+			printf("\nerror: %s\n at %s:%d\n", reportMsg.data, FI->context.path, location.line);
 		}
 		// clear the character accumulator
 		CharAccumulator_initialize(&reportMsg);
 	}
 	
-	printSourceCode(MI, location);
+	printSourceCode(FI, location);
 	
 	// stop compiling
 	exit(1);

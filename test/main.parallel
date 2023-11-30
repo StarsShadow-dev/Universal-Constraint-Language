@@ -1,8 +1,5 @@
-// import "modules/std"
-// import "modules/libc_bindings"
-
 #set("__functionSymbol", "main");
-function main(): Int8 {
+function main(): Int32 {
 	
 	return 0;
 }
