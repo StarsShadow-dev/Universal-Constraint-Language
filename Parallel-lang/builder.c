@@ -2308,9 +2308,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				ContextBinding *functionBinding = getContextBindingFromSubString(FI, data->name);
 				if (functionBinding == NULL || functionBinding->type != ContextBindingType_function) abort();
 				
-				if (!data->external) {
-					generateFunction(FI, outerSource, functionBinding, node, 1);
-				}
+				generateFunction(FI, outerSource, functionBinding, node, 1);
 			}
 			
 			afterLoopCurrent = afterLoopCurrent->next;
