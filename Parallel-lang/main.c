@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 	
 	for (; currentArg < argc; currentArg++) {
 		char *arg = argv[currentArg];
-		printf("arg %d: %s\n", currentArg, arg);
+//		printf("arg %d: %s\n", currentArg, arg);
 		if (strcmp(arg, "-d") == 0) {
 			if (compilerMode == CompilerMode_check) {
 				printf("'-d' is not allowed with check mode\n");

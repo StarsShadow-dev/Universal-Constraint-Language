@@ -2156,15 +2156,15 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					i++;
 				}
 				
-				CharAccumulator_appendChars(FI->topLevelConstantSource, "\n@.str.");
-				CharAccumulator_appendInt(FI->topLevelConstantSource, FI->stringCount);
-				CharAccumulator_appendChars(FI->topLevelConstantSource, " = private unnamed_addr constant [");
-				CharAccumulator_appendInt(FI->topLevelConstantSource, stringLength);
-				CharAccumulator_appendChars(FI->topLevelConstantSource, " x i8] c\"");
-				CharAccumulator_appendChars(FI->topLevelConstantSource, string.data);
-				CharAccumulator_appendChars(FI->topLevelConstantSource, "\\00\""); // the \00 is the NULL byte
-				
 				if (innerSource != NULL) {
+					CharAccumulator_appendChars(FI->topLevelConstantSource, "\n@.str.");
+					CharAccumulator_appendInt(FI->topLevelConstantSource, FI->stringCount);
+					CharAccumulator_appendChars(FI->topLevelConstantSource, " = private unnamed_addr constant [");
+					CharAccumulator_appendInt(FI->topLevelConstantSource, stringLength);
+					CharAccumulator_appendChars(FI->topLevelConstantSource, " x i8] c\"");
+					CharAccumulator_appendChars(FI->topLevelConstantSource, string.data);
+					CharAccumulator_appendChars(FI->topLevelConstantSource, "\\00\""); // the \00 is the NULL byte
+					
 					if (withTypes) {
 						CharAccumulator_appendChars(innerSource, "ptr ");
 					}
