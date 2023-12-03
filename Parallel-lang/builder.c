@@ -1337,20 +1337,22 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					
 					else if (SubString_string_cmp(macroToRunBinding->key, "describe") == 0) {
 						if (typeCount != 1) {
-							addStringToReportMsg("#error(variable) expected 1 argument");
+							addStringToReportMsg("#describe(variable) expected 1 argument");
 							compileError(FI, node->location);
 						}
 						
-						ContextBinding *variableBinding = getContextBindingFromIdentifierNode(FI, (ASTnode *)data->arguments->data);
-						
-						CharAccumulator variableDescription = {100, 0, 0};
-						CharAccumulator_initialize(&variableDescription);
-						
-						getVariableDescription(FI, &variableDescription, variableBinding);
-						
-						printf("%.*s", (int)variableDescription.size, variableDescription.data);
-						
-						CharAccumulator_free(&variableDescription);
+						if (compilerMode != CompilerMode_query) {
+							ContextBinding *variableBinding = getContextBindingFromIdentifierNode(FI, (ASTnode *)data->arguments->data);
+							
+							CharAccumulator variableDescription = {100, 0, 0};
+							CharAccumulator_initialize(&variableDescription);
+							
+							getVariableDescription(FI, &variableDescription, variableBinding);
+							
+							printf("%.*s", (int)variableDescription.size, variableDescription.data);
+							
+							CharAccumulator_free(&variableDescription);
+						}
 					}
 					
 					else if (SubString_string_cmp(macroToRunBinding->key, "insertLLVMIR") == 0) {
