@@ -581,7 +581,37 @@ void printKeywords(FileInformation *FI) {
 }
 
 void printBindings(FileInformation *FI) {
-	// TODO
+	int index = FI->level;
+	while (index >= 0) {
+		linkedList_Node *current = FI->context.bindings[index];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			printBinding(binding);
+			
+			current = current->next;
+		}
+		
+		index--;
+	}
+	
+	linkedList_Node *currentFile = FI->context.importedFiles;
+	while (currentFile != NULL) {
+		FileInformation *fileInformation = *(FileInformation **)currentFile->data;
+		
+		linkedList_Node *current = fileInformation->context.bindings[0];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			printBinding(binding);
+			
+			current = current->next;
+		}
+		
+		currentFile = currentFile->next;
+	}
 }
 
 ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_Node **list, ASTnode *node) {
