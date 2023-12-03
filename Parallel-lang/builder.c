@@ -523,7 +523,8 @@ void printKeyword(int type, char *name, char *documentation) {
 void printBinding(ContextBinding *binding) {
 	int type;
 	SubString *name = binding->key;
-	char *documentation = "";
+	CharAccumulator documentation = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(&documentation);
 	
 	switch (binding->type) {
 		case ContextBindingType_simpleType: {
@@ -555,6 +556,15 @@ void printBinding(ContextBinding *binding) {
 			break;
 		}
 		
+		case ContextBindingType_namespace: {
+			type = 8;
+			break;
+		}
+	}
+	
+	if (binding->type != ContextBindingType_namespace && binding->originFile != coreFilePointer) {
+		CharAccumulator_appendChars(&documentation, "file = ");
+		CharAccumulator_appendChars(&documentation, binding->originFile->context.path);
 	}
 	
 	if (printComma) {
@@ -562,7 +572,9 @@ void printBinding(ContextBinding *binding) {
 	}
 	printComma = 1;
 	
-	printf("[%d, \"%.*s\", \"%s\"]", type, name->length, name->start, documentation);
+	printf("[%d, \"%.*s\", \"%s\"]", type, name->length, name->start, documentation.data);
+	
+	CharAccumulator_free(&documentation);
 }
 
 void printKeywords(FileInformation *FI) {
