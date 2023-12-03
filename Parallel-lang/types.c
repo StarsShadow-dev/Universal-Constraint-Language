@@ -118,6 +118,14 @@ linkedList_Node *linkedList_popLast(linkedList_Node **head) {
 // SubString
 //
 
+SubString *SubString_new(char *start, int length) {
+	SubString *subString = safeMalloc(sizeof(SubString));
+	subString->start = start;
+	subString->length = length;
+	
+	return subString;
+}
+
 int SubString_string_cmp(SubString *subString, char *string) {
 	if (subString->length == strlen(string)) {
 		return strncmp(subString->start, string, subString->length);
@@ -253,6 +261,7 @@ FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelConsta
 		.context = {
 			.currentSource = NULL,
 			.path = path,
+			.declaredInLLVM = NULL,
 			
 			.bindings = {0},
 			.importedFiles = NULL,
@@ -290,4 +299,23 @@ void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator
 			return;
 		}
 	}
+}
+
+int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer) {
+	linkedList_Node *currentFunction = FI->context.declaredInLLVM;
+	
+	while (currentFunction != NULL) {
+		if (*(ContextBinding **)currentFunction->data == pointer) {
+			return 1;
+		}
+		
+		currentFunction = currentFunction->next;
+	}
+	
+	return 0;
+}
+
+void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer) {
+	ContextBinding **bindingPointer = linkedList_addNode(&FI->context.declaredInLLVM, sizeof(void *));
+	*bindingPointer = pointer;
 }

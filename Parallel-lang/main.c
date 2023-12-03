@@ -201,6 +201,7 @@ int main(int argc, char **argv) {
 		.context = {
 			.currentSource = NULL,
 			.path = NULL,
+			.declaredInLLVM = NULL,
 			
 			.bindings = {0},
 			.importedFiles = NULL,

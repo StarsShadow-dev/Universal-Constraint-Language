@@ -6,6 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include <libgen.h>
+#include <dirent.h>
 
 #include "compiler.h"
 #include "globals.h"
@@ -23,6 +24,7 @@ void addDILocation(CharAccumulator *source, int ID, SourceLocation location) {
 	CharAccumulator_appendChars(source, ")");
 }
 
+// note: originFile = coreFilePointer
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign) {
 	SubString *key = safeMalloc(sizeof(SubString));
 	key->start = name;
@@ -30,6 +32,7 @@ void addContextBinding_simpleType(linkedList_Node **context, char *name, char *L
 	
 	ContextBinding *data = linkedList_addNode(context, sizeof(ContextBinding) + sizeof(ContextBinding_simpleType));
 	
+	data->originFile = coreFilePointer;
 	data->key = key;
 	data->type = ContextBindingType_simpleType;
 	data->byteSize = byteSize;
@@ -43,17 +46,18 @@ void addContextBinding_macro(FileInformation *FI, char *name) {
 	key->length = (int)strlen(name);
 	
 	ContextBinding *macroData = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_macro));
-
+	
+	macroData->originFile = FI;
 	macroData->key = key;
 	macroData->type = ContextBindingType_macro;
 	// I do not think I need to set byteSize or byteAlign to anything specific
 	macroData->byteSize = 0;
 	macroData->byteAlign = 0;
 
-	((ContextBinding_macro *)macroData->value)->originFile = FI;
 	((ContextBinding_macro *)macroData->value)->codeBlock = NULL;
 }
 
+// note: originFile = coreFilePointer
 void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name) {
 	SubString *key = safeMalloc(sizeof(SubString));
 	key->start = name;
@@ -61,6 +65,7 @@ void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name)
 	
 	ContextBinding *data = linkedList_addNode(context, sizeof(ContextBinding) + sizeof(ContextBinding_compileTimeSetting));
 	
+	data->originFile = coreFilePointer;
 	data->key = key;
 	data->type = ContextBindingType_compileTimeSetting;
 	data->byteSize = 0;
@@ -191,7 +196,10 @@ void addTypeFromString(FileInformation *FI, linkedList_Node **list, char *string
 		.factStack = {0}
 	};
 	
-	Fact *factData = linkedList_addNode(&typeData->factStack[FI->level - 1], sizeof(Fact) + sizeof(Fact_expression));
+	int level = 0;
+	if (FI->level > 0) level = FI->level - 1;
+	
+	Fact *factData = linkedList_addNode(&typeData->factStack[level], sizeof(Fact) + sizeof(Fact_expression));
 	factData->type = FactType_expression;
 	((Fact_expression *)factData->value)->operatorType = ASTnode_operatorType_equivalent;
 	((Fact_expression *)factData->value)->left = NULL;
@@ -599,6 +607,7 @@ ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedLis
 	
 	ContextBinding *functionData = linkedList_addNode(list, sizeof(ContextBinding) + sizeof(ContextBinding_function));
 	
+	functionData->originFile = FI;
 	functionData->key = data->name;
 	functionData->type = ContextBindingType_function;
 	// I do not think I need to set byteSize or byteAlign to anything specific
@@ -635,7 +644,9 @@ ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedLis
 	return functionData;
 }
 
-void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ContextBinding_function *function, ASTnode *node, int defineNew) {
+void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ContextBinding *functionBinding, ASTnode *node, int defineNew) {
+	ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
+	
 	if (defineNew) {
 		ASTnode_function *data = (ASTnode_function *)node->value;
 		
@@ -692,6 +703,7 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 				
 				ContextBinding *argumentVariableData = linkedList_addNode(&FI->context.bindings[FI->level + 1], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
+				argumentVariableData->originFile = FI;
 				argumentVariableData->key = (SubString *)currentArgumentName->data;
 				argumentVariableData->type = ContextBindingType_variable;
 				argumentVariableData->byteSize = argumentTypeBinding->byteSize;
@@ -743,6 +755,8 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 			
 			CharAccumulator_appendChars(outerSource, "\n}");
 		}
+	} else {
+		FileInformation_addToDeclaredInLLVM(FI, functionBinding);
 	}
 	
 	CharAccumulator_free(&functionSource);
@@ -805,6 +819,7 @@ void generateStruct(FileInformation *FI, CharAccumulator *outerSource, ContextBi
 			
 			ContextBinding *variableBinding = linkedList_addNode(&structToGenerate->propertyBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 			
+			variableBinding->originFile = FI;
 			variableBinding->key = propertyData->name;
 			variableBinding->type = ContextBindingType_variable;
 			variableBinding->byteSize = type->binding->byteSize;
@@ -836,20 +851,29 @@ void generateStruct(FileInformation *FI, CharAccumulator *outerSource, ContextBi
 			
 			currentPropertyBinding = currentPropertyBinding->next;
 		}
-		
-		linkedList_Node *currentMethod = structToGenerate->methodBindings;
-		while (currentMethod != NULL) {
-			ContextBinding *methodBinding = (ContextBinding *)currentMethod->data;
-			if (methodBinding->type != ContextBindingType_function) abort();
-			ContextBinding_function *function = (ContextBinding_function *)methodBinding->value;
-			
-			generateFunction(FI, FI->topLevelFunctionSource, function, NULL, 0);
-			
-			currentMethod = currentMethod->next;
-		}
 	}
 	
 	CharAccumulator_appendChars(outerSource, " }");
+}
+
+FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSource, char *path) {
+	// TODO: hack to make "~" work on macOS
+	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
+	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(topLevelConstantSource);
+	
+	CharAccumulator *topLevelFunctionSource = safeMalloc(sizeof(CharAccumulator));
+	(*topLevelFunctionSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(topLevelFunctionSource);
+	
+	CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
+	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(LLVMmetadataSource);
+	
+	FileInformation *newFI = FileInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+	compileFile(newFI);
+	
+	return newFI;
 }
 
 int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
@@ -898,7 +922,6 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					compileError(FI, node->location);
 				}
 				
-				// TODO: hack to make "~" work on macOS
 				char *path;
 				if (data->path->start[0] == '~') {
 					char *homePath = getenv("HOME");
@@ -912,41 +935,53 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					snprintf(path, pathSize, "%.*s/%s", (int)strlen(dirPath), dirPath, data->path->start);
 				}
 				
-				CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
-				(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
-				CharAccumulator_initialize(topLevelConstantSource);
-				
-				CharAccumulator *topLevelFunctionSource = safeMalloc(sizeof(CharAccumulator));
-				(*topLevelFunctionSource) = (CharAccumulator){100, 0, 0};
-				CharAccumulator_initialize(topLevelFunctionSource);
-				
-				CharAccumulator *LLVMmetadataSource = safeMalloc(sizeof(CharAccumulator));
-				(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
-				CharAccumulator_initialize(LLVMmetadataSource);
-				
-				FileInformation *newFI = FileInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
-				compileFile(newFI);
-				
-				linkedList_Node *current = newFI->context.bindings[0];
-				
-				while (current != NULL) {
-					ContextBinding *binding = ((ContextBinding *)current->data);
+				char *suffix = ".parallel";
+				if (strncmp(data->path->start + data->path->length - strlen(suffix), suffix, strlen(suffix)) == 0) {
+					// if the path ends with ".parallel" import the file and add it to FI->context.importedFiles
+					FileInformation **filePointerData = linkedList_addNode(&FI->context.importedFiles, sizeof(void *));
+					*filePointerData = importFile(FI, outerSource, path);
+				} else {
+					// is 1024 enough?
+					char filePath[1024] = {0};
+					snprintf(filePath, sizeof(filePath), "%s", path);
 					
-					expectUnusedName(FI, binding->key, node->location);
-					
-					if (binding->type == ContextBindingType_struct) {
-						generateStruct(FI, outerSource, binding, NULL, 0);
-					} else if (binding->type == ContextBindingType_function) {
-						ContextBinding_function *function = (ContextBinding_function *)binding->value;
-						generateFunction(FI, outerSource, function, NULL, 0);
+					// open the directory
+					DIR *d = opendir(path);
+					if (d == NULL) {
+						addStringToReportMsg("could not open directory at '");
+						addStringToReportMsg(path);
+						addStringToReportMsg("'");
+						compileError(FI, node->location);
+						return 0;
 					}
 					
-					current = current->next;
+					ContextBinding *namespaceBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_namespace));
+					
+					namespaceBinding->originFile = FI;
+					
+					char *character = path + strlen(path) - 1;
+					while (character > path && *character != '/') character--;
+					namespaceBinding->key = SubString_new(character + 1, (int)(path + strlen(path) - character - 1));
+					
+					namespaceBinding->type = ContextBindingType_namespace;
+					namespaceBinding->byteSize = 0;
+					namespaceBinding->byteAlign = 0;
+					
+					struct dirent *dir;
+					while ((dir = readdir(d)) != NULL) {
+						if (*dir->d_name == '.') {
+							continue;
+						}
+						
+						snprintf(filePath + strlen(path), sizeof(filePath) - dir->d_namlen, "/%s", dir->d_name);
+						
+						FileInformation **filePointerData = linkedList_addNode(&((ContextBinding_namespace *)namespaceBinding->value)->files, sizeof(void *));
+						*filePointerData = importFile(FI, outerSource, filePath);
+					}
+					
+					// close the directory
+					closedir(d);
 				}
-				
-				// add the new file to importedFiles
-				FileInformation **filePointerData = linkedList_addNode(&FI->context.importedFiles, sizeof(void *));
-				*filePointerData = newFI;
 				
 				break;
 			}
@@ -964,6 +999,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				ASTnode_struct *data = (ASTnode_struct *)node->value;
 				
 				ContextBinding *structBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
+				
+				structBinding->originFile = FI;
 				structBinding->key = data->name;
 				structBinding->type = ContextBindingType_struct;
 				structBinding->byteSize = 0;
@@ -1040,8 +1077,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						char *LLVMname = safeMalloc(LLVMnameSize);
 						snprintf(LLVMname, LLVMnameSize, "%.*s.%s", bindingToImplement->key->length, bindingToImplement->key->start, methodData->name->start);
 						
-						ContextBinding_function *function = (ContextBinding_function *)addFunctionToList(LLVMname, FI, &structToImplement->methodBindings, methodNode)->value;
-						generateFunction(FI, FI->topLevelFunctionSource, function, methodNode, 1);
+						generateFunction(FI, FI->topLevelFunctionSource, addFunctionToList(LLVMname, FI, &structToImplement->methodBindings, methodNode), methodNode, 1);
 					} else {
 						abort();
 					}
@@ -1064,7 +1100,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				char *LLVMname = NULL;
 				
+				
 				ContextBinding *functionSymbolBinding = getContextBindingFromString(FI, "__functionSymbol");
+				
 				if (
 					functionSymbolBinding != NULL &&
 					functionSymbolBinding->type == ContextBindingType_compileTimeSetting &&
@@ -1130,6 +1168,11 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					addTypeFromBuilderType(FI, types, &functionToCall->returnType);
 				}
 				
+				// TODO: move this out of ASTnodeType_call
+				if (FI != functionToCallBinding->originFile && !FileInformation_declaredInLLVM(FI, functionToCallBinding)) {
+					generateFunction(FI, FI->topLevelFunctionSource, functionToCallBinding, node, 0);
+				}
+				
 				CharAccumulator newInnerSource = {100, 0, 0};
 				CharAccumulator_initialize(&newInnerSource);
 				
@@ -1179,13 +1222,13 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				ContextBinding *macroData = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_macro));
 				
+				macroData->originFile = FI;
 				macroData->key = data->name;
 				macroData->type = ContextBindingType_macro;
 				// I do not think I need to set byteSize or byteAlign to anything specific
 				macroData->byteSize = 0;
 				macroData->byteAlign = 0;
 				
-				((ContextBinding_macro *)macroData->value)->originFile = FI;
 				((ContextBinding_macro *)macroData->value)->codeBlock = data->codeBlock;
 				break;
 			}
@@ -1210,7 +1253,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				buildLLVM(FI, outerFunction, outerSource, NULL, NULL, &types, data->arguments, 0, 0, 0);
 				int typeCount = linkedList_getCount(&types);
 				
-				if (macroToRun->originFile == coreFilePointer) {
+				if (macroToRunBinding->originFile == coreFilePointer) {
 					// the macro is from the __core__ module, so this is a special case
 					
 					linkedList_Node **currentType = &types;
@@ -1329,7 +1372,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				} else {
 					// TODO: remove hack?
 					FileContext originalFileContext = FI->context;
-					FI->context = macroToRun->originFile->context;
+					FI->context = macroToRunBinding->originFile->context;
 					buildLLVM(FI, outerFunction, outerSource, NULL, NULL, NULL, macroToRun->codeBlock, 0, 0, 0);
 					FI->context = originalFileContext;
 				}
@@ -1592,6 +1635,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				ContextBinding *variableBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
+				variableBinding->originFile = FI;
 				variableBinding->key = data->name;
 				variableBinding->type = ContextBindingType_variable;
 				variableBinding->byteSize = pointer_byteSize;
@@ -1765,61 +1809,69 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				}
 				
 				else if (data->operatorType == ASTnode_operatorType_scopeResolution) {
-					// TODO: scopeResolution
-//					ASTnode *leftNode = (ASTnode *)data->left->data;
-//					ASTnode *rightNode = (ASTnode *)data->right->data;
-//					
-//					// for now just assume everything is an identifier
-//					if (leftNode->nodeType != ASTnodeType_identifier) abort();
-//					if (rightNode->nodeType != ASTnodeType_identifier) abort();
-//					
-//					SubString *leftSubString = ((ASTnode_identifier *)leftNode->value)->name;
-//					SubString *rightSubString = ((ASTnode_identifier *)rightNode->value)->name;
-//					
-//					// find the module
-//					linkedList_Node *currentFile = FI->context.importedFiles;
-//					while (1) {
-//						if (currentFile == NULL) {
-//							addStringToReportMsg("not an imported module");
-//							
-//							addStringToReportIndicator("no imported module named '");
-//							addSubStringToReportIndicator(leftSubString);
-//							addStringToReportIndicator("'");
-//							compileError(FI, leftNode->location);
-//						}
-//						FileInformation *fileInformation = *(FileInformation **)currentFile->data;
-//						
-//						if (SubString_string_cmp(leftSubString, fileInformation->name) != 0) {
-//							currentFile = currentFile->next;
-//							continue;
-//						}
-//						
-//						linkedList_Node *current = fileInformation->context.bindings[0];
-//						
-//						while (1) {
-//							if (current == NULL) {
-//								addStringToReportMsg("value does not exist in this modules scope");
-//								
-//								addStringToReportIndicator("nothing in module '");
-//								addSubStringToReportIndicator(leftSubString);
-//								addStringToReportIndicator("' with name '");
-//								addSubStringToReportIndicator(rightSubString);
-//								addStringToReportIndicator("'");
-//								compileError(FI, rightNode->location);
-//							}
-//							ContextBinding *binding = ((ContextBinding *)current->data);
-//							
-//							if (SubString_SubString_cmp(binding->key, rightSubString) == 0) {
-//								// success
-//								addTypeFromBinding(FI, types, binding);
-//								break;
-//							}
-//							
-//							current = current->next;
-//						}
-//						
-//						break;
-//					}
+					ASTnode *leftNode = (ASTnode *)data->left->data;
+					ASTnode *rightNode = (ASTnode *)data->right->data;
+					
+					// for now just assume everything is an identifier
+					if (leftNode->nodeType != ASTnodeType_identifier) abort();
+					if (rightNode->nodeType != ASTnodeType_identifier) abort();
+					
+					SubString *leftSubString = ((ASTnode_identifier *)leftNode->value)->name;
+					SubString *rightSubString = ((ASTnode_identifier *)rightNode->value)->name;
+					
+					ContextBinding *namespaceBinding = getContextBindingFromSubString(FI, leftSubString);
+					if (namespaceBinding == NULL) {
+						addStringToReportMsg("value does not exist");
+						
+						addStringToReportIndicator("nothing named '");
+						addSubStringToReportIndicator(leftSubString);
+						addStringToReportIndicator("'");
+						compileError(FI, leftNode->location);
+					}
+					
+					if (namespaceBinding->type != ContextBindingType_namespace) {
+						addStringToReportMsg("not a namespace");
+						
+						addStringToReportIndicator("'");
+						addSubStringToReportIndicator(leftSubString);
+						addStringToReportIndicator("' is not a namespace");
+						compileError(FI, leftNode->location);
+					}
+					
+					ContextBinding_namespace *namespace = (ContextBinding_namespace *)namespaceBinding->value;
+					
+					int success = 0;
+					
+					// find the module
+					linkedList_Node *currentFile = namespace->files;
+					while (1) {
+						if (currentFile == NULL) {
+							addStringToReportMsg("value does not exist is namespace");
+							
+							addStringToReportIndicator("nothing in namespace named '");
+							addSubStringToReportIndicator(leftSubString);
+							addStringToReportIndicator("'");
+							compileError(FI, leftNode->location);
+						}
+						FileInformation *fileInformation = *(FileInformation **)currentFile->data;
+						
+						linkedList_Node *current = fileInformation->context.bindings[0];
+						while (current != NULL) {
+							ContextBinding *binding = ((ContextBinding *)current->data);
+							
+							if (SubString_SubString_cmp(binding->key, rightSubString) == 0) {
+								addTypeFromBinding(FI, types, binding);
+								success = 1;
+								break;
+							}
+							
+							current = current->next;
+						}
+						
+						if (success) break;
+						
+						currentFile = currentFile->next;
+					}
 					
 					break;
 				}
@@ -2255,9 +2307,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				ContextBinding *functionBinding = getContextBindingFromSubString(FI, data->name);
 				if (functionBinding == NULL || functionBinding->type != ContextBindingType_function) abort();
-				ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
 				
-				generateFunction(FI, outerSource, function, node, 1);
+				if (!data->external) {
+					generateFunction(FI, outerSource, functionBinding, node, 1);
+				}
 			}
 			
 			afterLoopCurrent = afterLoopCurrent->next;

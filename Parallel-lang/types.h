@@ -37,6 +37,8 @@ typedef struct {
 	int length;
 } SubString;
 
+SubString *SubString_new(char *start, int length);
+
 /// returns 1, if the sub string and string have different lengths
 int SubString_string_cmp(SubString *subString, char *string);
 
@@ -74,6 +76,7 @@ void CharAccumulator_free(CharAccumulator *accumulator);
 typedef struct {
 	char *currentSource;
 	char *path;
+	linkedList_Node *declaredInLLVM;
 	
 	linkedList_Node *bindings[maxContextLevel];
 	linkedList_Node *importedFiles;
@@ -295,10 +298,12 @@ typedef enum {
 	ContextBindingType_macro,
 	ContextBindingType_variable,
 	ContextBindingType_compileTimeSetting,
-	ContextBindingType_struct
+	ContextBindingType_struct,
+	ContextBindingType_namespace
 } ContextBindingType;
 
 typedef struct {
+	FileInformation *originFile;
 	SubString *key;
 	ContextBindingType type;
 	int byteSize;
@@ -334,7 +339,6 @@ typedef struct {
 } ContextBinding_function;
 
 typedef struct {
-	FileInformation *originFile;
 	linkedList_Node *codeBlock;
 } ContextBinding_macro;
 
@@ -354,5 +358,12 @@ typedef struct {
 	// ContextBinding (should all be ContextBinding_function)
 	linkedList_Node *methodBindings;
 } ContextBinding_struct;
+
+typedef struct {
+	linkedList_Node *files;
+} ContextBinding_namespace;
+
+int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer);
+void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer);
 
 #endif /* types_h */
