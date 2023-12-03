@@ -528,7 +528,7 @@ void printBinding(ContextBinding *binding) {
 	
 	switch (binding->type) {
 		case ContextBindingType_simpleType: {
-			type = 13;
+			type = 6;
 			break;
 		}
 		
