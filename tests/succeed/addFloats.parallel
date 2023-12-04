@@ -1,0 +1,5 @@
+function main(): Int8 {
+	var test: Float32 = 1 + 2;
+
+	return 0;
+}

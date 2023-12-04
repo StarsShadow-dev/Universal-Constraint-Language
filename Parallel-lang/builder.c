@@ -172,14 +172,6 @@ ContextBinding *getContextBindingFromIdentifierNode(FileInformation *FI, ASTnode
 	return NULL;
 }
 
-int ifTypeIsNamed(BuilderType *actualType, char *expectedTypeString) {
-	if (SubString_string_cmp(actualType->binding->key, expectedTypeString) == 0) {
-		return 1;
-	}
-	
-	return 0;
-}
-
 // in the future this could do more than return type->binding->key
 SubString *getTypeAsSubString(BuilderType *type) {
 	return type->binding->key;
@@ -360,7 +352,7 @@ ASTnode *expectArgumentOnMacro(FileInformation *FI, linkedList_Node **currentTyp
 	ASTnode *argument = (ASTnode *)(*currentArgument)->data;
 	
 	// make sure that type has the right name
-	if (!ifTypeIsNamed(type, typeName)) {
+	if (!BuilderType_hasName(type, typeName)) {
 		addStringToReportMsg("unexpected type");
 		
 		addStringToReportIndicator("expected type '");
@@ -1615,7 +1607,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
 				if (data->expression == NULL) {
-					if (!ifTypeIsNamed(&outerFunction->returnType, "Void")) {
+					if (!BuilderType_hasName(&outerFunction->returnType, "Void")) {
 						addStringToReportMsg("returning Void in a function that does not return Void.");
 						compileError(FI, node->location);
 					}
@@ -1949,30 +1941,16 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					//
 					
 					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0, 0);
-					if (
-						!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
-						!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
-						!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
-					) {
-						if (
-							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")
-//							ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Pointer")
-						) {
+					if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
+						if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 							addStringToReportMsg("left side of operator expected a number");
 							compileError(FI, node->location);
 						}
 						
 						linkedList_freeList(&expectedTypeForLeftAndRight);
 						buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0, 0);
-						if (
-							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") &&
-							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") &&
-							!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
-						) {
-							if (
-								!ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")
-								// ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Pointer")
-							) {
+						if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 								addStringToReportMsg("right side of operator expected a number");
 								compileError(FI, node->location);
 							}
@@ -2028,17 +2006,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
 					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					if (
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") ||
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") ||
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
-					) {
+					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 						CharAccumulator_appendChars(outerSource, " = add nsw ");
-					} else if (
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Float16") ||
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Float32") ||
-						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Float64")
-					) {
+					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 						CharAccumulator_appendChars(outerSource, " = fadd ");
 					} else {
 						abort();
@@ -2085,7 +2055,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 			}
 			
 			case ASTnodeType_true: {
-				if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
+				if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "Bool")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -2108,7 +2078,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 			}
 			
 			case ASTnodeType_false: {
-				if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Bool")) {
+				if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "Bool")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -2137,30 +2107,25 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					addTypeFromString(FI, types, "__Number", node);
 				}
 				
-				if (
-					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int8") &&
-					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int16") &&
-					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int32") &&
-					!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Int64")
-				) {
+				if (!BuilderType_isNumber((BuilderType *)expectedTypes->data)) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
 					addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
 					addStringToReportIndicator("' but got a number.");
 					compileError(FI, node->location);
-				} else {
-					ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
+				}
+				
+				ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
+				
+				if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
+					addStringToReportMsg("integer overflow detected");
 					
-					if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
-						addStringToReportMsg("integer overflow detected");
-						
-						CharAccumulator_appendInt(&reportIndicator, data->value);
-						addStringToReportIndicator(" is larger than the maximum size of the type '");
-						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
-						addStringToReportIndicator("'");
-						compileWarning(FI, node->location, WarningType_unsafe);
-					}
+					CharAccumulator_appendInt(&reportIndicator, data->value);
+					addStringToReportIndicator(" is larger than the maximum size of the type '");
+					addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
+					addStringToReportIndicator("'");
+					compileWarning(FI, node->location, WarningType_unsafe);
 				}
 				
 				char *LLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)(*currentExpectedType)->data)->binding);
@@ -2171,6 +2136,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				}
 				
 				CharAccumulator_appendSubString(innerSource, data->string);
+				if (BuilderType_isFloat((BuilderType *)expectedTypes->data)) {
+					CharAccumulator_appendChars(innerSource, ".0");
+				}
 				
 				break;
 			}
@@ -2178,7 +2146,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (expectedTypes != NULL && !ifTypeIsNamed((BuilderType *)expectedTypes->data, "Pointer")) {
+				if (expectedTypes != NULL && !BuilderType_hasName((BuilderType *)expectedTypes->data, "Pointer")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -2306,7 +2274,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					}
 				} else if (variableBinding->type == ContextBindingType_function) {
 					if (expectedTypes != NULL) {
-						if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "Function")) {
+						if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "Function")) {
 							addStringToReportMsg("unexpected type");
 							
 							addStringToReportIndicator("expected type '");
@@ -2321,7 +2289,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					}
 				} else if (variableBinding->type == ContextBindingType_macro) {
 					if (expectedTypes != NULL) {
-						if (!ifTypeIsNamed((BuilderType *)expectedTypes->data, "__Macro")) {
+						if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "__Macro")) {
 							addStringToReportMsg("unexpected type");
 							
 							addStringToReportIndicator("expected type '");

@@ -319,6 +319,11 @@ typedef struct {
 	linkedList_Node *factStack[maxContextLevel];
 } BuilderType;
 
+int BuilderType_hasName(BuilderType *type, char *name);
+int BuilderType_isInt(BuilderType *type);
+int BuilderType_isFloat(BuilderType *type);
+int BuilderType_isNumber(BuilderType *type);
+
 typedef struct {
 	char *LLVMtype;
 } ContextBinding_simpleType;

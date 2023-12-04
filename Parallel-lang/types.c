@@ -319,3 +319,28 @@ void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *po
 	ContextBinding **bindingPointer = linkedList_addNode(&FI->context.declaredInLLVM, sizeof(void *));
 	*bindingPointer = pointer;
 }
+
+//
+// context
+//
+
+int BuilderType_hasName(BuilderType *type, char *name) {
+	return SubString_string_cmp(type->binding->key, name) == 0;
+}
+
+int BuilderType_isInt(BuilderType *type) {
+	return BuilderType_hasName(type, "Int8") ||
+	BuilderType_hasName(type, "Int16") ||
+	BuilderType_hasName(type, "Int32") ||
+	BuilderType_hasName(type, "Int64");
+}
+
+int BuilderType_isFloat(BuilderType *type) {
+	return BuilderType_hasName(type, "Float16") ||
+	BuilderType_hasName(type, "Float32") ||
+	BuilderType_hasName(type, "Float16");
+}
+
+int BuilderType_isNumber(BuilderType *type) {
+	return BuilderType_isInt(type) || BuilderType_isFloat(type);
+}
