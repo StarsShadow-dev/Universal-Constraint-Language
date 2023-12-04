@@ -1,5 +1,7 @@
 import "modules/libc_bindings"
 
 struct Vector3 {
-	
+	var x: Float32;
+	var y: Float32;
+	var z: Float32;
 }

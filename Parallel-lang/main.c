@@ -216,6 +216,9 @@ int main(int argc, char **argv) {
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int16", "i16", 2, 4);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int32", "i32", 4, 4);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int64", "i64", 8, 4);
+	
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float32", "float", 4, 4);
+	
 	// how much space should be made for an i1?
 	// I will do one byte for now
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Bool", "i1", 1, 4);
