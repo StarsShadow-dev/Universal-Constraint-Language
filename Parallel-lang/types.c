@@ -338,7 +338,7 @@ int BuilderType_isInt(BuilderType *type) {
 int BuilderType_isFloat(BuilderType *type) {
 	return BuilderType_hasName(type, "Float16") ||
 	BuilderType_hasName(type, "Float32") ||
-	BuilderType_hasName(type, "Float16");
+	BuilderType_hasName(type, "Float64");
 }
 
 int BuilderType_isNumber(BuilderType *type) {
