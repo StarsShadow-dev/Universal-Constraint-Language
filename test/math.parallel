@@ -1,0 +1,5 @@
+import "modules/libc_bindings"
+
+struct Vector3 {
+	
+}

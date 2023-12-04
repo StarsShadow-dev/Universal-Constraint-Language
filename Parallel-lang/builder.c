@@ -817,6 +817,13 @@ void generateStruct(FileInformation *FI, CharAccumulator *outerSource, ContextBi
 		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
 		while (currentPropertyNode != NULL) {
 			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
+			if (propertyNode->nodeType == ASTnodeType_queryLocation) {
+				printf("[");
+				printKeyword(13, "var", "");
+				printBindings(FI);
+				printf("]");
+				exit(0);
+			}
 			if (propertyNode->nodeType != ASTnodeType_variableDefinition) {
 				addStringToReportMsg("only variable definitions are allowed in a struct");
 				compileError(FI, propertyNode->location);

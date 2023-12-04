@@ -1,13 +1,8 @@
 import "modules/libc_bindings"
+import "math.parallel"
 
 #set("__functionSymbol", "main");
 function main(): Int32 {
-	libc_bindings::printf("testing the new import! 1\n");
-	test();
+	libc_bindings::printf("testing\n");
 	return 0;
-}
-
-function test(): Void {
-	libc_bindings::printf("testing the new import! 2\n");
-	return;
 }
