@@ -2028,7 +2028,21 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
 					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					CharAccumulator_appendChars(outerSource, " = add nsw ");
+					if (
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int8") ||
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int32") ||
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Int64")
+					) {
+						CharAccumulator_appendChars(outerSource, " = add nsw ");
+					} else if (
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Float16") ||
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Float32") ||
+						ifTypeIsNamed((BuilderType *)expectedTypeForLeftAndRight->data, "Float64")
+					) {
+						CharAccumulator_appendChars(outerSource, " = fadd ");
+					} else {
+						abort();
+					}
 					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
 				}
 				
