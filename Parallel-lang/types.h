@@ -237,6 +237,7 @@ typedef enum {
 	ASTnode_operatorType_lessThan,
 	ASTnode_operatorType_add,
 	ASTnode_operatorType_subtract,
+	ASTnode_operatorType_multiply,
 	ASTnode_operatorType_memberAccess,
 	ASTnode_operatorType_scopeResolution
 } ASTnode_operatorType;

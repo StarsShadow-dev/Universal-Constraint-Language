@@ -1997,7 +1997,6 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBinding(FI, ((BuilderType *)expectedTypeForLeftAndRight->data)->binding));
 				}
 				
-				// +
 				else if (data->operatorType == ASTnode_operatorType_add) {
 					// the expected type for both sides of the operator is the same type that is expected for the operator
 					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
@@ -2016,7 +2015,6 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
 				}
 				
-				// -
 				else if (data->operatorType == ASTnode_operatorType_subtract) {
 					// the expected type for both sides of the operator is the same type that is expected for the operator
 					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
@@ -2029,6 +2027,24 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						CharAccumulator_appendChars(outerSource, " = sub nsw ");
 					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 						CharAccumulator_appendChars(outerSource, " = fsub ");
+					} else {
+						abort();
+					}
+					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
+				}
+				
+				else if (data->operatorType == ASTnode_operatorType_multiply) {
+					// the expected type for both sides of the operator is the same type that is expected for the operator
+					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
+					
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+						CharAccumulator_appendChars(outerSource, " = mul nsw ");
+					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+						CharAccumulator_appendChars(outerSource, " = fmul ");
 					} else {
 						abort();
 					}
