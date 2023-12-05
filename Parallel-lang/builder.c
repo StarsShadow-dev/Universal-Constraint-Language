@@ -2025,7 +2025,13 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
 					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					CharAccumulator_appendChars(outerSource, " = sub nsw ");
+					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+						CharAccumulator_appendChars(outerSource, " = sub nsw ");
+					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+						CharAccumulator_appendChars(outerSource, " = fsub ");
+					} else {
+						abort();
+					}
 					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
 				}
 				

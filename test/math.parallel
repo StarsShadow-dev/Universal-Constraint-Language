@@ -6,10 +6,26 @@ struct Vector3 {
 	var z: Float32;
 }
 
-function Vector3_add(vector1: Vector3, vector2: Vector3): Vector3 {
+function Vector3_new(x: Float32, y: Float32, z: Float32): Vector3 {
 	var newVector: Vector3;
-	newVector.x = vector1.x + vector2.x;
-	newVector.y = vector1.y + vector2.y;
-	newVector.z = vector1.z + vector2.z;
+	newVector.x = x;
+	newVector.y = y;
+	newVector.z = z;
 	return newVector;
+}
+
+function Vector3_add(v1: Vector3, v2: Vector3): Vector3 {
+	return Vector3_new(
+		v1.x + v2.x,
+		v1.y + v2.y,
+		v1.z + v2.z
+	);
+}
+
+function Vector3_subtract(v1: Vector3, v2: Vector3): Vector3 {
+	return Vector3_new(
+		v1.x - v2.x,
+		v1.y - v2.y,
+		v1.z - v2.z
+	);
 }
