@@ -150,6 +150,8 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_subtract;
 			} else if (SubString_string_cmp(&operator->subString, "*") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_multiply;
+			} else if (SubString_string_cmp(&operator->subString, "/") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_divide;
 			} else if (SubString_string_cmp(&operator->subString, ".") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_memberAccess;
 			} else if (SubString_string_cmp(&operator->subString, "::") == 0) {

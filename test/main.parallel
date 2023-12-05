@@ -3,7 +3,7 @@ import "math.parallel"
 
 #set("__functionSymbol", "main");
 function main(): Int32 {
-	var test: Int32 = 5 * 5;
+	var test: Int32 = 5 / 5;
 	libc_bindings::printf("testing\n");
 	return 0;
 }
