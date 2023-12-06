@@ -38,6 +38,10 @@ UInt16
 UInt32
 UInt64
 
+Float16
+Float32
+Float64
+
 Bool
 Pointer
 ```
