@@ -515,6 +515,14 @@ void printKeyword(int type, char *name, char *documentation) {
 void printBinding(ContextBinding *binding) {
 	int type;
 	SubString *name = binding->key;
+	
+	// do not print if the name starts with "__"
+	if (name->length >= 2) {
+		if (name->start[0] == '_' && name->start[1] == '_') {
+			return;
+		}
+	}
+	
 	CharAccumulator documentation = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(&documentation);
 	
