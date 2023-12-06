@@ -1,9 +1,15 @@
 import "modules/libc_bindings"
-import "math.parallel"
+import "modules/std"
+// import "math.parallel"
 
 #set("__functionSymbol", "main");
 function main(): Int32 {
-	var test: Int32 = 5 / 5;
-	libc_bindings::printf("testing\n");
+	var i: Int32 = 0 - 100;
+	while (i < 101) {
+		std::print_Int32(i);
+		libc_bindings::printf("\n");
+		i = i + 1;
+	}
+	
 	return 0;
 }

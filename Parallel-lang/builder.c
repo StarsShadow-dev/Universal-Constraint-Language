@@ -1534,7 +1534,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				if (data->falseCodeBlock == NULL) {
 					endJump = outerFunction->registerCount;
-					outerFunction->registerCount += 2;
+					outerFunction->registerCount++;
 					
 					CharAccumulator_appendChars(outerSource, "\n\tbr ");
 					CharAccumulator_appendChars(outerSource, expressionSource.data);
@@ -1933,6 +1933,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				// https://llvm.org/docs/LangRef.html#fcmp-instruction
 				if (
 					data->operatorType == ASTnode_operatorType_equivalent ||
+					data->operatorType == ASTnode_operatorType_notEquivalent ||
 					data->operatorType == ASTnode_operatorType_greaterThan ||
 					data->operatorType == ASTnode_operatorType_lessThan
 				) {
@@ -1974,6 +1975,11 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					if (data->operatorType == ASTnode_operatorType_equivalent) {
 						// eq: yields true if the operands are equal, false otherwise. No sign interpretation is necessary or performed.
 						CharAccumulator_appendChars(outerSource, "eq ");
+					}
+					
+					else if (data->operatorType == ASTnode_operatorType_notEquivalent) {
+						// ne: yields true if the operands are unequal, false otherwise. No sign interpretation is necessary or performed.
+						CharAccumulator_appendChars(outerSource, "ne ");
 					}
 					
 					else if (data->operatorType == ASTnode_operatorType_greaterThan) {
@@ -2063,6 +2069,26 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						CharAccumulator_appendChars(outerSource, " = sdiv ");
 					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 						CharAccumulator_appendChars(outerSource, " = fdiv ");
+					} else {
+						abort();
+					}
+					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
+				}
+				
+				else if (data->operatorType == ASTnode_operatorType_modulo) {
+					// the expected type for both sides of the operator is the same type that is expected for the operator
+					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
+					
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+						CharAccumulator_appendChars(outerSource, " = srem ");
+					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+						addStringToReportMsg("modulo does not support floats");
+						
+						compileError(FI, node->location);
 					} else {
 						abort();
 					}

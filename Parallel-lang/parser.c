@@ -73,6 +73,7 @@ int getOperatorPrecedence(SubString *subString) {
 	
 	else if (
 		SubString_string_cmp(subString, "==") == 0 ||
+		SubString_string_cmp(subString, "!=") == 0 ||
 		SubString_string_cmp(subString, ">") == 0 ||
 		SubString_string_cmp(subString, "<") == 0
 	) {
@@ -83,7 +84,7 @@ int getOperatorPrecedence(SubString *subString) {
 		return 5;
 	}
 	
-	else if (SubString_string_cmp(subString, "*") == 0 || SubString_string_cmp(subString, "/") == 0) {
+	else if (SubString_string_cmp(subString, "*") == 0 || SubString_string_cmp(subString, "/") == 0 || SubString_string_cmp(subString, "%") == 0) {
 		return 6;
 	}
 	
@@ -96,7 +97,7 @@ int getOperatorPrecedence(SubString *subString) {
 	}
 	
 	else {
-		printf("getOperatorPrecedence error");
+		printf("getOperatorPrecedence error\n");
 		abort();
 	}
 }
@@ -140,6 +141,8 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_assignment;
 			} else if (SubString_string_cmp(&operator->subString, "==") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_equivalent;
+			} else if (SubString_string_cmp(&operator->subString, "!=") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_notEquivalent;
 			} else if (SubString_string_cmp(&operator->subString, ">") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_greaterThan;
 			} else if (SubString_string_cmp(&operator->subString, "<") == 0) {
@@ -152,6 +155,8 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_multiply;
 			} else if (SubString_string_cmp(&operator->subString, "/") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_divide;
+			} else if (SubString_string_cmp(&operator->subString, "%") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_modulo;
 			} else if (SubString_string_cmp(&operator->subString, ".") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_memberAccess;
 			} else if (SubString_string_cmp(&operator->subString, "::") == 0) {

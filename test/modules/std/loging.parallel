@@ -21,3 +21,23 @@ function printLine(string: Pointer): Void {
 	
 	return;
 }
+
+// there may be a more elegant way of doing this, but it seems to work
+function print_Int32(number: Int32): Void {	
+	var absoluteNumber: Int32;
+	if (number < 0) {
+		libc_bindings::putchar(45);
+		absoluteNumber = 0 - number;
+	} else {
+		absoluteNumber = number;
+	}
+	
+	var digit: Int32 = absoluteNumber % 10;
+	var n: Int32 = absoluteNumber / 10;
+	if (n != 0) {
+		print_Int32(n);
+	}
+	
+	libc_bindings::putchar(48 + digit);
+	return;
+}

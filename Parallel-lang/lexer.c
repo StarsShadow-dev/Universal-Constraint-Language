@@ -16,8 +16,11 @@
 #define ellipsis character == '.' && FI->context.currentSource[index+1] == '.' && FI->context.currentSource[index+2] == '.'
 
 // periods are considered operators because they perform an operation
-#define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '*' || character == '/' || character == '.'
-#define operator_2chars character == '=' && FI->context.currentSource[index+1] == '=' || character == ':' && FI->context.currentSource[index+1] == ':'
+#define operator_1char character == '>' || character == '<' || character == '=' || character == '+' || character == '-' || character == '*' || character == '/' || character == '%' || character == '.'
+#define operator_2chars \
+character == '=' && FI->context.currentSource[index+1] == '=' ||\
+character == '!' && FI->context.currentSource[index+1] == '=' ||\
+character == ':' && FI->context.currentSource[index+1] == ':'
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
