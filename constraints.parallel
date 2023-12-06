@@ -1,0 +1,102 @@
+// Constraints are something that I came up with.
+// And I do not know if anyone has tried something like this before.
+
+// Import the C standard library.
+import "modules/libc_bindings"
+
+//
+// Let's start with a simple example
+//
+
+// Define usePointer.
+function usePointer(ptr: Pointer): Void {
+	// ...
+}
+
+function test(): Void {
+	// Allocate 50 bytes, this works just like in C, but with a different syntax.
+	var pointer: Pointer = libc_bindings::malloc(50);
+	// Use the pointer.
+	usePointer(pointer);
+	// But wait, If you have used C before you might see something wrong with this.
+	// Malloc can return 0 and a function named usePointer should probably not get 0.
+	// If usePointer gets 0 then, hopefully the program crashes at runtime.
+	// But it is also possible that usePointer does not have any runtime checks on ptr.
+	// This could in theory, lead to undefined behavior.
+}
+
+//
+// Let's try that again, but with constraints!
+//
+
+// Define usePointer again, but with a constraint on ptr.
+// The square brackets are used around the constraint and the "$" is used to mean self (in this case ptr).
+// So basically, this constraint to saying that ptr does not equal 0.
+function usePointer(ptr: Pointer[$ != 0]): Void {
+	// ...
+}
+
+function test(): Void {
+	// Allocate 50 bytes, same as earlier.
+	var pointer: Pointer = libc_bindings::malloc(50);
+	
+	// compile time error: constraint not satisfied, ptr must satisfy the constraint ($ != 0)
+	usePointer(pointer);
+	
+	// Now you can only use usePointer, if the compiler can guarantee that ptr is not zero!
+	// But if we do this in an if statement.
+	if (pointer != 0) {
+		// Success!
+		usePointer(pointer);
+	}
+	
+	// The constraint system lets a function specify how it should be used.
+	// And if a function is ever used incorrectly, the compiler will tell you!
+}
+
+//
+// Constraints on return types
+//
+
+// UsePointer is the same as last time.
+function usePointer(ptr: Pointer[$ != 0]): Void {
+	// ...
+}
+
+// But this time we define a new function named safeMalloc.
+// It is the same as malloc, but it cannot return 0.
+function safeMalloc(size: Int64): Pointer[$ != 0] {
+	var pointer: Pointer = libc_bindings::malloc(size);
+	if (pointer == 0) {
+		// If pointer is equivalent to zero:
+		
+		// The program prints to standard out. 
+		libc_bindings::printf("malloc failed in safeMalloc\n");
+		// And then calls abort to end the program.
+		libc_bindings::abort();
+	}
+	
+	// Because we abort if pointer is 0 we can only get here if pointer is not 0.
+	// If the if statement is commented out, then this would be an error.
+	return pointer;
+}
+
+function test(): Void {
+	// Now we can allocate 50 bytes with safeMalloc.
+	var pointer: Pointer = safeMalloc(50);
+	// Right now the compiler knows that pointer is not 0, because safeMalloc cannot return zero!
+	// So we can call usePointer, without needing an if statement here!
+	usePointer(pointer);
+}
+
+// I really like the idea of a compiler that only finishes compiling, if it can guarantee that all constraints are satisfied.
+// It would let you create programs that are both both safe and fast at run time.
+// But in my opinion, the biggest advantage is that the the compiler can catch mistakes before the program is even run.
+
+// Wait a second, this is starting to sound a lot like a static type system...
+
+// Here are some similarities I am noticing between a type system and a constraint system:
+//  1. They can be put on function inputs and outputs.
+//  2. You need to prove that you are actually following the types/constraints on your function.
+//  3. These systems stop you from calling a function incorrectly.
+//  4. And type/constraint checking can happen at compile time.
