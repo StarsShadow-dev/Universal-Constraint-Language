@@ -1,15 +1,19 @@
 import "modules/libc_bindings"
-import "modules/std"
+// import "modules/std"
 // import "math.parallel"
 
 #set("__functionSymbol", "main");
 function main(): Int32 {
-	var i: Int32 = 0 - 100;
-	while (i < 101) {
-		std::print_Int32(i);
-		libc_bindings::printf("\n");
-		i = i + 1;
-	}
+	// var string: &[Uint8] = "string!\n";
+	// libc_bindings::putchar(string[0]);
+	// libc_bindings::putchar(10);
+	
+	var char: Int8 = 10;
+	libc_bindings::putchar(char);
+	libc_bindings::putchar(char);
+	libc_bindings::putchar(char);
+	libc_bindings::putchar(char);
+	libc_bindings::putchar(char);
 	
 	return 0;
 }

@@ -10,6 +10,6 @@ typedef enum {
 	ParserMode_arguments
 } ParserMode;
 
-linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMode parserMode, int returnAtNonScopeResolutionOperator, int returnAtOpeningParentheses);
+linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMode parserMode, int returnAtNonScopeResolutionOperator, int returnAtOpeningSeparator);
 
 #endif /* parser_h */

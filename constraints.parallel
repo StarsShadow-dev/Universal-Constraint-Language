@@ -95,7 +95,7 @@ function test(): Void {
 
 // Wait a second, this is starting to sound a lot like a static type system...
 
-// Here are some similarities I am noticing between a type system and a constraint system:
+// Here are some similarities I am noticing between a type system and my constraint system:
 //  1. They can be put on function inputs and outputs.
 //  2. You need to prove that you are actually following the types/constraints on your function.
 //  3. These systems stop you from calling a function incorrectly.

@@ -306,7 +306,7 @@ void addQueryLocation(linkedList_Node **AST) {
 	addedQueryLocation = 1;
 }
 
-linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMode parserMode, int returnAtNonScopeResolutionOperator, int returnAtOpeningParentheses) {
+linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMode parserMode, int returnAtNonScopeResolutionOperator, int returnAtOpeningSeparator) {
 	linkedList_Node *AST = NULL;
 	
 	while (1) {
@@ -743,7 +743,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 			
 			case TokenType_separator: {
 				if (SubString_string_cmp(&token->subString, "(") == 0) {
-					if (returnAtOpeningParentheses) {
+					if (returnAtOpeningSeparator) {
 						return AST;
 					}
 					
@@ -760,7 +760,35 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					
 					((ASTnode_call *)data->value)->left = left;
 					((ASTnode_call *)data->value)->arguments = arguments;
-				} else if (SubString_string_cmp(&token->subString, ")") == 0 || SubString_string_cmp(&token->subString, "}") == 0) {
+				} else if (SubString_string_cmp(&token->subString, "[") == 0) {
+					if (returnAtOpeningSeparator) {
+						return AST;
+					}
+					
+					linkedList_Node *left = linkedList_popLast(&AST);
+					ASTnode *leftNode = (ASTnode *)left->data;
+					
+					*current = (*current)->next;
+					linkedList_Node *right = parse(FI, current, ParserMode_expression, 0, 0);
+					Token *closingBracket = ((Token *)((*current)->data));
+					if (closingBracket->type != TokenType_separator || SubString_string_cmp(&closingBracket->subString, "]") != 0) {
+						printf("subscript expected a closingBracket\n");
+						compileError(FI, closingBracket->location);
+					}
+					*current = (*current)->next;
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_subscript));
+					
+					data->nodeType = ASTnodeType_subscript;
+					data->location = leftNode->location;
+					
+					((ASTnode_subscript *)data->value)->left = left;
+					((ASTnode_subscript *)data->value)->right = right;
+				} else if (
+					SubString_string_cmp(&token->subString, ")") == 0 ||
+					SubString_string_cmp(&token->subString, "}") == 0 ||
+					SubString_string_cmp(&token->subString, "]") == 0
+				) {
 					if (parserMode != ParserMode_expression) {
 						*current = (*current)->next;
 					}
@@ -848,9 +876,12 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 		}
 		
 		if (
-			!returnAtOpeningParentheses &&
+			!returnAtOpeningSeparator &&
 			((Token *)((*current)->data))->type == TokenType_separator &&
-			SubString_string_cmp(&((Token *)((*current)->data))->subString, "(") == 0
+			(
+				SubString_string_cmp(&((Token *)((*current)->data))->subString, "(") == 0 ||
+				SubString_string_cmp(&((Token *)((*current)->data))->subString, "[") == 0
+			)
 		) {
 			continue;
 		}
@@ -858,7 +889,10 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 		int nextTokenWillMoveLastNode = ((Token *)((*current)->data))->type == TokenType_operator ||
 		(
 			((Token *)((*current)->data))->type == TokenType_separator &&
-			SubString_string_cmp(&((Token *)((*current)->data))->subString, "(") == 0
+			(
+				SubString_string_cmp(&((Token *)((*current)->data))->subString, "(") == 0 ||
+				SubString_string_cmp(&((Token *)((*current)->data))->subString, "[") == 0
+			)
 		);
 		
 		// if the node that was just generated should have a semicolon

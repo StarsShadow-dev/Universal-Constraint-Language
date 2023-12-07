@@ -2383,6 +2383,13 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				break;
 			}
 			
+			case ASTnodeType_subscript: {
+				ASTnode_subscript *data = (ASTnode_subscript *)node->value;
+				
+				
+				break;
+			}
+			
 			default: {
 				printf("unknown node type: %u\n", node->nodeType);
 				compileError(FI, node->location);

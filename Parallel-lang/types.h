@@ -155,6 +155,7 @@ typedef enum {
 	ASTnodeType_string,
 	
 	ASTnodeType_identifier,
+	ASTnodeType_subscript,
 	
 	ASTnodeType_selfReference
 } ASTnodeType;
@@ -263,6 +264,11 @@ typedef struct {
 typedef struct {
 	SubString *name;
 } ASTnode_identifier;
+
+typedef struct {
+	linkedList_Node *left;
+	linkedList_Node *right;
+} ASTnode_subscript;
 
 void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator, ASTnode *node);
 
