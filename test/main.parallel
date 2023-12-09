@@ -9,11 +9,12 @@ function main(): Int32 {
 	// libc_bindings::putchar(10);
 	
 	var char: Int8 = 10;
-	libc_bindings::putchar(char);
-	libc_bindings::putchar(char);
-	libc_bindings::putchar(char);
-	libc_bindings::putchar(char);
-	libc_bindings::putchar(char);
+	libc_bindings::putchar(char as Int32);
+	
+	var test: Int32 = char as Int32;
+	libc_bindings::putchar(test);
+	libc_bindings::putchar(test);
+	libc_bindings::putchar(test);
 	
 	return 0;
 }

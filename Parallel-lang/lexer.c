@@ -20,7 +20,8 @@
 #define operator_2chars \
 character == '=' && FI->context.currentSource[index+1] == '=' ||\
 character == '!' && FI->context.currentSource[index+1] == '=' ||\
-character == ':' && FI->context.currentSource[index+1] == ':'
+character == ':' && FI->context.currentSource[index+1] == ':' ||\
+character == 'a' && FI->context.currentSource[index+1] == 's'
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','
 
@@ -70,8 +71,75 @@ linkedList_Node *lex(FileInformation *FI) {
 		
 		lineBreaksInARow = 0;
 		
-		// start of a word
-		if (wordStart) {
+		// comment
+		if (character == '/' && FI->context.currentSource[index+1] == '/') {
+			index++;
+			column++;
+			
+			while (1) {
+				char character = FI->context.currentSource[index];
+				
+				if (character != 0 && character != '\n') {
+					index++;
+					column++;
+					continue;
+				}
+				
+				index--;
+				column--;
+				break;
+			}
+		}
+		
+		// block comment
+		else if (character == '/' && FI->context.currentSource[index+1] == '*') {
+			index++;
+			column++;
+			
+			while (1) {
+				char character = FI->context.currentSource[index];
+				
+				if (character == 0) {
+					index--;
+					column--;
+					break;
+				}
+				
+				if (character == '\n') {
+					line++;
+				} else if (character == '*' && FI->context.currentSource[index+1] == '/') {
+					index++;
+					column++;
+					break;
+				}
+				
+				index++;
+				column++;
+			}
+		}
+		
+		else if (operator_2chars) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_operator;
+			data->location = (SourceLocation){line, column, column + 2};
+			data->subString.start = FI->context.currentSource + index;
+			data->subString.length = 2;
+			
+			index++;
+			column++;
+		}
+		
+		else if (operator_1char) {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_operator;
+			data->location = (SourceLocation){line, column, column + 1};
+			data->subString.start = FI->context.currentSource + index;
+			data->subString.length = 1;
+		}
+		
+		else if (wordStart) {
 			int start = index;
 			int columnStart = column;
 			int end = 0;
@@ -157,74 +225,6 @@ linkedList_Node *lex(FileInformation *FI) {
 			
 			index += 2;
 			column += 2;
-		}
-		
-		// comment
-		else if (character == '/' && FI->context.currentSource[index+1] == '/') {
-			index++;
-			column++;
-			
-			while (1) {
-				char character = FI->context.currentSource[index];
-				
-				if (character != 0 && character != '\n') {
-					index++;
-					column++;
-					continue;
-				}
-				
-				index--;
-				column--;
-				break;
-			}
-		}
-		
-		// block comment
-		else if (character == '/' && FI->context.currentSource[index+1] == '*') {
-			index++;
-			column++;
-			
-			while (1) {
-				char character = FI->context.currentSource[index];
-				
-				if (character == 0) {
-					index--;
-					column--;
-					break;
-				}
-				
-				if (character == '\n') {
-					line++;
-				} else if (character == '*' && FI->context.currentSource[index+1] == '/') {
-					index++;
-					column++;
-					break;
-				}
-				
-				index++;
-				column++;
-			}
-		}
-		
-		else if (operator_2chars) {
-			Token *data = linkedList_addNode(&tokens, sizeof(Token));
-			
-			data->type = TokenType_operator;
-			data->location = (SourceLocation){line, column, column + 2};
-			data->subString.start = FI->context.currentSource + index;
-			data->subString.length = 2;
-			
-			index++;
-			column++;
-		}
-		
-		else if (operator_1char) {
-			Token *data = linkedList_addNode(&tokens, sizeof(Token));
-			
-			data->type = TokenType_operator;
-			data->location = (SourceLocation){line, column, column + 1};
-			data->subString.start = FI->context.currentSource + index;
-			data->subString.length = 1;
 		}
 		
 		else if (separator) {

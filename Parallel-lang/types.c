@@ -324,6 +324,18 @@ void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *po
 // context
 //
 
+char *ContextBinding_getLLVMname(ContextBinding *binding) {
+	if (binding->type == ContextBindingType_simpleType) {
+		return ((ContextBinding_simpleType *)binding->value)->LLVMtype;
+	} else if (binding->type == ContextBindingType_function) {
+		return ((ContextBinding_function *)binding->value)->LLVMname;
+	} else if (binding->type == ContextBindingType_struct) {
+		return ((ContextBinding_struct *)binding->value)->LLVMname;
+	}
+	
+	abort();
+}
+
 int BuilderType_hasName(BuilderType *type, char *name) {
 	return SubString_string_cmp(type->binding->key, name) == 0;
 }

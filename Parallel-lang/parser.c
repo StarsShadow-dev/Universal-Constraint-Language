@@ -88,12 +88,16 @@ int getOperatorPrecedence(SubString *subString) {
 		return 6;
 	}
 	
-	else if (SubString_string_cmp(subString, ".") == 0) {
+	else if (SubString_string_cmp(subString, "as") == 0) {
 		return 7;
 	}
 	
-	else if (SubString_string_cmp(subString, "::") == 0) {
+	else if (SubString_string_cmp(subString, ".") == 0) {
 		return 8;
+	}
+	
+	else if (SubString_string_cmp(subString, "::") == 0) {
+		return 9;
 	}
 	
 	else {
@@ -101,6 +105,8 @@ int getOperatorPrecedence(SubString *subString) {
 		abort();
 	}
 }
+
+linkedList_Node *parseType(FileInformation *FI, linkedList_Node **current);
 
 linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, linkedList_Node *left, int precedence, int ignoreEquals) {
 	if (*current == NULL) {
@@ -126,7 +132,9 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 			
 			*current = (*current)->next;
 			linkedList_Node *right;
-			if (SubString_string_cmp(&operator->subString, ".") == 0 || SubString_string_cmp(&operator->subString, "::") == 0) {
+			if (SubString_string_cmp(&operator->subString, "as") == 0) {
+				right = parseType(FI, current);
+			} else if (SubString_string_cmp(&operator->subString, ".") == 0 || SubString_string_cmp(&operator->subString, "::") == 0) {
 				right = parseOperators(FI, current, parse(FI, current, ParserMode_expression, 1, 1), nextPrecedence, ignoreEquals);
 			} else {
 				right = parseOperators(FI, current, parse(FI, current, ParserMode_expression, 1, 0), nextPrecedence, ignoreEquals);
@@ -161,6 +169,8 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_memberAccess;
 			} else if (SubString_string_cmp(&operator->subString, "::") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_scopeResolution;
+			} else if (SubString_string_cmp(&operator->subString, "as") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_cast;
 			} else {
 				abort();
 			}

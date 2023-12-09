@@ -239,7 +239,7 @@ void expectUnusedName(FileInformation *FI, SubString *name, SourceLocation locat
 	}
 }
 
-// node is a ASTnode_constrainedType
+// node is an ASTnode_constrainedType
 BuilderType *getType(FileInformation *FI, ASTnode *node) {
 	if (node->nodeType != ASTnodeType_constrainedType) abort();
 	ASTnode_constrainedType *data = (ASTnode_constrainedType *)node->value;
@@ -1927,6 +1927,45 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					break;
 				}
 				
+				else if (data->operatorType == ASTnode_operatorType_cast) {
+					linkedList_Node *leftTypeList = NULL;
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypeList, data->left, 1, 1, 0);
+					
+					BuilderType *fromType = (BuilderType *)leftTypeList->data;
+					
+					BuilderType *toType = getType(FI, (ASTnode *)data->right->data);
+					
+					CharAccumulator_appendChars(outerSource, "\n\t%");
+					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+					CharAccumulator_appendChars(outerSource, " = ");
+					
+					// make the type bigger
+					if (fromType->binding->byteSize < toType->binding->byteSize) {
+						CharAccumulator_appendChars(outerSource, "sext ");
+					}
+					
+					else {
+						addStringToReportMsg("cast not currently supported");
+						
+						compileError(FI, node->location);
+					}
+					
+					CharAccumulator_appendChars(outerSource, leftInnerSource.data);
+					CharAccumulator_appendChars(outerSource, " to ");
+					CharAccumulator_appendChars(outerSource, ContextBinding_getLLVMname(toType->binding));
+					
+					if (withTypes) {
+						CharAccumulator_appendChars(innerSource, ContextBinding_getLLVMname(toType->binding));
+						CharAccumulator_appendChars(innerSource, " ");
+					}
+					CharAccumulator_appendChars(innerSource, "%");
+					CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+					
+					outerFunction->registerCount++;
+					
+					break;
+				}
+				
 				if (expectedTypes == NULL) {
 					addStringToReportMsg("unexpected operator");
 					
@@ -2106,6 +2145,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				else {
 					abort();
 				}
+				
 				CharAccumulator_appendChars(outerSource, " ");
 				CharAccumulator_appendChars(outerSource, leftInnerSource.data);
 				CharAccumulator_appendChars(outerSource, ", ");
@@ -2383,12 +2423,11 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				break;
 			}
 			
-			case ASTnodeType_subscript: {
-				ASTnode_subscript *data = (ASTnode_subscript *)node->value;
-				
-				
-				break;
-			}
+//			case ASTnodeType_subscript: {
+//				ASTnode_subscript *data = (ASTnode_subscript *)node->value;
+//				
+//				break;
+//			}
 			
 			default: {
 				printf("unknown node type: %u\n", node->nodeType);

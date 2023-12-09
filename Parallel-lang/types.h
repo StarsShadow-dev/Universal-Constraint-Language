@@ -243,7 +243,10 @@ typedef enum {
 	ASTnode_operatorType_divide,
 	ASTnode_operatorType_modulo,
 	ASTnode_operatorType_memberAccess,
-	ASTnode_operatorType_scopeResolution
+	ASTnode_operatorType_scopeResolution,
+	
+	// node: the right of operatorType_cast is a type
+	ASTnode_operatorType_cast
 } ASTnode_operatorType;
 
 typedef struct {
@@ -377,6 +380,8 @@ typedef struct {
 typedef struct {
 	linkedList_Node *files;
 } ContextBinding_namespace;
+
+char *ContextBinding_getLLVMname(ContextBinding *binding);
 
 int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer);
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer);
