@@ -1,21 +1,16 @@
 import "../libc_bindings"
 
-struct Thing {
-	var number: Int32;
-}
-
-impl Thing {
-	function test(): Void {
-		return;
-	}
-}
-
 macro print {
 	#warning("this macro is not very useful right now", "");
 	printLine("print test");
 }
 
-function printLine(string: Pointer): Void {
+// function printChar(char: Int8): Void {
+// 	libc_bindings::putchar(char as Int32);
+// 	return;
+// }
+
+function printString(string: Pointer): Void {
 	libc_bindings::printf(string);
 	libc_bindings::putchar(10); // \n
 	
@@ -32,12 +27,11 @@ function print_Int32(number: Int32): Void {
 		absoluteNumber = number;
 	}
 	
-	var digit: Int32 = absoluteNumber % 10;
 	var n: Int32 = absoluteNumber / 10;
 	if (n != 0) {
 		print_Int32(n);
 	}
 	
-	libc_bindings::putchar(48 + digit);
+	libc_bindings::putchar(48 + (absoluteNumber % 10));
 	return;
 }

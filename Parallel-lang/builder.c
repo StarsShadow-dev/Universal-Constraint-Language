@@ -1928,10 +1928,11 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				}
 				
 				else if (data->operatorType == ASTnode_operatorType_cast) {
-					linkedList_Node *leftTypeList = NULL;
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypeList, data->left, 1, 1, 0);
+					linkedList_Node *expectedTypeForLeft = NULL;
+					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeft, data->left, 0, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeft, NULL, data->left, 1, 1, 0);
 					
-					BuilderType *fromType = (BuilderType *)leftTypeList->data;
+					BuilderType *fromType = (BuilderType *)expectedTypeForLeft->data;
 					
 					BuilderType *toType = getType(FI, (ASTnode *)data->right->data);
 					
@@ -1966,37 +1967,40 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					break;
 				}
 				
-				if (expectedTypes == NULL) {
-					addStringToReportMsg("unexpected operator");
-					
-					addStringToReportIndicator("the return value of this operator is not used");
-					compileError(FI, node->location);
+				linkedList_Node *expectedTypeForLeftAndRight = NULL;
+				char *expectedLLVMtype = NULL;
+				if (expectedTypes != NULL) {
+					expectedLLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)expectedTypes->data)->binding);
 				}
 				
-				linkedList_Node *expectedTypeForLeftAndRight = NULL;
-				char *expectedLLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)expectedTypes->data)->binding);
-				
-				// all of these operators are very similar and even use the same 'icmp' instruction
-				// https://llvm.org/docs/LangRef.html#fcmp-instruction
 				if (
-					data->operatorType == ASTnode_operatorType_equivalent ||
-					data->operatorType == ASTnode_operatorType_notEquivalent ||
-					data->operatorType == ASTnode_operatorType_greaterThan ||
-					data->operatorType == ASTnode_operatorType_lessThan
+					(
+					 expectedTypes == NULL && types != NULL
+					) ||
+					(
+						data->operatorType == ASTnode_operatorType_equivalent ||
+						data->operatorType == ASTnode_operatorType_notEquivalent ||
+						data->operatorType == ASTnode_operatorType_greaterThan ||
+						data->operatorType == ASTnode_operatorType_lessThan
+					 )
 				) {
 					//
 					// figure out what the type of both sides should be
 					//
 					
+					// get left type
 					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0, 0);
+					// if we did not find a number on the left side
 					if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
 						if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 							addStringToReportMsg("left side of operator expected a number");
 							compileError(FI, node->location);
 						}
 						
+						// replace expectedTypeForLeftAndRight with the right type
 						linkedList_freeList(&expectedTypeForLeftAndRight);
 						buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0, 0);
+						// if we did not find a number on the right side
 						if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
 							if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 								addStringToReportMsg("right side of operator expected a number");
@@ -2008,11 +2012,16 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							addTypeFromString(FI, &expectedTypeForLeftAndRight, "Int32", NULL);
 						}
 					}
-					
-					//
-					// build both sides
-					//
-					
+				}
+				
+				// all of these operators are very similar and even use the same 'icmp' instruction
+				// https://llvm.org/docs/LangRef.html#fcmp-instruction
+				if (
+					data->operatorType == ASTnode_operatorType_equivalent ||
+					data->operatorType == ASTnode_operatorType_notEquivalent ||
+					data->operatorType == ASTnode_operatorType_greaterThan ||
+					data->operatorType == ASTnode_operatorType_lessThan
+				) {
 					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
 					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
@@ -2050,120 +2059,97 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBinding(FI, ((BuilderType *)expectedTypeForLeftAndRight->data)->binding));
 				}
 				
-				else if (data->operatorType == ASTnode_operatorType_add) {
-					// the expected type for both sides of the operator is the same type that is expected for the operator
-					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
-					
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
-					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = add nsw ");
-					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = fadd ");
-					} else {
-						abort();
+				else if (
+					data->operatorType == ASTnode_operatorType_add ||
+					data->operatorType == ASTnode_operatorType_subtract ||
+					data->operatorType == ASTnode_operatorType_multiply ||
+					data->operatorType == ASTnode_operatorType_divide ||
+					data->operatorType == ASTnode_operatorType_modulo
+				) {
+					if (expectedTypes == NULL && types != NULL) {
+						addTypeFromBuilderType(FI, types, (BuilderType *)expectedTypeForLeftAndRight->data);
 					}
-					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
-				}
-				
-				else if (data->operatorType == ASTnode_operatorType_subtract) {
-					// the expected type for both sides of the operator is the same type that is expected for the operator
-					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
 					
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
-					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = sub nsw ");
-					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = fsub ");
-					} else {
-						abort();
-					}
-					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
-				}
-				
-				else if (data->operatorType == ASTnode_operatorType_multiply) {
-					// the expected type for both sides of the operator is the same type that is expected for the operator
-					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
-					
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
-					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = mul nsw ");
-					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = fmul ");
-					} else {
-						abort();
-					}
-					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
-				}
-				
-				else if (data->operatorType == ASTnode_operatorType_divide) {
-					// the expected type for both sides of the operator is the same type that is expected for the operator
-					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
-					
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
-					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = sdiv ");
-					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = fdiv ");
-					} else {
-						abort();
-					}
-					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
-				}
-				
-				else if (data->operatorType == ASTnode_operatorType_modulo) {
-					// the expected type for both sides of the operator is the same type that is expected for the operator
-					addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
-					
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
-					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						CharAccumulator_appendChars(outerSource, " = srem ");
-					} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						addStringToReportMsg("modulo does not support floats");
+					if (expectedTypes != NULL && outerSource != NULL) {
+						addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
 						
-						compileError(FI, node->location);
-					} else {
-						abort();
+						buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
+						buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
+						CharAccumulator_appendChars(outerSource, "\n\t%");
+						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+						
+						if (data->operatorType == ASTnode_operatorType_add) {
+							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = add nsw ");
+							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = fadd ");
+							} else {
+								abort();
+							}
+						} else if (data->operatorType == ASTnode_operatorType_subtract) {
+							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = sub nsw ");
+							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = fsub ");
+							} else {
+								abort();
+							}
+						} else if (data->operatorType == ASTnode_operatorType_multiply) {
+							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = mul nsw ");
+							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = fmul ");
+							} else {
+								abort();
+							}
+						} else if (data->operatorType == ASTnode_operatorType_divide) {
+							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = sdiv ");
+							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = fdiv ");
+							} else {
+								abort();
+							}
+						} else if (data->operatorType == ASTnode_operatorType_modulo) {
+							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = srem ");
+							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								addStringToReportMsg("modulo does not support floats");
+								
+								compileError(FI, node->location);
+							} else {
+								abort();
+							}
+						} else {
+							abort();
+						}
 					}
-					CharAccumulator_appendChars(outerSource, expectedLLVMtype);
+					
+					if (expectedLLVMtype) CharAccumulator_appendChars(outerSource, expectedLLVMtype);
 				}
 				
 				else {
 					abort();
 				}
 				
-				CharAccumulator_appendChars(outerSource, " ");
-				CharAccumulator_appendChars(outerSource, leftInnerSource.data);
-				CharAccumulator_appendChars(outerSource, ", ");
-				CharAccumulator_appendChars(outerSource, rightInnerSource.data);
-				
-				if (withTypes) {
-					CharAccumulator_appendChars(innerSource, expectedLLVMtype);
-					CharAccumulator_appendChars(innerSource, " ");
+				if (outerSource != NULL && innerSource != NULL) {
+					CharAccumulator_appendChars(outerSource, " ");
+					CharAccumulator_appendChars(outerSource, leftInnerSource.data);
+					CharAccumulator_appendChars(outerSource, ", ");
+					CharAccumulator_appendChars(outerSource, rightInnerSource.data);
+					
+					if (withTypes) {
+						if (expectedLLVMtype) CharAccumulator_appendChars(innerSource, expectedLLVMtype);
+						CharAccumulator_appendChars(innerSource, " ");
+					}
+					CharAccumulator_appendChars(innerSource, "%");
+					CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+					
+					outerFunction->registerCount++;
 				}
-				CharAccumulator_appendChars(innerSource, "%");
-				CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 				
 				CharAccumulator_free(&leftInnerSource);
 				CharAccumulator_free(&rightInnerSource);
-				
-				linkedList_freeList(&expectedTypeForLeftAndRight);
-				
-				outerFunction->registerCount++;
 				
 				break;
 			}
@@ -2221,36 +2207,38 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					addTypeFromString(FI, types, "__Number", node);
 				}
 				
-				if (!BuilderType_isNumber((BuilderType *)expectedTypes->data)) {
-					addStringToReportMsg("unexpected type");
+				if (expectedTypes != NULL) {
+					if (!BuilderType_isNumber((BuilderType *)expectedTypes->data)) {
+						addStringToReportMsg("unexpected type");
+						
+						addStringToReportIndicator("expected type '");
+						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
+						addStringToReportIndicator("' but got a number.");
+						compileError(FI, node->location);
+					}
 					
-					addStringToReportIndicator("expected type '");
-					addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
-					addStringToReportIndicator("' but got a number.");
-					compileError(FI, node->location);
-				}
-				
-				ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
-				
-				if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
-					addStringToReportMsg("integer overflow detected");
+					ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
 					
-					CharAccumulator_appendInt(&reportIndicator, data->value);
-					addStringToReportIndicator(" is larger than the maximum size of the type '");
-					addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
-					addStringToReportIndicator("'");
-					compileWarning(FI, node->location, WarningType_unsafe);
+					if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
+						addStringToReportMsg("integer overflow detected");
+						
+						CharAccumulator_appendInt(&reportIndicator, data->value);
+						addStringToReportIndicator(" is larger than the maximum size of the type '");
+						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
+						addStringToReportIndicator("'");
+						compileWarning(FI, node->location, WarningType_unsafe);
+					}
+					
+					if (withTypes) {
+						char *LLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)(*currentExpectedType)->data)->binding);
+						
+						CharAccumulator_appendChars(innerSource, LLVMtype);
+						CharAccumulator_appendChars(innerSource, " ");
+					}
 				}
 				
-				char *LLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)(*currentExpectedType)->data)->binding);
-				
-				if (withTypes) {
-					CharAccumulator_appendChars(innerSource, LLVMtype);
-					CharAccumulator_appendChars(innerSource, " ");
-				}
-				
-				CharAccumulator_appendSubString(innerSource, data->string);
-				if (BuilderType_isFloat((BuilderType *)expectedTypes->data)) {
+				if (innerSource != NULL) CharAccumulator_appendSubString(innerSource, data->string);
+				if (expectedTypes != NULL && BuilderType_isFloat((BuilderType *)expectedTypes->data)) {
 					CharAccumulator_appendChars(innerSource, ".0");
 				}
 				

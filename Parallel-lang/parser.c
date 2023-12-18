@@ -757,19 +757,47 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 						return AST;
 					}
 					
-					linkedList_Node *left = linkedList_popLast(&AST);
-					ASTnode *leftNode = (ASTnode *)left->data;
+					int forFunction = 1;
 					
-					*current = (*current)->next;
-					linkedList_Node *arguments = parse(FI, current, ParserMode_arguments, 0, 0);
+					if (AST != NULL) {
+						linkedList_Node *last = linkedList_getLast(AST);
+						if (
+							((ASTnode *)last->data)->nodeType == ASTnodeType_identifier ||
+							((ASTnode *)last->data)->nodeType == ASTnodeType_operator
+						) {
+							forFunction = 1;
+						} else {
+							forFunction = 0;
+						}
+					} else {
+						forFunction = 0;
+					}
 					
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
-					
-					data->nodeType = ASTnodeType_call;
-					data->location = leftNode->location;
-					
-					((ASTnode_call *)data->value)->left = left;
-					((ASTnode_call *)data->value)->arguments = arguments;
+					if (forFunction) {
+						linkedList_Node *left = linkedList_popLast(&AST);
+						ASTnode *leftNode = (ASTnode *)left->data;
+						
+						*current = (*current)->next;
+						linkedList_Node *arguments = parse(FI, current, ParserMode_arguments, 0, 0);
+						
+						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
+						
+						data->nodeType = ASTnodeType_call;
+						data->location = leftNode->location;
+						
+						((ASTnode_call *)data->value)->left = left;
+						((ASTnode_call *)data->value)->arguments = arguments;
+					} else {
+						*current = (*current)->next;
+						linkedList_Node *newAST = parse(FI, current, ParserMode_expression, 0, 0);
+						linkedList_join(&AST, &newAST);
+						Token *closingParentheses = ((Token *)((*current)->data));
+						if (closingParentheses->type != TokenType_separator || SubString_string_cmp(&closingParentheses->subString, ")") != 0) {
+							printf("expected closingParentheses\n");
+							compileError(FI, closingParentheses->location);
+						}
+						*current = (*current)->next;
+					}
 				} else if (SubString_string_cmp(&token->subString, "[") == 0) {
 					if (returnAtOpeningSeparator) {
 						return AST;

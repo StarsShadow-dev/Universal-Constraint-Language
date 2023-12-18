@@ -1,5 +1,5 @@
 import "modules/libc_bindings"
-// import "modules/std"
+import "modules/std"
 // import "math.parallel"
 
 #set("__functionSymbol", "main");
@@ -8,13 +8,14 @@ function main(): Int32 {
 	// libc_bindings::putchar(string[0]);
 	// libc_bindings::putchar(10);
 	
-	var char: Int8 = 10;
-	libc_bindings::putchar(char as Int32);
+	std::print_Int32(1234);
+	libc_bindings::putchar(10); // \n
 	
-	var test: Int32 = char as Int32;
-	libc_bindings::putchar(test);
-	libc_bindings::putchar(test);
-	libc_bindings::putchar(test);
+	std::print_Int32(4321);
+	libc_bindings::putchar(10); // \n
+	
+	std::print_Int32(8368502);
+	libc_bindings::putchar(10); // \n
 	
 	return 0;
 }
