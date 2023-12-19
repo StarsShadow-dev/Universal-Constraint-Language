@@ -171,6 +171,8 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 }
 
 void compileFile(FileInformation *FI) {
+//	struct timespec fileStartTime = getTimespec();
+	
 	// add the coreFile to this file's importedFiles list
 	FileInformation **coreFilePointerData = linkedList_addNode(&FI->context.importedFiles, sizeof(void *));
 	*coreFilePointerData = coreFilePointer;
@@ -199,22 +201,33 @@ void compileFile(FileInformation *FI) {
 		FI->metadataCount++;
 	}
 	
+	struct timespec readFileStartTime = {0};
+	struct timespec readFileEndTime = {0};
+	
 	if (compilerMode == CompilerMode_query && strcmp(FI->context.path, startFilePath) == 0) {
 		FI->context.currentSource = queryText;
 	} else {
+		readFileStartTime = getTimespec();
 		FI->context.currentSource = readFile(FI->context.path);
+		readFileEndTime = getTimespec();
 	}
 	
 //	printf("Source (%s): %s\n", path, FI->context.currentSource);
 	
+	struct timespec lexStartTime = getTimespec();
 	linkedList_Node *tokens = lex(FI);
+	struct timespec lexEndTime = getTimespec();
 //	printTokens(tokens);
 	
 	linkedList_Node *currentToken = tokens;
 	
+	struct timespec parseStartTime = getTimespec();
 	linkedList_Node *AST = parse(FI, &currentToken, ParserMode_codeBlock, 0, 0);
+	struct timespec parseEndTime = getTimespec();
 	
+//	struct timespec buildStartTime = getTimespec();
 	buildLLVM(FI, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
+//	struct timespec buildEndTime = getTimespec();
 	
 	CharAccumulator_appendChars(&LLVMsource, FI->topLevelConstantSource->data);
 	CharAccumulator_appendChars(&LLVMsource, FI->topLevelFunctionSource->data);
@@ -243,6 +256,9 @@ void compileFile(FileInformation *FI) {
 		FI->metadataCount++;
 	}
 	
+	struct timespec llcStartTime = {0};
+	struct timespec llcEndTime = {0};
+	
 	if (compilerMode == CompilerMode_check) {
 		printf("Finished checking file at %s\n", FI->context.path);
 	} else {
@@ -263,11 +279,14 @@ void compileFile(FileInformation *FI) {
 			CharAccumulator_appendChars(&LLC_command, LLC_path);
 			CharAccumulator_appendChars(&LLC_command, " -filetype=obj -o ");
 			CharAccumulator_appendChars(&LLC_command, outputFilePath.data);
+			
+			llcStartTime = getTimespec();
 			FILE *fp = popen(LLC_command.data, "w");
 			fprintf(fp, "%s", LLVMsource.data);
 			int LLC_status = pclose(fp);
 			int LLC_exitCode = WEXITSTATUS(LLC_status);
 			CharAccumulator_free(&LLC_command);
+			llcEndTime = getTimespec();
 			
 			if (LLC_exitCode != 0) {
 				printf("llc error\n");
@@ -277,7 +296,7 @@ void compileFile(FileInformation *FI) {
 			CharAccumulator_appendChars(&objectFiles, outputFilePath.data);
 			CharAccumulator_appendChars(&objectFiles, " ");
 			
-			if (queryText == NULL) printf("Object file saved to %s\n", outputFilePath.data);
+			if (compilerOptions.verbose) printf("Object file saved to %s\n", outputFilePath.data);
 			
 			CharAccumulator_free(&outputFilePath);
 		} else {
@@ -285,11 +304,14 @@ void compileFile(FileInformation *FI) {
 			CharAccumulator_initialize(&LLC_command);
 			CharAccumulator_appendChars(&LLC_command, LLC_path);
 			CharAccumulator_appendChars(&LLC_command, " > /dev/null");
+			
+			llcStartTime = getTimespec();
 			FILE *fp = popen(LLC_command.data, "w");
 			fprintf(fp, "%s", LLVMsource.data);
 			int LLC_status = pclose(fp);
 			int LLC_exitCode = WEXITSTATUS(LLC_status);
 			CharAccumulator_free(&LLC_command);
+			llcEndTime = getTimespec();
 			
 			if (LLC_exitCode != 0) {
 				abort();
@@ -301,4 +323,19 @@ void compileFile(FileInformation *FI) {
 	
 	FileInformation **filePointerData = linkedList_addNode(&alreadyCompiledFiles, sizeof(void *));
 	*filePointerData = FI;
+	
+	if (compilerOptions.timed) {
+		printf("compiled file %s\n", FI->context.path);
+		if (!(compilerMode == CompilerMode_query && strcmp(FI->context.path, startFilePath) == 0)) {
+			printf(" readFile: %llu milliseconds\n", getMilliseconds(readFileStartTime, readFileEndTime));
+		}
+		printf(" lex: %llu milliseconds\n", getMilliseconds(lexStartTime, lexEndTime));
+		printf(" parse: %llu milliseconds\n", getMilliseconds(parseStartTime, parseEndTime));
+//		printf(" build: %llu milliseconds\n", getMilliseconds(buildStartTime, buildEndTime));
+		if (compilerMode != CompilerMode_check) {
+			printf(" llc: %llu milliseconds\n", getMilliseconds(llcStartTime, llcEndTime));
+		}
+//		printf("total: %llu milliseconds\n\n", getMilliseconds(fileStartTime, getTimespec()));
+		printf("\n");
+	}
 }

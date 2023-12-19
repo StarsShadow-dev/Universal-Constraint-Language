@@ -119,6 +119,11 @@ int main(int argc, char **argv) {
 			compilerOptions.verbose = 1;
 		}
 		
+		else if (strcmp(arg, "-timed") == 0) {
+			compilerOptions.timed = 1;
+			startTime = getTimespec();
+		}
+		
 		else {
 			printf("'%s' is not a valid argument\n", arg);
 			exit(1);
@@ -272,6 +277,7 @@ int main(int argc, char **argv) {
 			printf("clang_command: %s\n", clang_command.data);
 		}
 		
+		struct timespec clangStartTime = getTimespec();
 		int clang_status = system(clang_command.data);
 		
 		int clang_exitCode = WEXITSTATUS(clang_status);
@@ -282,6 +288,10 @@ int main(int argc, char **argv) {
 		}
 		
 		printf("Binary saved to %s/binary\n", buildDirectory);
+		
+		if (compilerOptions.timed) {
+			printf(" clang in %llu milliseconds\n", getMilliseconds(clangStartTime, getTimespec()));
+		}
 		
 		CharAccumulator_free(&clang_command);
 	}
@@ -311,6 +321,10 @@ int main(int argc, char **argv) {
 	
 	free(LLC_path);
 	free(clang_path);
+	
+	if (compilerOptions.timed) {
+		printf("\nfinished compiling in %llu milliseconds\n", getMilliseconds(startTime, getTimespec()));
+	}
 	
 	return 0;
 }

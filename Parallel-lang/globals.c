@@ -1,10 +1,12 @@
 #include "globals.h"
 
+struct timespec startTime = {0};
+
 CompilerMode compilerMode;
 
 CharAccumulator objectFiles = {100, 0, 0};
 
-CompilerOptions compilerOptions = {};
+CompilerOptions compilerOptions = {0};
 
 QueryMode queryMode;
 int queryTextLength = 0;

@@ -8,6 +8,8 @@
 // 8 bytes (on a 64 bit machine)
 #define pointer_byteSize 8
 
+extern struct timespec startTime;
+
 typedef enum {
 	CompilerMode_build_objectFile,
 	CompilerMode_build_binary,
@@ -36,6 +38,7 @@ extern CharAccumulator objectFiles;
 typedef struct {
 	int includeDebugInformation;
 	int verbose;
+	int timed;
 } CompilerOptions;
 
 extern CompilerOptions compilerOptions;

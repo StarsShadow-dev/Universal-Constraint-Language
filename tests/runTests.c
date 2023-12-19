@@ -19,13 +19,16 @@ extern char **environ;
 #define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
 // #define target_triple "arm64-apple-macosx13.0.0"
 
-#define SEC_TO_MS(sec) ((sec)*1000)
-#define NS_TO_MS(ns) ((ns)/1000000)
-uint64_t getMilliseconds() {
+struct timespec getTimespec(void) {
 	struct timespec ts;
-	timespec_get(&ts, TIME_UTC);
-	uint64_t ms = SEC_TO_MS((uint64_t)ts.tv_sec) + NS_TO_MS((uint64_t)ts.tv_nsec);
-	return ms;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+//	timespec_get(&ts, TIME_UTC);
+	return ts;
+}
+
+uint64_t getMilliseconds(struct timespec start) {
+	struct timespec end = getTimespec();
+	return (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
 }
 
 char *readFile(const char *path) {
@@ -197,7 +200,7 @@ int main(int argc, char **argv) {
 	int pathLength;
 	DIR *d;
 
-	uint64_t startMilliseconds = getMilliseconds();
+	struct timespec start = getTimespec();
 	
 	//
 	// testPath_fail
@@ -289,9 +292,9 @@ int main(int argc, char **argv) {
 	// closedir(d);
 
 	if (testsFailed > 0) {
-		printf("\nRan all tests in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
+		printf("\nRan all tests in %llu milliseconds.\n", getMilliseconds(start));
 	} else {
-		printf("\nAll tests succeeded in %llu milliseconds.\n", getMilliseconds() - startMilliseconds);
+		printf("\nAll tests succeeded in %llu milliseconds.\n", getMilliseconds(start));
 	}
 	printf("\x1B[32mtests succeeded: %d\x1B[0m\n", testsSucceeded);
 	printf("\x1B[31mtests failed: %d\x1B[0m\n", testsFailed);
