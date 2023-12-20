@@ -340,11 +340,22 @@ int BuilderType_hasName(BuilderType *type, char *name) {
 	return SubString_string_cmp(type->binding->key, name) == 0;
 }
 
-int BuilderType_isInt(BuilderType *type) {
+int BuilderType_isSignedInt(BuilderType *type) {
 	return BuilderType_hasName(type, "Int8") ||
 	BuilderType_hasName(type, "Int16") ||
 	BuilderType_hasName(type, "Int32") ||
 	BuilderType_hasName(type, "Int64");
+}
+
+int BuilderType_isUnsignedInt(BuilderType *type) {
+	return BuilderType_hasName(type, "UInt8") ||
+	BuilderType_hasName(type, "UInt16") ||
+	BuilderType_hasName(type, "UInt32") ||
+	BuilderType_hasName(type, "UInt64");
+}
+
+int BuilderType_isInt(BuilderType *type) {
+	return BuilderType_isSignedInt(type) || BuilderType_isUnsignedInt(type);
 }
 
 int BuilderType_isFloat(BuilderType *type) {

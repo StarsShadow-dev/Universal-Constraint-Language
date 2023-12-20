@@ -217,10 +217,16 @@ int main(int argc, char **argv) {
 	};
 	coreFilePointer = &coreFile;
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Void", "void", 0, 4);
+	
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int8", "i8", 1, 4);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int16", "i16", 2, 4);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int32", "i32", 4, 4);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int64", "i64", 8, 4);
+	
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt8", "i8", 1, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt16", "i16", 2, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt32", "i32", 4, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt64", "i64", 8, 4);
 	
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float16", "half", 2, 4);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float32", "float", 4, 4);

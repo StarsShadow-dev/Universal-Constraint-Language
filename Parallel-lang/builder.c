@@ -2083,7 +2083,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						
 						if (data->operatorType == ASTnode_operatorType_add) {
 							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-								CharAccumulator_appendChars(outerSource, " = add nsw ");
+								CharAccumulator_appendChars(outerSource, " = add ");
+								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+									CharAccumulator_appendChars(outerSource, "nsw ");
+								}
 							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fadd ");
 							} else {
@@ -2091,7 +2094,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							}
 						} else if (data->operatorType == ASTnode_operatorType_subtract) {
 							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-								CharAccumulator_appendChars(outerSource, " = sub nsw ");
+								CharAccumulator_appendChars(outerSource, " = sub ");
+								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+									CharAccumulator_appendChars(outerSource, "nsw ");
+								}
 							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fsub ");
 							} else {
@@ -2099,14 +2105,19 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							}
 						} else if (data->operatorType == ASTnode_operatorType_multiply) {
 							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
-								CharAccumulator_appendChars(outerSource, " = mul nsw ");
+								CharAccumulator_appendChars(outerSource, " = mul ");
+								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+									CharAccumulator_appendChars(outerSource, "nsw ");
+								}
 							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fmul ");
 							} else {
 								abort();
 							}
 						} else if (data->operatorType == ASTnode_operatorType_divide) {
-							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (BuilderType_isUnsignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = udiv ");
+							} else if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = sdiv ");
 							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fdiv ");
@@ -2114,7 +2125,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 								abort();
 							}
 						} else if (data->operatorType == ASTnode_operatorType_modulo) {
-							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (BuilderType_isUnsignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								CharAccumulator_appendChars(outerSource, " = urem ");
+							} else if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = srem ");
 							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								addStringToReportMsg("modulo does not support floats");

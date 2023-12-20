@@ -6,7 +6,7 @@ import "modules/std"
 function main(): Int32 {
 	// var string: &[Uint8] = "string!\n";
 	// libc_bindings::putchar(string[0]);
-	// libc_bindings::putchar(10);
+	// libc_bindings::putchar(10); // \n
 	
 	std::print_Int32(1234);
 	libc_bindings::putchar(10); // \n

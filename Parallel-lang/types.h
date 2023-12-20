@@ -333,6 +333,8 @@ typedef struct {
 } BuilderType;
 
 int BuilderType_hasName(BuilderType *type, char *name);
+int BuilderType_isSignedInt(BuilderType *type);
+int BuilderType_isUnsignedInt(BuilderType *type);
 int BuilderType_isInt(BuilderType *type);
 int BuilderType_isFloat(BuilderType *type);
 int BuilderType_isNumber(BuilderType *type);
