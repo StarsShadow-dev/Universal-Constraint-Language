@@ -1,0 +1,11 @@
+/*
+error: the name 'number' is defined multiple times
+8  |// TODO: the indicator points to the function name instead of the argument name
+9  |function test(number: Int8, number: Int8): Void {
+             ^^^^ 'number' redefined here
+10 |	return;
+*/
+// TODO: the indicator points to the function name instead of the argument name
+function test(number: Int8, number: Int8): Void {
+	return;
+}

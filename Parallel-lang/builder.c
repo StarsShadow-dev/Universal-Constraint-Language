@@ -739,7 +739,10 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 				CharAccumulator_appendChars(&functionSource, ", align ");
 				CharAccumulator_appendInt(&functionSource, argumentTypeBinding->byteAlign);
 				
+				// TODO: hack with FI->level to include bindings at FI->level + 1 in expectUnusedName (for arguments with the same name)
+				FI->level++;
 				expectUnusedName(FI, (SubString *)currentArgumentName->data, node->location);
+				FI->level--;
 				
 				BuilderType type = *(BuilderType *)currentArgumentType->data;
 				
