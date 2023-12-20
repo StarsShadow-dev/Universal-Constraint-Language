@@ -2,20 +2,38 @@ import "modules/libc_bindings"
 import "modules/std"
 // import "math.parallel"
 
+function recursiveFibonacci(n: Int64): Int64 {
+    if (n < 2) {
+        return n;
+    } else {
+        return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
+    }
+    
+    // unreachable
+    return 0;
+}
+
 #set("__functionSymbol", "main");
 function main(): Int32 {
 	// var string: &[Uint8] = "string!\n";
 	// libc_bindings::putchar(string[0]);
 	// libc_bindings::putchar(10); // \n
 	
-	std::print_Int32(1234);
-	libc_bindings::putchar(10); // \n
+	// std::print_Int32(1234);
+	// libc_bindings::putchar(10); // \n
 	
-	std::print_Int32(4321);
-	libc_bindings::putchar(10); // \n
+	// std::print_Int32(4321);
+	// libc_bindings::putchar(10); // \n
 	
-	std::print_Int32(8368502);
-	libc_bindings::putchar(10); // \n
+	// std::print_Int32(8368502);
+	// libc_bindings::putchar(10); // \n
+	
+	var i: Int64 = 1;
+	while (i < 40) {
+		std::print_Int32(recursiveFibonacci(i) as Int32);
+		libc_bindings::putchar(10); // \n
+		i = i + 1;
+	}
 	
 	return 0;
 }

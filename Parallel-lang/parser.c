@@ -902,17 +902,6 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 			continue;
 		}
 		
-		if (parserMode == ParserMode_arguments) {
-			if (
-				((Token *)((*current)->data))->type != TokenType_separator &&
-				SubString_string_cmp(&((Token *)((*current)->data))->subString, ",") != 0
-			) {
-				addStringToReportMsg("expected ',' inside of argument list");
-				compileError(FI, lastNode->location);
-			}
-			*current = (*current)->next;
-		}
-		
 		if (
 			!returnAtOpeningSeparator &&
 			((Token *)((*current)->data))->type == TokenType_separator &&
@@ -922,6 +911,17 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 			)
 		) {
 			continue;
+		}
+		
+		if (parserMode == ParserMode_arguments) {
+			if (
+				((Token *)((*current)->data))->type != TokenType_separator ||
+				SubString_string_cmp(&((Token *)((*current)->data))->subString, ",") != 0
+			) {
+				addStringToReportMsg("expected ',' inside of argument list");
+				compileError(FI, lastNode->location);
+			}
+			*current = (*current)->next;
 		}
 		
 		int nextTokenWillMoveLastNode = ((Token *)((*current)->data))->type == TokenType_operator ||

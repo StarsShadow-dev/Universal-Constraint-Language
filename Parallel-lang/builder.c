@@ -1230,33 +1230,35 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				buildLLVM(FI, outerFunction, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1, 1);
 				
-				if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
-					CharAccumulator_appendChars(outerSource, "\n\t%");
-					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					CharAccumulator_appendChars(outerSource, " = call ");
-					
-					if (innerSource != NULL) {
-						if (withTypes) {
-							CharAccumulator_appendChars(innerSource, functionToCall->LLVMreturnType);
-							CharAccumulator_appendChars(innerSource, " ");
+				if (outerSource != NULL) {
+					if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
+						CharAccumulator_appendChars(outerSource, "\n\t%");
+						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+						CharAccumulator_appendChars(outerSource, " = call ");
+						
+						if (innerSource != NULL) {
+							if (withTypes) {
+								CharAccumulator_appendChars(innerSource, functionToCall->LLVMreturnType);
+								CharAccumulator_appendChars(innerSource, " ");
+							}
+							CharAccumulator_appendChars(innerSource, "%");
+							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 						}
-						CharAccumulator_appendChars(innerSource, "%");
-						CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+						
+						outerFunction->registerCount++;
+					} else {
+						CharAccumulator_appendChars(outerSource, "\n\tcall ");
 					}
+					CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
+					CharAccumulator_appendChars(outerSource, " @\"");
+					CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
+					CharAccumulator_appendChars(outerSource, "\"(");
+					CharAccumulator_appendChars(outerSource, newInnerSource.data);
+					CharAccumulator_appendChars(outerSource, ")");
 					
-					outerFunction->registerCount++;
-				} else {
-					CharAccumulator_appendChars(outerSource, "\n\tcall ");
-				}
-				CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
-				CharAccumulator_appendChars(outerSource, " @\"");
-				CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
-				CharAccumulator_appendChars(outerSource, "\"(");
-				CharAccumulator_appendChars(outerSource, newInnerSource.data);
-				CharAccumulator_appendChars(outerSource, ")");
-				
-				if (compilerOptions.includeDebugInformation) {
-					addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
+					if (compilerOptions.includeDebugInformation) {
+						addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
+					}
 				}
 				
 				CharAccumulator_free(&newInnerSource);
@@ -1946,6 +1948,11 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					// make the type bigger
 					if (fromType->binding->byteSize < toType->binding->byteSize) {
 						CharAccumulator_appendChars(outerSource, "sext ");
+					}
+					
+					// make the type smaller
+					else if (fromType->binding->byteSize > toType->binding->byteSize) {
+						CharAccumulator_appendChars(outerSource, "trunc ");
 					}
 					
 					else {
