@@ -21,6 +21,36 @@ the Syntax for defining a variable:
 var myVariable: Int32 = 5;
 ```
 
+## Operators
+
+Listed from lowest precedence to highest precedence.
+
+```
+assignment =
+
+or ||
+
+and &&
+
+equivalent ==
+not equivalent !=
+greater than >
+less than <
+
+add +
+subtract -
+
+multiply *
+divide /
+modulo %
+
+cast as
+
+member access .
+
+scope resolution ::
+```
+
 ## Types
 
 The names of the integers are literally copied from Swift.
@@ -45,8 +75,6 @@ Float64
 Bool
 Pointer
 ```
-
-Add "Never"?
 
 ## macros
 
