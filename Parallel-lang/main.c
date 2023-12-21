@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
 	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
-	FileInformation *FI = FileInformation_new(startFilePath, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+	FileInformation *FI = FileInformation_new(realpath(startFilePath, NULL), topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
 	compileFile(FI);
 	linkedList_freeList(&FI->context.bindings[0]);
 	

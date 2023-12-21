@@ -909,6 +909,20 @@ void generateStruct(FileInformation *FI, CharAccumulator *outerSource, ContextBi
 }
 
 FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSource, char *path) {
+	char* fullpath = realpath(path, NULL);
+	
+	linkedList_Node *currentFile = alreadyCompiledFiles;
+	while (currentFile != NULL) {
+		FileInformation *fileInformation = *(FileInformation **)currentFile->data;
+		if (strcmp(fileInformation->context.path, fullpath) == 0) {
+			if (compilerOptions.verbose) {
+				printf("file already compiled: %s\n", fullpath);
+			}
+			return fileInformation;
+		}
+		currentFile = currentFile->next;
+	}
+	
 	// TODO: hack to make "~" work on macOS
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
@@ -922,7 +936,7 @@ FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSo
 	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
-	FileInformation *newFI = FileInformation_new(path, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+	FileInformation *newFI = FileInformation_new(fullpath, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
 	compileFile(newFI);
 	
 	return newFI;
