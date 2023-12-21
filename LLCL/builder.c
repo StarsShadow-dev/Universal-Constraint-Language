@@ -509,7 +509,7 @@ void printKeyword(int type, char *name, char *documentation) {
 		putchar(',');
 	}
 	printComma = 1;
-	printf("[%d, \"%s\", \"Parallel-Lang Keyword\\n\\n%s\"]", type, name, documentation);
+	printf("[%d, \"%s\", \"LLCL Keyword\\n\\n%s\"]", type, name, documentation);
 }
 
 void printBinding(ContextBinding *binding) {
@@ -1001,9 +1001,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					snprintf(path, pathSize, "%.*s/%s", (int)strlen(dirPath), dirPath, data->path->start);
 				}
 				
-				char *suffix = ".parallel";
+				char *suffix = ".llcl";
 				if (strncmp(data->path->start + data->path->length - strlen(suffix), suffix, strlen(suffix)) == 0) {
-					// if the path ends with ".parallel" import the file and add it to FI->context.importedFiles
+					// if the path ends with ".llcl" import the file and add it to FI->context.importedFiles
 					FileInformation **filePointerData = linkedList_addNode(&FI->context.importedFiles, sizeof(void *));
 					*filePointerData = importFile(FI, outerSource, path);
 				} else {

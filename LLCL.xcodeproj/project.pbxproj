@@ -50,7 +50,7 @@
 		028BE7E82A88FAED0049431E /* utilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
 		028BE7E92A88FAED0049431E /* utilities.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
 		028F239C2A6F2BE000279ECC /* objectFile.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = objectFile.o; path = LLCL/in_LLCL/build/objectFile.o; sourceTree = "<group>"; };
-		028F239E2A6F2E0800279ECC /* fromParallel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fromParallel.h; sourceTree = "<group>"; };
+		028F239E2A6F2E0800279ECC /* fromLLCL.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fromLLCL.h; sourceTree = "<group>"; };
 		028F239F2A707CBB00279ECC /* compiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		028F23A02A707CBB00279ECC /* compiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = compiler.c; sourceTree = "<group>"; };
 		028F23A22A72D99400279ECC /* LLCL.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LLCL.entitlements; sourceTree = "<group>"; };
@@ -107,7 +107,7 @@
 				028F239F2A707CBB00279ECC /* compiler.h */,
 				028F23A02A707CBB00279ECC /* compiler.c */,
 				0203002B2A2031CA0082A063 /* jsmn.h */,
-				028F239E2A6F2E0800279ECC /* fromParallel.h */,
+				028F239E2A6F2E0800279ECC /* fromLLCL.h */,
 			);
 			path = LLCL;
 			sourceTree = "<group>";

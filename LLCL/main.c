@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <libgen.h>
 
-#include "fromParallel.h"
+#include "fromLLCL.h"
 
 #include "jsmn.h"
 #include "report.h"
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	char *globalConfigRelativePath = "/.Parallel_Lang/config.json";
+	char *globalConfigRelativePath = "/.LLCL/config.json";
 	char *globalConfigPath = safeMalloc(strlen(homePath) + strlen(globalConfigRelativePath) + 1);
 	sprintf(globalConfigPath, "%s%s", homePath, globalConfigRelativePath);
 

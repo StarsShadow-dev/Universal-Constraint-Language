@@ -1,6 +1,6 @@
 import "modules/libc_bindings"
 import "modules/std"
-// import "math.parallel"
+// import "math.llcl"
 
 function recursiveFibonacci(n: Int64): Int64 {
     if (n < 2) {
