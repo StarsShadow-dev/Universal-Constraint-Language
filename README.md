@@ -1,5 +1,7 @@
 # Low Level Constraint Language
 
+Currently, I am trying to make a usable low level language language incorporating [my constraint system](./constraints.llcl).
+
 **Right now the compiler is very unstable. (I keep adding and removing features)**
 
 I am working on this programming language for personal use,
