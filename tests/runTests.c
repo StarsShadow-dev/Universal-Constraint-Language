@@ -16,7 +16,7 @@ extern char **environ;
 #define testPath_succeed "tests/succeed/"
 #define testPath_describe "tests/describe/"
 #define testPath_check "tests/check/"
-#define compilerPath "./DerivedData/Parallel-lang/Build/Products/Debug/Parallel-lang"
+#define compilerPath "./DerivedData/LLCL/Build/Products/Debug/LLCL"
 // #define target_triple "arm64-apple-macosx13.0.0"
 
 struct timespec getTimespec(void) {

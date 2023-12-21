@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "02392DF42A04024600F1AE9C"
-               BuildableName = "Parallel-lang"
-               BlueprintName = "Parallel-lang"
-               ReferencedContainer = "container:Parallel-lang.xcodeproj">
+               BuildableName = "LLCL"
+               BlueprintName = "LLCL"
+               ReferencedContainer = "container:LLCL.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -35,7 +35,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/minecraft/Documents/GitHub/Parallel-lang"
+      customWorkingDirectory = "$(PROJECT_DIR)"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
@@ -46,9 +46,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "02392DF42A04024600F1AE9C"
-            BuildableName = "Parallel-lang"
-            BlueprintName = "Parallel-lang"
-            ReferencedContainer = "container:Parallel-lang.xcodeproj">
+            BuildableName = "LLCL"
+            BlueprintName = "LLCL"
+            ReferencedContainer = "container:LLCL.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -93,9 +93,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "02392DF42A04024600F1AE9C"
-            BuildableName = "Parallel-lang"
-            BlueprintName = "Parallel-lang"
-            ReferencedContainer = "container:Parallel-lang.xcodeproj">
+            BuildableName = "LLCL"
+            BlueprintName = "LLCL"
+            ReferencedContainer = "container:LLCL.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

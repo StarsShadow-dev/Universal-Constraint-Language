@@ -1,4 +1,4 @@
-# Parallel Language Design
+# Language Design
 
 **Note, that not all of these features are currently implemented/working.**
 
@@ -7,7 +7,7 @@
 * A function can be called from within itself.
 
 main function:
-```parallel
+```llcl
 function main(): Int32 {
 	return 0;
 }
@@ -17,7 +17,7 @@ function main(): Int32 {
 
 the Syntax for defining a variable:
 
-```parallel
+```llcl
 var myVariable: Int32 = 5;
 ```
 
@@ -55,7 +55,7 @@ scope resolution ::
 
 The names of the integers are literally copied from Swift.
 
-```parallel
+```llcl
 Void
 
 Int8
@@ -80,7 +80,7 @@ Pointer
 
 Macro definition:
 
-```parallel
+```llcl
 macro nameOfMacro {
 	// ...
 }
@@ -88,7 +88,7 @@ macro nameOfMacro {
 
 Macro use:
 
-```parallel
+```llcl
 #nameOfMacro();
 ```
 
@@ -98,18 +98,18 @@ Syntax idea:
 
 Should `$` be self?
 
-<!-- ```parallel
+<!-- ```llcl
 typedef Degrees: Float [ $ >= -360, $ <= 360 ]
 ``` -->
 
 
-```parallel
+```llcl
 function getRand0_100(): Int8 [ $ >= 0, $ <= 100 ] {
 	// ...
 }
 ```
 
-```parallel
+```llcl
 typedef Window: Pointer;
 var window: Window;
 

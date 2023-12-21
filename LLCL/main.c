@@ -2,8 +2,6 @@
  This file has the main function.
  
  The main function has a simple command line argument parser and then calls compileFile from "compiler.c".
- 
- The printHelp function comes from "help.parallel" (#include "fromParallel.h");
  */
 
 #include <stdio.h>
@@ -26,7 +24,7 @@ int main(int argc, char **argv) {
 	if (argc == 1) {
 		printf("Compiler version: %s\n", CURRENT_VERSION);
 		printf("\n");
-		printHelp();
+		printf("no help for you.\n");
 		exit(1);
 	}
 	

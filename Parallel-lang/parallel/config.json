@@ -1,8 +1,0 @@
-{
-	"name": "objectFile",
-
-	"file_paths": [
-		"help.parallel"
-	],
-	"build_directory": "build"
-}

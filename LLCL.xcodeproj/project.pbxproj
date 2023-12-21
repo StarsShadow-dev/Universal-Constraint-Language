@@ -15,7 +15,6 @@
 		020300272A1EBA4A0082A063 /* parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 020300262A1EBA4A0082A063 /* parser.c */; };
 		0203002E2A24F49C0082A063 /* builder.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203002D2A24F49C0082A063 /* builder.c */; };
 		028BE7EA2A88FAED0049431E /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = 028BE7E92A88FAED0049431E /* utilities.c */; };
-		028F239D2A6F2D6000279ECC /* objectFile.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 028F239C2A6F2BE000279ECC /* objectFile.o */; };
 		028F23A12A707CBB00279ECC /* compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 028F23A02A707CBB00279ECC /* compiler.c */; };
 /* End PBXBuildFile section */
 
@@ -47,14 +46,14 @@
 		0203002B2A2031CA0082A063 /* jsmn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jsmn.h; sourceTree = "<group>"; };
 		0203002C2A24F49C0082A063 /* builder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = builder.h; sourceTree = "<group>"; };
 		0203002D2A24F49C0082A063 /* builder.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = builder.c; sourceTree = "<group>"; };
-		02392DF52A04024600F1AE9C /* Parallel-lang */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Parallel-lang"; sourceTree = BUILT_PRODUCTS_DIR; };
+		02392DF52A04024600F1AE9C /* LLCL */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LLCL; sourceTree = BUILT_PRODUCTS_DIR; };
 		028BE7E82A88FAED0049431E /* utilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
 		028BE7E92A88FAED0049431E /* utilities.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = utilities.c; sourceTree = "<group>"; };
-		028F239C2A6F2BE000279ECC /* objectFile.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = objectFile.o; path = "Parallel-lang/parallel/build/objectFile.o"; sourceTree = "<group>"; };
+		028F239C2A6F2BE000279ECC /* objectFile.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = objectFile.o; path = LLCL/in_LLCL/build/objectFile.o; sourceTree = "<group>"; };
 		028F239E2A6F2E0800279ECC /* fromParallel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fromParallel.h; sourceTree = "<group>"; };
 		028F239F2A707CBB00279ECC /* compiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		028F23A02A707CBB00279ECC /* compiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = compiler.c; sourceTree = "<group>"; };
-		028F23A22A72D99400279ECC /* Parallel-lang.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Parallel-lang.entitlements"; sourceTree = "<group>"; };
+		028F23A22A72D99400279ECC /* LLCL.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LLCL.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,7 +61,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				028F239D2A6F2D6000279ECC /* objectFile.o in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,7 +70,7 @@
 		02392DEC2A04024600F1AE9C = {
 			isa = PBXGroup;
 			children = (
-				02392DF72A04024600F1AE9C /* Parallel-lang */,
+				02392DF72A04024600F1AE9C /* LLCL */,
 				02392DF62A04024600F1AE9C /* Products */,
 				028F239B2A6F2BDF00279ECC /* Frameworks */,
 			);
@@ -81,15 +79,15 @@
 		02392DF62A04024600F1AE9C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				02392DF52A04024600F1AE9C /* Parallel-lang */,
+				02392DF52A04024600F1AE9C /* LLCL */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		02392DF72A04024600F1AE9C /* Parallel-lang */ = {
+		02392DF72A04024600F1AE9C /* LLCL */ = {
 			isa = PBXGroup;
 			children = (
-				028F23A22A72D99400279ECC /* Parallel-lang.entitlements */,
+				028F23A22A72D99400279ECC /* LLCL.entitlements */,
 				020300162A1A7AD90082A063 /* main.h */,
 				020300172A1A7AD90082A063 /* main.c */,
 				020300222A1D0BB70082A063 /* report.h */,
@@ -111,7 +109,7 @@
 				0203002B2A2031CA0082A063 /* jsmn.h */,
 				028F239E2A6F2E0800279ECC /* fromParallel.h */,
 			);
-			path = "Parallel-lang";
+			path = LLCL;
 			sourceTree = "<group>";
 		};
 		028F239B2A6F2BDF00279ECC /* Frameworks */ = {
@@ -125,9 +123,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		02392DF42A04024600F1AE9C /* Parallel-lang */ = {
+		02392DF42A04024600F1AE9C /* LLCL */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 02392DFC2A04024600F1AE9C /* Build configuration list for PBXNativeTarget "Parallel-lang" */;
+			buildConfigurationList = 02392DFC2A04024600F1AE9C /* Build configuration list for PBXNativeTarget "LLCL" */;
 			buildPhases = (
 				02392DF12A04024600F1AE9C /* Sources */,
 				02392DF22A04024600F1AE9C /* Frameworks */,
@@ -137,9 +135,9 @@
 			);
 			dependencies = (
 			);
-			name = "Parallel-lang";
-			productName = "Parallel-lang";
-			productReference = 02392DF52A04024600F1AE9C /* Parallel-lang */;
+			name = LLCL;
+			productName = LLCL;
+			productReference = 02392DF52A04024600F1AE9C /* LLCL */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -157,7 +155,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 02392DF02A04024600F1AE9C /* Build configuration list for PBXProject "Parallel-lang" */;
+			buildConfigurationList = 02392DF02A04024600F1AE9C /* Build configuration list for PBXProject "LLCL" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -170,7 +168,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				02392DF42A04024600F1AE9C /* Parallel-lang */,
+				02392DF42A04024600F1AE9C /* LLCL */,
 			);
 		};
 /* End PBXProject section */
@@ -315,7 +313,7 @@
 		02392DFD2A04024600F1AE9C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Parallel-lang/Parallel-lang.entitlements";
+				CODE_SIGN_ENTITLEMENTS = LLCL/LLCL.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Manual;
@@ -332,7 +330,7 @@
 		02392DFE2A04024600F1AE9C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Parallel-lang/Parallel-lang.entitlements";
+				CODE_SIGN_ENTITLEMENTS = LLCL/LLCL.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Manual;
@@ -350,7 +348,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		02392DF02A04024600F1AE9C /* Build configuration list for PBXProject "Parallel-lang" */ = {
+		02392DF02A04024600F1AE9C /* Build configuration list for PBXProject "LLCL" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				02392DFA2A04024600F1AE9C /* Debug */,
@@ -359,7 +357,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		02392DFC2A04024600F1AE9C /* Build configuration list for PBXNativeTarget "Parallel-lang" */ = {
+		02392DFC2A04024600F1AE9C /* Build configuration list for PBXNativeTarget "LLCL" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				02392DFD2A04024600F1AE9C /* Debug */,
