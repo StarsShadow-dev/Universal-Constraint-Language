@@ -16,6 +16,7 @@
 		0203002E2A24F49C0082A063 /* builder.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203002D2A24F49C0082A063 /* builder.c */; };
 		028BE7EA2A88FAED0049431E /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = 028BE7E92A88FAED0049431E /* utilities.c */; };
 		028F23A12A707CBB00279ECC /* compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 028F23A02A707CBB00279ECC /* compiler.c */; };
+		02F285E52B34A3E10037C2B9 /* printer.c in Sources */ = {isa = PBXBuildFile; fileRef = 02F285E42B34A3E10037C2B9 /* printer.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -54,6 +55,8 @@
 		028F239F2A707CBB00279ECC /* compiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		028F23A02A707CBB00279ECC /* compiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = compiler.c; sourceTree = "<group>"; };
 		028F23A22A72D99400279ECC /* LLCL.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LLCL.entitlements; sourceTree = "<group>"; };
+		02F285E32B34A3E10037C2B9 /* printer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = printer.h; sourceTree = "<group>"; };
+		02F285E42B34A3E10037C2B9 /* printer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = printer.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +101,8 @@
 				028BE7E92A88FAED0049431E /* utilities.c */,
 				0203001C2A1ACA210082A063 /* types.h */,
 				0203001D2A1AD5C40082A063 /* types.c */,
+				02F285E42B34A3E10037C2B9 /* printer.c */,
+				02F285E32B34A3E10037C2B9 /* printer.h */,
 				0203001F2A1D08840082A063 /* lexer.h */,
 				020300202A1D08840082A063 /* lexer.c */,
 				020300252A1EBA4A0082A063 /* parser.h */,
@@ -178,6 +183,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				02F285E52B34A3E10037C2B9 /* printer.c in Sources */,
 				020300212A1D08840082A063 /* lexer.c in Sources */,
 				0203001E2A1AD5C40082A063 /* types.c in Sources */,
 				0203002E2A24F49C0082A063 /* builder.c in Sources */,
