@@ -38,6 +38,7 @@ extern CharAccumulator objectFiles;
 typedef struct {
 	int includeDebugInformation;
 	int verbose;
+	int printIR;
 	int timed;
 } CompilerOptions;
 

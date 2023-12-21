@@ -119,6 +119,10 @@ int main(int argc, char **argv) {
 			compilerOptions.verbose = 1;
 		}
 		
+		else if (strcmp(arg, "-ir") == 0) {
+			compilerOptions.printIR = 1;
+		}
+		
 		else if (strcmp(arg, "-timed") == 0) {
 			compilerOptions.timed = 1;
 			startTime = getTimespec();
