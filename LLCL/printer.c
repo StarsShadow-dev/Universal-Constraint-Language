@@ -103,12 +103,12 @@ void printBinding(ContextBinding *binding) {
 		case ContextBindingType_function: {
 			ContextBinding_function *data = (ContextBinding_function *)binding->value;
 			
-			CharAccumulator_appendChars(&documentation, "function ");
+			CharAccumulator_appendChars(&documentation, "```\\nfunction ");
 			CharAccumulator_appendSubString(&documentation, binding->key);
 			CharAccumulator_appendChars(&documentation, "(");
 			CharAccumulator_appendChars(&documentation, "): ");
 			getTypeDescription(&documentation, &data->returnType);
-			CharAccumulator_appendChars(&documentation, ";\\n\\n");
+			CharAccumulator_appendChars(&documentation, ";\\n```\\n\\n");
 			
 			type = 2;
 			break;
@@ -124,11 +124,11 @@ void printBinding(ContextBinding *binding) {
 		case ContextBindingType_variable: {
 			ContextBinding_variable *data = (ContextBinding_variable *)binding->value;
 			
-			CharAccumulator_appendChars(&documentation, "var ");
+			CharAccumulator_appendChars(&documentation, "```\\nvar ");
 			CharAccumulator_appendSubString(&documentation, binding->key);
 			CharAccumulator_appendChars(&documentation, ": ");
 			getTypeDescription(&documentation, &data->type);
-			CharAccumulator_appendChars(&documentation, ";\\n\\n");
+			CharAccumulator_appendChars(&documentation, ";\\n```\\n\\n");
 			
 			type = 5;
 			break;
@@ -139,10 +139,10 @@ void printBinding(ContextBinding *binding) {
 		}
 		
 		case ContextBindingType_struct: {
-			CharAccumulator_appendChars(&documentation, "struct ");
+			CharAccumulator_appendChars(&documentation, "```\\nstruct ");
 			CharAccumulator_appendSubString(&documentation, binding->key);
 			CharAccumulator_appendChars(&documentation, " {");
-			CharAccumulator_appendChars(&documentation, "}\\n\\n");
+			CharAccumulator_appendChars(&documentation, "}\\n```\\n\\n");
 			
 			type = 21;
 			break;
