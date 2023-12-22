@@ -101,8 +101,10 @@ ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
 			
-			if (SubString_string_cmp(binding->key, key) == 0) {
-				return binding;
+			if (ContextBinding_availableInOtherFile(binding)) {
+				if (SubString_string_cmp(binding->key, key) == 0) {
+					return binding;
+				}
 			}
 			
 			current = current->next;
@@ -141,8 +143,10 @@ ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *k
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
 			
-			if (SubString_SubString_cmp(binding->key, key) == 0) {
-				return binding;
+			if (ContextBinding_availableInOtherFile(binding)) {
+				if (SubString_SubString_cmp(binding->key, key) == 0) {
+					return binding;
+				}
 			}
 			
 			current = current->next;

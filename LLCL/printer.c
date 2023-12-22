@@ -212,7 +212,9 @@ void printBindings(FileInformation *FI) {
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
 			
-			printBinding(binding);
+			if (ContextBinding_availableInOtherFile(binding)) {
+				printBinding(binding);
+			}
 			
 			current = current->next;
 		}

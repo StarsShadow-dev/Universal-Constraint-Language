@@ -384,6 +384,7 @@ typedef struct {
 } ContextBinding_namespace;
 
 char *ContextBinding_getLLVMname(ContextBinding *binding);
+int ContextBinding_availableInOtherFile(ContextBinding *binding);
 
 int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer);
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer);

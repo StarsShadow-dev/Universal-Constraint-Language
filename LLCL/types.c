@@ -336,6 +336,10 @@ char *ContextBinding_getLLVMname(ContextBinding *binding) {
 	abort();
 }
 
+int ContextBinding_availableInOtherFile(ContextBinding *binding) {
+	return binding->type != ContextBindingType_namespace;
+}
+
 int BuilderType_hasName(BuilderType *type, char *name) {
 	return SubString_string_cmp(type->binding->key, name) == 0;
 }
