@@ -5,6 +5,69 @@
 #include "globals.h"
 #include "printer.h"
 
+void getTypeDescription(CharAccumulator *charAccumulator, BuilderType *builderType) {
+	CharAccumulator_appendSubString(charAccumulator, builderType->binding->key);
+}
+
+void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulator, ContextBinding *variableBinding) {
+	if (variableBinding->type != ContextBindingType_variable) abort();
+	ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
+	
+	CharAccumulator_appendChars(charAccumulator, "variable description for '");
+	CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
+	CharAccumulator_appendChars(charAccumulator, "'\nbyteSize = ");
+	CharAccumulator_appendInt(charAccumulator, variableBinding->byteSize);
+	CharAccumulator_appendChars(charAccumulator, "\nbyteAlign = ");
+	CharAccumulator_appendInt(charAccumulator, variableBinding->byteAlign);
+	CharAccumulator_appendChars(charAccumulator, "\n\n");
+	
+	int index = 0;
+	while (index <= FI->level) {
+		linkedList_Node *currentFact = variable->type.factStack[index];
+		
+		if (currentFact == NULL) {
+			index++;
+			continue;
+		}
+		
+		CharAccumulator_appendChars(charAccumulator, "level ");
+		CharAccumulator_appendInt(charAccumulator, index);
+		CharAccumulator_appendChars(charAccumulator, ": ");
+		
+		while (currentFact != NULL) {
+			Fact *fact = (Fact *)currentFact->data;
+			
+			if (fact->type == FactType_expression) {
+				Fact_expression *expressionFact = (Fact_expression *)fact->value;
+				
+				CharAccumulator_appendChars(charAccumulator, "(");
+				
+				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
+					if (expressionFact->left == NULL) {
+						CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
+					} else {
+						abort();
+					}
+					CharAccumulator_appendChars(charAccumulator, " == ");
+					getASTnodeDescription(FI, charAccumulator, expressionFact->rightConstant);
+				} else {
+					abort();
+				}
+				
+				CharAccumulator_appendChars(charAccumulator, ")");
+			} else {
+				abort();
+			}
+			
+			currentFact = currentFact->next;
+		}
+		
+		CharAccumulator_appendChars(charAccumulator, "\n");
+		
+		index++;
+	}
+}
+
 int printComma = 0;
 
 void printKeyword(int type, char *name, char *documentation) {
@@ -36,6 +99,15 @@ void printBinding(ContextBinding *binding) {
 		}
 		
 		case ContextBindingType_function: {
+			ContextBinding_function *data = (ContextBinding_function *)binding->value;
+			
+			CharAccumulator_appendChars(&documentation, "function ");
+			CharAccumulator_appendSubString(&documentation, binding->key);
+			CharAccumulator_appendChars(&documentation, "(");
+			CharAccumulator_appendChars(&documentation, "): ");
+			getTypeDescription(&documentation, &data->returnType);
+			CharAccumulator_appendChars(&documentation, "\\n\\n");
+			
 			type = 2;
 			break;
 		}
@@ -65,10 +137,10 @@ void printBinding(ContextBinding *binding) {
 		}
 	}
 	
-	if (binding->type != ContextBindingType_namespace && binding->originFile != coreFilePointer) {
-		CharAccumulator_appendChars(&documentation, "file = ");
-		CharAccumulator_appendChars(&documentation, binding->originFile->context.path);
-	}
+//	if (binding->type != ContextBindingType_namespace && binding->originFile != coreFilePointer) {
+//		CharAccumulator_appendChars(&documentation, "file = ");
+//		CharAccumulator_appendChars(&documentation, binding->originFile->context.path);
+//	}
 	
 	if (printComma) {
 		putchar(',');

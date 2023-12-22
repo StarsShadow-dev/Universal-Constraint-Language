@@ -1,6 +1,8 @@
 #ifndef printer_h
 #define printer_h
 
+void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulator, ContextBinding *variableBinding);
+
 void printKeyword(int type, char *name, char *documentation);
 void printBinding(ContextBinding *binding);
 

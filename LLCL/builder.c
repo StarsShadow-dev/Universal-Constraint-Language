@@ -440,69 +440,6 @@ void getFact(FileInformation *FI, BuilderType type) {
 	
 }
 
-void getTypeDescription(FileInformation *FI, CharAccumulator *charAccumulator, BuilderType *builderType) {
-	
-}
-
-void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulator, ContextBinding *variableBinding) {
-	if (variableBinding->type != ContextBindingType_variable) abort();
-	ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
-	
-	CharAccumulator_appendChars(charAccumulator, "variable description for '");
-	CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
-	CharAccumulator_appendChars(charAccumulator, "'\nbyteSize = ");
-	CharAccumulator_appendInt(charAccumulator, variableBinding->byteSize);
-	CharAccumulator_appendChars(charAccumulator, "\nbyteAlign = ");
-	CharAccumulator_appendInt(charAccumulator, variableBinding->byteAlign);
-	CharAccumulator_appendChars(charAccumulator, "\n\n");
-	
-	int index = 0;
-	while (index <= FI->level) {
-		linkedList_Node *currentFact = variable->type.factStack[index];
-		
-		if (currentFact == NULL) {
-			index++;
-			continue;
-		}
-		
-		CharAccumulator_appendChars(charAccumulator, "level ");
-		CharAccumulator_appendInt(charAccumulator, index);
-		CharAccumulator_appendChars(charAccumulator, ": ");
-		
-		while (currentFact != NULL) {
-			Fact *fact = (Fact *)currentFact->data;
-			
-			if (fact->type == FactType_expression) {
-				Fact_expression *expressionFact = (Fact_expression *)fact->value;
-				
-				CharAccumulator_appendChars(charAccumulator, "(");
-				
-				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
-					if (expressionFact->left == NULL) {
-						CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
-					} else {
-						abort();
-					}
-					CharAccumulator_appendChars(charAccumulator, " == ");
-					getASTnodeDescription(FI, charAccumulator, expressionFact->rightConstant);
-				} else {
-					abort();
-				}
-				
-				CharAccumulator_appendChars(charAccumulator, ")");
-			} else {
-				abort();
-			}
-			
-			currentFact = currentFact->next;
-		}
-		
-		CharAccumulator_appendChars(charAccumulator, "\n");
-		
-		index++;
-	}
-}
-
 ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_Node **list, ASTnode *node) {
 	ASTnode_function *data = (ASTnode_function *)node->value;
 	
