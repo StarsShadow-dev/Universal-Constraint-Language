@@ -94,6 +94,8 @@ void printBinding(ContextBinding *binding) {
 	
 	switch (binding->type) {
 		case ContextBindingType_simpleType: {
+			CharAccumulator_appendChars(&documentation, "primitive type");
+			
 			type = 6;
 			break;
 		}
@@ -113,6 +115,8 @@ void printBinding(ContextBinding *binding) {
 		}
 		
 		case ContextBindingType_macro: {
+			CharAccumulator_appendChars(&documentation, "macro");
+			
 			type = 11;
 			break;
 		}
@@ -135,11 +139,18 @@ void printBinding(ContextBinding *binding) {
 		}
 		
 		case ContextBindingType_struct: {
+			CharAccumulator_appendChars(&documentation, "struct ");
+			CharAccumulator_appendSubString(&documentation, binding->key);
+			CharAccumulator_appendChars(&documentation, " {");
+			CharAccumulator_appendChars(&documentation, "}\\n\\n");
+			
 			type = 21;
 			break;
 		}
 		
 		case ContextBindingType_namespace: {
+			CharAccumulator_appendChars(&documentation, "namespace");
+			
 			type = 8;
 			break;
 		}
