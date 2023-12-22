@@ -106,7 +106,7 @@ void printBinding(ContextBinding *binding) {
 			CharAccumulator_appendChars(&documentation, "(");
 			CharAccumulator_appendChars(&documentation, "): ");
 			getTypeDescription(&documentation, &data->returnType);
-			CharAccumulator_appendChars(&documentation, "\\n\\n");
+			CharAccumulator_appendChars(&documentation, ";\\n\\n");
 			
 			type = 2;
 			break;
@@ -118,6 +118,14 @@ void printBinding(ContextBinding *binding) {
 		}
 		
 		case ContextBindingType_variable: {
+			ContextBinding_variable *data = (ContextBinding_variable *)binding->value;
+			
+			CharAccumulator_appendChars(&documentation, "var ");
+			CharAccumulator_appendSubString(&documentation, binding->key);
+			CharAccumulator_appendChars(&documentation, ": ");
+			getTypeDescription(&documentation, &data->type);
+			CharAccumulator_appendChars(&documentation, ";\\n\\n");
+			
 			type = 5;
 			break;
 		}
