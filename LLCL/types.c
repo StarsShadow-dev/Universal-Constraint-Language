@@ -244,11 +244,12 @@ void CharAccumulator_free(CharAccumulator *accumulator) {
 
 int nextFileID = 1;
 
-FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource) {
+FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStructSource, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource) {
 	FileInformation *FI = safeMalloc(sizeof(FileInformation));
 	
 	*FI = (FileInformation){
 		.ID = nextFileID,
+		.topLevelStructSource = topLevelStructSource,
 		.topLevelConstantSource = topLevelConstantSource,
 		.topLevelFunctionSource = topLevelFunctionSource,
 		.LLVMmetadataSource = LLVMmetadataSource,

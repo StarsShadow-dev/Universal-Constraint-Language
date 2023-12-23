@@ -504,6 +504,118 @@ ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedLis
 	return functionData;
 }
 
+void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode *node, int defineNew) {
+	ContextBinding_struct *structToGenerate = (ContextBinding_struct *)structBinding->value;
+	
+	CharAccumulator_appendChars(FI->topLevelStructSource, "\n\n");
+	CharAccumulator_appendChars(FI->topLevelStructSource, structToGenerate->LLVMname);
+	CharAccumulator_appendChars(FI->topLevelStructSource, " = type { ");
+	
+	int addComma = 0;
+	
+	if (defineNew) {
+		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
+		while (currentPropertyNode != NULL) {
+			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
+			if (propertyNode->nodeType == ASTnodeType_queryLocation) {
+				printf("[");
+				printKeyword(13, "var", "");
+				printBindings(FI);
+				printf("]");
+				exit(0);
+			}
+			if (propertyNode->nodeType != ASTnodeType_variableDefinition) {
+				addStringToReportMsg("only variable definitions are allowed in a struct");
+				compileError(FI, propertyNode->location);
+			}
+			ASTnode_variableDefinition *propertyData = (ASTnode_variableDefinition *)propertyNode->value;
+			
+			// make sure that there is not already a property in this struct with the same name
+			linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
+			while (currentPropertyBinding != NULL) {
+				ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
+				
+				if (SubString_SubString_cmp(propertyBinding->key, propertyData->name) == 0) {
+					addStringToReportMsg("the name '");
+					addSubStringToReportMsg(propertyData->name);
+					addStringToReportMsg("' is defined multiple times inside a struct");
+					
+					addStringToReportIndicator("'");
+					addSubStringToReportIndicator(propertyData->name);
+					addStringToReportIndicator("' redefined here");
+					compileError(FI,  propertyNode->location);
+				}
+				
+				currentPropertyBinding = currentPropertyBinding->next;
+			}
+			
+			// make sure the type actually exists
+			BuilderType* type = getType(FI, propertyData->type);
+			
+			char *LLVMtype = getLLVMtypeFromBinding(FI, type->binding);
+			
+			// if there is a pointer anywhere in the struct then the struct should be aligned by pointer_byteSize
+			if (strcmp(LLVMtype, "ptr") == 0) {
+				structBinding->byteAlign = pointer_byteSize;
+			}
+			
+			structBinding->byteSize += type->binding->byteSize;
+			
+			if (addComma) {
+				CharAccumulator_appendChars(FI->topLevelStructSource, ", ");
+			}
+			CharAccumulator_appendChars(FI->topLevelStructSource, LLVMtype);
+			
+			ContextBinding *variableBinding = linkedList_addNode(&structToGenerate->propertyBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
+			
+			variableBinding->originFile = FI;
+			variableBinding->key = propertyData->name;
+			variableBinding->type = ContextBindingType_variable;
+			variableBinding->byteSize = type->binding->byteSize;
+			variableBinding->byteAlign = type->binding->byteSize;
+			
+			((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
+			((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
+			((ContextBinding_variable *)variableBinding->value)->type = *type;
+			
+			addComma = 1;
+			
+			currentPropertyNode = currentPropertyNode->next;
+		}
+	}
+	
+	else {
+		linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
+		while (currentPropertyBinding != NULL) {
+			ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
+			if (propertyBinding->type != ContextBindingType_variable) abort();
+			ContextBinding_variable *variable = (ContextBinding_variable *)propertyBinding->value;
+			
+			if (addComma) {
+				CharAccumulator_appendChars(FI->topLevelStructSource, ", ");
+			}
+			CharAccumulator_appendChars(FI->topLevelStructSource, variable->LLVMtype);
+			
+			addComma = 1;
+			
+			currentPropertyBinding = currentPropertyBinding->next;
+		}
+		
+		FileInformation_addToDeclaredInLLVM(FI, structBinding);
+	}
+	
+	CharAccumulator_appendChars(FI->topLevelStructSource, " }");
+}
+
+void generateType(FileInformation *FI, CharAccumulator *source, BuilderType *type) {
+	if (type->binding->type == ContextBindingType_struct) {
+		if (FI != type->binding->originFile && !FileInformation_declaredInLLVM(FI, type->binding)) {
+			generateStruct(FI, type->binding, NULL, 0);
+		}
+	}
+	CharAccumulator_appendChars(source, getLLVMtypeFromBinding(FI, type->binding));
+}
+
 void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ContextBinding *functionBinding, ASTnode *node, int defineNew) {
 	ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
 	
@@ -625,107 +737,6 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 	CharAccumulator_free(&functionSource);
 }
 
-void generateStruct(FileInformation *FI, CharAccumulator *outerSource, ContextBinding *structBinding, ASTnode *node, int defineNew) {
-	ContextBinding_struct *structToGenerate = (ContextBinding_struct *)structBinding->value;
-	
-	CharAccumulator_appendChars(outerSource, "\n\n");
-	CharAccumulator_appendChars(outerSource, structToGenerate->LLVMname);
-	CharAccumulator_appendChars(outerSource, " = type { ");
-	
-	int addComma = 0;
-	
-	if (defineNew) {
-		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
-		while (currentPropertyNode != NULL) {
-			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
-			if (propertyNode->nodeType == ASTnodeType_queryLocation) {
-				printf("[");
-				printKeyword(13, "var", "");
-				printBindings(FI);
-				printf("]");
-				exit(0);
-			}
-			if (propertyNode->nodeType != ASTnodeType_variableDefinition) {
-				addStringToReportMsg("only variable definitions are allowed in a struct");
-				compileError(FI, propertyNode->location);
-			}
-			ASTnode_variableDefinition *propertyData = (ASTnode_variableDefinition *)propertyNode->value;
-			
-			// make sure that there is not already a property in this struct with the same name
-			linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
-			while (currentPropertyBinding != NULL) {
-				ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
-				
-				if (SubString_SubString_cmp(propertyBinding->key, propertyData->name) == 0) {
-					addStringToReportMsg("the name '");
-					addSubStringToReportMsg(propertyData->name);
-					addStringToReportMsg("' is defined multiple times inside a struct");
-					
-					addStringToReportIndicator("'");
-					addSubStringToReportIndicator(propertyData->name);
-					addStringToReportIndicator("' redefined here");
-					compileError(FI,  propertyNode->location);
-				}
-				
-				currentPropertyBinding = currentPropertyBinding->next;
-			}
-			
-			// make sure the type actually exists
-			BuilderType* type = getType(FI, propertyData->type);
-			
-			char *LLVMtype = getLLVMtypeFromBinding(FI, type->binding);
-			
-			// if there is a pointer anywhere in the struct then the struct should be aligned by pointer_byteSize
-			if (strcmp(LLVMtype, "ptr") == 0) {
-				structBinding->byteAlign = pointer_byteSize;
-			}
-			
-			structBinding->byteSize += type->binding->byteSize;
-			
-			if (addComma) {
-				CharAccumulator_appendChars(outerSource, ", ");
-			}
-			CharAccumulator_appendChars(outerSource, LLVMtype);
-			
-			ContextBinding *variableBinding = linkedList_addNode(&structToGenerate->propertyBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
-			
-			variableBinding->originFile = FI;
-			variableBinding->key = propertyData->name;
-			variableBinding->type = ContextBindingType_variable;
-			variableBinding->byteSize = type->binding->byteSize;
-			variableBinding->byteAlign = type->binding->byteSize;
-			
-			((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
-			((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
-			((ContextBinding_variable *)variableBinding->value)->type = *type;
-			
-			addComma = 1;
-			
-			currentPropertyNode = currentPropertyNode->next;
-		}
-	}
-	
-	else {
-		linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
-		while (currentPropertyBinding != NULL) {
-			ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
-			if (propertyBinding->type != ContextBindingType_variable) abort();
-			ContextBinding_variable *variable = (ContextBinding_variable *)propertyBinding->value;
-			
-			if (addComma) {
-				CharAccumulator_appendChars(outerSource, ", ");
-			}
-			CharAccumulator_appendChars(outerSource, variable->LLVMtype);
-			
-			addComma = 1;
-			
-			currentPropertyBinding = currentPropertyBinding->next;
-		}
-	}
-	
-	CharAccumulator_appendChars(outerSource, " }");
-}
-
 FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSource, char *path) {
 	char* fullpath = realpath(path, NULL);
 	
@@ -741,7 +752,10 @@ FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSo
 		currentFile = currentFile->next;
 	}
 	
-	// TODO: hack to make "~" work on macOS
+	CharAccumulator *topLevelStructSource = safeMalloc(sizeof(CharAccumulator));
+	(*topLevelStructSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(topLevelStructSource);
+	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(topLevelConstantSource);
@@ -754,7 +768,7 @@ FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSo
 	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
-	FileInformation *newFI = FileInformation_new(fullpath, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+	FileInformation *newFI = FileInformation_new(fullpath, topLevelStructSource, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
 	compileFile(newFI);
 	
 	return newFI;
@@ -806,6 +820,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					compileError(FI, node->location);
 				}
 				
+				// TODO: hack to make "~" work on macOS
 				char *path;
 				if (data->path->start[0] == '~') {
 					char *homePath = getenv("HOME");
@@ -902,7 +917,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				((ContextBinding_struct *)structBinding->value)->propertyBindings = NULL;
 				((ContextBinding_struct *)structBinding->value)->methodBindings = NULL;
 				
-				generateStruct(FI, outerSource, structBinding, node, 1);
+				generateStruct(FI, structBinding, node, 1);
 				
 				break;
 			}
@@ -1493,8 +1508,6 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				BuilderType* type = getType(FI, data->type);
 				
-				char *LLVMtype = getLLVMtypeFromBinding(FI, type->binding);
-				
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
 				
@@ -1508,7 +1521,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				CharAccumulator_appendChars(outerSource, "\n\t%");
 				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 				CharAccumulator_appendChars(outerSource, " = alloca ");
-				CharAccumulator_appendChars(outerSource, LLVMtype);
+				generateType(FI, outerSource, type);
 				CharAccumulator_appendChars(outerSource, ", align ");
 				CharAccumulator_appendInt(outerSource, type->binding->byteAlign);
 				
@@ -1530,7 +1543,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				variableBinding->byteAlign = pointer_byteSize;
 				
 				((ContextBinding_variable *)variableBinding->value)->LLVMRegister = outerFunction->registerCount;
-				((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
+				((ContextBinding_variable *)variableBinding->value)->LLVMtype = getLLVMtypeFromBinding(FI, type->binding);
 				((ContextBinding_variable *)variableBinding->value)->type = *type;
 				
 				outerFunction->registerCount++;

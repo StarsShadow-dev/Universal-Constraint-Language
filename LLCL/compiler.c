@@ -226,13 +226,19 @@ void compileFile(FileInformation *FI) {
 	struct timespec parseEndTime = getTimespec();
 	
 //	struct timespec buildStartTime = getTimespec();
-	buildLLVM(FI, NULL, &LLVMsource, NULL, NULL, NULL, AST, 0, 0, 0);
+	CharAccumulator LLVMbuildsource = {100, 0, 0};
+	CharAccumulator_initialize(&LLVMbuildsource);
+	buildLLVM(FI, NULL, &LLVMbuildsource, NULL, NULL, NULL, AST, 0, 0, 0);
 //	struct timespec buildEndTime = getTimespec();
 	
+	CharAccumulator_appendChars(&LLVMsource, FI->topLevelStructSource->data);
 	CharAccumulator_appendChars(&LLVMsource, FI->topLevelConstantSource->data);
 	CharAccumulator_appendChars(&LLVMsource, FI->topLevelFunctionSource->data);
+	CharAccumulator_appendChars(&LLVMsource, LLVMbuildsource.data);
 	CharAccumulator_appendChars(&LLVMsource, FI->LLVMmetadataSource->data);
 	
+	CharAccumulator_free(FI->topLevelStructSource);
+	CharAccumulator_free(&LLVMbuildsource);
 	CharAccumulator_free(FI->topLevelConstantSource);
 	CharAccumulator_free(FI->topLevelFunctionSource);
 	CharAccumulator_free(FI->LLVMmetadataSource);

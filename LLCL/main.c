@@ -253,6 +253,10 @@ int main(int argc, char **argv) {
 	addContextBinding_macro(&coreFile, "insertLLVMIR");
 	addContextBinding_macro(&coreFile, "set");
 	
+	CharAccumulator *topLevelStructSource = safeMalloc(sizeof(CharAccumulator));
+	(*topLevelStructSource) = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(topLevelStructSource);
+	
 	CharAccumulator *topLevelConstantSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelConstantSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(topLevelConstantSource);
@@ -265,7 +269,7 @@ int main(int argc, char **argv) {
 	(*LLVMmetadataSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
-	FileInformation *FI = FileInformation_new(realpath(startFilePath, NULL), topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
+	FileInformation *FI = FileInformation_new(realpath(startFilePath, NULL), topLevelStructSource, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
 	compileFile(FI);
 	linkedList_freeList(&FI->context.bindings[0]);
 	

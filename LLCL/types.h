@@ -84,6 +84,7 @@ typedef struct {
 
 typedef struct {
 	int ID;
+	CharAccumulator *topLevelStructSource;
 	CharAccumulator *topLevelConstantSource;
 	CharAccumulator *topLevelFunctionSource;
 	CharAccumulator *LLVMmetadataSource;
@@ -98,7 +99,7 @@ typedef struct {
 	int debugInformationFileScopeID;
 } FileInformation;
 
-FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource);
+FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStructSource, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource);
 
 //
 // lexer, parser and builder
