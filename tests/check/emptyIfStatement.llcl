@@ -1,0 +1,14 @@
+/*
+warning: empty if statement
+9  |function main(): Int8 {
+10 |    if (true) {
+        ^^
+11 |		
+*/
+
+function main(): Int8 {
+	if (true) {
+		
+	}
+	return 0;
+}

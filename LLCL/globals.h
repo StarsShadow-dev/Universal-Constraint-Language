@@ -40,6 +40,7 @@ typedef struct {
 	int verbose;
 	int printIR;
 	int timed;
+	int compilerTesting;
 } CompilerOptions;
 
 extern CompilerOptions compilerOptions;

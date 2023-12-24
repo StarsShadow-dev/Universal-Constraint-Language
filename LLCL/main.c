@@ -126,13 +126,17 @@ int main(int argc, char **argv) {
 			startTime = getTimespec();
 		}
 		
+		else if (strcmp(arg, "-compilerTesting") == 0) {
+			compilerOptions.compilerTesting = 1;
+		}
+		
 		else {
 			printf("'%s' is not a valid argument\n", arg);
 			exit(1);
 		}
 	}
 	
-	if (compilerMode != CompilerMode_compilerTesting && compilerMode != CompilerMode_query) {
+	if (compilerOptions.verbose) {
 		printf("Compiler version: %s\n", CURRENT_VERSION);
 	}
 	
@@ -174,23 +178,25 @@ int main(int argc, char **argv) {
 	
 	CharAccumulator_initialize(&objectFiles);
 	
-	if (compilerMode != CompilerMode_query) {
+	if (
+		compilerMode != CompilerMode_query &&
+		compilerMode != CompilerMode_compilerTesting &&
+		compilerMode != CompilerMode_check
+	) {
 		CharAccumulator buildDirectoryCA = {100, 0, 0};
 		CharAccumulator_initialize(&buildDirectoryCA);
 		CharAccumulator_appendChars(&buildDirectoryCA, dirname(startFilePath));
 		CharAccumulator_appendChars(&buildDirectoryCA, "/build");
 		buildDirectory = buildDirectoryCA.data;
 		
-		if (compilerMode != CompilerMode_compilerTesting) {
-			struct stat stat_buffer = {0};
-			if (stat(buildDirectory, &stat_buffer) == -1) {
-				printf("The buildDirectory (%s) does not exist.\n", buildDirectory);
+		struct stat stat_buffer = {0};
+		if (stat(buildDirectory, &stat_buffer) == -1) {
+			printf("The buildDirectory (%s) does not exist.\n", buildDirectory);
+			exit(1);
+		} else {
+			if (!S_ISDIR(stat_buffer.st_mode)) {
+				printf("The buildDirectory (%s) exists but is not a directory.\n", buildDirectory);
 				exit(1);
-			} else {
-				if (!S_ISDIR(stat_buffer.st_mode)) {
-					printf("The buildDirectory (%s) exists but is not a directory.\n", buildDirectory);
-					exit(1);
-				}
 			}
 		}
 	}
@@ -317,7 +323,7 @@ int main(int argc, char **argv) {
 //		printf("Program ended with exit code: %d\n", program_exitCode);
 //	}
 	
-	if (compilerMode == CompilerMode_check) {
+	if (compilerMode == CompilerMode_check && !compilerOptions.compilerTesting) {
 		printf("\nChecking complete.\n");
 		if (warningCount == 1) {
 			printf("1 warning generated.\n");

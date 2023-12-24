@@ -1393,6 +1393,12 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				int endJump;
 				
 				if (data->falseCodeBlock == NULL) {
+					if (data->trueCodeBlock == NULL) {
+						addStringToReportMsg("empty if statement");
+						
+						compileWarning(FI, node->location, WarningType_unused);
+					}
+					
 					endJump = outerFunction->registerCount;
 					outerFunction->registerCount++;
 					
@@ -2085,17 +2091,16 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						compileError(FI, node->location);
 					}
 					
-					ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
-					
-					if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
-						addStringToReportMsg("integer overflow detected");
-						
-						CharAccumulator_appendInt(&reportIndicator, data->value);
-						addStringToReportIndicator(" is larger than the maximum size of the type '");
-						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
-						addStringToReportIndicator("'");
-						compileWarning(FI, node->location, WarningType_unsafe);
-					}
+//					ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
+//					if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
+//						addStringToReportMsg("integer overflow detected");
+//						
+//						CharAccumulator_appendInt(&reportIndicator, data->value);
+//						addStringToReportIndicator(" is larger than the maximum size of the type '");
+//						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
+//						addStringToReportIndicator("'");
+//						compileWarning(FI, node->location, WarningType_unsafe);
+//					}
 					
 					if (withTypes) {
 						char *LLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)(*currentExpectedType)->data)->binding);

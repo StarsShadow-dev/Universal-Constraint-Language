@@ -266,7 +266,7 @@ void compileFile(FileInformation *FI) {
 	struct timespec llcEndTime = {0};
 	
 	if (compilerMode == CompilerMode_check) {
-		printf("Finished checking file at %s\n", FI->context.path);
+		if (!compilerOptions.compilerTesting) printf("Finished checking file at %s\n", FI->context.path);
 	} else {
 		if (compilerMode != CompilerMode_compilerTesting && compilerMode != CompilerMode_query) {
 			if (compilerOptions.printIR) {

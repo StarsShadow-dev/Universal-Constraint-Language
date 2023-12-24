@@ -112,7 +112,7 @@ void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput, int c
 		compilerMode = "compilerTesting";
 	}
 	
-	char *args[] = {compilerPath, compilerMode, filePath, NULL};
+	char *args[] = {compilerPath, compilerMode, filePath, "-compilerTesting", NULL};
 
 	posix_spawn_file_actions_init(&action);
 
@@ -273,23 +273,23 @@ int main(int argc, char **argv) {
 	// testPath_check
 	//
 	
-	// pathLength = strlen(testPath_check);
-	// snprintf(path, pathLength + 1, "%s", testPath_check);
-	// d = opendir(path);
-	// if (d == NULL) {
-	// 	printf("Could not open \"%s\"\n", path);
-	// 	return 0;
-	// }
-	// while ((dir = readdir(d)) != NULL) {
-	// 	if (*dir->d_name == '.') {
-	// 		continue;
-	// 	}
+	pathLength = strlen(testPath_check);
+	snprintf(path, pathLength + 1, "%s", testPath_check);
+	d = opendir(path);
+	if (d == NULL) {
+		printf("Could not open \"%s\"\n", path);
+		return 0;
+	}
+	while ((dir = readdir(d)) != NULL) {
+		if (*dir->d_name == '.') {
+			continue;
+		}
 		
-	// 	snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
+		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-	// 	runTest(path, 1, 1, 1);
-	// }
-	// closedir(d);
+		runTest(path, 1, 1, 1);
+	}
+	closedir(d);
 
 	if (testsFailed > 0) {
 		printf("\nRan all tests in %llu milliseconds.\n", getMilliseconds(start));
