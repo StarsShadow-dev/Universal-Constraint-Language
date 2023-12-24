@@ -105,14 +105,7 @@ void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput, int c
 	int out[2];
 	posix_spawn_file_actions_t action;
 	
-	char *compilerMode;
-	if (checkMode) {
-		compilerMode = "check";
-	} else {
-		compilerMode = "compilerTesting";
-	}
-	
-	char *args[] = {compilerPath, compilerMode, filePath, "-compilerTesting", NULL};
+	char *args[] = {compilerPath, "check", filePath, "-compilerTesting", NULL};
 
 	posix_spawn_file_actions_init(&action);
 

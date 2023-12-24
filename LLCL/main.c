@@ -52,14 +52,6 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	
-	else if (strcmp(argv[currentArg], "compilerTesting") == 0) {
-		currentArg++;
-		compilerMode = CompilerMode_compilerTesting;
-		
-		startFilePath = argv[currentArg];
-		currentArg++;
-	}
-	
 	else if (strcmp(argv[currentArg], "check") == 0) {
 		currentArg++;
 		compilerMode = CompilerMode_check;
@@ -179,8 +171,8 @@ int main(int argc, char **argv) {
 	CharAccumulator_initialize(&objectFiles);
 	
 	if (
+		!compilerOptions.compilerTesting &&
 		compilerMode != CompilerMode_query &&
-		compilerMode != CompilerMode_compilerTesting &&
 		compilerMode != CompilerMode_check
 	) {
 		CharAccumulator buildDirectoryCA = {100, 0, 0};

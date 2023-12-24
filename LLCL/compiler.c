@@ -282,7 +282,7 @@ void compileFile(FileInformation *FI) {
 	if (compilerMode == CompilerMode_check) {
 		if (!compilerOptions.compilerTesting) printf("Finished checking file at %s\n", FI->context.path);
 	} else {
-		if (compilerMode != CompilerMode_compilerTesting && compilerMode != CompilerMode_query) {
+		if (!compilerOptions.compilerTesting && compilerMode != CompilerMode_query) {
 			if (compilerOptions.printIR) {
 				printf("LLVMsource: %s\n", LLVMsource.data);
 			}

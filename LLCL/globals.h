@@ -14,7 +14,6 @@ typedef enum {
 	CompilerMode_build_objectFile,
 	CompilerMode_build_binary,
 	CompilerMode_run,
-	CompilerMode_compilerTesting,
 	CompilerMode_check,
 	CompilerMode_query
 } CompilerMode;
