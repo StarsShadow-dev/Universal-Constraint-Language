@@ -16,6 +16,7 @@
 		0203002E2A24F49C0082A063 /* builder.c in Sources */ = {isa = PBXBuildFile; fileRef = 0203002D2A24F49C0082A063 /* builder.c */; };
 		028BE7EA2A88FAED0049431E /* utilities.c in Sources */ = {isa = PBXBuildFile; fileRef = 028BE7E92A88FAED0049431E /* utilities.c */; };
 		028F23A12A707CBB00279ECC /* compiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 028F23A02A707CBB00279ECC /* compiler.c */; };
+		02B12BA92B38A3B900560DAE /* sha1.c in Sources */ = {isa = PBXBuildFile; fileRef = 02B12BA82B38A3B900560DAE /* sha1.c */; };
 		02F285E52B34A3E10037C2B9 /* printer.c in Sources */ = {isa = PBXBuildFile; fileRef = 02F285E42B34A3E10037C2B9 /* printer.c */; };
 /* End PBXBuildFile section */
 
@@ -55,6 +56,8 @@
 		028F239F2A707CBB00279ECC /* compiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		028F23A02A707CBB00279ECC /* compiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = compiler.c; sourceTree = "<group>"; };
 		028F23A22A72D99400279ECC /* LLCL.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LLCL.entitlements; sourceTree = "<group>"; };
+		02B12BA72B38A3B900560DAE /* sha1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sha1.h; sourceTree = "<group>"; };
+		02B12BA82B38A3B900560DAE /* sha1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sha1.c; sourceTree = "<group>"; };
 		02F285E32B34A3E10037C2B9 /* printer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = printer.h; sourceTree = "<group>"; };
 		02F285E42B34A3E10037C2B9 /* printer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = printer.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -113,6 +116,8 @@
 				028F23A02A707CBB00279ECC /* compiler.c */,
 				0203002B2A2031CA0082A063 /* jsmn.h */,
 				028F239E2A6F2E0800279ECC /* fromLLCL.h */,
+				02B12BA72B38A3B900560DAE /* sha1.h */,
+				02B12BA82B38A3B900560DAE /* sha1.c */,
 			);
 			path = LLCL;
 			sourceTree = "<group>";
@@ -189,6 +194,7 @@
 				0203002E2A24F49C0082A063 /* builder.c in Sources */,
 				0203001B2A1AC0420082A063 /* globals.c in Sources */,
 				020300182A1A7AD90082A063 /* main.c in Sources */,
+				02B12BA92B38A3B900560DAE /* sha1.c in Sources */,
 				020300272A1EBA4A0082A063 /* parser.c in Sources */,
 				028BE7EA2A88FAED0049431E /* utilities.c in Sources */,
 				028F23A12A707CBB00279ECC /* compiler.c in Sources */,

@@ -171,6 +171,10 @@ linkedList_Node *getJsmnStringArray(char *buffer, jsmntok_t *t, int start, int c
 }
 
 void compileFile(FileInformation *FI) {
+	if (compilerOptions.verbose) {
+		printf("\nCompiling file: %s\n", FI->context.path);
+	}
+	
 //	struct timespec fileStartTime = getTimespec();
 	
 	// add the coreFile to this file's importedFiles list
@@ -210,6 +214,16 @@ void compileFile(FileInformation *FI) {
 		readFileStartTime = getTimespec();
 		FI->context.currentSource = readFile(FI->context.path);
 		readFileEndTime = getTimespec();
+	}
+	
+	char hash[hashSize];
+	hashContents(FI->context.currentSource, strlen(FI->context.currentSource), hash);
+	if (compilerOptions.verbose) {
+		printf("hash: ");
+		for (int i = 0; i < hashSize; i++) {
+			printf("%02x", (unsigned char)hash[i]);
+		}
+		printf("\n\n");
 	}
 	
 //	printf("Source (%s): %s\n", path, FI->context.currentSource);
