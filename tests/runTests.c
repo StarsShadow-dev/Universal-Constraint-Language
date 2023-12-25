@@ -15,7 +15,7 @@ extern char **environ;
 #define testPath_fail "tests/fail/"
 #define testPath_succeed "tests/succeed/"
 #define testPath_describe "tests/describe/"
-#define testPath_check "tests/check/"
+#define testPath_warning "tests/warning/"
 #define compilerPath "./DerivedData/LLCL/Build/Products/Debug/LLCL"
 // #define target_triple "arm64-apple-macosx13.0.0"
 
@@ -94,7 +94,7 @@ int checkTestOutput(char *stdout, char *testFileData) {
 	return strncmp(stdout, startOfBlockCommentText, lengthOfTestExpectation) == 0;
 }
 
-void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput, int checkMode) {
+void runTest(char* filePath, int shouldSucceed, int shouldCheckTestOutput) {
 	printf("\nRuning: %s\n", filePath);
 
 	char *text = readFile(filePath);
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 0, 1, 0);
+		runTest(path, 0, 1);
 	}
 	closedir(d);
 
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 1, 0, 0);
+		runTest(path, 1, 0);
 	}
 	closedir(d);
 	
@@ -258,16 +258,16 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 1, 1, 0);
+		runTest(path, 1, 1);
 	}
 	closedir(d);
 	
 	//
-	// testPath_check
+	// testPath_warning
 	//
 	
-	pathLength = strlen(testPath_check);
-	snprintf(path, pathLength + 1, "%s", testPath_check);
+	pathLength = strlen(testPath_warning);
+	snprintf(path, pathLength + 1, "%s", testPath_warning);
 	d = opendir(path);
 	if (d == NULL) {
 		printf("Could not open \"%s\"\n", path);
@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
 		
 		snprintf(path + pathLength, sizeof(path) - pathLength, "%s", dir->d_name);
 
-		runTest(path, 1, 1, 1);
+		runTest(path, 1, 1);
 	}
 	closedir(d);
 
