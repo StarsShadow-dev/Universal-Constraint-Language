@@ -3,7 +3,8 @@ variable description for 'string'
 byteSize = 8
 byteAlign = 8
 
-level 1: (string == "A string!")
+type = Pointer
+level 1: ($ == "A string!")
 */
 
 function main(): Int8 {

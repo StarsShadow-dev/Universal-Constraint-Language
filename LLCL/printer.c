@@ -5,25 +5,48 @@
 #include "globals.h"
 #include "printer.h"
 
-void getTypeDescription(CharAccumulator *charAccumulator, BuilderType *builderType) {
-	CharAccumulator_appendSubString(charAccumulator, builderType->binding->key);
+void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator, ASTnode *node) {
+	switch (node->nodeType) {
+		case ASTnodeType_bool: {
+			ASTnode_bool *data = (ASTnode_bool *)node->value;
+			
+			if (data->isTrue) {
+				CharAccumulator_appendChars(charAccumulator, "true");
+			} else {
+				CharAccumulator_appendChars(charAccumulator, "false");
+			}
+			return;
+		}
+		
+		case ASTnodeType_number: {
+			CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)node->value)->value);
+			return;
+		}
+		
+		case ASTnodeType_string: {
+			CharAccumulator_appendChars(charAccumulator, "\"");
+			CharAccumulator_appendSubString(charAccumulator, ((ASTnode_string *)node->value)->value);
+			CharAccumulator_appendChars(charAccumulator, "\"");
+			return;
+		}
+		
+		default: {
+			CharAccumulator_appendChars(charAccumulator, "/*can not print*/");
+			return;
+		}
+	}
 }
 
-void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulator, ContextBinding *variableBinding) {
-	if (variableBinding->type != ContextBindingType_variable) abort();
-	ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
+void getTypeDescription(FileInformation *FI, CharAccumulator *charAccumulator, BuilderType *type, int withFactInformation) {
+	CharAccumulator_appendSubString(charAccumulator, type->binding->key);
 	
-	CharAccumulator_appendChars(charAccumulator, "variable description for '");
-	CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
-	CharAccumulator_appendChars(charAccumulator, "'\nbyteSize = ");
-	CharAccumulator_appendInt(charAccumulator, variableBinding->byteSize);
-	CharAccumulator_appendChars(charAccumulator, "\nbyteAlign = ");
-	CharAccumulator_appendInt(charAccumulator, variableBinding->byteAlign);
-	CharAccumulator_appendChars(charAccumulator, "\n\n");
+	if (!withFactInformation) return;
+	
+	CharAccumulator_appendChars(charAccumulator, "\n");
 	
 	int index = 0;
 	while (index <= FI->level) {
-		linkedList_Node *currentFact = variable->type.factStack[index];
+		linkedList_Node *currentFact = type->factStack[index];
 		
 		if (currentFact == NULL) {
 			index++;
@@ -44,7 +67,7 @@ void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulato
 				
 				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
 					if (expressionFact->left == NULL) {
-						CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
+						CharAccumulator_appendChars(charAccumulator, "$");
 					} else {
 						abort();
 					}
@@ -68,6 +91,21 @@ void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulato
 	}
 }
 
+void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulator, ContextBinding *variableBinding) {
+	if (variableBinding->type != ContextBindingType_variable) abort();
+	ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
+	
+	CharAccumulator_appendChars(charAccumulator, "variable description for '");
+	CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
+	CharAccumulator_appendChars(charAccumulator, "'\nbyteSize = ");
+	CharAccumulator_appendInt(charAccumulator, variableBinding->byteSize);
+	CharAccumulator_appendChars(charAccumulator, "\nbyteAlign = ");
+	CharAccumulator_appendInt(charAccumulator, variableBinding->byteAlign);
+	CharAccumulator_appendChars(charAccumulator, "\n\ntype = ");
+	
+	getTypeDescription(FI, charAccumulator, &variable->type, 1);
+}
+
 int printComma = 0;
 
 void printKeyword(int type, char *name, char *documentation) {
@@ -78,7 +116,7 @@ void printKeyword(int type, char *name, char *documentation) {
 	printf("[%d, \"%s\", \"LLCL Keyword\\n\\n%s\"]", type, name, documentation);
 }
 
-void printBinding(ContextBinding *binding) {
+void printBinding(FileInformation *FI, ContextBinding *binding) {
 	int type;
 	SubString *name = binding->key;
 	
@@ -107,7 +145,7 @@ void printBinding(ContextBinding *binding) {
 			CharAccumulator_appendSubString(&documentation, binding->key);
 			CharAccumulator_appendChars(&documentation, "(");
 			CharAccumulator_appendChars(&documentation, "): ");
-			getTypeDescription(&documentation, &data->returnType);
+			getTypeDescription(FI, &documentation, &data->returnType, 0);
 			CharAccumulator_appendChars(&documentation, ";\\n```\\n\\n");
 			
 			type = 2;
@@ -127,7 +165,7 @@ void printBinding(ContextBinding *binding) {
 			CharAccumulator_appendChars(&documentation, "```\\nvar ");
 			CharAccumulator_appendSubString(&documentation, binding->key);
 			CharAccumulator_appendChars(&documentation, ": ");
-			getTypeDescription(&documentation, &data->type);
+			getTypeDescription(FI, &documentation, &data->type, 0);
 			CharAccumulator_appendChars(&documentation, ";\\n```\\n\\n");
 			
 			type = 5;
@@ -195,7 +233,7 @@ void printBindings(FileInformation *FI) {
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
 			
-			printBinding(binding);
+			printBinding(FI, binding);
 			
 			current = current->next;
 		}
@@ -213,7 +251,7 @@ void printBindings(FileInformation *FI) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
 			
 			if (ContextBinding_availableInOtherFile(binding)) {
-				printBinding(binding);
+				printBinding(FI, binding);
 			}
 			
 			current = current->next;

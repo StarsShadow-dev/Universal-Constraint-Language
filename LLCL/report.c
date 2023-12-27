@@ -185,6 +185,9 @@ char *getWarningTypeAsString(WarningType warningType) {
 		case WarningType_unused:
 			return "unused";
 			
+		case WarningType_unneeded:
+			return "unneeded";
+			
 		case WarningType_redundant:
 			return "redundant";
 			

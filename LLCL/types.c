@@ -281,27 +281,6 @@ FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStruct
 // lexer, parser and builder
 //
 
-void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator, ASTnode *node) {
-	switch (node->nodeType) {
-		case ASTnodeType_number: {
-			CharAccumulator_appendInt(charAccumulator, ((ASTnode_number *)node->value)->value);
-			return;
-		}
-			
-		case ASTnodeType_string: {
-			CharAccumulator_appendChars(charAccumulator, "\"");
-			CharAccumulator_appendSubString(charAccumulator, ((ASTnode_string *)node->value)->value);
-			CharAccumulator_appendChars(charAccumulator, "\"");
-			return;
-		}
-			
-		default: {
-			CharAccumulator_appendChars(charAccumulator, "/*can not print*/");
-			return;
-		}
-	}
-}
-
 int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer) {
 	linkedList_Node *currentFunction = FI->context.declaredInLLVM;
 	
@@ -319,6 +298,18 @@ int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer)
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer) {
 	ContextBinding **bindingPointer = linkedList_addNode(&FI->context.declaredInLLVM, sizeof(void *));
 	*bindingPointer = pointer;
+}
+
+//
+// Facts
+//
+
+void Fact_newExpression(linkedList_Node **head, ASTnode_operatorType operatorType, ASTnode *left, ASTnode *rightConstant) {
+	Fact *factData = linkedList_addNode(head, sizeof(Fact) + sizeof(Fact_expression));
+	factData->type = FactType_expression;
+	((Fact_expression *)factData->value)->operatorType = ASTnode_operatorType_equivalent;
+	((Fact_expression *)factData->value)->left = left;
+	((Fact_expression *)factData->value)->rightConstant = rightConstant;
 }
 
 //

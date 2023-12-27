@@ -21,6 +21,8 @@
 character == '=' && FI->context.currentSource[index+1] == '=' ||\
 character == '!' && FI->context.currentSource[index+1] == '=' ||\
 character == ':' && FI->context.currentSource[index+1] == ':' ||\
+character == '&' && FI->context.currentSource[index+1] == '&' ||\
+character == '|' && FI->context.currentSource[index+1] == '|' ||\
 character == 'a' && FI->context.currentSource[index+1] == 's'
 
 #define separator character == '(' || character == ')' || character == '{' || character == '}'  || character == '[' || character == ']' || character == ':' || character == ';' || character == ','

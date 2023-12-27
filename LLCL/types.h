@@ -148,9 +148,8 @@ typedef enum {
 	ASTnodeType_variableAssignment,
 	ASTnodeType_operator,
 	
-	// I do not really need an ASTnode_true or ASTnode_false struct because I would not be storing anything in them
-	ASTnodeType_true,
-	ASTnodeType_false,
+	// TODO: replace with ASTnodeType_bool?
+	ASTnodeType_bool,
 	
 	ASTnodeType_number,
 	ASTnodeType_string,
@@ -243,6 +242,8 @@ typedef enum {
 	ASTnode_operatorType_multiply,
 	ASTnode_operatorType_divide,
 	ASTnode_operatorType_modulo,
+	ASTnode_operatorType_and,
+	ASTnode_operatorType_or,
 	ASTnode_operatorType_memberAccess,
 	ASTnode_operatorType_scopeResolution,
 	
@@ -255,6 +256,10 @@ typedef struct {
 	linkedList_Node *left;
 	linkedList_Node *right;
 } ASTnode_operator;
+
+typedef struct {
+	int isTrue;
+} ASTnode_bool;
 
 typedef struct {
 	SubString *string;
@@ -274,7 +279,7 @@ typedef struct {
 	linkedList_Node *right;
 } ASTnode_subscript;
 
-void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator, ASTnode *node);
+void Fact_newExpression(linkedList_Node **head, ASTnode_operatorType operatorType, ASTnode *left, ASTnode *rightConstant);
 
 //
 // facts

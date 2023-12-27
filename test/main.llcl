@@ -2,16 +2,16 @@ import "modules/libc_bindings"
 import "modules/std"
 import "math.llcl"
 
-function recursiveFibonacci(n: Int64): Int64 {
-    if (n < 2) {
-        return n;
-    } else {
-        return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
-    }
-    
-    // unreachable
-    return 0;
-}
+// function recursiveFibonacci(n: Int64): Int64 {
+// 	if (n < 2) {
+// 		return n;
+// 	} else {
+// 		return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
+// 	}
+//	
+// 	// unreachable
+// 	return 0;
+// }
 
 #set("__functionSymbol", "main");
 function main(): Int32 {
@@ -35,10 +35,20 @@ function main(): Int32 {
 	// 	i = i + 1;
 	// }
 	
-	var test: Int32 = 1;
-	#describe(test);
-	if (test == 1) {
-		return 1;
+	// var test1: Int32 = 1;
+	// #describe(test1);
+	
+	// var test2: Bool = 5 == 5;
+	// #describe(test2);
+	
+	var x: Int32 = 5;
+	var y: Int32 = 4;
+	
+	if (true || y == 5) {
+		// #describe(x);
+		// #describe(y);
+		std::print_Int32(1234);
+		libc_bindings::putchar(10); // \n
 	}
 	
 	return 0;

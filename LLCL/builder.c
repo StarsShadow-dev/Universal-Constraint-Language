@@ -196,11 +196,7 @@ void addTypeFromString(FileInformation *FI, linkedList_Node **list, char *string
 	int level = 0;
 	if (FI->level > 0) level = FI->level - 1;
 	
-	Fact *factData = linkedList_addNode(&typeData->factStack[level], sizeof(Fact) + sizeof(Fact_expression));
-	factData->type = FactType_expression;
-	((Fact_expression *)factData->value)->operatorType = ASTnode_operatorType_equivalent;
-	((Fact_expression *)factData->value)->left = NULL;
-	((Fact_expression *)factData->value)->rightConstant = node;
+	Fact_newExpression(&typeData->factStack[level], ASTnode_operatorType_equivalent, NULL, node);
 }
 
 void addTypeFromBuilderType(FileInformation *FI, linkedList_Node **list, BuilderType *type) {
@@ -285,71 +281,6 @@ void applyFacts(FileInformation *FI, ASTnode_operator *operator) {
 	((Fact_expression *)fact->value)->operatorType = operator->operatorType;
 	((Fact_expression *)fact->value)->left = NULL;
 	((Fact_expression *)fact->value)->rightConstant = (ASTnode *)operator->right->data;
-}
-
-int isExpressionTrue(FileInformation *FI, ContextBinding_variable *self, ASTnode_operator *operator) {
-	if (self == NULL) abort();
-	
-	ASTnode *leftNode = (ASTnode *)operator->left->data;
-	ASTnode *rightNode = (ASTnode *)operator->right->data;
-	
-	if (leftNode->nodeType != ASTnodeType_selfReference) return 0;
-	if (rightNode->nodeType != ASTnodeType_number) return 0;
-	
-	if (operator->operatorType == ASTnode_operatorType_equivalent) {
-		if (leftNode->nodeType == ASTnodeType_selfReference && rightNode->nodeType == ASTnodeType_number) {
-			int index = FI->level;
-			while (index > 0) {
-				linkedList_Node *currentFact = self->type.factStack[index];
-				
-				while (currentFact != NULL) {
-					Fact *fact = (Fact *)currentFact->data;
-					
-					if (fact->type == FactType_expression) {
-						Fact_expression *expressionFact = (Fact_expression *)fact->value;
-						if (expressionFact->rightConstant->nodeType != ASTnodeType_number) abort();
-						
-						if (
-							((ASTnode_number *)rightNode->value)->value ==
-							((ASTnode_number *)expressionFact->rightConstant->value)->value
-						) {
-							return 1;
-						}
-					}
-					
-					currentFact = currentFact->next;
-				}
-				
-				index--;
-			}
-		}
-	}
-	
-	return 0;
-}
-
-void expectType(FileInformation *FI, ContextBinding_variable *self, BuilderType *expectedType, BuilderType *actualType, SourceLocation location) {
-	if (expectedType->binding != actualType->binding) {
-		addStringToReportMsg("unexpected type");
-		
-		addStringToReportIndicator("expected type '");
-		addSubStringToReportIndicator(expectedType->binding->key);
-		addStringToReportIndicator("' but got type '");
-		addSubStringToReportIndicator(actualType->binding->key);
-		addStringToReportIndicator("'");
-		compileError(FI, location);
-	}
-	
-	if (expectedType->constraintNodes != NULL) {
-		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
-		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
-		ASTnode_operator *expectedData = (ASTnode_operator *)constraintExpectedNode->value;
-		
-		if (!isExpressionTrue(FI, self, expectedData)) {
-			addStringToReportMsg("constraint not met");
-			compileError(FI, location);
-		}
-	}
 }
 
 ASTnode *expectArgumentOnMacro(FileInformation *FI, linkedList_Node **currentType, linkedList_Node **currentArgument, char* typeName, int mustBeResolved) {
@@ -440,8 +371,108 @@ BuilderType getTypeFromBinding(ContextBinding *binding) {
 	return (BuilderType){binding};
 }
 
-void getFact(FileInformation *FI, BuilderType type) {
+void addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_operatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
+	if (FI->level <= 0) abort();
+	if (leftNode->nodeType != rightNode->nodeType) return;
+	ASTnodeType sharedNodeType = leftNode->nodeType;
 	
+	switch (sharedNodeType) {
+		case ASTnodeType_number: {
+			ASTnode_number *left = (ASTnode_number *)leftNode->value;
+			ASTnode_number *right = (ASTnode_number *)rightNode->value;
+			
+			if (
+				operatorType == ASTnode_operatorType_equivalent &&
+				left->value == right->value
+			) {
+				ASTnode *node = safeMalloc(sizeof(ASTnode) + sizeof(ASTnode_bool));
+				node->nodeType = ASTnodeType_bool;
+				node->location = (SourceLocation){0};
+				((ASTnode_bool *)node->value)->isTrue = 1;
+				
+				Fact_newExpression(&type->factStack[FI->level - 1], ASTnode_operatorType_equivalent, NULL, node);
+			}
+			return;
+		}
+		
+		default: {
+			return;
+		}
+	}
+}
+
+void addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_operatorType operatorType, BuilderType *left, BuilderType *right) {
+	BuilderType *type = linkedList_addNode(list, sizeof(BuilderType));
+	*type = (BuilderType){
+		.binding = getContextBindingFromString(FI, name),
+		.constraintNodes = NULL,
+		.factStack = {0}
+	};
+	
+	int leftIndex = FI->level;
+	while (leftIndex > 0) {
+		linkedList_Node *leftCurrentFact = left->factStack[leftIndex];
+		
+		while (leftCurrentFact != NULL) {
+			Fact *leftFact = (Fact *)leftCurrentFact->data;
+			
+			if (leftFact->type == FactType_expression) {
+				Fact_expression *leftExpressionFact = (Fact_expression *)leftFact->value;
+				
+				int rightIndex = FI->level;
+				while (rightIndex > 0) {
+					linkedList_Node *rightCurrentFact = right->factStack[rightIndex];
+					
+					while (rightCurrentFact != NULL) {
+						Fact *rightFact = (Fact *)rightCurrentFact->data;
+						
+						if (rightFact->type == FactType_expression) {
+							Fact_expression *rightExpressionFact = (Fact_expression *)rightFact->value;
+							
+							if (
+								leftExpressionFact->operatorType == ASTnode_operatorType_equivalent &&
+								rightExpressionFact->operatorType == ASTnode_operatorType_equivalent
+							) {
+								addOperatorResultToType(FI, type, operatorType, leftExpressionFact->rightConstant, rightExpressionFact->rightConstant);
+							}
+						}
+						
+						rightCurrentFact = rightCurrentFact->next;
+					}
+					
+					rightIndex--;
+				}
+			}
+			
+			leftCurrentFact = leftCurrentFact->next;
+		}
+		
+		leftIndex--;
+	}
+}
+
+void expectType(FileInformation *FI, ContextBinding_variable *self, BuilderType *expectedType, BuilderType *actualType, SourceLocation location) {
+	if (expectedType->binding != actualType->binding) {
+		addStringToReportMsg("unexpected type");
+		
+		addStringToReportIndicator("expected type '");
+		addSubStringToReportIndicator(expectedType->binding->key);
+		addStringToReportIndicator("' but got type '");
+		addSubStringToReportIndicator(actualType->binding->key);
+		addStringToReportIndicator("'");
+		compileError(FI, location);
+	}
+	
+	if (expectedType->constraintNodes != NULL) {
+		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
+		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
+		ASTnode_operator *expectedData = (ASTnode_operator *)constraintExpectedNode->value;
+		
+//		if (???) {
+//			addStringToReportMsg("constraint not met");
+//			compileError(FI, location);
+//		}
+	}
 }
 
 ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_Node **list, ASTnode *node) {
@@ -1357,10 +1388,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
 				
-				linkedList_Node *types = NULL;
-				buildLLVM(FI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, &types, data->expression, 1, 1, 0);
+				linkedList_Node *expressionTypes = NULL;
+				buildLLVM(FI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, &expressionTypes, data->expression, 1, 1, 0);
 				
-				int typesCount = linkedList_getCount(&types);
+				int typesCount = linkedList_getCount(&expressionTypes);
 				
 				if (typesCount == 0) {
 					addStringToReportMsg("if statement condition expected a bool but got nothing");
@@ -1459,7 +1490,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				CharAccumulator_free(&falseCodeBlockSource);
 				
 				linkedList_freeList(&expectedTypesForIf);
-				linkedList_freeList(&types);
+				linkedList_freeList(&expressionTypes);
 				
 				break;
 			}
@@ -1828,6 +1859,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					break;
 				}
 				
+				linkedList_Node *leftType = NULL;
+				linkedList_Node *rightType = NULL;
+				
 				linkedList_Node *expectedTypeForLeftAndRight = NULL;
 				char *expectedLLVMtype = NULL;
 				if (expectedTypes != NULL) {
@@ -1849,8 +1883,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					// figure out what the type of both sides should be
 					//
 					
-					// get left type
-					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->left, 0, 0, 0);
+					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &leftType, data->left, 0, 0, 0);
+					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &rightType, data->right, 0, 0, 0);
+					
+					expectedTypeForLeftAndRight = leftType;
 					// if we did not find a number on the left side
 					if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
 						if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
@@ -1859,8 +1895,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						}
 						
 						// replace expectedTypeForLeftAndRight with the right type
-						linkedList_freeList(&expectedTypeForLeftAndRight);
-						buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeftAndRight, data->right, 0, 0, 0);
+						expectedTypeForLeftAndRight = rightType;
 						// if we did not find a number on the right side
 						if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
 							if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
@@ -1869,7 +1904,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							}
 							
 							// default to Int32
-							linkedList_freeList(&expectedTypeForLeftAndRight);
+							expectedTypeForLeftAndRight = NULL;
 							addTypeFromString(FI, &expectedTypeForLeftAndRight, "Int32", NULL);
 						}
 					}
@@ -1915,6 +1950,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					
 					if (types != NULL) {
 						addTypeFromString(FI, types, "Bool", NULL);
+						// addTypeResultAfterOperationToList(FI, types, "Bool", data->operatorType, left, right);
 					}
 					
 					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBinding(FI, ((BuilderType *)expectedTypeForLeftAndRight->data)->binding));
@@ -1999,7 +2035,32 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						}
 					}
 					
-					if (expectedLLVMtype) CharAccumulator_appendChars(outerSource, expectedLLVMtype);
+					if (expectedLLVMtype != NULL) CharAccumulator_appendChars(outerSource, expectedLLVMtype);
+				}
+				
+				else if (
+					data->operatorType == ASTnode_operatorType_and ||
+					data->operatorType == ASTnode_operatorType_or
+				) {
+					linkedList_Node *expectedTypesForIf = NULL;
+					addTypeFromString(FI, &expectedTypesForIf, "Bool", NULL);
+					
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypesForIf, NULL, data->left, 1, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypesForIf, NULL, data->right, 1, 0, 0);
+					
+					if (outerSource != NULL) {
+						CharAccumulator_appendChars(outerSource, "\n\t%");
+						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+						if (data->operatorType == ASTnode_operatorType_and) {
+							CharAccumulator_appendChars(outerSource, " = and i1");
+						} else if (data->operatorType == ASTnode_operatorType_or) {
+							CharAccumulator_appendChars(outerSource, " = or i1");
+						}
+					}
+					
+					if (types != NULL) {
+						addTypeFromString(FI, types, "Bool", NULL);
+					}
 				}
 				
 				else {
@@ -2012,8 +2073,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(outerSource, ", ");
 					CharAccumulator_appendChars(outerSource, rightInnerSource.data);
 					
-					if (withTypes) {
-						if (expectedLLVMtype) CharAccumulator_appendChars(innerSource, expectedLLVMtype);
+					if (withTypes && expectedLLVMtype != NULL) {
+						CharAccumulator_appendChars(innerSource, expectedLLVMtype);
 						CharAccumulator_appendChars(innerSource, " ");
 					}
 					CharAccumulator_appendChars(innerSource, "%");
@@ -2028,7 +2089,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				break;
 			}
 			
-			case ASTnodeType_true: {
+			case ASTnodeType_bool: {
+				ASTnode_bool *data = (ASTnode_bool *)node->value;
+				
 				if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "Bool")) {
 					addStringToReportMsg("unexpected type");
 					
@@ -2042,30 +2105,11 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(innerSource, "i1 ");
 				}
 				
-				CharAccumulator_appendChars(innerSource, "true");
-				
-				if (types != NULL) {
-					addTypeFromString(FI, types, "Bool", node);
+				if (data->isTrue) {
+					CharAccumulator_appendChars(innerSource, "true");	
+				} else {
+					CharAccumulator_appendChars(innerSource, "false");
 				}
-				
-				break;
-			}
-			
-			case ASTnodeType_false: {
-				if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "Bool")) {
-					addStringToReportMsg("unexpected type");
-					
-					addStringToReportIndicator("expected type '");
-					addSubStringToReportIndicator(((BuilderType *)expectedTypes->data)->binding->key);
-					addStringToReportIndicator("' but got a bool");
-					compileError(FI, node->location);
-				}
-				
-				if (withTypes) {
-					CharAccumulator_appendChars(innerSource, "i1 ");
-				}
-				
-				CharAccumulator_appendChars(innerSource, "false");
 				
 				if (types != NULL) {
 					addTypeFromString(FI, types, "Bool", node);

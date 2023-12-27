@@ -165,6 +165,10 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_divide;
 			} else if (SubString_string_cmp(&operator->subString, "%") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_modulo;
+			} else if (SubString_string_cmp(&operator->subString, "&&") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_and;
+			} else if (SubString_string_cmp(&operator->subString, "||") == 0) {
+				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_or;
 			} else if (SubString_string_cmp(&operator->subString, ".") == 0) {
 				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_memberAccess;
 			} else if (SubString_string_cmp(&operator->subString, "::") == 0) {
@@ -683,18 +687,22 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 				
 				// true constant
 				else if (SubString_string_cmp(&token->subString, "true") == 0) {
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
-					data->nodeType = ASTnodeType_true;
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_bool));
+					data->nodeType = ASTnodeType_bool;
 					data->location = token->location;
+					
+					((ASTnode_bool *)data->value)->isTrue = 1;
 					
 					*current = (*current)->next;
 				}
 				
 				// false constant
 				else if (SubString_string_cmp(&token->subString, "false") == 0) {
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode));
-					data->nodeType = ASTnodeType_false;
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_bool));
+					data->nodeType = ASTnodeType_bool;
 					data->location = token->location;
+					
+					((ASTnode_bool *)data->value)->isTrue = 0;
 					
 					*current = (*current)->next;
 				}
