@@ -371,9 +371,9 @@ BuilderType getTypeFromBinding(ContextBinding *binding) {
 	return (BuilderType){binding};
 }
 
-void addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_operatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
+int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_operatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
 	if (FI->level <= 0) abort();
-	if (leftNode->nodeType != rightNode->nodeType) return;
+	if (leftNode->nodeType != rightNode->nodeType) return 0;
 	ASTnodeType sharedNodeType = leftNode->nodeType;
 	
 	switch (sharedNodeType) {
@@ -391,17 +391,20 @@ void addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_ope
 				((ASTnode_bool *)node->value)->isTrue = 1;
 				
 				Fact_newExpression(&type->factStack[FI->level - 1], ASTnode_operatorType_equivalent, NULL, node);
+				return 1;
 			}
-			return;
+			return 0;
 		}
 		
 		default: {
-			return;
+			return 0;
 		}
 	}
 }
 
-void addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_operatorType operatorType, BuilderType *left, BuilderType *right) {
+int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_operatorType operatorType, BuilderType *left, BuilderType *right) {
+	int resultIsTrue = 0;
+	
 	BuilderType *type = linkedList_addNode(list, sizeof(BuilderType));
 	*type = (BuilderType){
 		.binding = getContextBindingFromString(FI, name),
@@ -433,7 +436,8 @@ void addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **li
 								leftExpressionFact->operatorType == ASTnode_operatorType_equivalent &&
 								rightExpressionFact->operatorType == ASTnode_operatorType_equivalent
 							) {
-								addOperatorResultToType(FI, type, operatorType, leftExpressionFact->rightConstant, rightExpressionFact->rightConstant);
+								int isTrue = addOperatorResultToType(FI, type, operatorType, leftExpressionFact->rightConstant, rightExpressionFact->rightConstant);
+								if (isTrue) resultIsTrue = 1;
 							}
 						}
 						
@@ -449,6 +453,8 @@ void addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **li
 		
 		leftIndex--;
 	}
+	
+	return resultIsTrue;
 }
 
 void expectType(FileInformation *FI, ContextBinding_variable *self, BuilderType *expectedType, BuilderType *actualType, SourceLocation location) {
@@ -464,14 +470,36 @@ void expectType(FileInformation *FI, ContextBinding_variable *self, BuilderType 
 	}
 	
 	if (expectedType->constraintNodes != NULL) {
-//		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
-//		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
-//		ASTnode_operator *expectedData = (ASTnode_operator *)constraintExpectedNode->value;
+		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
+		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
+		ASTnode_operator *expectedData = (ASTnode_operator *)constraintExpectedNode->value;
 		
-//		if (???) {
-//			addStringToReportMsg("constraint not met");
-//			compileError(FI, location);
-//		}
+		ASTnode *leftNode = (ASTnode *)expectedData->left->data;
+		ASTnode *rightNode = (ASTnode *)expectedData->right->data;
+		
+		BuilderType *left;
+		if (leftNode->nodeType == ASTnodeType_selfReference) {
+			left = actualType;
+		} else {
+			linkedList_Node *leftTypes = NULL;
+			buildLLVM(FI, NULL, NULL, NULL, NULL, &leftTypes, expectedData->left, 0, 0, 0);
+			left = (BuilderType *)leftTypes->data;
+		}
+		
+		BuilderType *right;
+		if (rightNode->nodeType == ASTnodeType_selfReference) {
+			right = actualType;
+		} else {
+			linkedList_Node *rightTypes = NULL;
+			buildLLVM(FI, NULL, NULL, NULL, NULL, &rightTypes, expectedData->right, 0, 0, 0);
+			right = (BuilderType *)rightTypes->data;
+		}
+		
+		linkedList_Node *resultTypes = NULL;
+		if (!addTypeResultAfterOperationToList(FI, &resultTypes, "Bool", expectedData->operatorType, left, right)) {
+			addStringToReportMsg("constraint not met");
+			compileError(FI, location);
+		}
 	}
 }
 

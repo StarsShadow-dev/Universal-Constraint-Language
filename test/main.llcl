@@ -13,6 +13,10 @@ import "math.llcl"
 // 	return 0;
 // }
 
+function test(ptr: Int32[$ == 5]): Void {
+	return;
+}
+
 #set("__functionSymbol", "main");
 function main(): Int32 {
 	// var string: &[Uint8] = "string!\n";
@@ -41,15 +45,17 @@ function main(): Int32 {
 	// var test2: Bool = 5 == 5;
 	// #describe(test2);
 	
-	var x: Int32 = 5;
-	var y: Int32 = 4;
+	var x: Int32 = 4;
+	// var y: Int32 = 5;
 	
-	if (true || y == 5) {
-		#describe(x);
-		#describe(y);
-		std::print_Int32(1234);
-		libc_bindings::putchar(10); // \n
-	}
+	test(x);
+	
+	// if (true || y == 5) {
+	// 	#describe(x);
+	// 	#describe(y);
+	// 	std::print_Int32(1234);
+	// 	libc_bindings::putchar(10); // \n
+	// }
 	
 	return 0;
 }
