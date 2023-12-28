@@ -464,9 +464,9 @@ void expectType(FileInformation *FI, ContextBinding_variable *self, BuilderType 
 	}
 	
 	if (expectedType->constraintNodes != NULL) {
-		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
-		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
-		ASTnode_operator *expectedData = (ASTnode_operator *)constraintExpectedNode->value;
+//		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
+//		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
+//		ASTnode_operator *expectedData = (ASTnode_operator *)constraintExpectedNode->value;
 		
 //		if (???) {
 //			addStringToReportMsg("constraint not met");

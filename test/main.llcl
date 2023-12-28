@@ -45,8 +45,8 @@ function main(): Int32 {
 	var y: Int32 = 4;
 	
 	if (true || y == 5) {
-		// #describe(x);
-		// #describe(y);
+		#describe(x);
+		#describe(y);
 		std::print_Int32(1234);
 		libc_bindings::putchar(10); // \n
 	}
