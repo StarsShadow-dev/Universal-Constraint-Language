@@ -59,7 +59,7 @@ void addContextBinding_macro(FileInformation *FI, char *name) {
 }
 
 // note: originFile = coreFilePointer
-void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name) {
+void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value) {
 	SubString *key = safeMalloc(sizeof(SubString));
 	key->start = name;
 	key->length = (int)strlen(name);
@@ -71,7 +71,11 @@ void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name)
 	data->type = ContextBindingType_compileTimeSetting;
 	data->byteSize = 0;
 	data->byteAlign = 0;
-	((ContextBinding_compileTimeSetting *)data->value)->value = NULL;
+	if (value != NULL) {
+		((ContextBinding_compileTimeSetting *)data->value)->value = SubString_new(value, (int)strlen(value));
+	} else {
+		((ContextBinding_compileTimeSetting *)data->value)->value = NULL;
+	}
 }
 
 ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
@@ -1058,7 +1062,6 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				char *LLVMname = NULL;
 				
-				
 				ContextBinding *functionSymbolBinding = getContextBindingFromString(FI, "__functionSymbol");
 				
 				if (
@@ -1073,10 +1076,17 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					
 					((ContextBinding_compileTimeSetting *)functionSymbolBinding->value)->value = NULL;
 				} else {
-					// default symbol name
-					int LLVMnameSize = 1 + data->name->length + 1;
-					LLVMname = safeMalloc(LLVMnameSize);
-					snprintf(LLVMname, LLVMnameSize, "%d%s", FI->ID, data->name->start);
+					ContextBinding *symbolManglingBinding = getContextBindingFromString(FI, "core.symbolMangling");
+					
+					if (SubString_string_cmp(((ContextBinding_compileTimeSetting *)symbolManglingBinding->value)->value, "true") == 0) {
+						int LLVMnameSize = 1 + data->name->length + 1;
+						LLVMname = safeMalloc(LLVMnameSize);
+						snprintf(LLVMname, LLVMnameSize, "%d%s", FI->ID, data->name->start);
+					} else {
+						int LLVMnameSize = data->name->length + 1;
+						LLVMname = safeMalloc(LLVMnameSize);
+						snprintf(LLVMname, LLVMnameSize, "%s", data->name->start);
+					}
 				}
 				
 				addFunctionToList(LLVMname, FI, &FI->context.bindings[FI->level], node);

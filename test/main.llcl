@@ -1,6 +1,6 @@
-import "modules/libc_bindings"
-import "modules/std"
-import "math.llcl"
+// import "modules/libc_bindings"
+// import "modules/std"
+// import "math.llcl"
 
 // function recursiveFibonacci(n: Int64): Int64 {
 // 	if (n < 2) {
@@ -17,7 +17,7 @@ function test(ptr: Int32[$ == 5]): Void {
 	return;
 }
 
-#set("__functionSymbol", "main");
+#set("core.symbolMangling", "false");
 function main(): Int32 {
 	// var string: &[Uint8] = "string!\n";
 	// libc_bindings::putchar(string[0]);
@@ -48,7 +48,7 @@ function main(): Int32 {
 	var x: Int32 = 4;
 	// var y: Int32 = 5;
 	
-	test(x);
+	// test(x);
 	
 	// if (true || y == 5) {
 	// 	#describe(x);

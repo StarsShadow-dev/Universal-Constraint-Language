@@ -239,6 +239,8 @@ void compileFile(FileInformation *FI) {
 	linkedList_Node *AST = parse(FI, &currentToken, ParserMode_codeBlock, 0, 0);
 	struct timespec parseEndTime = getTimespec();
 	
+	addContextBinding_compileTimeSetting(&FI->context.bindings[0], "core.symbolMangling", "true");
+	
 //	struct timespec buildStartTime = getTimespec();
 	CharAccumulator LLVMbuildsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMbuildsource);
