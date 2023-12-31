@@ -1,16 +1,8 @@
 .DS_Store
-/.build
-/Packages
-# /*.xcodeproj
 xcuserdata/
 DerivedData/
-.swiftpm/config/registries.json
-.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
-.netrc
-
-test/build/*
 
 tests/runTests
 
-LLCL/old/*
+test/build/*
 LLCL/in_LLCL/build/*
