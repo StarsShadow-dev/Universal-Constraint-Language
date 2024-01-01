@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
 	// same for "__Number_and_it_should_not_be_in_IR"
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "__Number", "__Number_and_it_should_not_be_in_IR", 0, 0);
 	
-	addContextBinding_compileTimeSetting(&coreFile.context.bindings[0], "__functionSymbol", NULL);
+	addContextBinding_compileTimeSetting(&coreFile.context.bindings[0], "core.nextSymbol", NULL);
 	
 	addContextBinding_macro(&coreFile, "error");
 	addContextBinding_macro(&coreFile, "warning");

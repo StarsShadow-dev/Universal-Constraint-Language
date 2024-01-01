@@ -1062,19 +1062,19 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				char *LLVMname = NULL;
 				
-				ContextBinding *functionSymbolBinding = getContextBindingFromString(FI, "__functionSymbol");
+				ContextBinding *nextSymbolBinding = getContextBindingFromString(FI, "core.nextSymbol");
 				
 				if (
-					functionSymbolBinding != NULL &&
-					functionSymbolBinding->type == ContextBindingType_compileTimeSetting &&
-					((ContextBinding_compileTimeSetting *)functionSymbolBinding->value)->value != NULL
+					nextSymbolBinding != NULL &&
+					nextSymbolBinding->type == ContextBindingType_compileTimeSetting &&
+					((ContextBinding_compileTimeSetting *)nextSymbolBinding->value)->value != NULL
 				) {
-					SubString *functionSymbol = ((ContextBinding_compileTimeSetting *)functionSymbolBinding->value)->value;
+					SubString *functionSymbol = ((ContextBinding_compileTimeSetting *)nextSymbolBinding->value)->value;
 					int LLVMnameSize = functionSymbol->length + 1;
 					LLVMname = safeMalloc(LLVMnameSize);
 					snprintf(LLVMname, LLVMnameSize, "%s", functionSymbol->start);
 					
-					((ContextBinding_compileTimeSetting *)functionSymbolBinding->value)->value = NULL;
+					((ContextBinding_compileTimeSetting *)nextSymbolBinding->value)->value = NULL;
 				} else {
 					ContextBinding *symbolManglingBinding = getContextBindingFromString(FI, "core.symbolMangling");
 					
