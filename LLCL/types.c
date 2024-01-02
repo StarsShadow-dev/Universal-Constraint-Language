@@ -332,6 +332,143 @@ int ContextBinding_availableInOtherFile(ContextBinding *binding) {
 	return binding->type != ContextBindingType_namespace;
 }
 
+// note: originFile = coreFilePointer
+void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign) {
+	SubString *key = safeMalloc(sizeof(SubString));
+	key->start = name;
+	key->length = (int)strlen(name);
+	
+	ContextBinding *data = linkedList_addNode(context, sizeof(ContextBinding) + sizeof(ContextBinding_simpleType));
+	
+	data->originFile = coreFilePointer;
+	data->key = key;
+	data->type = ContextBindingType_simpleType;
+	data->byteSize = byteSize;
+	data->byteAlign = byteAlign;
+	((ContextBinding_simpleType *)data->value)->LLVMtype = LLVMtype;
+}
+
+void addContextBinding_macro(FileInformation *FI, char *name) {
+	SubString *key = safeMalloc(sizeof(SubString));
+	key->start = name;
+	key->length = (int)strlen(name);
+	
+	ContextBinding *macroData = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_macro));
+	
+	macroData->originFile = FI;
+	macroData->key = key;
+	macroData->type = ContextBindingType_macro;
+	// I do not think I need to set byteSize or byteAlign to anything specific
+	macroData->byteSize = 0;
+	macroData->byteAlign = 0;
+
+	((ContextBinding_macro *)macroData->value)->codeBlock = NULL;
+}
+
+// note: originFile = coreFilePointer
+void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value) {
+	SubString *key = safeMalloc(sizeof(SubString));
+	key->start = name;
+	key->length = (int)strlen(name);
+	
+	ContextBinding *data = linkedList_addNode(context, sizeof(ContextBinding) + sizeof(ContextBinding_compileTimeSetting));
+	
+	data->originFile = coreFilePointer;
+	data->key = key;
+	data->type = ContextBindingType_compileTimeSetting;
+	data->byteSize = 0;
+	data->byteAlign = 0;
+	if (value != NULL) {
+		((ContextBinding_compileTimeSetting *)data->value)->value = SubString_new(value, (int)strlen(value));
+	} else {
+		((ContextBinding_compileTimeSetting *)data->value)->value = NULL;
+	}
+}
+
+ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
+	int index = FI->level;
+	while (index >= 0) {
+		linkedList_Node *current = FI->context.bindings[index];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			if (SubString_string_cmp(binding->key, key) == 0) {
+				return binding;
+			}
+			
+			current = current->next;
+		}
+		
+		index--;
+	}
+	
+	linkedList_Node *currentFile = FI->context.importedFiles;
+	while (currentFile != NULL) {
+		FileInformation *fileInformation = *(FileInformation **)currentFile->data;
+		
+		linkedList_Node *current = fileInformation->context.bindings[0];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			if (ContextBinding_availableInOtherFile(binding)) {
+				if (SubString_string_cmp(binding->key, key) == 0) {
+					return binding;
+				}
+			}
+			
+			current = current->next;
+		}
+		
+		currentFile = currentFile->next;
+	}
+
+	return NULL;
+}
+
+ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *key) {
+	int index = FI->level;
+	while (index >= 0) {
+		linkedList_Node *current = FI->context.bindings[index];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			if (SubString_SubString_cmp(binding->key, key) == 0) {
+				return binding;
+			}
+			
+			current = current->next;
+		}
+		
+		index--;
+	}
+	
+	linkedList_Node *currentFile = FI->context.importedFiles;
+	while (currentFile != NULL) {
+		FileInformation *fileInformation = *(FileInformation **)currentFile->data;
+		
+		linkedList_Node *current = fileInformation->context.bindings[0];
+		
+		while (current != NULL) {
+			ContextBinding *binding = ((ContextBinding *)current->data);
+			
+			if (ContextBinding_availableInOtherFile(binding)) {
+				if (SubString_SubString_cmp(binding->key, key) == 0) {
+					return binding;
+				}
+			}
+			
+			current = current->next;
+		}
+		
+		currentFile = currentFile->next;
+	}
+	
+	return NULL;
+}
+
 int BuilderType_hasName(BuilderType *type, char *name) {
 	return SubString_string_cmp(type->binding->key, name) == 0;
 }

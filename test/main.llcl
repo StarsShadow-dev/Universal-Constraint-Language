@@ -2,60 +2,7 @@
 // import "modules/std"
 // import "math.llcl"
 
-// function recursiveFibonacci(n: Int64): Int64 {
-// 	if (n < 2) {
-// 		return n;
-// 	} else {
-// 		return recursiveFibonacci(n - 1) + recursiveFibonacci(n - 2);
-// 	}
-//	
-// 	// unreachable
-// 	return 0;
-// }
-
-function test(ptr: Int32[$ == 5]): Void {
-	return;
-}
-
 #set("core.symbolMangling", "false");
 function main(): Int32 {
-	// var string: &[Uint8] = "string!\n";
-	// libc_bindings::putchar(string[0]);
-	// libc_bindings::putchar(10); // \n
-	
-	// std::print_Int32(1234);
-	// libc_bindings::putchar(10); // \n
-	
-	// std::print_Int32(4321);
-	// libc_bindings::putchar(10); // \n
-	
-	// std::print_Int32(8368502);
-	// libc_bindings::putchar(10); // \n
-	
-	// var i: Int64 = 1;
-	// while (i < 40) {
-	// 	std::print_Int32(recursiveFibonacci(i) as Int32);
-	// 	libc_bindings::putchar(10); // \n
-	// 	i = i + 1;
-	// }
-	
-	// var test1: Int32 = 1;
-	// #describe(test1);
-	
-	// var test2: Bool = 5 == 5;
-	// #describe(test2);
-	
-	var x: Int32 = 4;
-	// var y: Int32 = 5;
-	
-	// test(x);
-	
-	// if (true || y == 5) {
-	// 	#describe(x);
-	// 	#describe(y);
-	// 	std::print_Int32(1234);
-	// 	libc_bindings::putchar(10); // \n
-	// }
-	
 	return 0;
 }

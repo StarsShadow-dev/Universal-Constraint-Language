@@ -5,12 +5,6 @@
 #include "globals.h"
 #include "compiler.h"
 
-void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
-
-void addContextBinding_macro(FileInformation *FI, char *name);
-
-void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value);
-
 int buildLLVM(
 	FileInformation *FI,
 	ContextBinding_function *outerFunction,

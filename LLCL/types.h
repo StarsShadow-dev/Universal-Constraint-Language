@@ -338,13 +338,6 @@ typedef struct {
 	linkedList_Node *factStack[maxContextLevel];
 } BuilderType;
 
-int BuilderType_hasName(BuilderType *type, char *name);
-int BuilderType_isSignedInt(BuilderType *type);
-int BuilderType_isUnsignedInt(BuilderType *type);
-int BuilderType_isInt(BuilderType *type);
-int BuilderType_isFloat(BuilderType *type);
-int BuilderType_isNumber(BuilderType *type);
-
 typedef struct {
 	char *LLVMtype;
 } ContextBinding_simpleType;
@@ -394,5 +387,18 @@ int ContextBinding_availableInOtherFile(ContextBinding *binding);
 
 int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer);
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer);
+
+void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
+void addContextBinding_macro(FileInformation *FI, char *name);
+void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value);
+ContextBinding *getContextBindingFromString(FileInformation *FI, char *key);
+ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *key);
+
+int BuilderType_hasName(BuilderType *type, char *name);
+int BuilderType_isSignedInt(BuilderType *type);
+int BuilderType_isUnsignedInt(BuilderType *type);
+int BuilderType_isInt(BuilderType *type);
+int BuilderType_isFloat(BuilderType *type);
+int BuilderType_isNumber(BuilderType *type);
 
 #endif /* types_h */
