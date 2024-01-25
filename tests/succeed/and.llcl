@@ -1,0 +1,11 @@
+function test(): Void {
+	var a: Bool = false && false; // false
+	
+	var b: Bool = true && false; // false
+	
+	var c: Bool = false && true; // false
+	
+	var d: Bool = true && true; // true
+	
+	return;
+}
