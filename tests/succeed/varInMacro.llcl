@@ -1,0 +1,11 @@
+macro test {
+	var a: Bool = true;
+	if (a) {
+		
+	}
+}
+
+function main(): Int32 {
+	#test();
+	return 0;
+}
