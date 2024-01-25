@@ -317,8 +317,10 @@ int main(int argc, char **argv) {
 //		printf("Program ended with exit code: %d\n", program_exitCode);
 //	}
 	
-	if (compilerMode == CompilerMode_check && !compilerOptions.compilerTesting) {
-		printf("\nChecking complete.\n");
+	if (!compilerOptions.compilerTesting) {
+		if (compilerMode == CompilerMode_check) {
+			printf("\nChecking complete.\n");
+		}
 		if (warningCount == 1) {
 			printf("1 warning generated.\n");
 		} else if (warningCount > 1) {
