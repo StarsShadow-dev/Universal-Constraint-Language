@@ -4,7 +4,7 @@ byteSize = 8
 byteAlign = 8
 
 type = Pointer
-level 1: ($ == "A string!")
+[0]: ($ == "A string!")
 */
 
 function main(): Int8 {

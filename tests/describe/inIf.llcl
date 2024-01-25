@@ -4,7 +4,12 @@ byteSize = 8
 byteAlign = 8
 
 type = Int8
-level 1: ($ == 5)
+[2]: ($ == 5)
+variable description for 'number'
+byteSize = 8
+byteAlign = 8
+
+type = Int8
 */
 
 function main(): Int8 {
@@ -12,6 +17,8 @@ function main(): Int8 {
 	if (number == 5) {
 		#describe(number);
 	}
+	
+	#describe(number);
 	
 	return 0;
 }

@@ -18,6 +18,10 @@ void addSubStringToReportMsg(SubString *subString) {
 	CharAccumulator_appendSubString(&reportMsg, subString);
 }
 
+void addIntToReportMsg(int64_t number) {
+	CharAccumulator_appendInt(&reportMsg, number);
+}
+
 CharAccumulator reportIndicator = {100, 0, 0};
 
 void addStringToReportIndicator(char *string) {
@@ -26,6 +30,10 @@ void addStringToReportIndicator(char *string) {
 
 void addSubStringToReportIndicator(SubString *subString) {
 	CharAccumulator_appendSubString(&reportIndicator, subString);
+}
+
+void addIntToReportIndicator(int64_t number) {
+	CharAccumulator_appendInt(&reportIndicator, number);
 }
 
 // there might be a simpler way of doing this

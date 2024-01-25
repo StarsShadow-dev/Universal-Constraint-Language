@@ -7,6 +7,27 @@
 #define WORD_ALIGNED __attribute__ ((aligned(8)))
 
 //
+// SubString
+//
+
+typedef struct {
+	char *start;
+	int length;
+} SubString;
+
+SubString *SubString_new(char *start, int length);
+
+SubString *getSubStringFromString(char *string);
+
+/// returns 1, if the sub string and string have different lengths
+int SubString_string_cmp(SubString *subString, char *string);
+
+/// returns 1, if the sub strings have different lengths
+int SubString_SubString_cmp(SubString *subString1, SubString *subString2);
+
+#define SubString_print(subString) printf("%.*s", (subString)->length, (subString)->start)
+
+//
 // linkedList
 //
 
@@ -29,24 +50,19 @@ linkedList_Node *linkedList_getLast(linkedList_Node *head);
 linkedList_Node *linkedList_popLast(linkedList_Node **head);
 
 //
-// SubString
+// Dictionary
 //
 
-typedef struct {
-	char *start;
-	int length;
-} SubString;
+struct Dictionary {
+	SubString *key;
+	struct Dictionary *next;
+	uint8_t data[];
+};
+typedef struct Dictionary Dictionary;
 
-SubString *SubString_new(char *start, int length);
+void *Dictionary_addNode(Dictionary **head, SubString *key, unsigned long size);
 
-/// returns 1, if the sub string and string have different lengths
-int SubString_string_cmp(SubString *subString, char *string);
-
-/// returns 1, if the sub strings have different lengths
-int SubString_SubString_cmp(SubString *subString1, SubString *subString2);
-
-#define SubString_print(subString) printf("%.*s", (subString)->length, (subString)->start)
-
+void *Dictionary_getFromSubString(Dictionary *head, SubString *key);
 //
 // CharAccumulator
 //
@@ -279,7 +295,9 @@ typedef struct {
 	linkedList_Node *right;
 } ASTnode_subscript;
 
-void Fact_newExpression(linkedList_Node **head, ASTnode_operatorType operatorType, ASTnode *left, ASTnode *rightConstant);
+SubString *ASTnode_getSubStringFromString(ASTnode *node, FileInformation *FI);
+
+int64_t ASTnode_getIntFromNumber(ASTnode *node, FileInformation *FI);
 
 //
 // facts
@@ -306,6 +324,8 @@ typedef struct {
 	linkedList_Node *trueFacts;
 	linkedList_Node *falseFacts;
 } Fact_if;
+
+void Fact_newExpression(linkedList_Node **head, ASTnode_operatorType operatorType, ASTnode *left, ASTnode *rightConstant);
 
 //
 // context
@@ -334,7 +354,10 @@ typedef struct {
 typedef struct {
 	ContextBinding *binding;
 	linkedList_Node *constraintNodes;
-	// Fact
+	
+	/// Dictionary of BuilderTypes
+	Dictionary *states;
+	/// [linkedList<Fact>]
 	linkedList_Node *factStack[maxContextLevel];
 } BuilderType;
 
@@ -382,7 +405,6 @@ typedef struct {
 	linkedList_Node *files;
 } ContextBinding_namespace;
 
-char *ContextBinding_getLLVMname(ContextBinding *binding);
 int ContextBinding_availableInOtherFile(ContextBinding *binding);
 
 int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer);
@@ -394,11 +416,19 @@ void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name,
 ContextBinding *getContextBindingFromString(FileInformation *FI, char *key);
 ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *key);
 
+ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI);
+
+BuilderType *BuilderType_getStateFromSubString(BuilderType *type, SubString *key);
+BuilderType *BuilderType_getStateFromString(BuilderType *type, char *key);
+
 int BuilderType_hasName(BuilderType *type, char *name);
+int BuilderType_hasCoreName(BuilderType *type, char *name);
 int BuilderType_isSignedInt(BuilderType *type);
 int BuilderType_isUnsignedInt(BuilderType *type);
 int BuilderType_isInt(BuilderType *type);
 int BuilderType_isFloat(BuilderType *type);
 int BuilderType_isNumber(BuilderType *type);
+
+char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI);
 
 #endif /* types_h */

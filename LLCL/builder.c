@@ -49,6 +49,20 @@ SubString *getTypeAsSubString(BuilderType *type) {
 	return type->binding->key;
 }
 
+BuilderType *getNewTypeFromString(FileInformation *FI, char *string) {
+	ContextBinding *binding = getContextBindingFromString(FI, string);
+	if (binding == NULL) abort();
+
+	BuilderType *typeData = safeMalloc(sizeof(BuilderType));
+	*typeData = (BuilderType){
+		.binding = binding,
+		.constraintNodes = NULL,
+		.factStack = {0}
+	};
+	
+	return typeData;
+}
+
 void addTypeFromString(FileInformation *FI, linkedList_Node **list, char *string, ASTnode *node) {
 	ContextBinding *binding = getContextBindingFromString(FI, string);
 	if (binding == NULL) abort();
@@ -60,19 +74,12 @@ void addTypeFromString(FileInformation *FI, linkedList_Node **list, char *string
 		.factStack = {0}
 	};
 	
-	int level = 0;
-	if (FI->level > 0) level = FI->level - 1;
-	
-	Fact_newExpression(&typeData->factStack[level], ASTnode_operatorType_equivalent, NULL, node);
+	Fact_newExpression(&typeData->factStack[0], ASTnode_operatorType_equivalent, NULL, node);
 }
 
 void addTypeFromBuilderType(FileInformation *FI, linkedList_Node **list, BuilderType *type) {
 	BuilderType *data = linkedList_addNode(list, sizeof(BuilderType));
-	*data = (BuilderType){
-		.binding = type->binding,
-		.constraintNodes = type->constraintNodes,
-		.factStack = {0}
-	};
+	*data = *type;
 }
 
 void addTypeFromBinding(FileInformation *FI, linkedList_Node **list, ContextBinding *binding) {
@@ -80,6 +87,7 @@ void addTypeFromBinding(FileInformation *FI, linkedList_Node **list, ContextBind
 	*data = (BuilderType){
 		.binding = binding,
 		.constraintNodes = NULL,
+		.states = NULL,
 		.factStack = {0}
 	};
 }
@@ -107,7 +115,7 @@ void expectUnusedName(FileInformation *FI, SubString *name, SourceLocation locat
 	}
 }
 
-// node is an ASTnode_constrainedType
+/// node is an ASTnode_constrainedType
 BuilderType *getType(FileInformation *FI, ASTnode *node) {
 	if (node->nodeType != ASTnodeType_constrainedType) abort();
 	ASTnode_constrainedType *data = (ASTnode_constrainedType *)node->value;
@@ -128,6 +136,7 @@ BuilderType *getType(FileInformation *FI, ASTnode *node) {
 		compileError(FI, node->location);
 	}
 	
+//	((BuilderType *)returnTypeList->data)->states = NULL;
 	((BuilderType *)returnTypeList->data)->constraintNodes = data->constraints;
 	
 	return (BuilderType *)returnTypeList->data;
@@ -150,6 +159,17 @@ void applyFacts(FileInformation *FI, ASTnode_operator *operator) {
 	((Fact_expression *)fact->value)->rightConstant = (ASTnode *)operator->right->data;
 }
 
+void expectMacroArgumentCount(FileInformation *FI, int typeCount, int expectedTypeCount, SourceLocation location) {
+	if (typeCount != expectedTypeCount) {
+		addStringToReportMsg("macro expect expected ");
+		addIntToReportMsg(expectedTypeCount);
+		addStringToReportMsg(" argument(s), but got ");
+		addIntToReportMsg(typeCount);
+		addStringToReportMsg(" argument(s)");
+		compileError(FI, location);
+	}
+}
+
 ASTnode *expectArgumentOnMacro(FileInformation *FI, linkedList_Node **currentType, linkedList_Node **currentArgument, char* typeName, int mustBeResolved) {
 	BuilderType *type = (BuilderType *)(*currentType)->data;
 	ASTnode *argument = (ASTnode *)(*currentArgument)->data;
@@ -170,36 +190,10 @@ ASTnode *expectArgumentOnMacro(FileInformation *FI, linkedList_Node **currentTyp
 	*currentType = (*currentType)->next;
 	*currentArgument = (*currentArgument)->next;
 	
-	int index = 0;
-	while (index <= FI->level) {
-		linkedList_Node *currentFact = type->factStack[index];
-		
-		if (currentFact == NULL) {
-			index++;
-			continue;
-		}
-		
-		while (currentFact != NULL) {
-			Fact *fact = (Fact *)currentFact->data;
-			
-			if (fact->type == FactType_expression) {
-				Fact_expression *expressionFact = (Fact_expression *)fact->value;
-				
-				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
-					if (expressionFact->left == NULL) {
-						return expressionFact->rightConstant;
-					} else {
-						abort();
-					}
-				}
-			} else {
-				abort();
-			}
-			
-			currentFact = currentFact->next;
-		}
-		
-		index++;
+	ASTnode *value = BuilderType_getResolvedValue(type, FI);
+	
+	if (value != NULL) {
+		return value;
 	}
 	
 	if (mustBeResolved) {
@@ -208,30 +202,9 @@ ASTnode *expectArgumentOnMacro(FileInformation *FI, linkedList_Node **currentTyp
 		addStringToReportIndicator("the value of this argument is not entirely known");
 		
 		compileError(FI, argument->location);
-	} else {
-		return NULL;
-	}
-}
-
-SubString *getSubStringFromStringNode(FileInformation *FI, ASTnode *node) {
-	if (node->nodeType != ASTnodeType_string) {
-		addStringToReportMsg("must be a string");
-		
-		// this might not show up in the right spot
-		compileError(FI, node->location);
 	}
 	
-	return ((ASTnode_string *)node->value)->value;
-}
-
-char *getLLVMtypeFromBinding(FileInformation *FI, ContextBinding *binding) {
-	if (binding->type == ContextBindingType_simpleType) {
-		return ((ContextBinding_simpleType *)binding->value)->LLVMtype;
-	} else if (binding->type == ContextBindingType_struct) {
-		return ((ContextBinding_struct *)binding->value)->LLVMname;
-	}
-	
-	abort();
+	return NULL;
 }
 
 BuilderType getTypeFromBinding(ContextBinding *binding) {
@@ -336,6 +309,10 @@ void expectType(FileInformation *FI, ContextBinding_variable *self, BuilderType 
 		compileError(FI, location);
 	}
 	
+	if (expectedType->states != NULL) {
+		
+	}
+	
 	if (expectedType->constraintNodes != NULL) {
 		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
 		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
@@ -389,7 +366,7 @@ ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedLis
 		currentArgument = currentArgument->next;
 	}
 	
-	char *LLVMreturnType = getLLVMtypeFromBinding(FI, returnType->binding);
+	char *LLVMreturnType = BuilderType_getLLVMname(returnType, FI);
 	
 	ContextBinding *functionData = linkedList_addNode(list, sizeof(ContextBinding) + sizeof(ContextBinding_function));
 	
@@ -478,11 +455,10 @@ void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode 
 			// make sure the type actually exists
 			BuilderType* type = getType(FI, propertyData->type);
 			
-			char *LLVMtype = getLLVMtypeFromBinding(FI, type->binding);
+			char *LLVMtype = BuilderType_getLLVMname(type, FI);
 			
-			// if there is a pointer anywhere in the struct then the struct should be aligned by pointer_byteSize
-			if (strcmp(LLVMtype, "ptr") == 0) {
-				structBinding->byteAlign = pointer_byteSize;
+			if (type->binding->byteAlign > structBinding->byteAlign) {
+				structBinding->byteAlign = type->binding->byteAlign;
 			}
 			
 			structBinding->byteSize += type->binding->byteSize;
@@ -539,7 +515,7 @@ void generateType(FileInformation *FI, CharAccumulator *source, BuilderType *typ
 			generateStruct(FI, type->binding, NULL, 0);
 		}
 	}
-	CharAccumulator_appendChars(source, getLLVMtypeFromBinding(FI, type->binding));
+	CharAccumulator_appendChars(source, BuilderType_getLLVMname(type, FI));
 }
 
 void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ContextBinding *functionBinding, ASTnode *node, int defineNew) {
@@ -572,7 +548,7 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 		while (1) {
 			ContextBinding *argumentTypeBinding = ((BuilderType *)currentArgumentType->data)->binding;
 			
-			char *currentArgumentLLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)currentArgumentType->data)->binding);
+			char *currentArgumentLLVMtype = BuilderType_getLLVMname((BuilderType *)currentArgumentType->data, FI);
 			CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
 			
 			if (defineNew) {
@@ -829,8 +805,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				structBinding->key = data->name;
 				structBinding->type = ContextBindingType_struct;
 				structBinding->byteSize = 0;
-				// 4 by default but set it to pointer_byteSize if there is a pointer is in the struct
-				structBinding->byteAlign = 4;
+				// 1 by default but in generateStruct it is set to the highest byteAlign of any property in the struct
+				structBinding->byteAlign = 1;
 				
 				int strlength = strlen("%struct.");
 				
@@ -1082,14 +1058,14 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				}
 				ContextBinding_macro *macroToRun = (ContextBinding_macro *)macroToRunBinding->value;
 				
-				linkedList_Node *types = NULL;
-				buildLLVM(FI, outerFunction, outerSource, NULL, NULL, &types, data->arguments, 0, 0, 0);
-				int typeCount = linkedList_getCount(&types);
+				linkedList_Node *MacroTypes = NULL;
+				buildLLVM(FI, outerFunction, outerSource, NULL, NULL, &MacroTypes, data->arguments, 0, 0, 0);
+				int typeCount = linkedList_getCount(&MacroTypes);
 				
 				if (macroToRunBinding->originFile == coreFilePointer) {
 					// the macro is from the __core__ module, so this is a special case
 					
-					linkedList_Node **currentType = &types;
+					linkedList_Node **currentType = &MacroTypes;
 					linkedList_Node **currentArgument = &data->arguments;
 					
 					if (SubString_string_cmp(macroToRunBinding->key, "error") == 0) {
@@ -1173,14 +1149,14 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							compileError(FI, node->location);
 						}
 						
-						SubString *key = getSubStringFromStringNode(
-							FI,
-							expectArgumentOnMacro(FI, currentType, currentArgument, "Pointer", 1)
+						SubString *key = ASTnode_getSubStringFromString(
+							expectArgumentOnMacro(FI, currentType, currentArgument, "Pointer", 1),
+							FI
 						);
 						
-						SubString *value = getSubStringFromStringNode(
-							FI,
-							expectArgumentOnMacro(FI, currentType, currentArgument, "Pointer", 1)
+						SubString *value = ASTnode_getSubStringFromString(
+							expectArgumentOnMacro(FI, currentType, currentArgument, "Pointer", 1),
+							FI
 						);
 						
 						ContextBinding *bindingToSet = getContextBindingFromSubString(FI, key);
@@ -1199,6 +1175,21 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						}
 						
 						((ContextBinding_compileTimeSetting *)bindingToSet->value)->value = value;
+					}
+					
+					else if (SubString_string_cmp(macroToRunBinding->key, "Vector") == 0) {
+						expectMacroArgumentCount(FI, typeCount, 1, node->location);
+						
+						BuilderType *sizeType = (BuilderType *)(*currentType)->data;
+						expectArgumentOnMacro(FI, currentType, currentArgument, "__Number", 1);
+//						uint64_t size = getIntFromNumberNode(FI, sizeNode);
+						
+						BuilderType *newType = getNewTypeFromString(FI, "Vector");
+						
+						BuilderType *VectorSize = Dictionary_addNode(&newType->states, getSubStringFromString("size"), sizeof(BuilderType));
+						*VectorSize = *sizeType;
+						
+						addTypeFromBuilderType(FI, types, newType);
 					}
 					
 					else {
@@ -1311,7 +1302,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				}
 				
 				if (((ASTnode *)data->expression->data)->nodeType == ASTnodeType_operator) {
+					FI->level++;
 					applyFacts(FI, (ASTnode_operator *)((ASTnode *)data->expression->data)->value);
+					FI->level--;
 				}
 				
 				int jump1 = outerFunction->registerCount;
@@ -1405,7 +1398,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				ASTnode_return *data = (ASTnode_return *)node->value;
 				
 				if (data->expression == NULL) {
-					if (!BuilderType_hasName(&outerFunction->returnType, "Void")) {
+					if (!BuilderType_hasCoreName(&outerFunction->returnType, "Void")) {
 						addStringToReportMsg("returning Void in a function that does not return Void.");
 						compileError(FI, node->location);
 					}
@@ -1481,7 +1474,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				variableBinding->byteAlign = pointer_byteSize;
 				
 				((ContextBinding_variable *)variableBinding->value)->LLVMRegister = outerFunction->registerCount;
-				((ContextBinding_variable *)variableBinding->value)->LLVMtype = getLLVMtypeFromBinding(FI, type->binding);
+				((ContextBinding_variable *)variableBinding->value)->LLVMtype = BuilderType_getLLVMname(type, FI);
 				((ContextBinding_variable *)variableBinding->value)->type = *type;
 				
 				outerFunction->registerCount++;
@@ -1746,10 +1739,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					
 					CharAccumulator_appendChars(outerSource, leftInnerSource.data);
 					CharAccumulator_appendChars(outerSource, " to ");
-					CharAccumulator_appendChars(outerSource, ContextBinding_getLLVMname(toType->binding));
+					CharAccumulator_appendChars(outerSource, BuilderType_getLLVMname(toType, FI));
 					
 					if (withTypes) {
-						CharAccumulator_appendChars(innerSource, ContextBinding_getLLVMname(toType->binding));
+						CharAccumulator_appendChars(innerSource, BuilderType_getLLVMname(toType, FI));
 						CharAccumulator_appendChars(innerSource, " ");
 					}
 					CharAccumulator_appendChars(innerSource, "%");
@@ -1766,7 +1759,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				linkedList_Node *expectedTypeForLeftAndRight = NULL;
 				char *expectedLLVMtype = NULL;
 				if (expectedTypes != NULL) {
-					expectedLLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)expectedTypes->data)->binding);
+					expectedLLVMtype = BuilderType_getLLVMname((BuilderType *)expectedTypes->data, FI);
 				}
 				
 				if (
@@ -1790,7 +1783,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					expectedTypeForLeftAndRight = leftType;
 					// if we did not find a number on the left side
 					if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
+						if (!BuilderType_hasCoreName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 							addStringToReportMsg("left side of operator expected a number");
 							compileError(FI, node->location);
 						}
@@ -1799,7 +1792,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						expectedTypeForLeftAndRight = rightType;
 						// if we did not find a number on the right side
 						if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
-							if (!BuilderType_hasName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
+							if (!BuilderType_hasCoreName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
 								addStringToReportMsg("right side of operator expected a number");
 								compileError(FI, node->location);
 							}
@@ -1851,10 +1844,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					
 					if (types != NULL) {
 						addTypeFromString(FI, types, "Bool", NULL);
-						// addTypeResultAfterOperationToList(FI, types, "Bool", data->operatorType, left, right);
 					}
 					
-					CharAccumulator_appendChars(outerSource, getLLVMtypeFromBinding(FI, ((BuilderType *)expectedTypeForLeftAndRight->data)->binding));
+					CharAccumulator_appendChars(outerSource, BuilderType_getLLVMname((BuilderType *)expectedTypeForLeftAndRight->data, FI));
 				}
 				
 				else if (
@@ -1993,7 +1985,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 			case ASTnodeType_bool: {
 				ASTnode_bool *data = (ASTnode_bool *)node->value;
 				
-				if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "Bool")) {
+				if (!BuilderType_hasCoreName((BuilderType *)expectedTypes->data, "Bool")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -2036,19 +2028,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						compileError(FI, node->location);
 					}
 					
-//					ContextBinding *typeBinding = ((BuilderType *)expectedTypes->data)->binding;
-//					if (data->value > pow(2, (typeBinding->byteSize * 8) - 1) - 1) {
-//						addStringToReportMsg("integer overflow detected");
-//						
-//						CharAccumulator_appendInt(&reportIndicator, data->value);
-//						addStringToReportIndicator(" is larger than the maximum size of the type '");
-//						addSubStringToReportIndicator(getTypeAsSubString((BuilderType *)expectedTypes->data));
-//						addStringToReportIndicator("'");
-//						compileWarning(FI, node->location, WarningType_unsafe);
-//					}
-					
 					if (withTypes) {
-						char *LLVMtype = getLLVMtypeFromBinding(FI, ((BuilderType *)(*currentExpectedType)->data)->binding);
+						char *LLVMtype = BuilderType_getLLVMname((BuilderType *)(*currentExpectedType)->data, FI);
 						
 						CharAccumulator_appendChars(innerSource, LLVMtype);
 						CharAccumulator_appendChars(innerSource, " ");
@@ -2066,7 +2047,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (expectedTypes != NULL && !BuilderType_hasName((BuilderType *)expectedTypes->data, "Pointer")) {
+				if (expectedTypes != NULL && !BuilderType_hasCoreName((BuilderType *)expectedTypes->data, "Pointer")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -2194,7 +2175,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					}
 				} else if (variableBinding->type == ContextBindingType_function) {
 					if (expectedTypes != NULL) {
-						if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "Function")) {
+						if (!BuilderType_hasCoreName((BuilderType *)expectedTypes->data, "Function")) {
 							addStringToReportMsg("unexpected type");
 							
 							addStringToReportIndicator("expected type '");
@@ -2209,7 +2190,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					}
 				} else if (variableBinding->type == ContextBindingType_macro) {
 					if (expectedTypes != NULL) {
-						if (!BuilderType_hasName((BuilderType *)expectedTypes->data, "__Macro")) {
+						if (!BuilderType_hasCoreName((BuilderType *)expectedTypes->data, "__Macro")) {
 							addStringToReportMsg("unexpected type");
 							
 							addStringToReportIndicator("expected type '");

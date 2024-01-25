@@ -212,11 +212,24 @@ linkedList_Node *parseConstraintList(FileInformation *FI, linkedList_Node **curr
 linkedList_Node *parseType(FileInformation *FI, linkedList_Node **current) {
 	linkedList_Node *AST = NULL;
 	
-	linkedList_Node *type = parseOperators(FI, current, parse(FI, current, ParserMode_expression, 1, 1), 0, 1);
+	linkedList_Node *type = parse(FI, current, ParserMode_expression, 1, 1);
+	
+//	linkedList_Node *stateConstructorArguments = NULL;
+//	Token *token = (Token *)((*current)->data);
+//	if (token->type == TokenType_operator && SubString_string_cmp(&token->subString, "<") == 0) {
+//		*current = (*current)->next;
+//		stateConstructorArguments = parse(FI, current, ParserMode_arguments, 1, 0);
+//		Token *endToken = (Token *)((*current)->data);
+//		if (endToken->type != TokenType_operator || SubString_string_cmp(&endToken->subString, ">") != 0) {
+//			addStringToReportMsg("expected '>'");
+//			compileError(FI, endToken->location);
+//		}
+//		*current = (*current)->next;
+//	}
 	
 	linkedList_Node *constraints = NULL;
-	Token *token = (Token *)((*current)->data);
-	if (token->type == TokenType_separator && SubString_string_cmp(&token->subString, "[") == 0) {
+	Token *constraintToken = (Token *)((*current)->data);
+	if (constraintToken->type == TokenType_separator && SubString_string_cmp(&constraintToken->subString, "[") == 0) {
 		*current = (*current)->next;
 		constraints = parseConstraintList(FI, current);
 	}
@@ -409,6 +422,21 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					}
 					
 					*current = (*current)->next;
+					
+//					linkedList_Node *stateConstructorArguments = NULL;
+//					Token *token = (Token *)((*current)->data);
+//					if (token->type == TokenType_operator && SubString_string_cmp(&token->subString, "<") == 0) {
+//						*current = (*current)->next;
+//						stateConstructorArguments = parse(FI, current, ParserMode_arguments, 1, 0);
+//						
+//						Token *greaterThan = (Token *)((*current)->data);
+//						if (greaterThan->type != TokenType_operator || SubString_string_cmp(&greaterThan->subString, ">") != 0) {
+//							addStringToReportMsg("struct expected '>'");
+//							compileError(FI, greaterThan->location);
+//						}
+//						*current = (*current)->next;
+//					}
+					
 					endIfCurrentIsEmpty()
 					Token *openingBracket = ((Token *)((*current)->data));
 					if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
@@ -898,6 +926,15 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 			}
 			return AST;
 		}
+		
+		// return at the end of a generic expression
+//		if (
+//			parserMode == ParserMode_arguments &&
+//			((Token *)((*current)->data))->type == TokenType_operator &&
+//			SubString_string_cmp(&((Token *)((*current)->data))->subString, ">") == 0
+//		) {
+//			return AST;
+//		}
 		
 		if (!returnAtNonScopeResolutionOperator && ((Token *)((*current)->data))->type == TokenType_operator) {
 			continue;

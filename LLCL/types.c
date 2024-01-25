@@ -6,15 +6,43 @@
 #include "utilities.h"
 
 //
+// SubString
+//
+
+SubString *SubString_new(char *start, int length) {
+	SubString *subString = safeMalloc(sizeof(SubString));
+	subString->start = start;
+	subString->length = length;
+	
+	return subString;
+}
+
+SubString *getSubStringFromString(char *string) {
+	return SubString_new(string, (int)strlen(string));
+}
+
+int SubString_string_cmp(SubString *subString, char *string) {
+	if (subString->length == strlen(string)) {
+		return strncmp(subString->start, string, subString->length);
+	} else {
+		return 1;
+	}
+}
+
+int SubString_SubString_cmp(SubString *subString1, SubString *subString2) {
+	if (subString1->length == subString2->length) {
+		return strncmp(subString1->start, subString2->start, subString1->length);
+	} else {
+		return 1;
+	}
+}
+
+//
 // linkedList
 //
 
 void *linkedList_addNode(linkedList_Node **head, unsigned long size) {
-	linkedList_Node* newNode = calloc(1, sizeof(linkedList_Node) + size);
-	if (newNode == NULL) {
-		printf("calloc failed to get space for a linked list\n");
-		abort();
-	}
+	linkedList_Node* newNode = safeMalloc(sizeof(linkedList_Node) + size);
 	
 	if (*head == NULL) {
 		*head = newNode;
@@ -115,30 +143,43 @@ linkedList_Node *linkedList_popLast(linkedList_Node **head) {
 }
 
 //
-// SubString
+// Dictionary
 //
 
-SubString *SubString_new(char *start, int length) {
-	SubString *subString = safeMalloc(sizeof(SubString));
-	subString->start = start;
-	subString->length = length;
+void *Dictionary_addNode(Dictionary **head, SubString *key, unsigned long size) {
+	Dictionary* newNode = safeMalloc(sizeof(Dictionary) + size);
+	newNode->key = key;
 	
-	return subString;
-}
-
-int SubString_string_cmp(SubString *subString, char *string) {
-	if (subString->length == strlen(string)) {
-		return strncmp(subString->start, string, subString->length);
+	if (*head == NULL) {
+		*head = newNode;
 	} else {
-		return 1;
+		Dictionary *current = *head;
+		while (1) {
+			if (current->next == NULL) {
+				current->next = newNode;
+				break;
+			}
+			current = current->next;
+		}
 	}
+	
+	return newNode->data;
 }
 
-int SubString_SubString_cmp(SubString *subString1, SubString *subString2) {
-	if (subString1->length == subString2->length) {
-		return strncmp(subString1->start, subString2->start, subString1->length);
-	} else {
-		return 1;
+void *Dictionary_getFromSubString(Dictionary *head, SubString *key) {
+	if (head == NULL) return NULL;
+	
+	Dictionary *current = head;
+	while (1) {
+		if (SubString_SubString_cmp(current->key, key) == 0) {
+			return current->data;
+		}
+		
+		if (current->next == NULL) {
+			return NULL;
+		}
+		
+		current = current->next;
 	}
 }
 
@@ -242,6 +283,13 @@ void CharAccumulator_free(CharAccumulator *accumulator) {
 	free(accumulator->data);
 }
 
+CharAccumulator *CharAccumulator_new(void) {
+	CharAccumulator *charAccumulator = safeMalloc(sizeof(CharAccumulator));
+	*charAccumulator = (CharAccumulator){100, 0, 0};
+	CharAccumulator_initialize(charAccumulator);
+	return charAccumulator;
+}
+
 int nextFileID = 1;
 
 FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStructSource, CharAccumulator *topLevelConstantSource, CharAccumulator *topLevelFunctionSource, CharAccumulator *LLVMmetadataSource) {
@@ -300,6 +348,24 @@ void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *po
 	*bindingPointer = pointer;
 }
 
+SubString *ASTnode_getSubStringFromString(ASTnode *node, FileInformation *FI) {
+	if (node->nodeType != ASTnodeType_string) {
+		addStringToReportMsg("must be a string");
+		compileError(FI, node->location);
+	}
+	
+	return ((ASTnode_string *)node->value)->value;
+}
+
+int64_t ASTnode_getIntFromNumber(ASTnode *node, FileInformation *FI) {
+	if (node->nodeType != ASTnodeType_number) {
+		addStringToReportMsg("must be a number");
+		compileError(FI, node->location);
+	}
+	
+	return ((ASTnode_number *)node->value)->value;
+}
+
 //
 // Facts
 //
@@ -316,16 +382,9 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_operatorType operatorTyp
 // context
 //
 
-char *ContextBinding_getLLVMname(ContextBinding *binding) {
-	if (binding->type == ContextBindingType_simpleType) {
-		return ((ContextBinding_simpleType *)binding->value)->LLVMtype;
-	} else if (binding->type == ContextBindingType_function) {
-		return ((ContextBinding_function *)binding->value)->LLVMname;
-	} else if (binding->type == ContextBindingType_struct) {
-		return ((ContextBinding_struct *)binding->value)->LLVMname;
-	}
-	
-	abort();
+// from the core file and has name
+int ContextBinding_hasCoreName(ContextBinding *binding, char *name) {
+	return binding->originFile == coreFilePointer && SubString_string_cmp(binding->key, name) == 0;
 }
 
 int ContextBinding_availableInOtherFile(ContextBinding *binding) {
@@ -469,22 +528,76 @@ ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *k
 	return NULL;
 }
 
+//
+// BuilderType
+//
+
+/// returns the resolved value of `type` or NULL
+ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI) {
+	int index = 0;
+	while (index <= FI->level) {
+		linkedList_Node *currentFact = type->factStack[index];
+		
+		if (currentFact == NULL) {
+			index++;
+			continue;
+		}
+		
+		while (currentFact != NULL) {
+			Fact *fact = (Fact *)currentFact->data;
+			
+			if (fact->type == FactType_expression) {
+				Fact_expression *expressionFact = (Fact_expression *)fact->value;
+				
+				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
+					if (expressionFact->left == NULL) {
+						return expressionFact->rightConstant;
+					} else {
+						abort();
+					}
+				}
+			} else {
+				abort();
+			}
+			
+			currentFact = currentFact->next;
+		}
+		
+		index++;
+	}
+	
+	return NULL;
+}
+
+BuilderType *BuilderType_getStateFromSubString(BuilderType *type, SubString *key) {
+	return Dictionary_getFromSubString(type->states, key);
+}
+
+BuilderType *BuilderType_getStateFromString(BuilderType *type, char *key) {
+	return Dictionary_getFromSubString(type->states, getSubStringFromString(key));
+}
+
 int BuilderType_hasName(BuilderType *type, char *name) {
 	return SubString_string_cmp(type->binding->key, name) == 0;
 }
 
+// from the core file and has name
+int BuilderType_hasCoreName(BuilderType *type, char *name) {
+	return type->binding->originFile == coreFilePointer && BuilderType_hasName(type, name);
+}
+
 int BuilderType_isSignedInt(BuilderType *type) {
-	return BuilderType_hasName(type, "Int8") ||
-	BuilderType_hasName(type, "Int16") ||
-	BuilderType_hasName(type, "Int32") ||
-	BuilderType_hasName(type, "Int64");
+	return BuilderType_hasCoreName(type, "Int8") ||
+	BuilderType_hasCoreName(type, "Int16") ||
+	BuilderType_hasCoreName(type, "Int32") ||
+	BuilderType_hasCoreName(type, "Int64");
 }
 
 int BuilderType_isUnsignedInt(BuilderType *type) {
-	return BuilderType_hasName(type, "UInt8") ||
-	BuilderType_hasName(type, "UInt16") ||
-	BuilderType_hasName(type, "UInt32") ||
-	BuilderType_hasName(type, "UInt64");
+	return BuilderType_hasCoreName(type, "UInt8") ||
+	BuilderType_hasCoreName(type, "UInt16") ||
+	BuilderType_hasCoreName(type, "UInt32") ||
+	BuilderType_hasCoreName(type, "UInt64");
 }
 
 int BuilderType_isInt(BuilderType *type) {
@@ -492,11 +605,36 @@ int BuilderType_isInt(BuilderType *type) {
 }
 
 int BuilderType_isFloat(BuilderType *type) {
-	return BuilderType_hasName(type, "Float16") ||
-	BuilderType_hasName(type, "Float32") ||
-	BuilderType_hasName(type, "Float64");
+	return BuilderType_hasCoreName(type, "Float16") ||
+	BuilderType_hasCoreName(type, "Float32") ||
+	BuilderType_hasCoreName(type, "Float64");
 }
 
 int BuilderType_isNumber(BuilderType *type) {
 	return BuilderType_isInt(type) || BuilderType_isFloat(type);
+}
+
+char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI) {
+	if (type->binding->type == ContextBindingType_simpleType) {
+		if (ContextBinding_hasCoreName(type->binding, "Vector")) {
+			ASTnode *resolvedValue = BuilderType_getResolvedValue(BuilderType_getStateFromString(type, "size"), FI);
+			if (resolvedValue == NULL) abort();
+			
+			CharAccumulator *LLVMname = CharAccumulator_new();
+			CharAccumulator_appendChars(LLVMname, "[ ");
+			CharAccumulator_appendInt(LLVMname, ASTnode_getIntFromNumber(resolvedValue, FI));
+			CharAccumulator_appendChars(LLVMname, " x ");
+			CharAccumulator_appendChars(LLVMname, "float");
+			CharAccumulator_appendChars(LLVMname, " ]");
+			return LLVMname->data;
+		} else {
+			return ((ContextBinding_simpleType *)type->binding->value)->LLVMtype;
+		}
+	} else if (type->binding->type == ContextBindingType_function) {
+		return ((ContextBinding_function *)type->binding->value)->LLVMname;
+	} else if (type->binding->type == ContextBindingType_struct) {
+		return ((ContextBinding_struct *)type->binding->value)->LLVMname;
+	} else {
+		abort();
+	}
 }

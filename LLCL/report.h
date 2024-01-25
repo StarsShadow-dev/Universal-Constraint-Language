@@ -11,10 +11,12 @@
 extern CharAccumulator reportMsg;
 void addStringToReportMsg(char *string);
 void addSubStringToReportMsg(SubString *subString);
+void addIntToReportMsg(int64_t number);
 
 extern CharAccumulator reportIndicator;
 void addStringToReportIndicator(char *string);
 void addSubStringToReportIndicator(SubString *subString);
+void addIntToReportIndicator(int64_t number);
 
 //
 // warnings

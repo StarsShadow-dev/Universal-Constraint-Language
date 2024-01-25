@@ -53,9 +53,9 @@ void getTypeDescription(FileInformation *FI, CharAccumulator *charAccumulator, B
 			continue;
 		}
 		
-		CharAccumulator_appendChars(charAccumulator, "level ");
+		CharAccumulator_appendChars(charAccumulator, "[");
 		CharAccumulator_appendInt(charAccumulator, index);
-		CharAccumulator_appendChars(charAccumulator, ": ");
+		CharAccumulator_appendChars(charAccumulator, "]: ");
 		
 		while (currentFact != NULL) {
 			Fact *fact = (Fact *)currentFact->data;

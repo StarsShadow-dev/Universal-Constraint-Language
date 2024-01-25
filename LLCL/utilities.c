@@ -1,16 +1,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 
 #include "utilities.h"
 #include "sha1.h"
 
+/// the returned buffer is initialized to 0
 void *safeMalloc(size_t size) {
 	void *pointer = malloc(size);
 	if (pointer == NULL) {
 		printf("safeMalloc: malloc failed\n");
 		abort();
 	}
+	
+	memset(pointer, 0, size);
+	
 	return pointer;
 }
 

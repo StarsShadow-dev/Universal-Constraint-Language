@@ -4,7 +4,7 @@ byteSize = 8
 byteAlign = 8
 
 type = Int8
-level 1: ($ == 1234)
+[0]: ($ == 1234)
 */
 
 function main(): Int8 {
