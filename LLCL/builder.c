@@ -607,6 +607,10 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 	
 	CharAccumulator_appendChars(outerSource, ")");
 	
+	// This function attribute indicates that the function never raises an exception.
+	// If the function does raise an exception, its runtime behavior is undefined.
+	CharAccumulator_appendChars(outerSource, " nounwind");
+	
 	if (defineNew) {
 		ASTnode_function *data = (ASTnode_function *)node->value;
 		
