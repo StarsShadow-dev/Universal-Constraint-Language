@@ -1200,11 +1200,28 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						abort();
 					}
 				} else {
+					//
+					// hack
+					//
+					
 					// TODO: remove hack?
+					
 					FileContext originalFileContext = FI->context;
 					FI->context = macroToRunBinding->originFile->context;
+					
+					linkedList_Node *originalBindings[maxContextLevel];
+					// originalBindings = macroToRunBinding->originFile->context.bindings
+					memcpy(originalBindings, macroToRunBinding->originFile->context.bindings, sizeof(originalBindings));
+					// macroToRunBinding->originFile->context.bindings = {0}
+					memset(macroToRunBinding->originFile->context.bindings, 0, sizeof(originalBindings));
+					macroToRunBinding->originFile->context.bindings[0] = originalBindings[0];
+					
 					buildLLVM(FI, outerFunction, outerSource, NULL, NULL, NULL, macroToRun->codeBlock, 0, 0, 0);
+					
+					// fix everything
 					FI->context = originalFileContext;
+					// macroToRunBinding->originFile->context.bindings = originalBindings
+					memcpy(macroToRunBinding->originFile->context.bindings, originalBindings, sizeof(originalBindings));
 				}
 				break;
 			}

@@ -2,7 +2,7 @@ import "../libc_bindings"
 
 macro print {
 	#warning("this macro is not very useful right now", "");
-	printLine("print test");
+	printString("print test");
 }
 
 // function printChar(char: Int8): Void {

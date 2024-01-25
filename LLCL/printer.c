@@ -194,11 +194,11 @@ void printBinding(FileInformation *FI, ContextBinding *binding) {
 		}
 	}
 	
-	if (binding->type != ContextBindingType_namespace && binding->originFile != coreFilePointer) {
-		CharAccumulator_appendChars(&documentation, "[origin file](");
-		CharAccumulator_appendChars(&documentation, binding->originFile->context.path);
-		CharAccumulator_appendChars(&documentation, ")");
-	}
+//	if (binding->type != ContextBindingType_namespace && binding->originFile != coreFilePointer) {
+//		CharAccumulator_appendChars(&documentation, "[origin file](");
+//		CharAccumulator_appendChars(&documentation, binding->originFile->context.path);
+//		CharAccumulator_appendChars(&documentation, ")");
+//	}
 	
 	if (printComma) {
 		putchar(',');
