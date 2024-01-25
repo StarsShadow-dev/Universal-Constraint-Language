@@ -211,6 +211,9 @@ void printBinding(FileInformation *FI, ContextBinding *binding) {
 }
 
 void printKeywords(FileInformation *FI) {
+	printKeyword(13, "true", "");
+	printKeyword(13, "false", "");
+	
 	if (FI->level == 0) {
 		printKeyword(13, "import", "");
 		printKeyword(13, "macro", "");

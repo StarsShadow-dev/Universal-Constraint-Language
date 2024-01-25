@@ -1,3 +1,4 @@
 #set("core.symbolMangling", "false");
+
 function putchar(char: Int32): Int32;
 function printf(pointer: Pointer): Int32;
