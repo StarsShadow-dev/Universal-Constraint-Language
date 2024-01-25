@@ -317,7 +317,7 @@ int main(int argc, char **argv) {
 //		printf("Program ended with exit code: %d\n", program_exitCode);
 //	}
 	
-	if (!compilerOptions.compilerTesting) {
+	if (!compilerOptions.compilerTesting && compilerMode != CompilerMode_query) {
 		if (compilerMode == CompilerMode_check) {
 			printf("\nChecking complete.\n");
 		}
