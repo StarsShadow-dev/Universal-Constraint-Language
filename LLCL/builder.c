@@ -962,21 +962,33 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				int actualArgumentCount = linkedList_getCount(&data->arguments);
 				
 				if (expectedArgumentCount > actualArgumentCount) {
-					addSubStringToReportMsg(functionToCallBinding->key);
-					addStringToReportMsg(" did not get enough arguments (expected ");
-					addIntToReportMsg(expectedArgumentCount);
-					addStringToReportMsg(" but got ");
-					addIntToReportMsg(actualArgumentCount);
-					addStringToReportMsg(")");
+					addStringToReportMsg("function did not get enough arguments");
+					
+					addStringToReportIndicator("'");
+					addSubStringToReportIndicator(functionToCallBinding->key);
+					addStringToReportIndicator("' expected ");
+					addIntToReportIndicator(expectedArgumentCount);
+					addStringToReportIndicator(" argument");
+					if (expectedArgumentCount != 1) addStringToReportIndicator("s");
+					addStringToReportIndicator(" but got ");
+					addIntToReportIndicator(actualArgumentCount);
+					addStringToReportIndicator(" argument");
+					if (actualArgumentCount != 1) addStringToReportIndicator("s");
 					compileError(FI, node->location);
 				}
 				if (expectedArgumentCount < actualArgumentCount) {
-					addSubStringToReportMsg(functionToCallBinding->key);
-					addStringToReportMsg(" got too many arguments (expected ");
-					addIntToReportMsg(expectedArgumentCount);
-					addStringToReportMsg(" but got ");
-					addIntToReportMsg(actualArgumentCount);
-					addStringToReportMsg(")");
+					addStringToReportMsg("function got too many arguments");
+					
+					addStringToReportIndicator("'");
+					addSubStringToReportIndicator(functionToCallBinding->key);
+					addStringToReportIndicator("' expected ");
+					addIntToReportIndicator(expectedArgumentCount);
+					addStringToReportIndicator(" argument");
+					if (expectedArgumentCount != 1) addStringToReportIndicator("s");
+					addStringToReportIndicator(" but got ");
+					addIntToReportIndicator(actualArgumentCount);
+					addStringToReportIndicator(" argument");
+					if (actualArgumentCount != 1) addStringToReportIndicator("s");
 					compileError(FI, node->location);
 				}
 				
