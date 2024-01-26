@@ -420,12 +420,6 @@ void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode 
 		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
 		while (currentPropertyNode != NULL) {
 			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
-			if (propertyNode->nodeType == ASTnodeType_queryLocation && queryMode == QueryMode_suggestions) {
-				printKeyword(13, "var", "");
-				printBindings(FI);
-				printf("]");
-				exit(0);
-			}
 			if (propertyNode->nodeType != ASTnodeType_variableDefinition) {
 				addStringToReportMsg("only variable definitions are allowed in a struct");
 				compileError(FI, propertyNode->location);
@@ -701,26 +695,16 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 	while (mainLoopCurrent != NULL) {
 		ASTnode *node = ((ASTnode *)mainLoopCurrent->data);
 		
-		switch (node->nodeType) {
-			case ASTnodeType_queryLocation: {
-				ASTnode_queryLocation *data = (ASTnode_queryLocation *)node->value;
-				
-				if (queryMode == QueryMode_suggestions) {
-					printKeywords(FI);
-					printBindings(FI);
-				} else if (queryMode == QueryMode_hover) {
-					// if it is an identifier
-					if (data->node->nodeType == ASTnodeType_identifier) {
-						ASTnode_identifier *queryData = (ASTnode_identifier *)data->node->value;
-						printBinding(FI, getContextBindingFromSubString(FI, queryData->name));
-					}
-				}
-				
+		if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions) {
+			if (node->location.line >= queryLine) {
+				printKeywords(FI);
+				printBindings(FI);
 				printf("]");
 				exit(0);
-				break;
 			}
-			
+		}
+		
+		switch (node->nodeType) {
 			case ASTnodeType_import: {
 				if (FI->level != 0) {
 					addStringToReportMsg("import statements are only allowed at top level");
@@ -2276,6 +2260,18 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				printf("unknown node type: %u\n", node->nodeType);
 				compileError(FI, node->location);
 				break;
+			}
+		}
+		
+		if (compilerMode == CompilerMode_query && queryMode == QueryMode_hover) {
+			if (node->location.line == queryLine && node->location.columnStart <= queryColumn && node->location.columnEnd >= queryColumn) {
+				// if it is an identifier
+				if (node->nodeType == ASTnodeType_identifier) {
+					ASTnode_identifier *queryData = (ASTnode_identifier *)node->value;
+					printBinding(FI, getContextBindingFromSubString(FI, queryData->name));
+					printf("]");
+					exit(0);
+				}
 			}
 		}
 		

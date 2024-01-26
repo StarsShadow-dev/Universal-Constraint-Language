@@ -325,39 +325,15 @@ linkedList_Node_tuple parseFunctionArguments(FileInformation *FI, linkedList_Nod
 	}
 }
 
-void addQueryLocation(linkedList_Node **AST, ASTnode *node) {
-	ASTnode *data = linkedList_addNode(AST, sizeof(ASTnode) + sizeof(ASTnode_queryLocation));
-	
-	data->nodeType = ASTnodeType_queryLocation;
-	data->location = (SourceLocation){0};
-	((ASTnode_queryLocation *)data->value)->node = node;
-	
-	addedQueryLocation = 1;
-}
-
 linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMode parserMode, int returnAtNonScopeResolutionOperator, int returnAtOpeningSeparator) {
 	linkedList_Node *AST = NULL;
 	
 	while (1) {
 		if (*current == NULL) {
-			if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
-				addQueryLocation(&AST, NULL);
-			}
 			return AST;
 		}
 		
 		Token *token = (Token *)((*current)->data);
-		
-		if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && strcmp(FI->context.path, startFilePath) == 0) {
-			if (!addedQueryLocation && token->location.line >= queryLine) {
-				addQueryLocation(&AST, NULL);
-			}
-			
-			if (token->location.line == queryLine) {
-				*current = (*current)->next;
-				continue;
-			}
-		}
 		
 		switch (token->type) {
 			case TokenType_word: {
@@ -926,24 +902,10 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 		
 		ASTnode *lastNode = (ASTnode *)linkedList_getLast(AST)->data;
 		
-		if (compilerMode == CompilerMode_query && queryMode == QueryMode_hover && strcmp(FI->context.path, startFilePath) == 0) {
-			if (!addedQueryLocation && token->location.line >= queryLine) {
-				addQueryLocation(&AST, lastNode);
-			}
-			
-//			if (token->location.line == queryLine) {
-//				*current = (*current)->next;
-//				continue;
-//			}
-		}
-		
 		if (*current == NULL) {
 			if (getIfNodeShouldHaveSemicolon(lastNode)) {
 				addStringToReportMsg("expected ';' after statement, but the file ended");
 				compileError(FI, lastNode->location);
-			}
-			if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
-				addQueryLocation(&AST, NULL);
 			}
 			return AST;
 		}

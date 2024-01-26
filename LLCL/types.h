@@ -149,7 +149,6 @@ typedef struct {
 } Token;
 
 typedef enum {
-	ASTnodeType_queryLocation,
 	ASTnodeType_import,
 	ASTnodeType_constrainedType,
 	ASTnodeType_struct,
@@ -182,10 +181,6 @@ typedef struct {
 	SourceLocation location;
 	uint8_t value[] WORD_ALIGNED;
 } ASTnode;
-
-typedef struct {
-	ASTnode *node;
-} ASTnode_queryLocation;
 
 typedef struct {
 	SubString *path;

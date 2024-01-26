@@ -28,7 +28,6 @@ extern int queryTextLength;
 extern int queryLine;
 extern int queryColumn;
 extern char *queryText;
-extern int addedQueryLocation;
 
 extern CompilerMode compilerMode;
 

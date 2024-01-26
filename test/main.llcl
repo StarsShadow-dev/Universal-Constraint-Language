@@ -1,9 +1,5 @@
 function test(): Void {
-	test();
-	
-	var absoluteNumber: Int32;
-	
-	absoluteNumber;
-	
+	var number: Int32 = 10;
+	var n: Int32 = number / 10;
 	return;
 }
