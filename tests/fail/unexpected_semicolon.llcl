@@ -1,5 +1,5 @@
 /*
-unexpected separator: ';'
+error: unexpected separator: ';'
 9  |function main(): Int8 {
 10 |    ;
         ^

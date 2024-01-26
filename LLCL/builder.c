@@ -704,7 +704,6 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 		
 		switch (node->nodeType) {
 			case ASTnodeType_queryLocation: {
-				printf("[");
 				printKeywords(FI);
 				printBindings(FI);
 				printf("]");

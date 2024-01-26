@@ -7,6 +7,8 @@ function main(): Int32 {
 	// var test: Vector[$.#size == 3 && $.#type == @Float32];
 	// var test: #Vector(3, @Float32) = new_Float3(0.0, 0.0, 0.0);
 	
+	a;
+	
 	var a: #Vector(3, @Int16);
 	
 	// var array: #Array(10, @Int32) = #new_Array(0, 1, 2, 3, 4, getN(), 6, 7, 8, 9);

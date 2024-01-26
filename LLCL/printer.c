@@ -108,12 +108,24 @@ void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulato
 
 int printComma = 0;
 
+// error is 0
+
+void printError(SourceLocation location, char *msg, char *indicator) {
+	if (printComma) {
+		putchar(',');
+	}
+	printComma = 1;
+	printf("[0, %d, %d, %d, \"%s\", \"%s\"]", location.line, location.columnStart, location.columnEnd, msg, indicator);
+}
+
+// warning is 1
+
 void printKeyword(int type, char *name, char *documentation) {
 	if (printComma) {
 		putchar(',');
 	}
 	printComma = 1;
-	printf("[%d, \"%s\", \"LLCL Keyword\\n\\n%s\"]", type, name, documentation);
+	printf("[2, %d, \"%s\", \"LLCL Keyword\\n\\n%s\"]", type, name, documentation);
 }
 
 void printBinding(FileInformation *FI, ContextBinding *binding) {
@@ -205,7 +217,7 @@ void printBinding(FileInformation *FI, ContextBinding *binding) {
 	}
 	printComma = 1;
 	
-	printf("[%d, \"%.*s\", \"%s\"]", type, name->length, name->start, documentation.data);
+	printf("[2, %d, \"%.*s\", \"%s\"]", type, name->length, name->start, documentation.data);
 	
 	CharAccumulator_free(&documentation);
 }

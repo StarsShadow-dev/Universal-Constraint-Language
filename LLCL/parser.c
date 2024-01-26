@@ -289,9 +289,9 @@ linkedList_Node_tuple parseFunctionArguments(FileInformation *FI, linkedList_Nod
 						if (SubString_string_cmp(&token->subString, ")") == 0) {
 							return (linkedList_Node_tuple){argumentNames, argumentTypes};
 						} else {
-							printf("unexpected separator: '");
-							SubString_print(&token->subString);
-							printf("'\n");
+							addStringToReportMsg("unexpected separator: '");
+							addSubStringToReportMsg(&token->subString);
+							addStringToReportMsg("'");
 							compileError(FI, token->location);
 						}
 					}
@@ -306,9 +306,9 @@ linkedList_Node_tuple parseFunctionArguments(FileInformation *FI, linkedList_Nod
 				if (SubString_string_cmp(&token->subString, ")") == 0) {
 					return (linkedList_Node_tuple){argumentNames, argumentTypes};
 				} else {
-					printf("unexpected separator: '");
-					SubString_print(&token->subString);
-					printf("'\n");
+					addStringToReportMsg("unexpected separator: '");
+					addSubStringToReportMsg(&token->subString);
+					addStringToReportMsg("'");
 					compileError(FI, token->location);
 				}
 				break;
@@ -868,9 +868,9 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					}
 					return AST;
 				} else if (parserMode != ParserMode_expression) {
-					printf("unexpected separator: '");
-					SubString_print(&token->subString);
-					printf("'\n");
+					addStringToReportMsg("unexpected separator: '");
+					addSubStringToReportMsg(&token->subString);
+					addStringToReportMsg("'");
 					compileError(FI, token->location);
 				}
 				break;

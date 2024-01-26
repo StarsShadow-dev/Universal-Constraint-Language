@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "report.h"
+#include "printer.h"
 #include "globals.h"
 
 //
@@ -239,7 +240,10 @@ void compileWarning(FileInformation *FI, SourceLocation location, WarningType wa
 //
 
 void compileError(FileInformation *FI, SourceLocation location) {
-	if (reportMsg.size > 0) {
+	if (compilerMode == CompilerMode_query) {
+		printError(location, reportMsg.data, reportIndicator.data);
+		printf("]");
+	} else if (reportMsg.size > 0) {
 		// \x1B[31m \x1B[0m
 		if (compilerOptions.compilerTesting || FI->context.path == NULL) {
 			printf("error: %s\n", reportMsg.data);
@@ -248,9 +252,9 @@ void compileError(FileInformation *FI, SourceLocation location) {
 		}
 		// clear the character accumulator
 		CharAccumulator_initialize(&reportMsg);
+		
+		printSourceCode(FI, location);
 	}
-	
-	printSourceCode(FI, location);
 	
 	// stop compiling
 	exit(1);
