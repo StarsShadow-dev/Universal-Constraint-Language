@@ -1,18 +1,9 @@
-// import "modules/libc_bindings"
-// import "modules/std"
-// import "math.llcl"
-
-#set("core.symbolMangling", "false");
-function main(): Int32 {
-	// var test: Vector[$.#size == 3 && $.#type == @Float32];
-	// var test: #Vector(3, @Float32) = new_Float3(0.0, 0.0, 0.0);
+function test(): Void {
+	test();
 	
-	a;
+	var absoluteNumber: Int32;
 	
-	var a: #Vector(3, @Int16);
+	absoluteNumber;
 	
-	// var array: #Array(10, @Int32) = #new_Array(0, 1, 2, 3, 4, getN(), 6, 7, 8, 9);
-	// array[10]; // error
-	
-	return 0;
+	return;
 }

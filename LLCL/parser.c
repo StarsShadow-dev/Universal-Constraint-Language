@@ -325,11 +325,13 @@ linkedList_Node_tuple parseFunctionArguments(FileInformation *FI, linkedList_Nod
 	}
 }
 
-void addQueryLocation(linkedList_Node **AST) {
-	ASTnode *data = linkedList_addNode(AST, sizeof(ASTnode));
+void addQueryLocation(linkedList_Node **AST, ASTnode *node) {
+	ASTnode *data = linkedList_addNode(AST, sizeof(ASTnode) + sizeof(ASTnode_queryLocation));
 	
 	data->nodeType = ASTnodeType_queryLocation;
 	data->location = (SourceLocation){0};
+	((ASTnode_queryLocation *)data->value)->node = node;
+	
 	addedQueryLocation = 1;
 }
 
@@ -339,7 +341,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 	while (1) {
 		if (*current == NULL) {
 			if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
-				addQueryLocation(&AST);
+				addQueryLocation(&AST, NULL);
 			}
 			return AST;
 		}
@@ -348,7 +350,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 		
 		if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && strcmp(FI->context.path, startFilePath) == 0) {
 			if (!addedQueryLocation && token->location.line >= queryLine) {
-				addQueryLocation(&AST);
+				addQueryLocation(&AST, NULL);
 			}
 			
 			if (token->location.line == queryLine) {
@@ -924,13 +926,24 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 		
 		ASTnode *lastNode = (ASTnode *)linkedList_getLast(AST)->data;
 		
+		if (compilerMode == CompilerMode_query && queryMode == QueryMode_hover && strcmp(FI->context.path, startFilePath) == 0) {
+			if (!addedQueryLocation && token->location.line >= queryLine) {
+				addQueryLocation(&AST, lastNode);
+			}
+			
+//			if (token->location.line == queryLine) {
+//				*current = (*current)->next;
+//				continue;
+//			}
+		}
+		
 		if (*current == NULL) {
 			if (getIfNodeShouldHaveSemicolon(lastNode)) {
 				addStringToReportMsg("expected ';' after statement, but the file ended");
 				compileError(FI, lastNode->location);
 			}
 			if (compilerMode == CompilerMode_query && queryMode == QueryMode_suggestions && !addedQueryLocation) {
-				addQueryLocation(&AST);
+				addQueryLocation(&AST, NULL);
 			}
 			return AST;
 		}

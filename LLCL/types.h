@@ -184,6 +184,10 @@ typedef struct {
 } ASTnode;
 
 typedef struct {
+	ASTnode *node;
+} ASTnode_queryLocation;
+
+typedef struct {
 	SubString *path;
 } ASTnode_import;
 

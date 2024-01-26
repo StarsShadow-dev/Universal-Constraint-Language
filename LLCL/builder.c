@@ -420,8 +420,7 @@ void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode 
 		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
 		while (currentPropertyNode != NULL) {
 			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
-			if (propertyNode->nodeType == ASTnodeType_queryLocation) {
-				printf("[");
+			if (propertyNode->nodeType == ASTnodeType_queryLocation && queryMode == QueryMode_suggestions) {
 				printKeyword(13, "var", "");
 				printBindings(FI);
 				printf("]");
@@ -704,8 +703,19 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 		
 		switch (node->nodeType) {
 			case ASTnodeType_queryLocation: {
-				printKeywords(FI);
-				printBindings(FI);
+				ASTnode_queryLocation *data = (ASTnode_queryLocation *)node->value;
+				
+				if (queryMode == QueryMode_suggestions) {
+					printKeywords(FI);
+					printBindings(FI);
+				} else if (queryMode == QueryMode_hover) {
+					// if it is an identifier
+					if (data->node->nodeType == ASTnodeType_identifier) {
+						ASTnode_identifier *queryData = (ASTnode_identifier *)data->node->value;
+						printBinding(FI, getContextBindingFromSubString(FI, queryData->name));
+					}
+				}
+				
 				printf("]");
 				exit(0);
 				break;
