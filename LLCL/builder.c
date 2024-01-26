@@ -962,13 +962,21 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				int actualArgumentCount = linkedList_getCount(&data->arguments);
 				
 				if (expectedArgumentCount > actualArgumentCount) {
-					SubString_print(functionToCallBinding->key);
-					printf(" did not get enough arguments (expected %d but got %d)\n", expectedArgumentCount, actualArgumentCount);
+					addSubStringToReportMsg(functionToCallBinding->key);
+					addStringToReportMsg(" did not get enough arguments (expected ");
+					addIntToReportMsg(expectedArgumentCount);
+					addStringToReportMsg(" but got ");
+					addIntToReportMsg(actualArgumentCount);
+					addStringToReportMsg(")");
 					compileError(FI, node->location);
 				}
 				if (expectedArgumentCount < actualArgumentCount) {
-					SubString_print(functionToCallBinding->key);
-					printf(" got too many arguments (expected %d but got %d)\n", expectedArgumentCount, actualArgumentCount);
+					addSubStringToReportMsg(functionToCallBinding->key);
+					addStringToReportMsg(" got too many arguments (expected ");
+					addIntToReportMsg(expectedArgumentCount);
+					addStringToReportMsg(" but got ");
+					addIntToReportMsg(actualArgumentCount);
+					addStringToReportMsg(")");
 					compileError(FI, node->location);
 				}
 				
