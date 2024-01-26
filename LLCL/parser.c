@@ -906,6 +906,14 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 				*current = (*current)->next;
 				break;
 			}
+				
+			case TokenType_floatingType: {
+				*current = (*current)->next;
+				
+				linkedList_Node *type = parseType(FI, current);
+				linkedList_join(&AST, &type);
+				break;
+			}
 			
 			default: {
 				printf("unknown token type: %u\n", token->type);

@@ -138,7 +138,8 @@ typedef enum {
 	TokenType_separator,
 	TokenType_operator,
 	TokenType_string,
-	TokenType_selfReference
+	TokenType_selfReference,
+	TokenType_floatingType // @
 } TokenType;
 
 typedef struct {

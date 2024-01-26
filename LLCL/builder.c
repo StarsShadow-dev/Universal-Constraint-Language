@@ -792,7 +792,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 			}
 			
 			case ASTnodeType_constrainedType: {
-				abort();
+				addTypeFromBuilderType(FI, types, getType(FI, node));
+				break;
 			}
 			
 			case ASTnodeType_struct: {
@@ -1182,16 +1183,21 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					}
 					
 					else if (SubString_string_cmp(macroToRunBinding->key, "Vector") == 0) {
-						expectMacroArgumentCount(FI, typeCount, 1, node->location);
+						expectMacroArgumentCount(FI, typeCount, 2, node->location);
 						
 						BuilderType *sizeType = (BuilderType *)(*currentType)->data;
 						expectArgumentOnMacro(FI, currentType, currentArgument, "__Number", 1);
-//						uint64_t size = getIntFromNumberNode(FI, sizeNode);
+						BuilderType *type = (BuilderType *)(*currentType)->data;
+						*currentType = (*currentType)->next;
+						*currentArgument = (*currentArgument)->next;
 						
 						BuilderType *newType = getNewTypeFromString(FI, "Vector");
 						
 						BuilderType *VectorSize = Dictionary_addNode(&newType->states, getSubStringFromString("size"), sizeof(BuilderType));
 						*VectorSize = *sizeType;
+						
+						BuilderType *VectorType = Dictionary_addNode(&newType->states, getSubStringFromString("type"), sizeof(BuilderType));
+						*VectorType = *type;
 						
 						addTypeFromBuilderType(FI, types, newType);
 					}

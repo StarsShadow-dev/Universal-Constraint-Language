@@ -217,6 +217,15 @@ linkedList_Node *lex(FileInformation *FI) {
 			data->subString.length = 1;
 		}
 		
+		else if (character == '@') {
+			Token *data = linkedList_addNode(&tokens, sizeof(Token));
+			
+			data->type = TokenType_floatingType;
+			data->location = (SourceLocation){line, column, column + 1};
+			data->subString.start = FI->context.currentSource + index;
+			data->subString.length = 1;
+		}
+		
 		else if (ellipsis) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			

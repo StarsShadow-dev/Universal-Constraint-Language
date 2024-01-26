@@ -617,14 +617,14 @@ int BuilderType_isNumber(BuilderType *type) {
 char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI) {
 	if (type->binding->type == ContextBindingType_simpleType) {
 		if (ContextBinding_hasCoreName(type->binding, "Vector")) {
-			ASTnode *resolvedValue = BuilderType_getResolvedValue(BuilderType_getStateFromString(type, "size"), FI);
-			if (resolvedValue == NULL) abort();
+			ASTnode *resolvedSizeValue = BuilderType_getResolvedValue(BuilderType_getStateFromString(type, "size"), FI);
+			if (resolvedSizeValue == NULL) abort();
 			
 			CharAccumulator *LLVMname = CharAccumulator_new();
 			CharAccumulator_appendChars(LLVMname, "[ ");
-			CharAccumulator_appendInt(LLVMname, ASTnode_getIntFromNumber(resolvedValue, FI));
+			CharAccumulator_appendInt(LLVMname, ASTnode_getIntFromNumber(resolvedSizeValue, FI));
 			CharAccumulator_appendChars(LLVMname, " x ");
-			CharAccumulator_appendChars(LLVMname, "float");
+			CharAccumulator_appendChars(LLVMname, BuilderType_getLLVMname(BuilderType_getStateFromString(type, "type"), FI));
 			CharAccumulator_appendChars(LLVMname, " ]");
 			return LLVMname->data;
 		} else {
