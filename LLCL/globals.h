@@ -20,7 +20,8 @@ typedef enum {
 
 typedef enum {
 	QueryMode_hover,
-	QueryMode_suggestions
+	QueryMode_suggestions,
+	QueryMode_diagnostics_only
 } QueryMode;
 
 extern QueryMode queryMode;

@@ -1,5 +1,7 @@
 function test(): Void {
 	var number: Int32 = 10;
 	var n: Int32 = number / 10;
+	
+	var name: type = 0;
 	return;
 }
