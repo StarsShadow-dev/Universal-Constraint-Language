@@ -56,9 +56,10 @@ void printLine(char *source, int *index) {
 		
 		if (character == 0) {
 			putchar('\n');
-			exit(1);
+			return;
 		} else if (character == '\n') {
 			putchar('\n');
+			(*index) += 1;
 			return;
 		}
 		
@@ -80,8 +81,12 @@ void printLineWithIndicator(char *source, int *index, int columnStart, int colum
 	while (1) {
 		char character = source[*index];
 		
-		if (character == 0 || character == '\n') {
+		if (character == 0) {
 			putchar('\n');
+			break;
+		} else if (character == '\n') {
+			putchar('\n');
+			(*index) += 1;
 			break;
 		} else if (character == '\t') {
 			// Make all tabs the size of 4 spaces,
@@ -176,9 +181,10 @@ void printSourceCode(FileInformation *FI, SourceLocation location) {
 			break;
 		} else if (character == '\n') {
 			line++;
+			index++;
+		} else {
+			index++;
 		}
-		
-		index++;
 	}
 }
 

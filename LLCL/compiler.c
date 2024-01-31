@@ -216,15 +216,15 @@ void compileFile(FileInformation *FI) {
 		readFileEndTime = getTimespec();
 	}
 	
-	char hash[hashSize];
-	hashContents(FI->context.currentSource, strlen(FI->context.currentSource), hash);
-	if (compilerOptions.verbose) {
-		printf("hash: ");
-		for (int i = 0; i < hashSize; i++) {
-			printf("%02x", (unsigned char)hash[i]);
-		}
-		printf("\n\n");
-	}
+//	char hash[hashSize];
+//	hashContents(FI->context.currentSource, strlen(FI->context.currentSource), hash);
+//	if (compilerOptions.verbose) {
+//		printf("hash: ");
+//		for (int i = 0; i < hashSize; i++) {
+//			printf("%02x", (unsigned char)hash[i]);
+//		}
+//		printf("\n\n");
+//	}
 	
 //	printf("Source (%s): %s\n", path, FI->context.currentSource);
 	

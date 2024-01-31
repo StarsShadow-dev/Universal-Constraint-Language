@@ -67,19 +67,19 @@ int main(int argc, char **argv) {
 		if (strcmp(argv[currentArg], "hover") == 0) {
 			queryMode = QueryMode_hover;
 			if (argc < 7) {
-				printf("not (argc < 8)");
+				printf("not (argc < 7)\n");
 				exit(1);
 			}
 		} else if (strcmp(argv[currentArg], "suggestions") == 0) {
 			queryMode = QueryMode_suggestions;
 			if (argc < 7) {
-				printf("not (argc < 8)");
+				printf("not (argc < 7)\n");
 				exit(1);
 			}
 		} else if (strcmp(argv[currentArg], "diagnostics_only") == 0) {
 			queryMode = QueryMode_diagnostics_only;
 			if (argc < 5) {
-				printf("not (argc < 6)");
+				printf("not (argc < 5)\n");
 				exit(1);
 			}
 		} else {
@@ -98,8 +98,8 @@ int main(int argc, char **argv) {
 			currentArg++;
 		}
 		
-		queryText = safeMalloc(queryTextLength);
-		fread(queryText, queryTextLength, 1, stdin);
+		queryText = safeMalloc(queryTextLength + 1);
+		if (fread(queryText, 1, queryTextLength, stdin) == -1) abort();
 	}
 	
 	else {
