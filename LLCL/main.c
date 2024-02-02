@@ -283,9 +283,13 @@ int main(int argc, char **argv) {
 	CharAccumulator_initialize(LLVMmetadataSource);
 	
 	FileInformation *FI = FileInformation_new(realpath(startFilePath, NULL), topLevelStructSource, topLevelConstantSource, topLevelFunctionSource, LLVMmetadataSource);
-	if (compilerMode == CompilerMode_query) printf("[");
+	if (compilerMode == CompilerMode_query && !compilerOptions.printIR) {
+		printf("[");
+	}
 	compileFile(FI);
-	if (compilerMode == CompilerMode_query) printf("]");
+	if (compilerMode == CompilerMode_query && !compilerOptions.printIR) {
+		printf("]");
+	}
 	linkedList_freeList(&FI->context.bindings[0]);
 	
 	if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {

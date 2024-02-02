@@ -2269,8 +2269,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				if (node->nodeType == ASTnodeType_identifier) {
 					ASTnode_identifier *queryData = (ASTnode_identifier *)node->value;
 					printBinding(FI, getContextBindingFromSubString(FI, queryData->name));
-					printf("]");
-					exit(0);
+//					printf("]");
+//					exit(0);
 				}
 			}
 		}
