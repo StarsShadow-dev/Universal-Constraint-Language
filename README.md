@@ -10,6 +10,10 @@ but the source code is public on github because someone might find this interest
 Right now the compiler is being made for macOS.
 But it may work on other platforms.
 
+## Extension
+
+I have been working on a [vscode extension](https://github.com/StarsShadow-dev/LLCL-extension) for this language.
+
 <!-- # Installation
 
 ### macOS (arm64)
