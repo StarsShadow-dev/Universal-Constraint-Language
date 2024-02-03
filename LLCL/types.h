@@ -431,4 +431,7 @@ int BuilderType_isNumber(BuilderType *type);
 
 char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI);
 
+int BuilderType_getByteSize(BuilderType *type);
+int BuilderType_getByteAlign(BuilderType *type);
+
 #endif /* types_h */

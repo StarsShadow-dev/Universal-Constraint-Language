@@ -288,7 +288,24 @@ void compileFile(FileInformation *FI) {
 			printf("LLVMsource: %s\n", LLVMsource.data);
 		}
 		
-		if (!compilerOptions.compilerTesting && compilerMode != CompilerMode_query) {
+		if (compilerOptions.compilerTesting) {
+			CharAccumulator LLC_command = {100, 0, 0};
+			CharAccumulator_initialize(&LLC_command);
+			CharAccumulator_appendChars(&LLC_command, LLC_path);
+			CharAccumulator_appendChars(&LLC_command, " > /dev/null");
+			
+			llcStartTime = getTimespec();
+			FILE *fp = popen(LLC_command.data, "w");
+			fprintf(fp, "%s", LLVMsource.data);
+			int LLC_status = pclose(fp);
+			int LLC_exitCode = WEXITSTATUS(LLC_status);
+			CharAccumulator_free(&LLC_command);
+			llcEndTime = getTimespec();
+			
+			if (LLC_exitCode != 0) {
+				abort();
+			}
+		} else if (compilerMode != CompilerMode_query) {
 			CharAccumulator outputFilePath = {100, 0, 0};
 			CharAccumulator_initialize(&outputFilePath);
 			CharAccumulator_appendChars(&outputFilePath, buildDirectory);
@@ -321,23 +338,6 @@ void compileFile(FileInformation *FI) {
 			if (compilerOptions.verbose) printf("Object file saved to %s\n", outputFilePath.data);
 			
 			CharAccumulator_free(&outputFilePath);
-		} else {
-			CharAccumulator LLC_command = {100, 0, 0};
-			CharAccumulator_initialize(&LLC_command);
-			CharAccumulator_appendChars(&LLC_command, LLC_path);
-			CharAccumulator_appendChars(&LLC_command, " > /dev/null");
-			
-			llcStartTime = getTimespec();
-			FILE *fp = popen(LLC_command.data, "w");
-			fprintf(fp, "%s", LLVMsource.data);
-			int LLC_status = pclose(fp);
-			int LLC_exitCode = WEXITSTATUS(LLC_status);
-			CharAccumulator_free(&LLC_command);
-			llcEndTime = getTimespec();
-			
-			if (LLC_exitCode != 0) {
-				abort();
-			}
 		}
 	}
 	

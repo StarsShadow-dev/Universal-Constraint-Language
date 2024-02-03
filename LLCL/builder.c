@@ -417,6 +417,8 @@ void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode 
 	int addComma = 0;
 	
 	if (defineNew) {
+		int highestBiteAlign = 0;
+		
 		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
 		while (currentPropertyNode != NULL) {
 			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
@@ -450,11 +452,11 @@ void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode 
 			
 			char *LLVMtype = BuilderType_getLLVMname(type, FI);
 			
-			if (type->binding->byteAlign > structBinding->byteAlign) {
-				structBinding->byteAlign = type->binding->byteAlign;
+			if (BuilderType_getByteAlign(type) > highestBiteAlign) {
+				highestBiteAlign = BuilderType_getByteAlign(type);
 			}
 			
-			structBinding->byteSize += type->binding->byteSize;
+			structBinding->byteSize += BuilderType_getByteSize(type);
 			
 			if (addComma) {
 				CharAccumulator_appendChars(FI->topLevelStructSource, ", ");
@@ -467,7 +469,7 @@ void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode 
 			variableBinding->key = propertyData->name;
 			variableBinding->type = ContextBindingType_variable;
 			variableBinding->byteSize = type->binding->byteSize;
-			variableBinding->byteAlign = type->binding->byteSize;
+			variableBinding->byteAlign = BuilderType_getByteAlign(type);
 			
 			((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
 			((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
@@ -477,6 +479,8 @@ void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode 
 			
 			currentPropertyNode = currentPropertyNode->next;
 		}
+		
+		structBinding->byteAlign = highestBiteAlign;
 	}
 	
 	else {
@@ -545,6 +549,8 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 			CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
 			
 			if (defineNew) {
+				BuilderType type = *(BuilderType *)currentArgumentType->data;
+				
 				CharAccumulator_appendChars(outerSource, " %");
 				CharAccumulator_appendInt(outerSource, function->registerCount);
 				
@@ -553,7 +559,7 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 				CharAccumulator_appendChars(&functionSource, " = alloca ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
 				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendInt(&functionSource, argumentTypeBinding->byteAlign);
+				CharAccumulator_appendInt(&functionSource, BuilderType_getByteAlign(&type));
 				
 				CharAccumulator_appendChars(&functionSource, "\n\tstore ");
 				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
@@ -562,14 +568,12 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 				CharAccumulator_appendChars(&functionSource, ", ptr %");
 				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
 				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendInt(&functionSource, argumentTypeBinding->byteAlign);
+				CharAccumulator_appendInt(&functionSource, BuilderType_getByteAlign(&type));
 				
 				// TODO: hack with FI->level to include bindings at FI->level + 1 in expectUnusedName (for arguments with the same name)
 				FI->level++;
 				expectUnusedName(FI, (SubString *)currentArgumentName->data, node->location);
 				FI->level--;
-				
-				BuilderType type = *(BuilderType *)currentArgumentType->data;
 				
 				ContextBinding *argumentVariableData = linkedList_addNode(&FI->context.bindings[FI->level + 1], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
 				
@@ -577,7 +581,7 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 				argumentVariableData->key = (SubString *)currentArgumentName->data;
 				argumentVariableData->type = ContextBindingType_variable;
 				argumentVariableData->byteSize = argumentTypeBinding->byteSize;
-				argumentVariableData->byteAlign = argumentTypeBinding->byteAlign;
+				argumentVariableData->byteAlign = BuilderType_getByteAlign(&type);
 				
 				((ContextBinding_variable *)argumentVariableData->value)->LLVMRegister = function->registerCount + argumentCount + 1;
 				((ContextBinding_variable *)argumentVariableData->value)->LLVMtype = currentArgumentLLVMtype;
@@ -1204,7 +1208,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						*currentType = (*currentType)->next;
 						*currentArgument = (*currentArgument)->next;
 						
-						BuilderType *newType = getNewTypeFromString(FI, "Vector");
+						BuilderType *newType = getNewTypeFromString(FI, "_Vector");
 						
 						BuilderType *VectorSize = Dictionary_addNode(&newType->states, getSubStringFromString("size"), sizeof(BuilderType));
 						*VectorSize = *sizeType;
@@ -1494,7 +1498,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				CharAccumulator_appendChars(outerSource, " = alloca ");
 				generateType(FI, outerSource, type);
 				CharAccumulator_appendChars(outerSource, ", align ");
-				CharAccumulator_appendInt(outerSource, type->binding->byteAlign);
+				CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(type));
 				
 				if (data->expression != NULL) {
 					CharAccumulator_appendChars(outerSource, "\n\tstore ");
@@ -1502,7 +1506,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(outerSource, ", ptr %");
 					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, ", align ");
-					CharAccumulator_appendInt(outerSource, type->binding->byteAlign);
+					CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(type));
 				}
 				
 				ContextBinding *variableBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_variable));
@@ -1555,7 +1559,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(outerSource, ", ptr ");
 					CharAccumulator_appendChars(outerSource, leftSource.data);
 					CharAccumulator_appendChars(outerSource, ", align ");
-					CharAccumulator_appendInt(outerSource, leftVariable->byteAlign);
+					CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign((BuilderType *)leftType->data));
 					
 					CharAccumulator_free(&rightSource);
 					CharAccumulator_free(&leftSource);
@@ -1597,8 +1601,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						
 						if (SubString_SubString_cmp(propertyBinding->key, rightData->name) == 0) {
 							if (propertyBinding->type == ContextBindingType_variable) {
+								ContextBinding_variable *variable = (ContextBinding_variable *)propertyBinding->value;
+								
 								if (types != NULL) {
-									addTypeFromBuilderType(FI, types, &((ContextBinding_variable *)propertyBinding->value)->type);
+									addTypeFromBuilderType(FI, types, &variable->type);
 								}
 								
 								CharAccumulator_appendChars(outerSource, "\n\t%");
@@ -1619,7 +1625,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 									CharAccumulator_appendChars(outerSource, ", ptr %");
 									CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 									CharAccumulator_appendChars(outerSource, ", align ");
-									CharAccumulator_appendInt(outerSource, propertyBinding->byteAlign);
+									CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(&variable->type));
 									
 									if (withTypes) {
 										CharAccumulator_appendChars(innerSource, ((ContextBinding_variable *)propertyBinding->value)->LLVMtype);
@@ -1762,12 +1768,12 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendChars(outerSource, " = ");
 					
 					// make the type bigger
-					if (fromType->binding->byteSize < toType->binding->byteSize) {
+					if (BuilderType_getByteSize(fromType) < BuilderType_getByteSize(toType)) {
 						CharAccumulator_appendChars(outerSource, "sext ");
 					}
 					
 					// make the type smaller
-					else if (fromType->binding->byteSize > toType->binding->byteSize) {
+					else if (BuilderType_getByteSize(fromType) > BuilderType_getByteSize(toType)) {
 						CharAccumulator_appendChars(outerSource, "trunc ");
 					}
 					
@@ -2204,7 +2210,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							CharAccumulator_appendChars(outerSource, ", ptr %");
 							CharAccumulator_appendInt(outerSource, variable->LLVMRegister);
 							CharAccumulator_appendChars(outerSource, ", align ");
-							CharAccumulator_appendInt(outerSource, variableBinding->byteAlign);
+							CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(&variable->type));
 							
 							if (innerSource != NULL) CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 							

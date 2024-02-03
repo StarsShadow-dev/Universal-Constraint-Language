@@ -616,7 +616,7 @@ int BuilderType_isNumber(BuilderType *type) {
 
 char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI) {
 	if (type->binding->type == ContextBindingType_simpleType) {
-		if (ContextBinding_hasCoreName(type->binding, "Vector")) {
+		if (ContextBinding_hasCoreName(type->binding, "_Vector")) {
 			ASTnode *resolvedSizeValue = BuilderType_getResolvedValue(BuilderType_getStateFromString(type, "size"), FI);
 			if (resolvedSizeValue == NULL) abort();
 			
@@ -636,5 +636,21 @@ char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI) {
 		return ((ContextBinding_struct *)type->binding->value)->LLVMname;
 	} else {
 		abort();
+	}
+}
+
+int BuilderType_getByteSize(BuilderType *type) {
+	if (ContextBinding_hasCoreName(type->binding, "_Vector")) {
+		return BuilderType_getStateFromString(type, "type")->binding->byteSize;
+	} else {
+		return type->binding->byteSize;
+	}
+}
+
+int BuilderType_getByteAlign(BuilderType *type) {
+	if (ContextBinding_hasCoreName(type->binding, "_Vector")) {
+		return BuilderType_getStateFromString(type, "type")->binding->byteAlign;
+	} else {
+		return type->binding->byteAlign;
 	}
 }

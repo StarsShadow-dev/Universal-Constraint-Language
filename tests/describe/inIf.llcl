@@ -1,13 +1,13 @@
 /*
 variable description for 'number'
-byteSize = 8
-byteAlign = 8
+byteSize = 1
+byteAlign = 1
 
 type = Int8
 [2]: ($ == 5)
 variable description for 'number'
-byteSize = 8
-byteAlign = 8
+byteSize = 1
+byteAlign = 1
 
 type = Int8
 */

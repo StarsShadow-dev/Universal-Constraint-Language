@@ -98,9 +98,9 @@ void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulato
 	CharAccumulator_appendChars(charAccumulator, "variable description for '");
 	CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
 	CharAccumulator_appendChars(charAccumulator, "'\nbyteSize = ");
-	CharAccumulator_appendInt(charAccumulator, variableBinding->byteSize);
+	CharAccumulator_appendInt(charAccumulator, BuilderType_getByteSize(&variable->type));
 	CharAccumulator_appendChars(charAccumulator, "\nbyteAlign = ");
-	CharAccumulator_appendInt(charAccumulator, variableBinding->byteAlign);
+	CharAccumulator_appendInt(charAccumulator, BuilderType_getByteAlign(&variable->type));
 	CharAccumulator_appendChars(charAccumulator, "\n\ntype = ");
 	
 	getTypeDescription(FI, charAccumulator, &variable->type, 1);

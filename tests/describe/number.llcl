@@ -1,14 +1,14 @@
 /*
 variable description for 'number'
-byteSize = 8
-byteAlign = 8
+byteSize = 1
+byteAlign = 1
 
 type = Int8
-[0]: ($ == 1234)
+[0]: ($ == 123)
 */
 
 function main(): Int8 {
-	var number: Int8 = 1234;
+	var number: Int8 = 123;
 	#describe(number);
 	
 	return 0;

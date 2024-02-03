@@ -229,27 +229,27 @@ int main(int argc, char **argv) {
 		.debugInformationFileScopeID = 0
 	};
 	coreFilePointer = &coreFile;
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Void", "void", 0, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Void", "void", 0, 0);
 	
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int8", "i8", 1, 4);
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int16", "i16", 2, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int8", "i8", 1, 1);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int16", "i16", 2, 2);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int32", "i32", 4, 4);
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int64", "i64", 8, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int64", "i64", 8, 8);
 	
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt8", "i8", 1, 4);
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt16", "i16", 2, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt8", "i8", 1, 1);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt16", "i16", 2, 2);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt32", "i32", 4, 4);
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt64", "i64", 8, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "UInt64", "i64", 8, 8);
 	
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float16", "half", 2, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float16", "half", 2, 2);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float32", "float", 4, 4);
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float64", "double", 8, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float64", "double", 8, 8);
 	
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Vector", "", 0, pointer_byteSize);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "_Vector", "_Vector_and_it_should_not_be_in_IR", 0, 0);
 	
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "Bool", "i1", 1, 4);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Bool", "i1", 1, 1);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
@@ -265,6 +265,7 @@ int main(int argc, char **argv) {
 	addContextBinding_macro(&coreFile, "describe");
 	addContextBinding_macro(&coreFile, "insertLLVMIR");
 	addContextBinding_macro(&coreFile, "set");
+	addContextBinding_macro(&coreFile, "Vector");
 	
 	CharAccumulator *topLevelStructSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelStructSource) = (CharAccumulator){100, 0, 0};

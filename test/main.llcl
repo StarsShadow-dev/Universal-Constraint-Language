@@ -1,7 +1,8 @@
-function test(): Void {
-	var number: Int32 = 10;
-	var n: Int32 = number / 10;
+#set("core.nextSymbol", "main");
+function main(): Int32 {
+	var test: #Vector(3, @Float32);
 	
-	var name: type = 0;
-	return;
+	var test2: Void;
+	
+	return 0;
 }
