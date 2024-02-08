@@ -1,11 +1,11 @@
 /*
 error: unexpected separator: ';'
-9  |function main(): Int8 {
+9  |fn main(): Int8 {
 10 |    ;
         ^
 11 |}
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	;
 }

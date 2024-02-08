@@ -1,10 +1,10 @@
-function main(): Int8 {
+fn main(): Int8 {
 	printCount("Hello, World (50 times!)", 50);
 
 	return 0;
 }
 
-function printCount(string: Pointer, count: Int32): Void {
+fn printCount(string: Pointer, count: Int32): Void {
 	while (count > 0) {
 		printLine(string);
 		count = count - 1;
@@ -13,12 +13,12 @@ function printCount(string: Pointer, count: Int32): Void {
 	return;
 }
 
-function printLine(string: Pointer): Void {
+fn printLine(string: Pointer): Void {
 	printf(string);
 	putchar(10); // \n
 	
 	return;
 }
 
-function putchar(char: Int32): Int32;
-function printf(pointer: Pointer): Int32;
+fn putchar(char: Int32): Int32;
+fn printf(pointer: Pointer): Int32;

@@ -7,7 +7,7 @@ type = Int8
 [0]: ($ == 123)
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	var number: Int8 = 123;
 	#describe(number);
 	

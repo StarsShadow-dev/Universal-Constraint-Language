@@ -1,15 +1,15 @@
 /*
 error: unexpected type
-9  |function main(): Int8 {
+9  |fn main(): Int8 {
 10 |    printf(10);
                ^^ expected type 'Pointer' but got a number.
 11 |
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	printf(10);
 
 	return 0;
 }
 
-function printf(pointer: Pointer): Int32;
+fn printf(pointer: Pointer): Int32;

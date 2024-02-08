@@ -12,7 +12,7 @@ byteAlign = 1
 type = Int8
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	var number: Int8;
 	if (number == 5) {
 		#describe(number);

@@ -1,4 +1,4 @@
-function main(): Int8 {
+fn main(): Int8 {
 	if (true) {
 		return 0;
 	}

@@ -1,4 +1,4 @@
-function test(): Void {
+fn test(): Void {
 	var a: Bool = false && false; // false
 	
 	var b: Bool = true && false; // false

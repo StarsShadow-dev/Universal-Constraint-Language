@@ -1,4 +1,4 @@
-function main(): Int8 {
+fn main(): Int8 {
 	printLine("Starting loop.");
 
 	var i: Int32 = 0;
@@ -10,12 +10,12 @@ function main(): Int8 {
 	return 0;
 }
 
-function printLine(string: Pointer): Void {
+fn printLine(string: Pointer): Void {
 	printf(string);
 	putchar(10); // \n
 	
 	return;
 }
 
-function putchar(char: Int32): Int32;
-function printf(pointer: Pointer): Int32;
+fn putchar(char: Int32): Int32;
+fn printf(pointer: Pointer): Int32;

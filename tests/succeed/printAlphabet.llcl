@@ -1,11 +1,11 @@
-function main(): Int8 {
+fn main(): Int8 {
 	printAlphabet(); // abcdefghijklmnopqrstuvwxyz
 	putchar(10); // \n
 
 	return 0;
 }
 
-function printAlphabet(): Void {
+fn printAlphabet(): Void {
 	var i: Int32 = 97;
 	while (i < 123) {
 		putchar(i);
@@ -15,4 +15,4 @@ function printAlphabet(): Void {
 	return;
 }
 
-function putchar(char: Int32): Int32;
+fn putchar(char: Int32): Int32;

@@ -1,4 +1,4 @@
-function test(): Void {
+fn test(): Void {
 	var float1: #Vector(1, @Float32);
 	var float2: #Vector(2, @Float32);
 	var float3: #Vector(3, @Float32);

@@ -5,7 +5,7 @@ macro test {
 	}
 }
 
-function main(): Int32 {
+fn main(): Int32 {
 	#test();
 	return 0;
 }

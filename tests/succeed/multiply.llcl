@@ -1,4 +1,4 @@
-function main(): Int8 {
+fn main(): Int8 {
 	var a: Int8 = 1 * 2;
 	var b: Int16 = 1 * 2;
 	var c: Int32 = 1 * 2;

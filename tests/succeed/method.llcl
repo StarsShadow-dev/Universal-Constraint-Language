@@ -3,12 +3,12 @@ struct Thing {
 }
 
 impl Thing {
-	function test(): Void {
+	fn test(): Void {
 		return;
 	}
 }
 
-function main(): Int8 {
+fn main(): Int8 {
 	var thing: Thing;
 	thing.number = 5;
 	thing.test();

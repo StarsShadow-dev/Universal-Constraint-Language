@@ -6,7 +6,7 @@ error: if statement condition expected a bool but got nothing
 12 |	return number;
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	var number: Int8 = 0;
 	if (number = 0) {}
 	return number;

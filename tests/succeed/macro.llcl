@@ -1,4 +1,4 @@
-function main(): Int8 {
+fn main(): Int8 {
 	#test();
 
 	return 0;
@@ -8,4 +8,4 @@ macro test {
 	printf("macro test\n");
 }
 
-function printf(pointer: Pointer): Int32;
+fn printf(pointer: Pointer): Int32;

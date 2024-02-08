@@ -1,4 +1,4 @@
-function main(): Int8 {
+fn main(): Int8 {
 	var number: Int32 = 97;
 
 	putchar(number);
@@ -6,4 +6,4 @@ function main(): Int8 {
 	return 0;
 }
 
-function putchar(char: Int32): Int32;
+fn putchar(char: Int32): Int32;

@@ -1,12 +1,12 @@
 /*
 error: value not in scope
-9  |function main(): Int8 {
+9  |fn main(): Int8 {
 10 |    notAFunction();
         ^^^^^^^^^^^^ nothing named 'notAFunction'
 11 |
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	notAFunction();
 
 	return 0;

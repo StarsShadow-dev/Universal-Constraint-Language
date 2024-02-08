@@ -7,7 +7,7 @@ type = Pointer
 [0]: ($ == "A string!")
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	var string: Pointer = "A string!";
 	#describe(string);
 	

@@ -1,12 +1,12 @@
 /*
 error: import statements are only allowed at top level
-9  |function main(): Int8 {
+9  |fn main(): Int8 {
 10 |    import ""
         ^^^^^^
 11 |	return 0;
 */
 
-function main(): Int8 {
+fn main(): Int8 {
 	import ""
 	return 0;
 }

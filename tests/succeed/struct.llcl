@@ -1,4 +1,4 @@
-function main(): Int8 {
+fn main(): Int8 {
 	var thing: Thing;
 	thing.number = 5;
 	return 0;

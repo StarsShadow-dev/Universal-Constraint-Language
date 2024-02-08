@@ -1,11 +1,11 @@
 /*
 error: function did not return
 8  |
-9  |function main(): Void {
-             ^^^^ the compiler cannot guarantee that function 'main' returns
+9  |fn main(): Void {
+       ^^^^ the compiler cannot guarantee that function 'main' returns
 10 |
 */
 
-function main(): Void {
+fn main(): Void {
 
 }

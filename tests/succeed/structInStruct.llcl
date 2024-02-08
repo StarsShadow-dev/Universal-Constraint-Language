@@ -10,7 +10,7 @@ struct Triangle {
 	var p3: Point;
 }
 
-function main(): Int8 {
+fn main(): Int8 {
 	var triangle: Triangle;
 	triangle.p1.x = 0;
 	
