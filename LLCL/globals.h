@@ -11,7 +11,7 @@
 extern struct timespec startTime;
 
 typedef enum {
-	CompilerMode_build_objectFile,
+	CompilerMode_build_obj,
 	CompilerMode_build_binary,
 	CompilerMode_run,
 	CompilerMode_check,

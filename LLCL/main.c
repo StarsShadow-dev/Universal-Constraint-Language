@@ -31,9 +31,9 @@ int main(int argc, char **argv) {
 	// the current argument
 	int currentArg = 1;
 	
-	if (strcmp(argv[currentArg], "build_objectFile") == 0) {
+	if (strcmp(argv[currentArg], "build_obj") == 0) {
 		currentArg++;
-		compilerMode = CompilerMode_build_objectFile;
+		compilerMode = CompilerMode_build_obj;
 		
 		startFilePath = argv[currentArg];
 		currentArg++;
