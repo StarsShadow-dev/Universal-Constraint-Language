@@ -344,6 +344,8 @@ typedef struct {
 } ContextBinding_simpleType;
 
 typedef struct {
+	int compileTime;
+	
 	char *LLVMname;
 	char *LLVMreturnType;
 	/// BuilderType

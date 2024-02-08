@@ -228,6 +228,8 @@ int main(int argc, char **argv) {
 		.debugInformationFileScopeID = 0
 	};
 	coreFilePointer = &coreFile;
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "Type", "should_not_be_in_IR", 0, 0);
+	
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Void", "void", 0, 0);
 	
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Int8", "i8", 1, 1);
@@ -244,7 +246,7 @@ int main(int argc, char **argv) {
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float32", "float", 4, 4);
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Float64", "double", 8, 8);
 	
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "_Vector", "_Vector_and_it_should_not_be_in_IR", 0, 0);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "_Vector", "should_not_be_in_IR", 0, 0);
 	
 	// how much space should be made for an i1?
 	// I will do one byte for now
@@ -253,7 +255,7 @@ int main(int argc, char **argv) {
 	
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
 	// same for "__Number_and_it_should_not_be_in_IR"
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "__Number", "__Number_and_it_should_not_be_in_IR", 0, 0);
+	addContextBinding_simpleType(&coreFile.context.bindings[0], "__Number", "should_not_be_in_IR", 0, 0);
 	
 	addContextBinding_compileTimeSetting(&coreFile.context.bindings[0], "core.nextSymbol", NULL);
 	

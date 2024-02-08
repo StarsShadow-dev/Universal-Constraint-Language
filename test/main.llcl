@@ -1,3 +1,8 @@
+fn test(): Type {
+	valueNotInScope();
+	return struct {};
+}
+
 fn main(): Int32 {
 	return 1 + 2 * 8;
 }

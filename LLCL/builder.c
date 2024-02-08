@@ -305,6 +305,11 @@ ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedLis
 	// make sure that the return type actually exists
 	BuilderType* returnType = getType(FI, data->returnType);
 	
+	int compileTime = 0;
+	if (BuilderType_hasCoreName(returnType, "Type")) {
+		compileTime = 1;
+	}
+	
 	linkedList_Node *argumentTypes = NULL;
 	
 	// make sure that the types of all arguments actually exist
@@ -329,14 +334,20 @@ ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedLis
 	functionData->byteSize = 0;
 	functionData->byteAlign = 0;
 	
-	((ContextBinding_function *)functionData->value)->LLVMname = LLVMname;
-	((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
+	((ContextBinding_function *)functionData->value)->compileTime = compileTime;
+	if (compileTime) {
+		((ContextBinding_function *)functionData->value)->LLVMname = "LLVMname";
+		((ContextBinding_function *)functionData->value)->LLVMreturnType = "LLVMreturnType";
+	} else {
+		((ContextBinding_function *)functionData->value)->LLVMname = LLVMname;
+		((ContextBinding_function *)functionData->value)->LLVMreturnType = LLVMreturnType;
+	}
 	((ContextBinding_function *)functionData->value)->argumentNames = data->argumentNames;
 	((ContextBinding_function *)functionData->value)->argumentTypes = argumentTypes;
 	((ContextBinding_function *)functionData->value)->returnType = *returnType;
 	((ContextBinding_function *)functionData->value)->registerCount = 0;
 	
-	if (compilerOptions.includeDebugInformation) {
+	if (!compileTime && compilerOptions.includeDebugInformation) {
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, "\n!");
 		CharAccumulator_appendInt(FI->LLVMmetadataSource, FI->metadataCount);
 		CharAccumulator_appendChars(FI->LLVMmetadataSource, " = distinct !DISubprogram(");
@@ -467,8 +478,27 @@ void generateType(FileInformation *FI, CharAccumulator *source, BuilderType *typ
 	CharAccumulator_appendChars(source, BuilderType_getLLVMname(type, FI));
 }
 
+void buildFunctionCodeBlock(FileInformation *FI, ContextBinding *functionBinding, CharAccumulator *outerSource, linkedList_Node *codeBlock, SourceLocation location) {
+	ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
+	
+	int functionHasReturned = buildLLVM(FI, function, outerSource, NULL, NULL, NULL, codeBlock, 0, 0, 0);
+	
+	if (!functionHasReturned) {
+		addStringToReportMsg("function did not return");
+		
+		addStringToReportIndicator("the compiler cannot guarantee that function '");
+		addSubStringToReportIndicator(functionBinding->key);
+		addStringToReportIndicator("' returns");
+		compileError(FI, location);
+	}
+}
+
 void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ContextBinding *functionBinding, ASTnode *node, int defineNew) {
 	ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
+	
+	if (function->compileTime) {
+		abort();
+	}
 	
 	if (defineNew) {
 		ASTnode_function *data = (ASTnode_function *)node->value;
@@ -572,16 +602,7 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, Context
 			}
 			CharAccumulator_appendChars(outerSource, " {");
 			CharAccumulator_appendChars(outerSource, functionSource.data);
-			int functionHasReturned = buildLLVM(FI, function, outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
-			
-			if (!functionHasReturned) {
-				addStringToReportMsg("function did not return");
-				
-				addStringToReportIndicator("the compiler cannot guarantee that function '");
-				addSubStringToReportIndicator(data->name);
-				addStringToReportIndicator("' returns");
-				compileError(FI, node->location);
-			}
+			buildFunctionCodeBlock(FI, functionBinding, outerSource, data->codeBlock, node->location);
 			
 			CharAccumulator_appendChars(outerSource, "\n}");
 		}
@@ -1046,21 +1067,24 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						addStringToReportMsg("returning Void in a function that does not return Void.");
 						compileError(FI, node->location);
 					}
-					CharAccumulator_appendChars(outerSource, "\n\tret void");
+					if (outerSource != NULL) {
+						CharAccumulator_appendChars(outerSource, "\n\tret void");
+					}
 				} else {
 					CharAccumulator newInnerSource = {100, 0, 0};
 					CharAccumulator_initialize(&newInnerSource);
 					
 					buildLLVM(FI, outerFunction, outerSource, &newInnerSource, typeToList(outerFunction->returnType), NULL, data->expression, 1, 1, 0);
 					
-					CharAccumulator_appendChars(outerSource, "\n\tret ");
-					
-					CharAccumulator_appendChars(outerSource, newInnerSource.data);
+					if (outerSource != NULL) {
+						CharAccumulator_appendChars(outerSource, "\n\tret ");
+						CharAccumulator_appendChars(outerSource, newInnerSource.data);
+					}
 					
 					CharAccumulator_free(&newInnerSource);
 				}
 				
-				if (compilerOptions.includeDebugInformation) {
+				if (outerSource != NULL && compilerOptions.includeDebugInformation) {
 					addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
 				}
 				
@@ -1143,7 +1167,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						compileError(FI, node->location);
 					}
 					
-					ContextBinding *leftVariable = getContextBindingFromIdentifierNode(FI, (ASTnode *)data->left->data);
+//					ContextBinding *leftVariable = getContextBindingFromIdentifierNode(FI, (ASTnode *)data->left->data);
 					
 					CharAccumulator leftSource = {100, 0, 0};
 					CharAccumulator_initialize(&leftSource);
@@ -1822,8 +1846,13 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				
 				ContextBinding *functionBinding = getContextBindingFromSubString(FI, data->name);
 				if (functionBinding == NULL || functionBinding->type != ContextBindingType_function) abort();
+				ContextBinding_function *function = (ContextBinding_function *)functionBinding->value;
 				
-				generateFunction(FI, outerSource, functionBinding, node, 1);
+				if (function->compileTime) {
+					buildFunctionCodeBlock(FI, functionBinding, NULL, data->codeBlock, node->location);
+				} else {
+					generateFunction(FI, outerSource, functionBinding, node, 1);
+				}
 			}
 			
 			afterLoopCurrent = afterLoopCurrent->next;

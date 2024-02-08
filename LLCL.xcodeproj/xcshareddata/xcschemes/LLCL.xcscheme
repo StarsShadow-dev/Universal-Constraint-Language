@@ -53,11 +53,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "build_objectFile"
+            argument = "build_obj"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "build_binary"
+            argument = "build_exe"
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
