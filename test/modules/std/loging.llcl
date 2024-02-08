@@ -1,24 +1,5 @@
-import "../libc_bindings"
-
-macro print {
-	#warning("this macro is not very useful right now", "");
-	printString("print test");
-}
-
-// function printChar(char: Int8): Void {
-// 	libc_bindings::putchar(char as Int32);
-// 	return;
-// }
-
-function printString(string: Pointer): Void {
-	libc_bindings::printf(string);
-	libc_bindings::putchar(10); // \n
-	
-	return;
-}
-
 // there may be a more elegant way of doing this, but it seems to work
-function print_Int32(number: Int32): Void {	
+fn print_Int32(number: Int32): Void {	
 	var absoluteNumber: Int32;
 	if (number < 0) {
 		libc_bindings::putchar(45);

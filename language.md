@@ -76,44 +76,6 @@ Bool
 Pointer
 ```
 
-## macros
-
-Macro definition:
-
-```llcl
-macro nameOfMacro {
-	// ...
-}
-```
-
-Macro use:
-
-```llcl
-#nameOfMacro();
-```
-
 ## constraints
 
-Syntax idea:
-
-Should `$` be self?
-
-<!-- ```llcl
-typedef Degrees: Float [ $ >= -360, $ <= 360 ]
-``` -->
-
-
-```llcl
-function getRand0_100(): Int8 [ $ >= 0, $ <= 100 ] {
-	// ...
-}
-```
-
-```llcl
-typedef Window: Pointer;
-var window: Window;
-
-function [ window != 0 ] useWindow(): Void {}
-// or
-function useWindow() [ window != 0 ]: Void {}
-```
+TODO: Update this section.

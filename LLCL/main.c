@@ -253,19 +253,10 @@ int main(int argc, char **argv) {
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
-	// if "__Macro_and_it_should_not_be_in_IR" ever shows up in the IR then I know that something went horribly wrong...
-	addContextBinding_simpleType(&coreFile.context.bindings[0], "__Macro", "__Macro_and_it_should_not_be_in_IR", 0, 0);
 	// same for "__Number_and_it_should_not_be_in_IR"
 	addContextBinding_simpleType(&coreFile.context.bindings[0], "__Number", "__Number_and_it_should_not_be_in_IR", 0, 0);
 	
 	addContextBinding_compileTimeSetting(&coreFile.context.bindings[0], "core.nextSymbol", NULL);
-	
-	addContextBinding_macro(&coreFile, "error");
-	addContextBinding_macro(&coreFile, "warning");
-	addContextBinding_macro(&coreFile, "describe");
-	addContextBinding_macro(&coreFile, "insertLLVMIR");
-	addContextBinding_macro(&coreFile, "set");
-	addContextBinding_macro(&coreFile, "Vector");
 	
 	CharAccumulator *topLevelStructSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelStructSource) = (CharAccumulator){100, 0, 0};

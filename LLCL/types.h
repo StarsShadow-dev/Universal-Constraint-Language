@@ -152,11 +152,8 @@ typedef enum {
 	ASTnodeType_import,
 	ASTnodeType_constrainedType,
 	ASTnodeType_struct,
-	ASTnodeType_implement,
 	ASTnodeType_function,
 	ASTnodeType_call,
-	ASTnodeType_macro,
-	ASTnodeType_runMacro,
 	ASTnodeType_while,
 	ASTnodeType_if,
 	ASTnodeType_return,
@@ -199,11 +196,6 @@ typedef struct {
 
 typedef struct {
 	SubString *name;
-	linkedList_Node *block;
-} ASTnode_implement;
-
-typedef struct {
-	SubString *name;
 	int external;
 	ASTnode *returnType;
 	linkedList_Node *argumentNames;
@@ -216,16 +208,6 @@ typedef struct {
 	linkedList_Node *left;
 	linkedList_Node *arguments;
 } ASTnode_call;
-
-typedef struct {
-	SubString *name;
-	linkedList_Node *codeBlock;
-} ASTnode_macro;
-
-typedef struct {
-	linkedList_Node *left;
-	linkedList_Node *arguments;
-} ASTnode_runMacro;
 
 typedef struct {
 	linkedList_Node *expression;
@@ -335,7 +317,6 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operat
 typedef enum {
 	ContextBindingType_simpleType,
 	ContextBindingType_function,
-	ContextBindingType_macro,
 	ContextBindingType_variable,
 	ContextBindingType_compileTimeSetting,
 	ContextBindingType_struct,
@@ -382,10 +363,6 @@ typedef struct {
 } ContextBinding_function;
 
 typedef struct {
-	linkedList_Node *codeBlock;
-} ContextBinding_macro;
-
-typedef struct {
 	int LLVMRegister;
 	char *LLVMtype;
 	BuilderType type;
@@ -412,7 +389,6 @@ int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer)
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer);
 
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
-void addContextBinding_macro(FileInformation *FI, char *name);
 void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value);
 ContextBinding *getContextBindingFromString(FileInformation *FI, char *key);
 ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *key);

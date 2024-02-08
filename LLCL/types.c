@@ -407,23 +407,6 @@ void addContextBinding_simpleType(linkedList_Node **context, char *name, char *L
 	((ContextBinding_simpleType *)data->value)->LLVMtype = LLVMtype;
 }
 
-void addContextBinding_macro(FileInformation *FI, char *name) {
-	SubString *key = safeMalloc(sizeof(SubString));
-	key->start = name;
-	key->length = (int)strlen(name);
-	
-	ContextBinding *macroData = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_macro));
-	
-	macroData->originFile = FI;
-	macroData->key = key;
-	macroData->type = ContextBindingType_macro;
-	// I do not think I need to set byteSize or byteAlign to anything specific
-	macroData->byteSize = 0;
-	macroData->byteAlign = 0;
-
-	((ContextBinding_macro *)macroData->value)->codeBlock = NULL;
-}
-
 // note: originFile = coreFilePointer
 void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value) {
 	SubString *key = safeMalloc(sizeof(SubString));

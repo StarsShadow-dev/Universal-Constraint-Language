@@ -16,9 +16,7 @@ int getIfNodeShouldHaveSemicolon(ASTnode *node) {
 	return node->nodeType != ASTnodeType_import &&
 	node->nodeType != ASTnodeType_constrainedType &&
 	node->nodeType != ASTnodeType_struct &&
-	node->nodeType != ASTnodeType_implement &&
 	node->nodeType != ASTnodeType_function &&
-	node->nodeType != ASTnodeType_macro &&
 	node->nodeType != ASTnodeType_while &&
 	node->nodeType != ASTnodeType_if;
 }
@@ -358,36 +356,6 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					*current = (*current)->next;
 				}
 				
-				// macro definition
-				else if (SubString_string_cmp(&token->subString, "macro") == 0) {
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					Token *nameToken = ((Token *)((*current)->data));
-					
-					if (nameToken->type != TokenType_word) {
-						addStringToReportMsg("expected word after macro keyword");
-						compileError(FI, nameToken->location);
-					}
-					
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					Token *openingBracket = ((Token *)((*current)->data));
-					if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
-						addStringToReportMsg("struct expected '{'");
-						compileError(FI, openingBracket->location);
-					}
-					
-					*current = (*current)->next;
-					linkedList_Node *codeBlock = parse(FI, current, ParserMode_codeBlock, 0, 0);
-					
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_macro));
-					data->nodeType = ASTnodeType_macro;
-					data->location = nameToken->location;
-					
-					((ASTnode_macro *)data->value)->name = &nameToken->subString;
-					((ASTnode_macro *)data->value)->codeBlock = codeBlock;
-				}
-				
 				// struct
 				else if (SubString_string_cmp(&token->subString, "struct") == 0) {
 					*current = (*current)->next;
@@ -432,36 +400,6 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					
 					((ASTnode_struct *)data->value)->name = &nameToken->subString;
 					((ASTnode_struct *)data->value)->block = block;
-				}
-				
-				else if (SubString_string_cmp(&token->subString, "impl") == 0) {
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					Token *nameToken = ((Token *)((*current)->data));
-					
-					if (nameToken->type != TokenType_word) {
-						addStringToReportMsg("expected word after impl keyword");
-						compileError(FI, nameToken->location);
-					}
-					
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					Token *openingBracket = ((Token *)((*current)->data));
-					if (openingBracket->type != TokenType_separator || SubString_string_cmp(&openingBracket->subString, "{") != 0) {
-						addStringToReportMsg("impl expected '{'");
-						compileError(FI, openingBracket->location);
-					}
-					
-					*current = (*current)->next;
-					linkedList_Node *block = parse(FI, current, ParserMode_codeBlock, 0, 0);
-					
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_implement));
-					
-					data->nodeType = ASTnodeType_implement;
-					data->location = token->location;
-					
-					((ASTnode_implement *)data->value)->name = &nameToken->subString;
-					((ASTnode_implement *)data->value)->block = block;
 				}
 				
 				// function definition
@@ -733,29 +671,6 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 				((ASTnode_number *)data->value)->value = parseInt(FI, current).value;
 				
 				*current = (*current)->next;
-				break;
-			}
-				
-			case TokenType_pound: {
-				*current = (*current)->next;
-				linkedList_Node *left = parse(FI, current, ParserMode_expression, 0, 1);
-				
-				endIfCurrentIsEmpty()
-				Token *openingParentheses = ((Token *)((*current)->data));
-				if (openingParentheses->type != TokenType_separator || SubString_string_cmp(&openingParentheses->subString, "(") != 0) {
-					addStringToReportMsg("runMacro expected an openingParentheses");
-					compileError(FI, openingParentheses->location);
-				}
-				
-				*current = (*current)->next;
-				linkedList_Node *arguments = parse(FI, current, ParserMode_arguments, 0, 0);
-				
-				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_runMacro));
-				
-				data->nodeType = ASTnodeType_runMacro;
-				data->location = token->location;
-				((ASTnode_runMacro *)data->value)->left = left;
-				((ASTnode_runMacro *)data->value)->arguments = arguments;
 				break;
 			}
 				

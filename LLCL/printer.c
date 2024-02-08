@@ -164,13 +164,6 @@ void printBinding(FileInformation *FI, ContextBinding *binding) {
 			break;
 		}
 		
-		case ContextBindingType_macro: {
-			CharAccumulator_appendChars(&documentation, "macro");
-			
-			type = 11;
-			break;
-		}
-		
 		case ContextBindingType_variable: {
 			ContextBinding_variable *data = (ContextBinding_variable *)binding->value;
 			
@@ -228,10 +221,8 @@ void printKeywords(FileInformation *FI) {
 	
 	if (FI->level == 0) {
 		printKeyword(13, "import", "");
-		printKeyword(13, "macro", "");
 		printKeyword(13, "struct", "");
-		printKeyword(13, "impl", "");
-		printKeyword(13, "function", "");
+		printKeyword(13, "fn", "");
 	} else {
 		printKeyword(13, "while", "");
 		printKeyword(13, "if", "If statement syntax:\\n```\\nif (/*condition*/) {\\n\\t// code\\n}\\n```");
