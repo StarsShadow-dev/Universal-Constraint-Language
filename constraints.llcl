@@ -31,7 +31,7 @@ function test(): Void {
 
 // Define usePointer again, but with a constraint on ptr.
 // The square brackets are used around the constraint and the "$" is used to mean self (in this case ptr).
-// So basically, this constraint to saying that ptr does not equal 0.
+// So basically, this constraint is saying that ptr does not equal 0.
 function usePointer(ptr: Pointer[$ != 0]): Void {
 	// ...
 }
@@ -44,14 +44,14 @@ function test(): Void {
 	usePointer(pointer);
 	
 	// Now you can only use usePointer, if the compiler can guarantee that ptr is not zero!
-	// But if we do this in an if statement.
+	// And if we do this in an if statement.
 	if (pointer != 0) {
 		// Success!
 		usePointer(pointer);
 	}
 	
 	// The constraint system lets a function specify how it should be used.
-	// And if a function is ever used incorrectly, the compiler will tell you!
+	// And if a function is used incorrectly, the compiler will tell you!
 }
 
 //

@@ -465,7 +465,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 				}
 				
 				// function definition
-				else if (SubString_string_cmp(&token->subString, "function") == 0) {
+				else if (SubString_string_cmp(&token->subString, "fn") == 0) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
 					Token *nameToken = ((Token *)((*current)->data));
