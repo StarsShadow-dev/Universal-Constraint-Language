@@ -39,9 +39,9 @@ int main(int argc, char **argv) {
 		currentArg++;
 	}
 	
-	else if (strcmp(argv[currentArg], "build_binary") == 0) {
+	else if (strcmp(argv[currentArg], "build_exe") == 0) {
 		currentArg++;
-		compilerMode = CompilerMode_build_binary;
+		compilerMode = CompilerMode_build_exe;
 		
 		startFilePath = argv[currentArg];
 		currentArg++;
@@ -284,7 +284,7 @@ int main(int argc, char **argv) {
 	}
 	linkedList_freeList(&FI->context.bindings[0]);
 	
-	if (compilerMode == CompilerMode_build_binary || compilerMode == CompilerMode_run) {
+	if (compilerMode == CompilerMode_build_exe || compilerMode == CompilerMode_run) {
 		CharAccumulator clang_command = {100, 0, 0};
 		CharAccumulator_initialize(&clang_command);
 		CharAccumulator_appendChars(&clang_command, clang_path);
