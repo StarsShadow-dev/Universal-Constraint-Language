@@ -95,7 +95,6 @@ typedef struct {
 	linkedList_Node *declaredInLLVM;
 	
 	linkedList_Node *bindings[maxContextLevel];
-	linkedList_Node *importedFiles;
 } FileContext;
 
 typedef struct {
@@ -149,7 +148,6 @@ typedef struct {
 } Token;
 
 typedef enum {
-	ASTnodeType_import,
 	ASTnodeType_constrainedType,
 	ASTnodeType_struct,
 	ASTnodeType_function,
@@ -181,16 +179,11 @@ typedef struct {
 } ASTnode;
 
 typedef struct {
-	SubString *path;
-} ASTnode_import;
-
-typedef struct {
 	linkedList_Node *type;
 	linkedList_Node *constraints;
 } ASTnode_constrainedType;
 
 typedef struct {
-	SubString *name;
 	linkedList_Node *block;
 } ASTnode_struct;
 
@@ -244,7 +237,6 @@ typedef enum {
 	ASTnode_infixOperatorType_and,
 	ASTnode_infixOperatorType_or,
 	ASTnode_infixOperatorType_memberAccess,
-	ASTnode_infixOperatorType_scopeResolution,
 	
 	// node: the right of operatorType_cast is a type
 	ASTnode_infixOperatorType_cast
@@ -315,12 +307,11 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operat
 //
 
 typedef enum {
+	ContextBindingType_struct,
 	ContextBindingType_simpleType,
 	ContextBindingType_function,
 	ContextBindingType_variable,
-	ContextBindingType_compileTimeSetting,
-	ContextBindingType_struct,
-	ContextBindingType_namespace
+	ContextBindingType_compileTimeSetting
 } ContextBindingType;
 
 typedef struct {
@@ -342,6 +333,11 @@ typedef struct {
 	/// [linkedList<Fact>]
 	linkedList_Node *factStack[maxContextLevel];
 } BuilderType;
+
+typedef struct {
+	char *LLVMname;
+	linkedList_Node *memberBindings;
+} ContextBinding_struct;
 
 typedef struct {
 	char *LLVMtype;
@@ -371,19 +367,6 @@ typedef struct {
 typedef struct {
 	SubString *value;
 } ContextBinding_compileTimeSetting;
-
-typedef struct {
-	char *LLVMname;
-	linkedList_Node *propertyBindings;
-	// ContextBinding (should all be ContextBinding_function)
-	linkedList_Node *methodBindings;
-} ContextBinding_struct;
-
-typedef struct {
-	linkedList_Node *files;
-} ContextBinding_namespace;
-
-int ContextBinding_availableInOtherFile(ContextBinding *binding);
 
 int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer);
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer);

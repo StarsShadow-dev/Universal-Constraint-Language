@@ -221,8 +221,7 @@ int main(int argc, char **argv) {
 			.path = NULL,
 			.declaredInLLVM = NULL,
 			
-			.bindings = {0},
-			.importedFiles = NULL,
+			.bindings = {0}
 		},
 		
 		.debugInformationCompileUnitID = 0,

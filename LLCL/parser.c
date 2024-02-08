@@ -13,9 +13,7 @@ if (*current == NULL) {\
 #define CURRENT_IS_NOT_SEMICOLON *current == NULL || (((Token *)((*current)->data))->type != TokenType_separator || SubString_string_cmp(&((Token *)((*current)->data))->subString, ";") != 0)
 
 int getIfNodeShouldHaveSemicolon(ASTnode *node) {
-	return node->nodeType != ASTnodeType_import &&
-	node->nodeType != ASTnodeType_constrainedType &&
-	node->nodeType != ASTnodeType_struct &&
+	return node->nodeType != ASTnodeType_constrainedType &&
 	node->nodeType != ASTnodeType_function &&
 	node->nodeType != ASTnodeType_while &&
 	node->nodeType != ASTnodeType_if;
@@ -169,8 +167,6 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_or;
 			} else if (SubString_string_cmp(&operator->subString, ".") == 0) {
 				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_memberAccess;
-			} else if (SubString_string_cmp(&operator->subString, "::") == 0) {
-				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_scopeResolution;
 			} else if (SubString_string_cmp(&operator->subString, "as") == 0) {
 				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_cast;
 			} else {
@@ -335,53 +331,8 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 		
 		switch (token->type) {
 			case TokenType_word: {
-				// import statement
-				if (SubString_string_cmp(&token->subString, "import") == 0) {
+				if (SubString_string_cmp(&token->subString, "struct") == 0) {
 					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					Token *pathString = ((Token *)((*current)->data));
-					
-					if (pathString->type != TokenType_string) {
-						addStringToReportIndicator("expected string as part of import keyword");
-						compileError(FI, pathString->location);
-					}
-					
-					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_import));
-					
-					data->nodeType = ASTnodeType_import;
-					data->location = token->location;
-					
-					((ASTnode_import *)data->value)->path = &pathString->subString;
-					
-					*current = (*current)->next;
-				}
-				
-				// struct
-				else if (SubString_string_cmp(&token->subString, "struct") == 0) {
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
-					Token *nameToken = ((Token *)((*current)->data));
-					
-					if (nameToken->type != TokenType_word) {
-						addStringToReportMsg("expected word after struct keyword");
-						compileError(FI, nameToken->location);
-					}
-					
-					*current = (*current)->next;
-					
-//					linkedList_Node *stateConstructorArguments = NULL;
-//					Token *token = (Token *)((*current)->data);
-//					if (token->type == TokenType_operator && SubString_string_cmp(&token->subString, "<") == 0) {
-//						*current = (*current)->next;
-//						stateConstructorArguments = parse(FI, current, ParserMode_arguments, 1, 0);
-//						
-//						Token *greaterThan = (Token *)((*current)->data);
-//						if (greaterThan->type != TokenType_operator || SubString_string_cmp(&greaterThan->subString, ">") != 0) {
-//							addStringToReportMsg("struct expected '>'");
-//							compileError(FI, greaterThan->location);
-//						}
-//						*current = (*current)->next;
-//					}
 					
 					endIfCurrentIsEmpty()
 					Token *openingBracket = ((Token *)((*current)->data));
@@ -398,7 +349,6 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					data->nodeType = ASTnodeType_struct;
 					data->location = token->location;
 					
-					((ASTnode_struct *)data->value)->name = &nameToken->subString;
 					((ASTnode_struct *)data->value)->block = block;
 				}
 				

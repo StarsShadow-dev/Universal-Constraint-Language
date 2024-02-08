@@ -177,10 +177,6 @@ void compileFile(FileInformation *FI) {
 	
 //	struct timespec fileStartTime = getTimespec();
 	
-	// add the coreFile to this file's importedFiles list
-	FileInformation **coreFilePointerData = linkedList_addNode(&FI->context.importedFiles, sizeof(void *));
-	*coreFilePointerData = coreFilePointer;
-	
 	CharAccumulator LLVMsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMsource);
 	

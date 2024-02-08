@@ -312,8 +312,7 @@ FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStruct
 			.path = path,
 			.declaredInLLVM = NULL,
 			
-			.bindings = {0},
-			.importedFiles = NULL,
+			.bindings = {0}
 		},
 		
 		.debugInformationCompileUnitID = 0,
@@ -387,10 +386,6 @@ int ContextBinding_hasCoreName(ContextBinding *binding, char *name) {
 	return binding->originFile == coreFilePointer && SubString_string_cmp(binding->key, name) == 0;
 }
 
-int ContextBinding_availableInOtherFile(ContextBinding *binding) {
-	return binding->type != ContextBindingType_namespace;
-}
-
 // note: originFile = coreFilePointer
 void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign) {
 	SubString *key = safeMalloc(sizeof(SubString));
@@ -431,7 +426,6 @@ ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
 	int index = FI->level;
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.bindings[index];
-		
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
 			
@@ -445,25 +439,15 @@ ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
 		index--;
 	}
 	
-	linkedList_Node *currentFile = FI->context.importedFiles;
-	while (currentFile != NULL) {
-		FileInformation *fileInformation = *(FileInformation **)currentFile->data;
+	linkedList_Node *current = coreFilePointer->context.bindings[0];
+	while (current != NULL) {
+		ContextBinding *binding = ((ContextBinding *)current->data);
 		
-		linkedList_Node *current = fileInformation->context.bindings[0];
-		
-		while (current != NULL) {
-			ContextBinding *binding = ((ContextBinding *)current->data);
-			
-			if (ContextBinding_availableInOtherFile(binding)) {
-				if (SubString_string_cmp(binding->key, key) == 0) {
-					return binding;
-				}
-			}
-			
-			current = current->next;
+		if (SubString_string_cmp(binding->key, key) == 0) {
+			return binding;
 		}
 		
-		currentFile = currentFile->next;
+		current = current->next;
 	}
 
 	return NULL;
@@ -473,7 +457,6 @@ ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *k
 	int index = FI->level;
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.bindings[index];
-		
 		while (current != NULL) {
 			ContextBinding *binding = ((ContextBinding *)current->data);
 			
@@ -487,25 +470,15 @@ ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *k
 		index--;
 	}
 	
-	linkedList_Node *currentFile = FI->context.importedFiles;
-	while (currentFile != NULL) {
-		FileInformation *fileInformation = *(FileInformation **)currentFile->data;
+	linkedList_Node *current = coreFilePointer->context.bindings[0];
+	while (current != NULL) {
+		ContextBinding *binding = ((ContextBinding *)current->data);
 		
-		linkedList_Node *current = fileInformation->context.bindings[0];
-		
-		while (current != NULL) {
-			ContextBinding *binding = ((ContextBinding *)current->data);
-			
-			if (ContextBinding_availableInOtherFile(binding)) {
-				if (SubString_SubString_cmp(binding->key, key) == 0) {
-					return binding;
-				}
-			}
-			
-			current = current->next;
+		if (SubString_SubString_cmp(binding->key, key) == 0) {
+			return binding;
 		}
 		
-		currentFile = currentFile->next;
+		current = current->next;
 	}
 	
 	return NULL;

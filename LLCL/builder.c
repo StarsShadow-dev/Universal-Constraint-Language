@@ -359,109 +359,109 @@ ContextBinding *addFunctionToList(char *LLVMname, FileInformation *FI, linkedLis
 	return functionData;
 }
 
-void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode *node, int defineNew) {
-	ContextBinding_struct *structToGenerate = (ContextBinding_struct *)structBinding->value;
-	
-	CharAccumulator_appendChars(FI->topLevelStructSource, "\n\n");
-	CharAccumulator_appendChars(FI->topLevelStructSource, structToGenerate->LLVMname);
-	CharAccumulator_appendChars(FI->topLevelStructSource, " = type { ");
-	
-	int addComma = 0;
-	
-	if (defineNew) {
-		int highestBiteAlign = 0;
-		
-		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
-		while (currentPropertyNode != NULL) {
-			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
-			if (propertyNode->nodeType != ASTnodeType_variableDefinition) {
-				addStringToReportMsg("only variable definitions are allowed in a struct");
-				compileError(FI, propertyNode->location);
-			}
-			ASTnode_variableDefinition *propertyData = (ASTnode_variableDefinition *)propertyNode->value;
-			
-			// make sure that there is not already a property in this struct with the same name
-			linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
-			while (currentPropertyBinding != NULL) {
-				ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
-				
-				if (SubString_SubString_cmp(propertyBinding->key, propertyData->name) == 0) {
-					addStringToReportMsg("the name '");
-					addSubStringToReportMsg(propertyData->name);
-					addStringToReportMsg("' is defined multiple times inside a struct");
-					
-					addStringToReportIndicator("'");
-					addSubStringToReportIndicator(propertyData->name);
-					addStringToReportIndicator("' redefined here");
-					compileError(FI,  propertyNode->location);
-				}
-				
-				currentPropertyBinding = currentPropertyBinding->next;
-			}
-			
-			// make sure the type actually exists
-			BuilderType* type = getType(FI, propertyData->type);
-			
-			char *LLVMtype = BuilderType_getLLVMname(type, FI);
-			
-			if (BuilderType_getByteAlign(type) > highestBiteAlign) {
-				highestBiteAlign = BuilderType_getByteAlign(type);
-			}
-			
-			structBinding->byteSize += BuilderType_getByteSize(type);
-			
-			if (addComma) {
-				CharAccumulator_appendChars(FI->topLevelStructSource, ", ");
-			}
-			CharAccumulator_appendChars(FI->topLevelStructSource, LLVMtype);
-			
-			ContextBinding *variableBinding = linkedList_addNode(&structToGenerate->propertyBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
-			
-			variableBinding->originFile = FI;
-			variableBinding->key = propertyData->name;
-			variableBinding->type = ContextBindingType_variable;
-			variableBinding->byteSize = type->binding->byteSize;
-			variableBinding->byteAlign = BuilderType_getByteAlign(type);
-			
-			((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
-			((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
-			((ContextBinding_variable *)variableBinding->value)->type = *type;
-			
-			addComma = 1;
-			
-			currentPropertyNode = currentPropertyNode->next;
-		}
-		
-		structBinding->byteAlign = highestBiteAlign;
-	}
-	
-	else {
-		linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
-		while (currentPropertyBinding != NULL) {
-			ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
-			if (propertyBinding->type != ContextBindingType_variable) abort();
-			ContextBinding_variable *variable = (ContextBinding_variable *)propertyBinding->value;
-			
-			if (addComma) {
-				CharAccumulator_appendChars(FI->topLevelStructSource, ", ");
-			}
-			CharAccumulator_appendChars(FI->topLevelStructSource, variable->LLVMtype);
-			
-			addComma = 1;
-			
-			currentPropertyBinding = currentPropertyBinding->next;
-		}
-		
-		FileInformation_addToDeclaredInLLVM(FI, structBinding);
-	}
-	
-	CharAccumulator_appendChars(FI->topLevelStructSource, " }");
-}
+//void generateStruct(FileInformation *FI, ContextBinding *structBinding, ASTnode *node, int defineNew) {
+//	ContextBinding_struct *structToGenerate = (ContextBinding_struct *)structBinding->value;
+//	
+//	CharAccumulator_appendChars(FI->topLevelStructSource, "\n\n");
+//	CharAccumulator_appendChars(FI->topLevelStructSource, structToGenerate->LLVMname);
+//	CharAccumulator_appendChars(FI->topLevelStructSource, " = type { ");
+//	
+//	int addComma = 0;
+//	
+//	if (defineNew) {
+//		int highestBiteAlign = 0;
+//		
+//		linkedList_Node *currentPropertyNode = ((ASTnode_struct *)node->value)->block;
+//		while (currentPropertyNode != NULL) {
+//			ASTnode *propertyNode = (ASTnode *)currentPropertyNode->data;
+//			if (propertyNode->nodeType != ASTnodeType_variableDefinition) {
+//				addStringToReportMsg("only variable definitions are allowed in a struct");
+//				compileError(FI, propertyNode->location);
+//			}
+//			ASTnode_variableDefinition *propertyData = (ASTnode_variableDefinition *)propertyNode->value;
+//			
+//			// make sure that there is not already a property in this struct with the same name
+//			linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
+//			while (currentPropertyBinding != NULL) {
+//				ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
+//				
+//				if (SubString_SubString_cmp(propertyBinding->key, propertyData->name) == 0) {
+//					addStringToReportMsg("the name '");
+//					addSubStringToReportMsg(propertyData->name);
+//					addStringToReportMsg("' is defined multiple times inside a struct");
+//					
+//					addStringToReportIndicator("'");
+//					addSubStringToReportIndicator(propertyData->name);
+//					addStringToReportIndicator("' redefined here");
+//					compileError(FI,  propertyNode->location);
+//				}
+//				
+//				currentPropertyBinding = currentPropertyBinding->next;
+//			}
+//			
+//			// make sure the type actually exists
+//			BuilderType* type = getType(FI, propertyData->type);
+//			
+//			char *LLVMtype = BuilderType_getLLVMname(type, FI);
+//			
+//			if (BuilderType_getByteAlign(type) > highestBiteAlign) {
+//				highestBiteAlign = BuilderType_getByteAlign(type);
+//			}
+//			
+//			structBinding->byteSize += BuilderType_getByteSize(type);
+//			
+//			if (addComma) {
+//				CharAccumulator_appendChars(FI->topLevelStructSource, ", ");
+//			}
+//			CharAccumulator_appendChars(FI->topLevelStructSource, LLVMtype);
+//			
+//			ContextBinding *variableBinding = linkedList_addNode(&structToGenerate->propertyBindings, sizeof(ContextBinding) + sizeof(ContextBinding_variable));
+//			
+//			variableBinding->originFile = FI;
+//			variableBinding->key = propertyData->name;
+//			variableBinding->type = ContextBindingType_variable;
+//			variableBinding->byteSize = type->binding->byteSize;
+//			variableBinding->byteAlign = BuilderType_getByteAlign(type);
+//			
+//			((ContextBinding_variable *)variableBinding->value)->LLVMRegister = 0;
+//			((ContextBinding_variable *)variableBinding->value)->LLVMtype = LLVMtype;
+//			((ContextBinding_variable *)variableBinding->value)->type = *type;
+//			
+//			addComma = 1;
+//			
+//			currentPropertyNode = currentPropertyNode->next;
+//		}
+//		
+//		structBinding->byteAlign = highestBiteAlign;
+//	}
+//	
+//	else {
+//		linkedList_Node *currentPropertyBinding = structToGenerate->propertyBindings;
+//		while (currentPropertyBinding != NULL) {
+//			ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
+//			if (propertyBinding->type != ContextBindingType_variable) abort();
+//			ContextBinding_variable *variable = (ContextBinding_variable *)propertyBinding->value;
+//			
+//			if (addComma) {
+//				CharAccumulator_appendChars(FI->topLevelStructSource, ", ");
+//			}
+//			CharAccumulator_appendChars(FI->topLevelStructSource, variable->LLVMtype);
+//			
+//			addComma = 1;
+//			
+//			currentPropertyBinding = currentPropertyBinding->next;
+//		}
+//		
+//		FileInformation_addToDeclaredInLLVM(FI, structBinding);
+//	}
+//	
+//	CharAccumulator_appendChars(FI->topLevelStructSource, " }");
+//}
 
 void generateType(FileInformation *FI, CharAccumulator *source, BuilderType *type) {
 	if (type->binding->type == ContextBindingType_struct) {
 		if (FI != type->binding->originFile && !FileInformation_declaredInLLVM(FI, type->binding)) {
-			generateStruct(FI, type->binding, NULL, 0);
+//			generateStruct(FI, type->binding, NULL, 0);
 		}
 	}
 	CharAccumulator_appendChars(source, BuilderType_getLLVMname(type, FI));
@@ -661,119 +661,35 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 		}
 		
 		switch (node->nodeType) {
-			case ASTnodeType_import: {
-				if (FI->level != 0) {
-					addStringToReportMsg("import statements are only allowed at top level");
-					compileError(FI, node->location);
-				}
-				
-				ASTnode_import *data = (ASTnode_import *)node->value;
-				
-				if (data->path->length == 0) {
-					addStringToReportMsg("empty import path");
-					addStringToReportIndicator("import statements require a path");
-					compileError(FI, node->location);
-				}
-				
-				// TODO: hack to make "~" work on macOS
-				char *path;
-				if (data->path->start[0] == '~') {
-					char *homePath = getenv("HOME");
-					int pathSize = (int)strlen(homePath) + data->path->length;
-					path = safeMalloc(pathSize);
-					snprintf(path, pathSize, "%.*s%s", (int)strlen(homePath), homePath, data->path->start + 1);
-				} else {
-					char *dirPath = dirname(FI->context.path);
-					int pathSize = (int)strlen(dirPath) + 1 + data->path->length + 1;
-					path = safeMalloc(pathSize);
-					snprintf(path, pathSize, "%.*s/%s", (int)strlen(dirPath), dirPath, data->path->start);
-				}
-				
-				char *suffix = ".llcl";
-				if (strncmp(data->path->start + data->path->length - strlen(suffix), suffix, strlen(suffix)) == 0) {
-					// if the path ends with ".llcl" import the file and add it to FI->context.importedFiles
-					FileInformation **filePointerData = linkedList_addNode(&FI->context.importedFiles, sizeof(void *));
-					*filePointerData = importFile(FI, outerSource, path);
-				} else {
-					// is 1024 enough?
-					char filePath[1024] = {0};
-					snprintf(filePath, sizeof(filePath), "%s", path);
-					
-					// open the directory
-					DIR *d = opendir(path);
-					if (d == NULL) {
-						addStringToReportMsg("could not open directory at '");
-						addStringToReportMsg(path);
-						addStringToReportMsg("'");
-						compileError(FI, node->location);
-						return 0;
-					}
-					
-					ContextBinding *namespaceBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_namespace));
-					
-					namespaceBinding->originFile = FI;
-					
-					char *character = path + strlen(path) - 1;
-					while (character > path && *character != '/') character--;
-					namespaceBinding->key = SubString_new(character + 1, (int)(path + strlen(path) - character - 1));
-					
-					namespaceBinding->type = ContextBindingType_namespace;
-					namespaceBinding->byteSize = 0;
-					namespaceBinding->byteAlign = 0;
-					
-					struct dirent *dir;
-					while ((dir = readdir(d)) != NULL) {
-						if (*dir->d_name == '.') {
-							continue;
-						}
-						
-						snprintf(filePath + strlen(path), sizeof(filePath) - dir->d_namlen, "/%s", dir->d_name);
-						
-						FileInformation **filePointerData = linkedList_addNode(&((ContextBinding_namespace *)namespaceBinding->value)->files, sizeof(void *));
-						*filePointerData = importFile(FI, outerSource, filePath);
-					}
-					
-					// close the directory
-					closedir(d);
-				}
-				
-				break;
-			}
-			
 			case ASTnodeType_constrainedType: {
 				addTypeFromBuilderType(FI, types, getType(FI, node));
 				break;
 			}
 			
 			case ASTnodeType_struct: {
-				if (FI->level != 0) {
-					addStringToReportMsg("struct definitions are only allowed at top level");
-					compileError(FI, node->location);
-				}
-				
-				ASTnode_struct *data = (ASTnode_struct *)node->value;
-				
-				ContextBinding *structBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
-				
-				structBinding->originFile = FI;
-				structBinding->key = data->name;
-				structBinding->type = ContextBindingType_struct;
-				structBinding->byteSize = 0;
-				// 1 by default but in generateStruct it is set to the highest byteAlign of any property in the struct
-				structBinding->byteAlign = 1;
-				
-				int strlength = strlen("%struct.");
-				
-				char *LLVMname = safeMalloc(strlength + data->name->length + 1);
-				memcpy(LLVMname, "%struct.", strlength);
-				memcpy(LLVMname + strlength, data->name->start, data->name->length);
-				LLVMname[strlength + data->name->length] = 0;
-				
-				((ContextBinding_struct *)structBinding->value)->LLVMname = LLVMname;
-				((ContextBinding_struct *)structBinding->value)->propertyBindings = NULL;
-				((ContextBinding_struct *)structBinding->value)->methodBindings = NULL;
-				
-				generateStruct(FI, structBinding, node, 1);
+//				ASTnode_struct *data = (ASTnode_struct *)node->value;
+//				
+//				ContextBinding *structBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
+//				
+//				structBinding->originFile = FI;
+//				structBinding->key = data->name;
+//				structBinding->type = ContextBindingType_struct;
+//				structBinding->byteSize = 0;
+//				// 1 by default but in generateStruct it is set to the highest byteAlign of any property in the struct
+//				structBinding->byteAlign = 1;
+//				
+//				int strlength = strlen("%struct.");
+//				
+//				char *LLVMname = safeMalloc(strlength + data->name->length + 1);
+//				memcpy(LLVMname, "%struct.", strlength);
+//				memcpy(LLVMname + strlength, data->name->start, data->name->length);
+//				LLVMname[strlength + data->name->length] = 0;
+//				
+//				((ContextBinding_struct *)structBinding->value)->LLVMname = LLVMname;
+//				((ContextBinding_struct *)structBinding->value)->propertyBindings = NULL;
+//				((ContextBinding_struct *)structBinding->value)->methodBindings = NULL;
+//				
+//				generateStruct(FI, structBinding, node, 1);
 				
 				break;
 			}
@@ -1251,192 +1167,124 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					break;
 				}
 				
-				else if (data->operatorType == ASTnode_infixOperatorType_memberAccess) {
-					ASTnode *rightNode = (ASTnode *)data->right->data;
-					
-					if (rightNode->nodeType != ASTnodeType_identifier) {
-						addStringToReportMsg("right side of memberAccess must be an identifier");
-						
-						addStringToReportIndicator("right side of memberAccess is not an identifier");
-						compileError(FI, rightNode->location);
-					};
-					
-					linkedList_Node *leftTypes = NULL;
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypes, data->left, 0, 0, 0);
-					
-					ContextBinding *structBinding = ((BuilderType *)leftTypes->data)->binding;
-					if (structBinding->type != ContextBindingType_struct) {
-						addStringToReportMsg("left side of member access is not a struct");
-						compileError(FI, ((ASTnode *)data->left->data)->location);
-					}
-					ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
-					
-					ASTnode_identifier *rightData = (ASTnode_identifier *)rightNode->value;
-					
-					int index = 0;
-					
-					linkedList_Node *currentPropertyBinding = structData->propertyBindings;
-					while (1) {
-						if (currentPropertyBinding == NULL) {
-							break;
-						}
-						
-						ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
-						
-						if (SubString_SubString_cmp(propertyBinding->key, rightData->name) == 0) {
-							if (propertyBinding->type == ContextBindingType_variable) {
-								ContextBinding_variable *variable = (ContextBinding_variable *)propertyBinding->value;
-								
-								if (types != NULL) {
-									addTypeFromBuilderType(FI, types, &variable->type);
-								}
-								
-								CharAccumulator_appendChars(outerSource, "\n\t%");
-								CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-								CharAccumulator_appendChars(outerSource, " = getelementptr inbounds ");
-								CharAccumulator_appendChars(outerSource, structData->LLVMname);
-								CharAccumulator_appendChars(outerSource, ", ptr ");
-								CharAccumulator_appendChars(outerSource, leftInnerSource.data);
-								CharAccumulator_appendChars(outerSource, ", i32 0");
-								CharAccumulator_appendChars(outerSource, ", i32 ");
-								CharAccumulator_appendInt(outerSource, index);
-								
-								if (loadVariables) {
-									CharAccumulator_appendChars(outerSource, "\n\t%");
-									CharAccumulator_appendInt(outerSource, outerFunction->registerCount + 1);
-									CharAccumulator_appendChars(outerSource, " = load ");
-									CharAccumulator_appendChars(outerSource, ((ContextBinding_variable *)propertyBinding->value)->LLVMtype);
-									CharAccumulator_appendChars(outerSource, ", ptr %");
-									CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-									CharAccumulator_appendChars(outerSource, ", align ");
-									CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(&variable->type));
-									
-									if (withTypes) {
-										CharAccumulator_appendChars(innerSource, ((ContextBinding_variable *)propertyBinding->value)->LLVMtype);
-										CharAccumulator_appendChars(innerSource, " ");
-									}
-									
-									outerFunction->registerCount++;
-								}
-								
-								if (innerSource) {
-									CharAccumulator_appendChars(innerSource, "%");
-									CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
-								} else {
-									addStringToReportMsg("unused member access");
-									compileWarning(FI, rightNode->location, WarningType_unused);
-								}
-								
-								outerFunction->registerCount++;
-							} else {
-								abort();
-							}
-							
-							break;
-						}
-						
-						currentPropertyBinding = currentPropertyBinding->next;
-						if (propertyBinding->type != ContextBindingType_function) {
-							index++;
-						}
-					}
-					
-					linkedList_Node *currentMethodBinding = structData->methodBindings;
-					while (1) {
-						if (currentMethodBinding == NULL) {
-							break;
-						}
-						
-						ContextBinding *methodBinding = (ContextBinding *)currentMethodBinding->data;
-						if (methodBinding->type != ContextBindingType_function) abort();
-						
-						if (SubString_SubString_cmp(methodBinding->key, rightData->name) == 0) {
-							if (types != NULL) {
-								addTypeFromBinding(FI, types, methodBinding);
-							}
-							break;
-						}
-						
-						currentMethodBinding = currentMethodBinding->next;
-					}
-					
-					if (currentPropertyBinding == NULL && currentMethodBinding == NULL) {
-						addStringToReportMsg("left side of memberAccess must exist");
-						compileError(FI, ((ASTnode *)data->left->data)->location);
-					}
-					
-					CharAccumulator_free(&leftInnerSource);
-					CharAccumulator_free(&rightInnerSource);
-					break;
-				}
-				
-				else if (data->operatorType == ASTnode_infixOperatorType_scopeResolution) {
-					ASTnode *leftNode = (ASTnode *)data->left->data;
-					ASTnode *rightNode = (ASTnode *)data->right->data;
-					
-					// for now just assume everything is an identifier
-					if (leftNode->nodeType != ASTnodeType_identifier) abort();
-					if (rightNode->nodeType != ASTnodeType_identifier) abort();
-					
-					SubString *leftSubString = ((ASTnode_identifier *)leftNode->value)->name;
-					SubString *rightSubString = ((ASTnode_identifier *)rightNode->value)->name;
-					
-					ContextBinding *namespaceBinding = getContextBindingFromSubString(FI, leftSubString);
-					if (namespaceBinding == NULL) {
-						addStringToReportMsg("value does not exist");
-						
-						addStringToReportIndicator("nothing named '");
-						addSubStringToReportIndicator(leftSubString);
-						addStringToReportIndicator("'");
-						compileError(FI, leftNode->location);
-					}
-					
-					if (namespaceBinding->type != ContextBindingType_namespace) {
-						addStringToReportMsg("not a namespace");
-						
-						addStringToReportIndicator("'");
-						addSubStringToReportIndicator(leftSubString);
-						addStringToReportIndicator("' is not a namespace");
-						compileError(FI, leftNode->location);
-					}
-					
-					ContextBinding_namespace *namespace = (ContextBinding_namespace *)namespaceBinding->value;
-					
-					int success = 0;
-					
-					// find the module
-					linkedList_Node *currentFile = namespace->files;
-					while (1) {
-						if (currentFile == NULL) {
-							addStringToReportMsg("value does not exist is namespace");
-							
-							addStringToReportIndicator("nothing in namespace named '");
-							addSubStringToReportIndicator(leftSubString);
-							addStringToReportIndicator("'");
-							compileError(FI, leftNode->location);
-						}
-						FileInformation *fileInformation = *(FileInformation **)currentFile->data;
-						
-						linkedList_Node *current = fileInformation->context.bindings[0];
-						while (current != NULL) {
-							ContextBinding *binding = ((ContextBinding *)current->data);
-							
-							if (SubString_SubString_cmp(binding->key, rightSubString) == 0) {
-								addTypeFromBinding(FI, types, binding);
-								success = 1;
-								break;
-							}
-							
-							current = current->next;
-						}
-						
-						if (success) break;
-						
-						currentFile = currentFile->next;
-					}
-					
-					break;
-				}
+//				else if (data->operatorType == ASTnode_infixOperatorType_memberAccess) {
+//					ASTnode *rightNode = (ASTnode *)data->right->data;
+//					
+//					if (rightNode->nodeType != ASTnodeType_identifier) {
+//						addStringToReportMsg("right side of memberAccess must be an identifier");
+//						
+//						addStringToReportIndicator("right side of memberAccess is not an identifier");
+//						compileError(FI, rightNode->location);
+//					};
+//					
+//					linkedList_Node *leftTypes = NULL;
+//					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypes, data->left, 0, 0, 0);
+//					
+//					ContextBinding *structBinding = ((BuilderType *)leftTypes->data)->binding;
+//					if (structBinding->type != ContextBindingType_struct) {
+//						addStringToReportMsg("left side of member access is not a struct");
+//						compileError(FI, ((ASTnode *)data->left->data)->location);
+//					}
+//					ContextBinding_struct *structData = (ContextBinding_struct *)structBinding->value;
+//					
+//					ASTnode_identifier *rightData = (ASTnode_identifier *)rightNode->value;
+//					
+//					int index = 0;
+//					
+//					linkedList_Node *currentPropertyBinding = structData->propertyBindings;
+//					while (1) {
+//						if (currentPropertyBinding == NULL) {
+//							break;
+//						}
+//						
+//						ContextBinding *propertyBinding = (ContextBinding *)currentPropertyBinding->data;
+//						
+//						if (SubString_SubString_cmp(propertyBinding->key, rightData->name) == 0) {
+//							if (propertyBinding->type == ContextBindingType_variable) {
+//								ContextBinding_variable *variable = (ContextBinding_variable *)propertyBinding->value;
+//								
+//								if (types != NULL) {
+//									addTypeFromBuilderType(FI, types, &variable->type);
+//								}
+//								
+//								CharAccumulator_appendChars(outerSource, "\n\t%");
+//								CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+//								CharAccumulator_appendChars(outerSource, " = getelementptr inbounds ");
+//								CharAccumulator_appendChars(outerSource, structData->LLVMname);
+//								CharAccumulator_appendChars(outerSource, ", ptr ");
+//								CharAccumulator_appendChars(outerSource, leftInnerSource.data);
+//								CharAccumulator_appendChars(outerSource, ", i32 0");
+//								CharAccumulator_appendChars(outerSource, ", i32 ");
+//								CharAccumulator_appendInt(outerSource, index);
+//								
+//								if (loadVariables) {
+//									CharAccumulator_appendChars(outerSource, "\n\t%");
+//									CharAccumulator_appendInt(outerSource, outerFunction->registerCount + 1);
+//									CharAccumulator_appendChars(outerSource, " = load ");
+//									CharAccumulator_appendChars(outerSource, ((ContextBinding_variable *)propertyBinding->value)->LLVMtype);
+//									CharAccumulator_appendChars(outerSource, ", ptr %");
+//									CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+//									CharAccumulator_appendChars(outerSource, ", align ");
+//									CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(&variable->type));
+//									
+//									if (withTypes) {
+//										CharAccumulator_appendChars(innerSource, ((ContextBinding_variable *)propertyBinding->value)->LLVMtype);
+//										CharAccumulator_appendChars(innerSource, " ");
+//									}
+//									
+//									outerFunction->registerCount++;
+//								}
+//								
+//								if (innerSource) {
+//									CharAccumulator_appendChars(innerSource, "%");
+//									CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+//								} else {
+//									addStringToReportMsg("unused member access");
+//									compileWarning(FI, rightNode->location, WarningType_unused);
+//								}
+//								
+//								outerFunction->registerCount++;
+//							} else {
+//								abort();
+//							}
+//							
+//							break;
+//						}
+//						
+//						currentPropertyBinding = currentPropertyBinding->next;
+//						if (propertyBinding->type != ContextBindingType_function) {
+//							index++;
+//						}
+//					}
+//					
+//					linkedList_Node *currentMethodBinding = structData->methodBindings;
+//					while (1) {
+//						if (currentMethodBinding == NULL) {
+//							break;
+//						}
+//						
+//						ContextBinding *methodBinding = (ContextBinding *)currentMethodBinding->data;
+//						if (methodBinding->type != ContextBindingType_function) abort();
+//						
+//						if (SubString_SubString_cmp(methodBinding->key, rightData->name) == 0) {
+//							if (types != NULL) {
+//								addTypeFromBinding(FI, types, methodBinding);
+//							}
+//							break;
+//						}
+//						
+//						currentMethodBinding = currentMethodBinding->next;
+//					}
+//					
+//					if (currentPropertyBinding == NULL && currentMethodBinding == NULL) {
+//						addStringToReportMsg("left side of memberAccess must exist");
+//						compileError(FI, ((ASTnode *)data->left->data)->location);
+//					}
+//					
+//					CharAccumulator_free(&leftInnerSource);
+//					CharAccumulator_free(&rightInnerSource);
+//					break;
+//				}
 				
 				else if (data->operatorType == ASTnode_infixOperatorType_cast) {
 					linkedList_Node *expectedTypeForLeft = NULL;

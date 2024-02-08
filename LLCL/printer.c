@@ -190,13 +190,6 @@ void printBinding(FileInformation *FI, ContextBinding *binding) {
 			type = 21;
 			break;
 		}
-		
-		case ContextBindingType_namespace: {
-			CharAccumulator_appendChars(&documentation, "namespace");
-			
-			type = 8;
-			break;
-		}
 	}
 	
 //	if (binding->type != ContextBindingType_namespace && binding->originFile != coreFilePointer) {
@@ -245,24 +238,5 @@ void printBindings(FileInformation *FI) {
 		}
 		
 		index--;
-	}
-	
-	linkedList_Node *currentFile = FI->context.importedFiles;
-	while (currentFile != NULL) {
-		FileInformation *fileInformation = *(FileInformation **)currentFile->data;
-		
-		linkedList_Node *current = fileInformation->context.bindings[0];
-		
-		while (current != NULL) {
-			ContextBinding *binding = ((ContextBinding *)current->data);
-			
-			if (ContextBinding_availableInOtherFile(binding)) {
-				printBinding(FI, binding);
-			}
-			
-			current = current->next;
-		}
-		
-		currentFile = currentFile->next;
 	}
 }
