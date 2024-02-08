@@ -65,7 +65,7 @@ void getTypeDescription(FileInformation *FI, CharAccumulator *charAccumulator, B
 				
 				CharAccumulator_appendChars(charAccumulator, "(");
 				
-				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
+				if (expressionFact->operatorType == ASTnode_infixOperatorType_equivalent) {
 					if (expressionFact->left == NULL) {
 						CharAccumulator_appendChars(charAccumulator, "$");
 					} else {

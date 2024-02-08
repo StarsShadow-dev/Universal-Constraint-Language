@@ -370,10 +370,10 @@ int64_t ASTnode_getIntFromNumber(ASTnode *node, FileInformation *FI) {
 // Facts
 //
 
-void Fact_newExpression(linkedList_Node **head, ASTnode_operatorType operatorType, ASTnode *left, ASTnode *rightConstant) {
+void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operatorType, ASTnode *left, ASTnode *rightConstant) {
 	Fact *factData = linkedList_addNode(head, sizeof(Fact) + sizeof(Fact_expression));
 	factData->type = FactType_expression;
-	((Fact_expression *)factData->value)->operatorType = ASTnode_operatorType_equivalent;
+	((Fact_expression *)factData->value)->operatorType = ASTnode_infixOperatorType_equivalent;
 	((Fact_expression *)factData->value)->left = left;
 	((Fact_expression *)factData->value)->rightConstant = rightConstant;
 }
@@ -549,7 +549,7 @@ ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI) {
 			if (fact->type == FactType_expression) {
 				Fact_expression *expressionFact = (Fact_expression *)fact->value;
 				
-				if (expressionFact->operatorType == ASTnode_operatorType_equivalent) {
+				if (expressionFact->operatorType == ASTnode_infixOperatorType_equivalent) {
 					if (expressionFact->left == NULL) {
 						return expressionFact->rightConstant;
 					} else {

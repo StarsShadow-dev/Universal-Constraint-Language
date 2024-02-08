@@ -31,10 +31,10 @@ ContextBinding *getContextBindingFromIdentifierNode(FileInformation *FI, ASTnode
 		ASTnode_identifier *data = (ASTnode_identifier *)node->value;
 		
 		return getContextBindingFromSubString(FI, data->name);
-	} else if (node->nodeType == ASTnodeType_operator) {
-		ASTnode_operator *data = (ASTnode_operator *)node->value;
+	} else if (node->nodeType == ASTnodeType_infixOperator) {
+		ASTnode_infixOperator *data = (ASTnode_infixOperator *)node->value;
 		
-		if (data->operatorType != ASTnode_operatorType_memberAccess) abort();
+		if (data->operatorType != ASTnode_infixOperatorType_memberAccess) abort();
 		
 		return getContextBindingFromIdentifierNode(FI, (ASTnode *)data->left->data);
 	} else {
@@ -74,7 +74,7 @@ void addTypeFromString(FileInformation *FI, linkedList_Node **list, char *string
 		.factStack = {0}
 	};
 	
-	Fact_newExpression(&typeData->factStack[0], ASTnode_operatorType_equivalent, NULL, node);
+	Fact_newExpression(&typeData->factStack[0], ASTnode_infixOperatorType_equivalent, NULL, node);
 }
 
 void addTypeFromBuilderType(FileInformation *FI, linkedList_Node **list, BuilderType *type) {
@@ -142,8 +142,8 @@ BuilderType *getType(FileInformation *FI, ASTnode *node) {
 	return (BuilderType *)returnTypeList->data;
 }
 
-void applyFacts(FileInformation *FI, ASTnode_operator *operator) {
-	if (operator->operatorType != ASTnode_operatorType_equivalent) return;
+void applyFacts(FileInformation *FI, ASTnode_infixOperator *operator) {
+	if (operator->operatorType != ASTnode_infixOperatorType_equivalent) return;
 	if (((ASTnode *)operator->left->data)->nodeType != ASTnodeType_identifier) return;
 	if (((ASTnode *)operator->right->data)->nodeType != ASTnodeType_number) return;
 	
@@ -211,7 +211,7 @@ BuilderType getTypeFromBinding(ContextBinding *binding) {
 	return (BuilderType){binding};
 }
 
-int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_operatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
+int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_infixOperatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
 	if (FI->level <= 0) abort();
 	if (leftNode->nodeType != rightNode->nodeType) return 0;
 	ASTnodeType sharedNodeType = leftNode->nodeType;
@@ -222,7 +222,7 @@ int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_oper
 			ASTnode_number *right = (ASTnode_number *)rightNode->value;
 			
 			if (
-				operatorType == ASTnode_operatorType_equivalent &&
+				operatorType == ASTnode_infixOperatorType_equivalent &&
 				left->value == right->value
 			) {
 				ASTnode *node = safeMalloc(sizeof(ASTnode) + sizeof(ASTnode_bool));
@@ -230,7 +230,7 @@ int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_oper
 				node->location = (SourceLocation){0};
 				((ASTnode_bool *)node->value)->isTrue = 1;
 				
-				Fact_newExpression(&type->factStack[FI->level - 1], ASTnode_operatorType_equivalent, NULL, node);
+				Fact_newExpression(&type->factStack[FI->level - 1], ASTnode_infixOperatorType_equivalent, NULL, node);
 				return 1;
 			}
 			return 0;
@@ -242,7 +242,7 @@ int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_oper
 	}
 }
 
-int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_operatorType operatorType, BuilderType *left, BuilderType *right) {
+int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_infixOperatorType operatorType, BuilderType *left, BuilderType *right) {
 	int resultIsTrue = 0;
 	
 	BuilderType *type = linkedList_addNode(list, sizeof(BuilderType));
@@ -273,8 +273,8 @@ int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **lis
 							Fact_expression *rightExpressionFact = (Fact_expression *)rightFact->value;
 							
 							if (
-								leftExpressionFact->operatorType == ASTnode_operatorType_equivalent &&
-								rightExpressionFact->operatorType == ASTnode_operatorType_equivalent
+								leftExpressionFact->operatorType == ASTnode_infixOperatorType_equivalent &&
+								rightExpressionFact->operatorType == ASTnode_infixOperatorType_equivalent
 							) {
 								int isTrue = addOperatorResultToType(FI, type, operatorType, leftExpressionFact->rightConstant, rightExpressionFact->rightConstant);
 								if (isTrue) resultIsTrue = 1;
@@ -315,8 +315,8 @@ void expectType(FileInformation *FI, ContextBinding_variable *self, BuilderType 
 	
 	if (expectedType->constraintNodes != NULL) {
 		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
-		if (constraintExpectedNode->nodeType != ASTnodeType_operator) abort();
-		ASTnode_operator *expectedData = (ASTnode_operator *)constraintExpectedNode->value;
+		if (constraintExpectedNode->nodeType != ASTnodeType_infixOperator) abort();
+		ASTnode_infixOperator *expectedData = (ASTnode_infixOperator *)constraintExpectedNode->value;
 		
 		ASTnode *leftNode = (ASTnode *)expectedData->left->data;
 		ASTnode *rightNode = (ASTnode *)expectedData->right->data;
@@ -1334,7 +1334,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					
 					if (data->expression == NULL) {
 						addStringToReportIndicator("if statement condition is empty");
-					} else if (((ASTnode_operator *)((ASTnode *)data->expression->data)->value)->operatorType == ASTnode_operatorType_assignment) {
+					} else if (((ASTnode_infixOperator *)((ASTnode *)data->expression->data)->value)->operatorType == ASTnode_infixOperatorType_assignment) {
 						addStringToReportIndicator("did you mean to use two equals?");
 					}
 					
@@ -1345,9 +1345,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					compileError(FI, node->location);
 				}
 				
-				if (((ASTnode *)data->expression->data)->nodeType == ASTnodeType_operator) {
+				if (((ASTnode *)data->expression->data)->nodeType == ASTnodeType_infixOperator) {
 					FI->level++;
-					applyFacts(FI, (ASTnode_operator *)((ASTnode *)data->expression->data)->value);
+					applyFacts(FI, (ASTnode_infixOperator *)((ASTnode *)data->expression->data)->value);
 					FI->level--;
 				}
 				
@@ -1528,8 +1528,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				break;
 			}
 			
-			case ASTnodeType_operator: {
-				ASTnode_operator *data = (ASTnode_operator *)node->value;
+			case ASTnodeType_infixOperator: {
+				ASTnode_infixOperator *data = (ASTnode_infixOperator *)node->value;
 				
 				CharAccumulator leftInnerSource = {100, 0, 0};
 				CharAccumulator_initialize(&leftInnerSource);
@@ -1537,7 +1537,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				CharAccumulator rightInnerSource = {100, 0, 0};
 				CharAccumulator_initialize(&rightInnerSource);
 				
-				if (data->operatorType == ASTnode_operatorType_assignment) {
+				if (data->operatorType == ASTnode_infixOperatorType_assignment) {
 					if (outerFunction == NULL) {
 						addStringToReportMsg("variable assignments are only allowed in a function");
 						compileError(FI, node->location);
@@ -1567,7 +1567,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					break;
 				}
 				
-				else if (data->operatorType == ASTnode_operatorType_memberAccess) {
+				else if (data->operatorType == ASTnode_infixOperatorType_memberAccess) {
 					ASTnode *rightNode = (ASTnode *)data->right->data;
 					
 					if (rightNode->nodeType != ASTnodeType_identifier) {
@@ -1686,7 +1686,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					break;
 				}
 				
-				else if (data->operatorType == ASTnode_operatorType_scopeResolution) {
+				else if (data->operatorType == ASTnode_infixOperatorType_scopeResolution) {
 					ASTnode *leftNode = (ASTnode *)data->left->data;
 					ASTnode *rightNode = (ASTnode *)data->right->data;
 					
@@ -1754,7 +1754,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					break;
 				}
 				
-				else if (data->operatorType == ASTnode_operatorType_cast) {
+				else if (data->operatorType == ASTnode_infixOperatorType_cast) {
 					linkedList_Node *expectedTypeForLeft = NULL;
 					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeft, data->left, 0, 0, 0);
 					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeft, NULL, data->left, 1, 1, 0);
@@ -1813,10 +1813,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					 expectedTypes == NULL && types != NULL
 					) ||
 					(
-						data->operatorType == ASTnode_operatorType_equivalent ||
-						data->operatorType == ASTnode_operatorType_notEquivalent ||
-						data->operatorType == ASTnode_operatorType_greaterThan ||
-						data->operatorType == ASTnode_operatorType_lessThan
+						data->operatorType == ASTnode_infixOperatorType_equivalent ||
+						data->operatorType == ASTnode_infixOperatorType_notEquivalent ||
+						data->operatorType == ASTnode_infixOperatorType_greaterThan ||
+						data->operatorType == ASTnode_infixOperatorType_lessThan
 					 )
 				) {
 					//
@@ -1853,10 +1853,10 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				// all of these operators are very similar and even use the same 'icmp' instruction
 				// https://llvm.org/docs/LangRef.html#fcmp-instruction
 				if (
-					data->operatorType == ASTnode_operatorType_equivalent ||
-					data->operatorType == ASTnode_operatorType_notEquivalent ||
-					data->operatorType == ASTnode_operatorType_greaterThan ||
-					data->operatorType == ASTnode_operatorType_lessThan
+					data->operatorType == ASTnode_infixOperatorType_equivalent ||
+					data->operatorType == ASTnode_infixOperatorType_notEquivalent ||
+					data->operatorType == ASTnode_infixOperatorType_greaterThan ||
+					data->operatorType == ASTnode_infixOperatorType_lessThan
 				) {
 					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
 					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
@@ -1864,22 +1864,22 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, " = icmp ");
 					
-					if (data->operatorType == ASTnode_operatorType_equivalent) {
+					if (data->operatorType == ASTnode_infixOperatorType_equivalent) {
 						// eq: yields true if the operands are equal, false otherwise. No sign interpretation is necessary or performed.
 						CharAccumulator_appendChars(outerSource, "eq ");
 					}
 					
-					else if (data->operatorType == ASTnode_operatorType_notEquivalent) {
+					else if (data->operatorType == ASTnode_infixOperatorType_notEquivalent) {
 						// ne: yields true if the operands are unequal, false otherwise. No sign interpretation is necessary or performed.
 						CharAccumulator_appendChars(outerSource, "ne ");
 					}
 					
-					else if (data->operatorType == ASTnode_operatorType_greaterThan) {
+					else if (data->operatorType == ASTnode_infixOperatorType_greaterThan) {
 						// sgt: interprets the operands as signed values and yields true if op1 is greater than op2.
 						CharAccumulator_appendChars(outerSource, "sgt ");
 					}
 					
-					else if (data->operatorType == ASTnode_operatorType_lessThan) {
+					else if (data->operatorType == ASTnode_infixOperatorType_lessThan) {
 						// slt: interprets the operands as signed values and yields true if op1 is less than op2.
 						CharAccumulator_appendChars(outerSource, "slt ");
 					}
@@ -1896,11 +1896,11 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				}
 				
 				else if (
-					data->operatorType == ASTnode_operatorType_add ||
-					data->operatorType == ASTnode_operatorType_subtract ||
-					data->operatorType == ASTnode_operatorType_multiply ||
-					data->operatorType == ASTnode_operatorType_divide ||
-					data->operatorType == ASTnode_operatorType_modulo
+					data->operatorType == ASTnode_infixOperatorType_add ||
+					data->operatorType == ASTnode_infixOperatorType_subtract ||
+					data->operatorType == ASTnode_infixOperatorType_multiply ||
+					data->operatorType == ASTnode_infixOperatorType_divide ||
+					data->operatorType == ASTnode_infixOperatorType_modulo
 				) {
 					if (expectedTypes == NULL && types != NULL) {
 						addTypeFromBuilderType(FI, types, (BuilderType *)expectedTypeForLeftAndRight->data);
@@ -1914,7 +1914,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 						CharAccumulator_appendChars(outerSource, "\n\t%");
 						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 						
-						if (data->operatorType == ASTnode_operatorType_add) {
+						if (data->operatorType == ASTnode_infixOperatorType_add) {
 							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = add ");
 								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
@@ -1925,7 +1925,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_operatorType_subtract) {
+						} else if (data->operatorType == ASTnode_infixOperatorType_subtract) {
 							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = sub ");
 								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
@@ -1936,7 +1936,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_operatorType_multiply) {
+						} else if (data->operatorType == ASTnode_infixOperatorType_multiply) {
 							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = mul ");
 								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
@@ -1947,7 +1947,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_operatorType_divide) {
+						} else if (data->operatorType == ASTnode_infixOperatorType_divide) {
 							if (BuilderType_isUnsignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = udiv ");
 							} else if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
@@ -1957,7 +1957,7 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_operatorType_modulo) {
+						} else if (data->operatorType == ASTnode_infixOperatorType_modulo) {
 							if (BuilderType_isUnsignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = urem ");
 							} else if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
@@ -1978,8 +1978,8 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 				}
 				
 				else if (
-					data->operatorType == ASTnode_operatorType_and ||
-					data->operatorType == ASTnode_operatorType_or
+					data->operatorType == ASTnode_infixOperatorType_and ||
+					data->operatorType == ASTnode_infixOperatorType_or
 				) {
 					linkedList_Node *expectedTypesForIf = NULL;
 					addTypeFromString(FI, &expectedTypesForIf, "Bool", NULL);
@@ -1990,9 +1990,9 @@ int buildLLVM(FileInformation *FI, ContextBinding_function *outerFunction, CharA
 					if (outerSource != NULL) {
 						CharAccumulator_appendChars(outerSource, "\n\t%");
 						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-						if (data->operatorType == ASTnode_operatorType_and) {
+						if (data->operatorType == ASTnode_infixOperatorType_and) {
 							CharAccumulator_appendChars(outerSource, " = and i1");
-						} else if (data->operatorType == ASTnode_operatorType_or) {
+						} else if (data->operatorType == ASTnode_infixOperatorType_or) {
 							CharAccumulator_appendChars(outerSource, " = or i1");
 						}
 					}

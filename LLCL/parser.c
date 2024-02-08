@@ -140,47 +140,47 @@ linkedList_Node *parseOperators(FileInformation *FI, linkedList_Node **current, 
 				right = parseOperators(FI, current, parse(FI, current, ParserMode_expression, 1, 0), nextPrecedence, ignoreEquals);
 			}
 			
-			ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_operator));
+			ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_infixOperator));
 			
-			data->nodeType = ASTnodeType_operator;
+			data->nodeType = ASTnodeType_infixOperator;
 			data->location = operator->location;
 			
 			if (SubString_string_cmp(&operator->subString, "=") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_assignment;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_assignment;
 			} else if (SubString_string_cmp(&operator->subString, "==") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_equivalent;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_equivalent;
 			} else if (SubString_string_cmp(&operator->subString, "!=") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_notEquivalent;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_notEquivalent;
 			} else if (SubString_string_cmp(&operator->subString, ">") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_greaterThan;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_greaterThan;
 			} else if (SubString_string_cmp(&operator->subString, "<") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_lessThan;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_lessThan;
 			} else if (SubString_string_cmp(&operator->subString, "+") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_add;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_add;
 			} else if (SubString_string_cmp(&operator->subString, "-") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_subtract;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_subtract;
 			} else if (SubString_string_cmp(&operator->subString, "*") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_multiply;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_multiply;
 			} else if (SubString_string_cmp(&operator->subString, "/") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_divide;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_divide;
 			} else if (SubString_string_cmp(&operator->subString, "%") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_modulo;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_modulo;
 			} else if (SubString_string_cmp(&operator->subString, "&&") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_and;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_and;
 			} else if (SubString_string_cmp(&operator->subString, "||") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_or;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_or;
 			} else if (SubString_string_cmp(&operator->subString, ".") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_memberAccess;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_memberAccess;
 			} else if (SubString_string_cmp(&operator->subString, "::") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_scopeResolution;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_scopeResolution;
 			} else if (SubString_string_cmp(&operator->subString, "as") == 0) {
-				((ASTnode_operator *)data->value)->operatorType = ASTnode_operatorType_cast;
+				((ASTnode_infixOperator *)data->value)->operatorType = ASTnode_infixOperatorType_cast;
 			} else {
 				abort();
 			}
 			
-			((ASTnode_operator *)data->value)->left = left;
-			((ASTnode_operator *)data->value)->right = right;
+			((ASTnode_infixOperator *)data->value)->left = left;
+			((ASTnode_infixOperator *)data->value)->right = right;
 			
 			return parseOperators(FI, current, AST, precedence, ignoreEquals);
 		}
@@ -777,7 +777,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 						linkedList_Node *last = linkedList_getLast(AST);
 						if (
 							((ASTnode *)last->data)->nodeType == ASTnodeType_identifier ||
-							((ASTnode *)last->data)->nodeType == ASTnodeType_operator
+							((ASTnode *)last->data)->nodeType == ASTnodeType_infixOperator
 						) {
 							forFunction = 1;
 						} else {

@@ -162,7 +162,8 @@ typedef enum {
 	ASTnodeType_return,
 	ASTnodeType_variableDefinition,
 	ASTnodeType_variableAssignment,
-	ASTnodeType_operator,
+	
+	ASTnodeType_infixOperator,
 	
 	// TODO: replace with ASTnodeType_bool?
 	ASTnodeType_bool,
@@ -248,30 +249,30 @@ typedef struct {
 } ASTnode_variableDefinition;
 
 typedef enum {
-	ASTnode_operatorType_assignment,
-	ASTnode_operatorType_equivalent,
-	ASTnode_operatorType_notEquivalent,
-	ASTnode_operatorType_greaterThan,
-	ASTnode_operatorType_lessThan,
-	ASTnode_operatorType_add,
-	ASTnode_operatorType_subtract,
-	ASTnode_operatorType_multiply,
-	ASTnode_operatorType_divide,
-	ASTnode_operatorType_modulo,
-	ASTnode_operatorType_and,
-	ASTnode_operatorType_or,
-	ASTnode_operatorType_memberAccess,
-	ASTnode_operatorType_scopeResolution,
+	ASTnode_infixOperatorType_assignment,
+	ASTnode_infixOperatorType_equivalent,
+	ASTnode_infixOperatorType_notEquivalent,
+	ASTnode_infixOperatorType_greaterThan,
+	ASTnode_infixOperatorType_lessThan,
+	ASTnode_infixOperatorType_add,
+	ASTnode_infixOperatorType_subtract,
+	ASTnode_infixOperatorType_multiply,
+	ASTnode_infixOperatorType_divide,
+	ASTnode_infixOperatorType_modulo,
+	ASTnode_infixOperatorType_and,
+	ASTnode_infixOperatorType_or,
+	ASTnode_infixOperatorType_memberAccess,
+	ASTnode_infixOperatorType_scopeResolution,
 	
 	// node: the right of operatorType_cast is a type
-	ASTnode_operatorType_cast
-} ASTnode_operatorType;
+	ASTnode_infixOperatorType_cast
+} ASTnode_infixOperatorType;
 
 typedef struct {
-	ASTnode_operatorType operatorType;
+	ASTnode_infixOperatorType operatorType;
 	linkedList_Node *left;
 	linkedList_Node *right;
-} ASTnode_operator;
+} ASTnode_infixOperator;
 
 typedef struct {
 	int isTrue;
@@ -314,7 +315,7 @@ typedef struct {
 } Fact;
 
 typedef struct {
-	ASTnode_operatorType operatorType;
+	ASTnode_infixOperatorType operatorType;
 	ASTnode *left;
 	ASTnode *rightConstant;
 } Fact_expression;
@@ -325,7 +326,7 @@ typedef struct {
 	linkedList_Node *falseFacts;
 } Fact_if;
 
-void Fact_newExpression(linkedList_Node **head, ASTnode_operatorType operatorType, ASTnode *left, ASTnode *rightConstant);
+void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operatorType, ASTnode *left, ASTnode *rightConstant);
 
 //
 // context
