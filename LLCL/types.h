@@ -94,7 +94,7 @@ typedef struct {
 	char *path;
 	linkedList_Node *declaredInLLVM;
 	
-	linkedList_Node *bindings[maxContextLevel];
+	linkedList_Node *scopeObjects[maxContextLevel];
 } FileContext;
 
 typedef struct {

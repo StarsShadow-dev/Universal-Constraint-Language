@@ -185,7 +185,7 @@ void printKeywords(FileInformation *FI) {
 void printScopeObjects(FileInformation *FI) {
 	int index = FI->level;
 	while (index >= 0) {
-		linkedList_Node *current = FI->context.bindings[index];
+		linkedList_Node *current = FI->context.scopeObjects[index];
 		
 		while (current != NULL) {
 			ScopeObject *scopeObject = ((ScopeObject *)current->data);

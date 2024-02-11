@@ -312,7 +312,7 @@ FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStruct
 			.path = path,
 			.declaredInLLVM = NULL,
 			
-			.bindings = {0}
+			.scopeObjects = {0}
 		},
 		
 		.debugInformationCompileUnitID = 0,
@@ -435,7 +435,7 @@ void addScopeObject_simpleType(linkedList_Node **context, char *name, char *LLVM
 ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
 	int index = FI->level;
 	while (index >= 0) {
-		linkedList_Node *current = FI->context.bindings[index];
+		linkedList_Node *current = FI->context.scopeObjects[index];
 		while (current != NULL) {
 			ScopeObject *binding = (ScopeObject *)current->data;
 			
@@ -449,7 +449,7 @@ ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
 		index--;
 	}
 	
-	linkedList_Node *current = coreFilePointer->context.bindings[0];
+	linkedList_Node *current = coreFilePointer->context.scopeObjects[0];
 	while (current != NULL) {
 		ScopeObject *binding = (ScopeObject *)current->data;
 		
@@ -466,7 +466,7 @@ ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
 ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key) {
 	int index = FI->level;
 	while (index >= 0) {
-		linkedList_Node *current = FI->context.bindings[index];
+		linkedList_Node *current = FI->context.scopeObjects[index];
 		while (current != NULL) {
 			ScopeObject *binding = (ScopeObject *)current->data;
 			
@@ -480,7 +480,7 @@ ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key) {
 		index--;
 	}
 	
-	linkedList_Node *current = coreFilePointer->context.bindings[0];
+	linkedList_Node *current = coreFilePointer->context.scopeObjects[0];
 	while (current != NULL) {
 		ScopeObject *binding = (ScopeObject *)current->data;
 		

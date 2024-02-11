@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 			.path = NULL,
 			.declaredInLLVM = NULL,
 			
-			.bindings = {0}
+			.scopeObjects = {0}
 		},
 		
 		.debugInformationCompileUnitID = 0,
@@ -231,36 +231,36 @@ int main(int argc, char **argv) {
 	
 	// special case, define the type "Type"
 	SubString *key = SubString_new("Type", (int)strlen("Type"));
-	ScopeObject *data = linkedList_addNode(&coreFile.context.bindings[0], sizeof(ScopeObject) + sizeof(ScopeObject_struct));
+	ScopeObject *data = linkedList_addNode(&coreFile.context.scopeObjects[0], sizeof(ScopeObject) + sizeof(ScopeObject_struct));
 	*data = ScopeObject_new(key, 1, coreFilePointer, BuilderType_new(NULL, NULL), ScopeObjectType_struct);
 	*(ScopeObject_struct *)data->value = ScopeObject_struct_new("should_not_be_in_IR", NULL, 0, 0);
 	
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Void", "void", 0, 0);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Void", "void", 0, 0);
 	
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Int8", "i8", 1, 1);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Int16", "i16", 2, 2);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Int32", "i32", 4, 4);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Int64", "i64", 8, 8);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Int8", "i8", 1, 1);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Int16", "i16", 2, 2);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Int32", "i32", 4, 4);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Int64", "i64", 8, 8);
 	
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "UInt8", "i8", 1, 1);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "UInt16", "i16", 2, 2);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "UInt32", "i32", 4, 4);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "UInt64", "i64", 8, 8);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "UInt8", "i8", 1, 1);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "UInt16", "i16", 2, 2);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "UInt32", "i32", 4, 4);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "UInt64", "i64", 8, 8);
 	
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Float16", "half", 2, 2);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Float32", "float", 4, 4);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Float64", "double", 8, 8);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Float16", "half", 2, 2);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Float32", "float", 4, 4);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Float64", "double", 8, 8);
 	
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "_Vector", "should_not_be_in_IR", 0, 0);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "_Vector", "should_not_be_in_IR", 0, 0);
 	
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Bool", "i1", 1, 1);
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Bool", "i1", 1, 1);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "Function", "ptr", pointer_byteSize, pointer_byteSize);
 	// same for "__Number_and_it_should_not_be_in_IR"
-	addScopeObject_simpleType(&coreFile.context.bindings[0], "__Number", "should_not_be_in_IR", 0, 0);
+	addScopeObject_simpleType(&coreFile.context.scopeObjects[0], "__Number", "should_not_be_in_IR", 0, 0);
 	
 	CharAccumulator *topLevelStructSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelStructSource) = (CharAccumulator){100, 0, 0};
@@ -286,7 +286,7 @@ int main(int argc, char **argv) {
 	if (compilerMode == CompilerMode_query && !compilerOptions.printIR) {
 		printf("]");
 	}
-	linkedList_freeList(&FI->context.bindings[0]);
+	linkedList_freeList(&FI->context.scopeObjects[0]);
 	
 	if (compilerMode == CompilerMode_build_exe || compilerMode == CompilerMode_run) {
 		CharAccumulator clang_command = {100, 0, 0};

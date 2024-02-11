@@ -505,7 +505,7 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ScopeOb
 				expectUnusedName(FI, (SubString *)currentArgumentName->data, node->location);
 				FI->level--;
 				
-				ScopeObject *argumentScopeObject = linkedList_addNode(&FI->context.bindings[FI->level + 1], sizeof(ScopeObject) + sizeof(ScopeObject_value));
+				ScopeObject *argumentScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level + 1], sizeof(ScopeObject) + sizeof(ScopeObject_value));
 				*argumentScopeObject = ScopeObject_new((SubString *)currentArgumentName->data, 0, FI, type, ScopeObjectType_value);
 				*(ScopeObject_value *)argumentScopeObject->value = ScopeObject_value_new(function->registerCount + argumentCount + 1);
 				
@@ -630,7 +630,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			case ASTnodeType_struct: {
 //				ASTnode_struct *data = (ASTnode_struct *)node->value;
 //				
-//				ContextBinding *structBinding = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
+//				ContextBinding *structBinding = linkedList_addNode(&FI->context.scopeObjects[FI->level], sizeof(ContextBinding) + sizeof(ContextBinding_struct));
 //				
 //				structBinding->originFile = FI;
 //				structBinding->key = data->name;
@@ -699,7 +699,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //					}
 //				}
 				
-				addFunctionToList(LLVMname, FI, &FI->context.bindings[FI->level], node);
+				addFunctionToList(LLVMname, FI, &FI->context.scopeObjects[FI->level], node);
 				
 				break;
 			}
@@ -1077,7 +1077,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(type));
 				}
 				
-				ScopeObject *variableScopeObject = linkedList_addNode(&FI->context.bindings[FI->level], sizeof(ScopeObject) + sizeof(ScopeObject_value));
+				ScopeObject *variableScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level], sizeof(ScopeObject) + sizeof(ScopeObject_value));
 				*variableScopeObject = ScopeObject_new(data->name, 0, FI, *type, ScopeObjectType_value);
 				*(ScopeObject_value *)variableScopeObject->value = ScopeObject_value_new(outerFunction->registerCount);
 				
@@ -1796,7 +1796,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 	}
 	
 	if (FI->level != 0) {
-		linkedList_freeList(&FI->context.bindings[FI->level]);
+		linkedList_freeList(&FI->context.scopeObjects[FI->level]);
 	}
 	
 	FI->level--;
