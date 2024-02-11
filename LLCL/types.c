@@ -328,23 +328,23 @@ FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStruct
 // lexer, parser and builder
 //
 
-int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer) {
-	linkedList_Node *currentFunction = FI->context.declaredInLLVM;
+int FileInformation_declaredInLLVM(FileInformation *FI, ScopeObject *pointer) {
+	linkedList_Node *current = FI->context.declaredInLLVM;
 	
-	while (currentFunction != NULL) {
-		if (*(ContextBinding **)currentFunction->data == pointer) {
+	while (current != NULL) {
+		if (*(ScopeObject **)current->data == pointer) {
 			return 1;
 		}
 		
-		currentFunction = currentFunction->next;
+		current = current->next;
 	}
 	
 	return 0;
 }
 
-void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer) {
-	ContextBinding **bindingPointer = linkedList_addNode(&FI->context.declaredInLLVM, sizeof(void *));
-	*bindingPointer = pointer;
+void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ScopeObject *pointer) {
+	ScopeObject **newPointer = linkedList_addNode(&FI->context.declaredInLLVM, sizeof(void *));
+	*newPointer = pointer;
 }
 
 SubString *ASTnode_getSubStringFromString(ASTnode *node, FileInformation *FI) {
@@ -381,53 +381,63 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operat
 // context
 //
 
+BuilderType BuilderType_new(ScopeObject *scopeObject, linkedList_Node *constraintNodes) {
+	return (BuilderType){
+		.scopeObject = scopeObject,
+		.constraintNodes = constraintNodes,
+		.factStack = {0},
+	};
+}
+
+BuilderType getTypeFromScopeObject(ScopeObject *scopeObject) {
+	return BuilderType_new(scopeObject, NULL);
+}
+
+ScopeObject ScopeObject_new(SubString *key, int compileTime, FileInformation *originFile, BuilderType type, ScopeObjectType scopeObjectType) {
+	return (ScopeObject){
+		.key = key,
+		.compileTime = compileTime,
+		.originFile = originFile,
+		.type = type,
+		.scopeObjectType = scopeObjectType,
+	};
+}
+
+ScopeObject_struct ScopeObject_struct_new(char *LLVMname, linkedList_Node *members, int byteSize, int byteAlign) {
+	return (ScopeObject_struct){
+		.LLVMname = LLVMname,
+		.members  = members,
+		.byteSize = byteSize,
+		.byteAlign = byteAlign,
+	};
+}
+
+ScopeObject_value ScopeObject_value_new(int LLVMRegister) {
+	return (ScopeObject_value){
+		.LLVMRegister = LLVMRegister,
+	};
+}
+
 // from the core file and has name
-int ContextBinding_hasCoreName(ContextBinding *binding, char *name) {
+int ContextBinding_hasCoreName(ScopeObject *binding, char *name) {
 	return binding->originFile == coreFilePointer && SubString_string_cmp(binding->key, name) == 0;
 }
 
 // note: originFile = coreFilePointer
-void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign) {
-	SubString *key = safeMalloc(sizeof(SubString));
-	key->start = name;
-	key->length = (int)strlen(name);
+void addScopeObject_simpleType(linkedList_Node **context, char *name, char *LLVMname, int byteSize, int byteAlign) {
+	SubString *key = SubString_new(name, (int)strlen(name));
+	ScopeObject *data = linkedList_addNode(context, sizeof(ScopeObject) + sizeof(ScopeObject_struct));
 	
-	ContextBinding *data = linkedList_addNode(context, sizeof(ContextBinding) + sizeof(ContextBinding_simpleType));
-	
-	data->originFile = coreFilePointer;
-	data->key = key;
-	data->type = ContextBindingType_simpleType;
-	data->byteSize = byteSize;
-	data->byteAlign = byteAlign;
-	((ContextBinding_simpleType *)data->value)->LLVMtype = LLVMtype;
+	*data = ScopeObject_new(key, 1, coreFilePointer, getTypeFromScopeObject(getScopeObjectFromString(coreFilePointer, "Type")), ScopeObjectType_struct);
+	*(ScopeObject_struct *)data->value = ScopeObject_struct_new(LLVMname, NULL, byteSize, byteAlign);
 }
 
-// note: originFile = coreFilePointer
-void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value) {
-	SubString *key = safeMalloc(sizeof(SubString));
-	key->start = name;
-	key->length = (int)strlen(name);
-	
-	ContextBinding *data = linkedList_addNode(context, sizeof(ContextBinding) + sizeof(ContextBinding_compileTimeSetting));
-	
-	data->originFile = coreFilePointer;
-	data->key = key;
-	data->type = ContextBindingType_compileTimeSetting;
-	data->byteSize = 0;
-	data->byteAlign = 0;
-	if (value != NULL) {
-		((ContextBinding_compileTimeSetting *)data->value)->value = SubString_new(value, (int)strlen(value));
-	} else {
-		((ContextBinding_compileTimeSetting *)data->value)->value = NULL;
-	}
-}
-
-ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
+ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
 	int index = FI->level;
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.bindings[index];
 		while (current != NULL) {
-			ContextBinding *binding = ((ContextBinding *)current->data);
+			ScopeObject *binding = (ScopeObject *)current->data;
 			
 			if (SubString_string_cmp(binding->key, key) == 0) {
 				return binding;
@@ -441,7 +451,7 @@ ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
 	
 	linkedList_Node *current = coreFilePointer->context.bindings[0];
 	while (current != NULL) {
-		ContextBinding *binding = ((ContextBinding *)current->data);
+		ScopeObject *binding = (ScopeObject *)current->data;
 		
 		if (SubString_string_cmp(binding->key, key) == 0) {
 			return binding;
@@ -453,12 +463,12 @@ ContextBinding *getContextBindingFromString(FileInformation *FI, char *key) {
 	return NULL;
 }
 
-ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *key) {
+ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key) {
 	int index = FI->level;
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.bindings[index];
 		while (current != NULL) {
-			ContextBinding *binding = ((ContextBinding *)current->data);
+			ScopeObject *binding = (ScopeObject *)current->data;
 			
 			if (SubString_SubString_cmp(binding->key, key) == 0) {
 				return binding;
@@ -472,7 +482,7 @@ ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *k
 	
 	linkedList_Node *current = coreFilePointer->context.bindings[0];
 	while (current != NULL) {
-		ContextBinding *binding = ((ContextBinding *)current->data);
+		ScopeObject *binding = (ScopeObject *)current->data;
 		
 		if (SubString_SubString_cmp(binding->key, key) == 0) {
 			return binding;
@@ -487,6 +497,20 @@ ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *k
 //
 // BuilderType
 //
+
+BuilderType *BuilderType_getNewFromString(FileInformation *FI, char *string) {
+	ScopeObject *scopeObject = getScopeObjectFromString(FI, string);
+	if (scopeObject == NULL) abort();
+	
+	BuilderType *typeData = safeMalloc(sizeof(BuilderType));
+	*typeData = (BuilderType){
+		.scopeObject = scopeObject,
+		.constraintNodes = NULL,
+		.factStack = {0}
+	};
+	
+	return typeData;
+}
 
 /// returns the resolved value of `type` or NULL
 ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI) {
@@ -525,21 +549,13 @@ ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI) {
 	return NULL;
 }
 
-BuilderType *BuilderType_getStateFromSubString(BuilderType *type, SubString *key) {
-	return Dictionary_getFromSubString(type->states, key);
-}
-
-BuilderType *BuilderType_getStateFromString(BuilderType *type, char *key) {
-	return Dictionary_getFromSubString(type->states, getSubStringFromString(key));
-}
-
 int BuilderType_hasName(BuilderType *type, char *name) {
-	return SubString_string_cmp(type->binding->key, name) == 0;
+	return SubString_string_cmp(type->scopeObject->key, name) == 0;
 }
 
 // from the core file and has name
 int BuilderType_hasCoreName(BuilderType *type, char *name) {
-	return type->binding->originFile == coreFilePointer && BuilderType_hasName(type, name);
+	return type->scopeObject->originFile == coreFilePointer && BuilderType_hasName(type, name);
 }
 
 int BuilderType_isSignedInt(BuilderType *type) {
@@ -571,42 +587,42 @@ int BuilderType_isNumber(BuilderType *type) {
 }
 
 char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI) {
-	if (type->binding->type == ContextBindingType_simpleType) {
-		if (ContextBinding_hasCoreName(type->binding, "_Vector")) {
-			ASTnode *resolvedSizeValue = BuilderType_getResolvedValue(BuilderType_getStateFromString(type, "size"), FI);
-			if (resolvedSizeValue == NULL) abort();
-			
-			CharAccumulator *LLVMname = CharAccumulator_new();
-			CharAccumulator_appendChars(LLVMname, "[ ");
-			CharAccumulator_appendInt(LLVMname, ASTnode_getIntFromNumber(resolvedSizeValue, FI));
-			CharAccumulator_appendChars(LLVMname, " x ");
-			CharAccumulator_appendChars(LLVMname, BuilderType_getLLVMname(BuilderType_getStateFromString(type, "type"), FI));
-			CharAccumulator_appendChars(LLVMname, " ]");
-			return LLVMname->data;
-		} else {
-			return ((ContextBinding_simpleType *)type->binding->value)->LLVMtype;
-		}
-	} else if (type->binding->type == ContextBindingType_function) {
-		return ((ContextBinding_function *)type->binding->value)->LLVMname;
-	} else if (type->binding->type == ContextBindingType_struct) {
-		return ((ContextBinding_struct *)type->binding->value)->LLVMname;
+//	CharAccumulator *LLVMname = CharAccumulator_new();
+//	CharAccumulator_appendChars(LLVMname, "[ ");
+//	CharAccumulator_appendInt(LLVMname, ASTnode_getIntFromNumber(resolvedSizeValue, FI));
+//	CharAccumulator_appendChars(LLVMname, " x ");
+//	CharAccumulator_appendChars(LLVMname, BuilderType_getLLVMname(BuilderType_getStateFromString(type, "type"), FI));
+//	CharAccumulator_appendChars(LLVMname, " ]");
+//	return LLVMname->data;
+	
+	if (type->scopeObject->scopeObjectType == ScopeObjectType_struct) {
+		return ((ScopeObject_struct *)type->scopeObject->value)->LLVMname;
+	} else if (type->scopeObject->scopeObjectType == ScopeObjectType_function) {
+		return ((ScopeObject_function *)type->scopeObject->value)->LLVMname;
+	} else if (type->scopeObject->scopeObjectType == ScopeObjectType_value) {
+//		return ((ScopeObject_value *)type->scopeObject->value)->LLVMname;
+		abort();
 	} else {
 		abort();
 	}
 }
 
 int BuilderType_getByteSize(BuilderType *type) {
-	if (ContextBinding_hasCoreName(type->binding, "_Vector")) {
-		return BuilderType_getStateFromString(type, "type")->binding->byteSize;
+	if (type->scopeObject->scopeObjectType != ScopeObjectType_struct) {
+		return ((ScopeObject_struct *)type->scopeObject->value)->byteSize;
 	} else {
-		return type->binding->byteSize;
+		abort();
 	}
 }
 
 int BuilderType_getByteAlign(BuilderType *type) {
-	if (ContextBinding_hasCoreName(type->binding, "_Vector")) {
-		return BuilderType_getStateFromString(type, "type")->binding->byteAlign;
+	if (type->scopeObject->scopeObjectType != ScopeObjectType_struct) {
+		return ((ScopeObject_struct *)type->scopeObject->value)->byteAlign;
 	} else {
-		return type->binding->byteAlign;
+		abort();
 	}
+}
+
+SubString *BuilderType_getName(BuilderType *type) {
+	return type->scopeObject->key;
 }

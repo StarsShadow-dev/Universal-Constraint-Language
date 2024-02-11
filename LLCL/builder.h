@@ -7,7 +7,7 @@
 
 int buildLLVM(
 	FileInformation *FI,
-	ContextBinding_function *outerFunction,
+	ScopeObject_function *outerFunction,
 	CharAccumulator *outerSource,
 	CharAccumulator *innerSource,
 	

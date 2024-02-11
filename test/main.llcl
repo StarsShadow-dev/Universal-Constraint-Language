@@ -1,8 +1,7 @@
-fn test(): Type {
-	valueNotInScope();
-	return struct {};
-}
+// fn test(): Type {
+// 	return struct {};
+// }
 
 fn main(): Int32 {
-	return 1 + 2 * 8;
+	return 0;
 }

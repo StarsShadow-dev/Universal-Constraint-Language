@@ -306,82 +306,80 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operat
 // context
 //
 
-typedef enum {
-	ContextBindingType_struct,
-	ContextBindingType_simpleType,
-	ContextBindingType_function,
-	ContextBindingType_variable,
-	ContextBindingType_compileTimeSetting
-} ContextBindingType;
-
-typedef struct {
-	FileInformation *originFile;
-	SubString *key;
-	ContextBindingType type;
-	int byteSize;
-	int byteAlign;
-	
-	uint8_t value[] WORD_ALIGNED;
-} ContextBinding;
-
-typedef struct {
-	ContextBinding *binding;
+struct BuilderType {
+	struct ScopeObject *scopeObject;
 	linkedList_Node *constraintNodes;
 	
 	/// Dictionary of BuilderTypes
-	Dictionary *states;
+//	Dictionary *states;
 	/// [linkedList<Fact>]
 	linkedList_Node *factStack[maxContextLevel];
-} BuilderType;
+};
+typedef struct BuilderType BuilderType;
+
+typedef enum {
+//	ScopeObjectType_simpleType,
+	ScopeObjectType_struct,
+	ScopeObjectType_function,
+	ScopeObjectType_value
+} ScopeObjectType;
+
+struct ScopeObject {
+	SubString *key;
+	
+	int compileTime;
+	FileInformation *originFile;
+	struct BuilderType type;
+	
+	ScopeObjectType scopeObjectType;
+	uint8_t value[] WORD_ALIGNED;
+};
+typedef struct ScopeObject ScopeObject;
+
+ScopeObject ScopeObject_new(SubString *key, int compileTime, FileInformation *originFile, BuilderType type, ScopeObjectType scopeObjectType);
+
+BuilderType BuilderType_new(ScopeObject *scopeObject, linkedList_Node *constraintNodes);
+
+BuilderType getTypeFromScopeObject(ScopeObject *scopeObject);
 
 typedef struct {
 	char *LLVMname;
-	linkedList_Node *memberBindings;
-} ContextBinding_struct;
-
-typedef struct {
-	char *LLVMtype;
-} ContextBinding_simpleType;
-
-typedef struct {
-	int compileTime;
+	linkedList_Node *members;
 	
+	int byteSize;
+	int byteAlign;
+} ScopeObject_struct;
+ScopeObject_struct ScopeObject_struct_new(char *LLVMname, linkedList_Node *members, int byteSize, int byteAlign);
+
+typedef struct {
 	char *LLVMname;
 	char *LLVMreturnType;
+	
 	/// BuilderType
 	linkedList_Node *argumentNames;
 	/// BuilderType
 	linkedList_Node *argumentTypes;
 	BuilderType returnType;
 	
-	// for LLVM registers
+	// for LLVMIR registers
 	int registerCount;
-	
 	int debugInformationScopeID;
-} ContextBinding_function;
+} ScopeObject_function;
 
 typedef struct {
 	int LLVMRegister;
-	char *LLVMtype;
-	BuilderType type;
-} ContextBinding_variable;
+//	char *LLVMname;
+} ScopeObject_value;
+ScopeObject_value ScopeObject_value_new(int LLVMRegister);
 
-typedef struct {
-	SubString *value;
-} ContextBinding_compileTimeSetting;
+int FileInformation_declaredInLLVM(FileInformation *FI, ScopeObject *pointer);
+void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ScopeObject *pointer);
 
-int FileInformation_declaredInLLVM(FileInformation *FI, ContextBinding *pointer);
-void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ContextBinding *pointer);
-
-void addContextBinding_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
-void addContextBinding_compileTimeSetting(linkedList_Node **context, char *name, char *value);
-ContextBinding *getContextBindingFromString(FileInformation *FI, char *key);
-ContextBinding *getContextBindingFromSubString(FileInformation *FI, SubString *key);
+void addScopeObject_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
+ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key);
+ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key);
 
 ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI);
-
-BuilderType *BuilderType_getStateFromSubString(BuilderType *type, SubString *key);
-BuilderType *BuilderType_getStateFromString(BuilderType *type, char *key);
 
 int BuilderType_hasName(BuilderType *type, char *name);
 int BuilderType_hasCoreName(BuilderType *type, char *name);
@@ -395,5 +393,7 @@ char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI);
 
 int BuilderType_getByteSize(BuilderType *type);
 int BuilderType_getByteAlign(BuilderType *type);
+
+SubString *BuilderType_getName(BuilderType *type);
 
 #endif /* types_h */

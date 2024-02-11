@@ -38,7 +38,7 @@ void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator
 }
 
 void getTypeDescription(FileInformation *FI, CharAccumulator *charAccumulator, BuilderType *type, int withFactInformation) {
-	CharAccumulator_appendSubString(charAccumulator, type->binding->key);
+	CharAccumulator_appendSubString(charAccumulator, type->scopeObject->key);
 	
 	if (!withFactInformation) return;
 	
@@ -91,21 +91,6 @@ void getTypeDescription(FileInformation *FI, CharAccumulator *charAccumulator, B
 	}
 }
 
-void getVariableDescription(FileInformation *FI, CharAccumulator *charAccumulator, ContextBinding *variableBinding) {
-	if (variableBinding->type != ContextBindingType_variable) abort();
-	ContextBinding_variable *variable = (ContextBinding_variable *)variableBinding->value;
-	
-	CharAccumulator_appendChars(charAccumulator, "variable description for '");
-	CharAccumulator_appendSubString(charAccumulator, variableBinding->key);
-	CharAccumulator_appendChars(charAccumulator, "'\nbyteSize = ");
-	CharAccumulator_appendInt(charAccumulator, BuilderType_getByteSize(&variable->type));
-	CharAccumulator_appendChars(charAccumulator, "\nbyteAlign = ");
-	CharAccumulator_appendInt(charAccumulator, BuilderType_getByteAlign(&variable->type));
-	CharAccumulator_appendChars(charAccumulator, "\n\ntype = ");
-	
-	getTypeDescription(FI, charAccumulator, &variable->type, 1);
-}
-
 int printComma = 0;
 
 // error is 0
@@ -128,33 +113,26 @@ void printKeyword(int type, char *name, char *documentation) {
 	printf("[2, %d, \"%s\", \"LLCL Keyword\\n\\n%s\"]", type, name, documentation);
 }
 
-void printBinding(FileInformation *FI, ContextBinding *binding) {
+void printScopeObject(FileInformation *FI, ScopeObject *scopeObject) {
 	int type;
-	SubString *name = binding->key;
-	
-	// do not print if the name starts with "__"
-	if (name->length >= 2) {
-		if (name->start[0] == '_' && name->start[1] == '_') {
-			return;
-		}
-	}
+	SubString *name = scopeObject->key;
 	
 	CharAccumulator documentation = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(&documentation);
 	
-	switch (binding->type) {
-		case ContextBindingType_simpleType: {
-			CharAccumulator_appendChars(&documentation, "primitive type");
+	switch (scopeObject->scopeObjectType) {
+		case ScopeObjectType_struct: {
+			CharAccumulator_appendChars(&documentation, "```\\nstruct```\\n");
 			
-			type = 6;
+			type = 21;
 			break;
 		}
 		
-		case ContextBindingType_function: {
-			ContextBinding_function *data = (ContextBinding_function *)binding->value;
+		case ScopeObjectType_function: {
+			ScopeObject_function *data = (ScopeObject_function *)scopeObject->value;
 			
 			CharAccumulator_appendChars(&documentation, "```\\nfunction ");
-			CharAccumulator_appendSubString(&documentation, binding->key);
+			CharAccumulator_appendSubString(&documentation, name);
 			CharAccumulator_appendChars(&documentation, "(");
 			CharAccumulator_appendChars(&documentation, "): ");
 			getTypeDescription(FI, &documentation, &data->returnType, 0);
@@ -164,35 +142,15 @@ void printBinding(FileInformation *FI, ContextBinding *binding) {
 			break;
 		}
 		
-		case ContextBindingType_variable: {
-			ContextBinding_variable *data = (ContextBinding_variable *)binding->value;
+		case ScopeObjectType_value: {
+			CharAccumulator_appendChars(&documentation, "value\\n");
 			
-			CharAccumulator_appendChars(&documentation, "```\\nvar ");
-			CharAccumulator_appendSubString(&documentation, binding->key);
-			CharAccumulator_appendChars(&documentation, ": ");
-			getTypeDescription(FI, &documentation, &data->type, 0);
-			CharAccumulator_appendChars(&documentation, ";\\n```\\n\\n");
-			
-			type = 5;
-			break;
-		}
-		
-		case ContextBindingType_compileTimeSetting: {
-			return;
-		}
-		
-		case ContextBindingType_struct: {
-			CharAccumulator_appendChars(&documentation, "```\\nstruct ");
-			CharAccumulator_appendSubString(&documentation, binding->key);
-			CharAccumulator_appendChars(&documentation, " {");
-			CharAccumulator_appendChars(&documentation, "}\\n```\\n\\n");
-			
-			type = 21;
+			type = 11;
 			break;
 		}
 	}
 	
-//	if (binding->type != ContextBindingType_namespace && binding->originFile != coreFilePointer) {
+//	if (binding->originFile != coreFilePointer) {
 //		CharAccumulator_appendChars(&documentation, "[origin file](");
 //		CharAccumulator_appendChars(&documentation, binding->originFile->context.path);
 //		CharAccumulator_appendChars(&documentation, ")");
@@ -224,15 +182,15 @@ void printKeywords(FileInformation *FI) {
 	}
 }
 
-void printBindings(FileInformation *FI) {
+void printScopeObjects(FileInformation *FI) {
 	int index = FI->level;
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.bindings[index];
 		
 		while (current != NULL) {
-			ContextBinding *binding = ((ContextBinding *)current->data);
+			ScopeObject *scopeObject = ((ScopeObject *)current->data);
 			
-			printBinding(FI, binding);
+			printScopeObject(FI, scopeObject);
 			
 			current = current->next;
 		}
