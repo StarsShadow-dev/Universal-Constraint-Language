@@ -616,7 +616,7 @@ int BuilderType_getByteSize(BuilderType *type) {
 }
 
 int BuilderType_getByteAlign(BuilderType *type) {
-	if (type->scopeObject->scopeObjectType != ScopeObjectType_struct) {
+	if (type->scopeObject->scopeObjectType == ScopeObjectType_struct) {
 		return ((ScopeObject_struct *)type->scopeObject->value)->byteAlign;
 	} else {
 		abort();
