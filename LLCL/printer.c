@@ -37,58 +37,68 @@ void getASTnodeDescription(FileInformation *FI, CharAccumulator *charAccumulator
 	}
 }
 
-void getTypeDescription(FileInformation *FI, CharAccumulator *charAccumulator, BuilderType *type, int withFactInformation) {
-	CharAccumulator_appendSubString(charAccumulator, type->scopeObject->key);
-	
-	if (!withFactInformation) return;
-	
-	CharAccumulator_appendChars(charAccumulator, "\n");
-	
-	int index = 0;
-	while (index <= FI->level) {
-		linkedList_Node *currentFact = type->factStack[index];
+void getScopeObjectDescription(FileInformation *FI, CharAccumulator *charAccumulator, ScopeObject *scopeObject, int withFactInformation) {
+	switch (scopeObject->scopeObjectKind) {
+//		case ScopeObjectKind_alias: {
+//			return;
+//		}
 		
-		if (currentFact == NULL) {
-			index++;
-			continue;
+		default: {
+			CharAccumulator_appendChars(charAccumulator, "/*can not print*/");
+			return;
 		}
-		
-		CharAccumulator_appendChars(charAccumulator, "[");
-		CharAccumulator_appendInt(charAccumulator, index);
-		CharAccumulator_appendChars(charAccumulator, "]: ");
-		
-		while (currentFact != NULL) {
-			Fact *fact = (Fact *)currentFact->data;
-			
-			if (fact->type == FactType_expression) {
-				Fact_expression *expressionFact = (Fact_expression *)fact->value;
-				
-				CharAccumulator_appendChars(charAccumulator, "(");
-				
-				if (expressionFact->operatorType == ASTnode_infixOperatorType_equivalent) {
-					if (expressionFact->left == NULL) {
-						CharAccumulator_appendChars(charAccumulator, "$");
-					} else {
-						abort();
-					}
-					CharAccumulator_appendChars(charAccumulator, " == ");
-					getASTnodeDescription(FI, charAccumulator, expressionFact->rightConstant);
-				} else {
-					abort();
-				}
-				
-				CharAccumulator_appendChars(charAccumulator, ")");
-			} else {
-				abort();
-			}
-			
-			currentFact = currentFact->next;
-		}
-		
-		CharAccumulator_appendChars(charAccumulator, "\n");
-		
-		index++;
 	}
+//	CharAccumulator_appendSubString(charAccumulator, type->scopeObject->key);
+//	
+//	if (!withFactInformation) return;
+//	
+//	CharAccumulator_appendChars(charAccumulator, "\n");
+//	
+//	int index = 0;
+//	while (index <= FI->level) {
+//		linkedList_Node *currentFact = type->factStack[index];
+//		
+//		if (currentFact == NULL) {
+//			index++;
+//			continue;
+//		}
+//		
+//		CharAccumulator_appendChars(charAccumulator, "[");
+//		CharAccumulator_appendInt(charAccumulator, index);
+//		CharAccumulator_appendChars(charAccumulator, "]: ");
+//		
+//		while (currentFact != NULL) {
+//			Fact *fact = (Fact *)currentFact->data;
+//			
+//			if (fact->type == FactType_expression) {
+//				Fact_expression *expressionFact = (Fact_expression *)fact->value;
+//				
+//				CharAccumulator_appendChars(charAccumulator, "(");
+//				
+//				if (expressionFact->operatorType == ASTnode_infixOperatorType_equivalent) {
+//					if (expressionFact->left == NULL) {
+//						CharAccumulator_appendChars(charAccumulator, "$");
+//					} else {
+//						abort();
+//					}
+//					CharAccumulator_appendChars(charAccumulator, " == ");
+//					getASTnodeDescription(FI, charAccumulator, expressionFact->rightConstant);
+//				} else {
+//					abort();
+//				}
+//				
+//				CharAccumulator_appendChars(charAccumulator, ")");
+//			} else {
+//				abort();
+//			}
+//			
+//			currentFact = currentFact->next;
+//		}
+//		
+//		CharAccumulator_appendChars(charAccumulator, "\n");
+//		
+//		index++;
+//	}
 }
 
 int printComma = 0;
@@ -113,40 +123,46 @@ void printKeyword(int type, char *name, char *documentation) {
 	printf("[2, %d, \"%s\", \"LLCL Keyword\\n\\n%s\"]", type, name, documentation);
 }
 
-void printScopeObject(FileInformation *FI, ScopeObject *scopeObject) {
+// scopeObject is an alias
+void printScopeObject_alias(FileInformation *FI, ScopeObject *scopeObject) {
+	ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
 	int type;
-	SubString *name = scopeObject->key;
+	SubString *name = alias->key;
 	
 	CharAccumulator documentation = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(&documentation);
 	
-	switch (scopeObject->scopeObjectType) {
-		case ScopeObjectType_struct: {
+	switch (scopeObject->scopeObjectKind) {
+		case ScopeObjectKind_struct: {
 			CharAccumulator_appendChars(&documentation, "```\\nstruct```\\n");
 			
 			type = 21;
 			break;
 		}
 		
-		case ScopeObjectType_function: {
+		case ScopeObjectKind_function: {
 			ScopeObject_function *data = (ScopeObject_function *)scopeObject->value;
 			
 			CharAccumulator_appendChars(&documentation, "```\\nfunction ");
 			CharAccumulator_appendSubString(&documentation, name);
 			CharAccumulator_appendChars(&documentation, "(");
 			CharAccumulator_appendChars(&documentation, "): ");
-			getTypeDescription(FI, &documentation, &data->returnType, 0);
+			getScopeObjectDescription(FI, &documentation, data->returnType, 0);
 			CharAccumulator_appendChars(&documentation, ";\\n```\\n\\n");
 			
 			type = 2;
 			break;
 		}
 		
-		case ScopeObjectType_value: {
+		case ScopeObjectKind_value: {
 			CharAccumulator_appendChars(&documentation, "value\\n");
 			
 			type = 11;
 			break;
+		}
+			
+		default: {
+			abort();
 		}
 	}
 	
@@ -190,7 +206,7 @@ void printScopeObjects(FileInformation *FI) {
 		while (current != NULL) {
 			ScopeObject *scopeObject = ((ScopeObject *)current->data);
 			
-			printScopeObject(FI, scopeObject);
+			printScopeObject_alias(FI, scopeObject);
 			
 			current = current->next;
 		}

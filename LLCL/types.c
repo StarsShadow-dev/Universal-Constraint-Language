@@ -381,25 +381,12 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operat
 // context
 //
 
-BuilderType BuilderType_new(ScopeObject *scopeObject, linkedList_Node *constraintNodes) {
-	return (BuilderType){
-		.scopeObject = scopeObject,
-		.constraintNodes = constraintNodes,
-		.factStack = {0},
-	};
-}
-
-BuilderType getTypeFromScopeObject(ScopeObject *scopeObject) {
-	return BuilderType_new(scopeObject, NULL);
-}
-
-ScopeObject ScopeObject_new(SubString *key, int compileTime, FileInformation *originFile, BuilderType type, ScopeObjectType scopeObjectType) {
+ScopeObject ScopeObject_new(int compileTime, linkedList_Node *constraintNodes, ScopeObject *type, ScopeObjectKind scopeObjectType) {
 	return (ScopeObject){
-		.key = key,
 		.compileTime = compileTime,
-		.originFile = originFile,
+		.constraintNodes = constraintNodes,
 		.type = type,
-		.scopeObjectType = scopeObjectType,
+		.scopeObjectKind = scopeObjectType
 	};
 }
 
@@ -418,18 +405,43 @@ ScopeObject_value ScopeObject_value_new(int LLVMRegister) {
 	};
 }
 
-// from the core file and has name
-int ContextBinding_hasCoreName(ScopeObject *binding, char *name) {
-	return binding->originFile == coreFilePointer && SubString_string_cmp(binding->key, name) == 0;
+ScopeObject_alias ScopeObject_alias_new(SubString *key, ScopeObject *value) {
+	return (ScopeObject_alias){
+		.key = key,
+		.value = value
+	};
+}
+
+ScopeObject *addAlias(linkedList_Node **list, SubString *key, ScopeObject *type, ScopeObject *value) {
+	ScopeObject *alias = linkedList_addNode(list, sizeof(ScopeObject) + sizeof(ScopeObject_alias));
+	*alias = ScopeObject_new(0, NULL, type, ScopeObjectKind_alias);
+	*(ScopeObject_alias *)alias->value = ScopeObject_alias_new(key, value);
+	
+	return alias;
 }
 
 // note: originFile = coreFilePointer
-void addScopeObject_simpleType(linkedList_Node **context, char *name, char *LLVMname, int byteSize, int byteAlign) {
-	SubString *key = SubString_new(name, (int)strlen(name));
-	ScopeObject *data = linkedList_addNode(context, sizeof(ScopeObject) + sizeof(ScopeObject_struct));
+void addSimpleType(linkedList_Node **list, char *name, char *LLVMname, int byteSize, int byteAlign) {
+	ScopeObject *structScopeObject = linkedList_addNode(list, sizeof(ScopeObject) + sizeof(ScopeObject_struct));
+	*structScopeObject = ScopeObject_new(1, NULL, getScopeObjectFromString(coreFilePointer, "Type"), ScopeObjectKind_struct);
+	*(ScopeObject_struct *)structScopeObject->value = ScopeObject_struct_new(LLVMname, NULL, byteSize, byteAlign);
 	
-	*data = ScopeObject_new(key, 1, coreFilePointer, getTypeFromScopeObject(getScopeObjectFromString(coreFilePointer, "Type")), ScopeObjectType_struct);
-	*(ScopeObject_struct *)data->value = ScopeObject_struct_new(LLVMname, NULL, byteSize, byteAlign);
+	addAlias(list, getSubStringFromString(name), getScopeObjectFromString(coreFilePointer, "Type"), structScopeObject);
+}
+
+ScopeObject *addScopeObjectNone(FileInformation *FI, linkedList_Node **list, ScopeObject *scopeObject) {
+	ScopeObject *newScopeObject = linkedList_addNode(list, sizeof(ScopeObject));
+	*newScopeObject = ScopeObject_new(0, NULL, scopeObject, ScopeObjectKind_none);
+	return newScopeObject;
+}
+
+void addScopeObjectFromString(FileInformation *FI, linkedList_Node **list, char *string, ASTnode *node) {
+	ScopeObject *scopeObject = getScopeObjectFromString(FI, string);
+	if (scopeObject == NULL) abort();
+	
+	ScopeObject *newScopeObject = addScopeObjectNone(FI, list, scopeObject);
+		
+	Fact_newExpression(&newScopeObject->factStack[0], ASTnode_infixOperatorType_equivalent, NULL, node);
 }
 
 ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
@@ -437,10 +449,11 @@ ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.scopeObjects[index];
 		while (current != NULL) {
-			ScopeObject *binding = (ScopeObject *)current->data;
+			ScopeObject *scopeObject = (ScopeObject *)current->data;
+			ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
 			
-			if (SubString_string_cmp(binding->key, key) == 0) {
-				return binding;
+			if (SubString_string_cmp(alias->key, key) == 0) {
+				return scopeObject;
 			}
 			
 			current = current->next;
@@ -451,10 +464,11 @@ ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
 	
 	linkedList_Node *current = coreFilePointer->context.scopeObjects[0];
 	while (current != NULL) {
-		ScopeObject *binding = (ScopeObject *)current->data;
+		ScopeObject *scopeObject = (ScopeObject *)current->data;
+		ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
 		
-		if (SubString_string_cmp(binding->key, key) == 0) {
-			return binding;
+		if (SubString_string_cmp(alias->key, key) == 0) {
+			return scopeObject;
 		}
 		
 		current = current->next;
@@ -468,10 +482,11 @@ ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key) {
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.scopeObjects[index];
 		while (current != NULL) {
-			ScopeObject *binding = (ScopeObject *)current->data;
+			ScopeObject *scopeObject = (ScopeObject *)current->data;
+			ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
 			
-			if (SubString_SubString_cmp(binding->key, key) == 0) {
-				return binding;
+			if (SubString_SubString_cmp(alias->key, key) == 0) {
+				return scopeObject;
 			}
 			
 			current = current->next;
@@ -482,10 +497,11 @@ ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key) {
 	
 	linkedList_Node *current = coreFilePointer->context.scopeObjects[0];
 	while (current != NULL) {
-		ScopeObject *binding = (ScopeObject *)current->data;
+		ScopeObject *scopeObject = (ScopeObject *)current->data;
+		ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
 		
-		if (SubString_SubString_cmp(binding->key, key) == 0) {
-			return binding;
+		if (SubString_SubString_cmp(alias->key, key) == 0) {
+			return scopeObject;
 		}
 		
 		current = current->next;
@@ -494,29 +510,11 @@ ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key) {
 	return NULL;
 }
 
-//
-// BuilderType
-//
-
-BuilderType *BuilderType_getNewFromString(FileInformation *FI, char *string) {
-	ScopeObject *scopeObject = getScopeObjectFromString(FI, string);
-	if (scopeObject == NULL) abort();
-	
-	BuilderType *typeData = safeMalloc(sizeof(BuilderType));
-	*typeData = (BuilderType){
-		.scopeObject = scopeObject,
-		.constraintNodes = NULL,
-		.factStack = {0}
-	};
-	
-	return typeData;
-}
-
 /// returns the resolved value of `type` or NULL
-ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI) {
+ASTnode *ScopeObject_getResolvedValue(ScopeObject *scopeObject, FileInformation *FI) {
 	int index = 0;
 	while (index <= FI->level) {
-		linkedList_Node *currentFact = type->factStack[index];
+		linkedList_Node *currentFact = scopeObject->factStack[index];
 		
 		if (currentFact == NULL) {
 			index++;
@@ -549,44 +547,53 @@ ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI) {
 	return NULL;
 }
 
-int BuilderType_hasName(BuilderType *type, char *name) {
-	return SubString_string_cmp(type->scopeObject->key, name) == 0;
+ScopeObject_alias *scopeObject_getAsAlias(ScopeObject *scopeObject) {
+	if (scopeObject->scopeObjectKind != ScopeObjectKind_alias) abort();
+	return (ScopeObject_alias *)scopeObject->value;
+}
+
+ScopeObject *ScopeObjectAlias_unalias(ScopeObject *scopeObject) {
+	return scopeObject_getAsAlias(scopeObject)->value;
+}
+
+int ScopeObjectAlias_hasName(ScopeObject *scopeObject, char *name) {
+	return SubString_string_cmp(scopeObject_getAsAlias(scopeObject)->key, name) == 0;
 }
 
 // from the core file and has name
-int BuilderType_hasCoreName(BuilderType *type, char *name) {
-	return type->scopeObject->originFile == coreFilePointer && BuilderType_hasName(type, name);
+int ScopeObjectAlias_hasCoreName(ScopeObject *scopeObject, char *name) {
+	return scopeObject_getAsAlias(scopeObject)->originFile == coreFilePointer && ScopeObjectAlias_hasName(scopeObject, name);
 }
 
-int BuilderType_isSignedInt(BuilderType *type) {
-	return BuilderType_hasCoreName(type, "Int8") ||
-	BuilderType_hasCoreName(type, "Int16") ||
-	BuilderType_hasCoreName(type, "Int32") ||
-	BuilderType_hasCoreName(type, "Int64");
+int ScopeObjectAlias_isSignedInt(ScopeObject *scopeObject) {
+	return ScopeObjectAlias_hasCoreName(scopeObject, "Int8") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "Int16") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "Int32") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "Int64");
 }
 
-int BuilderType_isUnsignedInt(BuilderType *type) {
-	return BuilderType_hasCoreName(type, "UInt8") ||
-	BuilderType_hasCoreName(type, "UInt16") ||
-	BuilderType_hasCoreName(type, "UInt32") ||
-	BuilderType_hasCoreName(type, "UInt64");
+int ScopeObjectAlias_isUnsignedInt(ScopeObject *scopeObject) {
+	return ScopeObjectAlias_hasCoreName(scopeObject, "UInt8") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "UInt16") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "UInt32") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "UInt64");
 }
 
-int BuilderType_isInt(BuilderType *type) {
-	return BuilderType_isSignedInt(type) || BuilderType_isUnsignedInt(type);
+int ScopeObjectAlias_isInt(ScopeObject *scopeObject) {
+	return ScopeObjectAlias_isSignedInt(scopeObject) || ScopeObjectAlias_isUnsignedInt(scopeObject);
 }
 
-int BuilderType_isFloat(BuilderType *type) {
-	return BuilderType_hasCoreName(type, "Float16") ||
-	BuilderType_hasCoreName(type, "Float32") ||
-	BuilderType_hasCoreName(type, "Float64");
+int ScopeObjectAlias_isFloat(ScopeObject *scopeObject) {
+	return ScopeObjectAlias_hasCoreName(scopeObject, "Float16") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "Float32") ||
+	ScopeObjectAlias_hasCoreName(scopeObject, "Float64");
 }
 
-int BuilderType_isNumber(BuilderType *type) {
-	return BuilderType_isInt(type) || BuilderType_isFloat(type);
+int ScopeObjectAlias_isNumber(ScopeObject *scopeObject) {
+	return ScopeObjectAlias_isInt(scopeObject) || ScopeObjectAlias_isFloat(scopeObject);
 }
 
-char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI) {
+char *ScopeObjectAlias_getLLVMname(ScopeObject *scopeObject, FileInformation *FI) {
 //	CharAccumulator *LLVMname = CharAccumulator_new();
 //	CharAccumulator_appendChars(LLVMname, "[ ");
 //	CharAccumulator_appendInt(LLVMname, ASTnode_getIntFromNumber(resolvedSizeValue, FI));
@@ -595,34 +602,38 @@ char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI) {
 //	CharAccumulator_appendChars(LLVMname, " ]");
 //	return LLVMname->data;
 	
-	if (type->scopeObject->scopeObjectType == ScopeObjectType_struct) {
-		return ((ScopeObject_struct *)type->scopeObject->value)->LLVMname;
-	} else if (type->scopeObject->scopeObjectType == ScopeObjectType_function) {
-		return ((ScopeObject_function *)type->scopeObject->value)->LLVMname;
-	} else if (type->scopeObject->scopeObjectType == ScopeObjectType_value) {
-//		return ((ScopeObject_value *)type->scopeObject->value)->LLVMname;
-		abort();
+	ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
+	
+	if (alias->value->scopeObjectKind == ScopeObjectKind_struct) {
+		return ((ScopeObject_struct *)alias->value)->LLVMname;
+	} else if (alias->value->scopeObjectKind == ScopeObjectKind_function) {
+		return ((ScopeObject_function *)alias->value)->LLVMname;
 	} else {
 		abort();
 	}
 }
 
-int BuilderType_getByteSize(BuilderType *type) {
-	if (type->scopeObject->scopeObjectType != ScopeObjectType_struct) {
-		return ((ScopeObject_struct *)type->scopeObject->value)->byteSize;
+int ScopeObjectAlias_getByteSize(ScopeObject *scopeObject) {
+	ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
+	
+	if (alias->value->scopeObjectKind != ScopeObjectKind_struct) {
+		return ((ScopeObject_struct *)alias->value->value)->byteSize;
 	} else {
 		abort();
 	}
 }
 
-int BuilderType_getByteAlign(BuilderType *type) {
-	if (type->scopeObject->scopeObjectType == ScopeObjectType_struct) {
-		return ((ScopeObject_struct *)type->scopeObject->value)->byteAlign;
+int ScopeObjectAlias_getByteAlign(ScopeObject *scopeObject) {
+	ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
+	
+	if (alias->value->scopeObjectKind == ScopeObjectKind_struct) {
+		return ((ScopeObject_struct *)alias->value->value)->byteAlign;
 	} else {
 		abort();
 	}
 }
 
-SubString *BuilderType_getName(BuilderType *type) {
-	return type->scopeObject->key;
+SubString *ScopeObjectAlias_getName(ScopeObject *scopeObject) {
+	ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
+	return alias->key;
 }

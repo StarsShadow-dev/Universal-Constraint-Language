@@ -44,35 +44,6 @@ ScopeObject *getScopeObjectFromIdentifierNode(FileInformation *FI, ASTnode *node
 	return NULL;
 }
 
-void addTypeFromString(FileInformation *FI, linkedList_Node **list, char *string, ASTnode *node) {
-	ScopeObject *scopeObject = getScopeObjectFromString(FI, string);
-	if (scopeObject == NULL) abort();
-
-	BuilderType *typeData = linkedList_addNode(list, sizeof(BuilderType));
-	*typeData = getTypeFromScopeObject(scopeObject);
-	
-	Fact_newExpression(&typeData->factStack[0], ASTnode_infixOperatorType_equivalent, NULL, node);
-}
-
-void addTypeFromBuilderType(FileInformation *FI, linkedList_Node **list, BuilderType *type) {
-	BuilderType *data = linkedList_addNode(list, sizeof(BuilderType));
-	*data = *type;
-}
-
-void addTypeFromScopeObject(FileInformation *FI, linkedList_Node **list, ScopeObject *scopeObject) {
-	BuilderType *data = linkedList_addNode(list, sizeof(BuilderType));
-	*data = getTypeFromScopeObject(scopeObject);
-}
-
-linkedList_Node *typeToList(BuilderType type) {
-	linkedList_Node *list = NULL;
-	
-	BuilderType *data = linkedList_addNode(&list, sizeof(BuilderType));
-	data->scopeObject = type.scopeObject;
-	
-	return list;
-}
-
 void expectUnusedName(FileInformation *FI, SubString *name, SourceLocation location) {
 	ScopeObject *scopeObject = getScopeObjectFromSubString(FI, name);
 	if (scopeObject != NULL) {
@@ -88,7 +59,7 @@ void expectUnusedName(FileInformation *FI, SubString *name, SourceLocation locat
 }
 
 /// node is an ASTnode_constrainedType
-BuilderType *getTypeFromConstrainedType(FileInformation *FI, ASTnode *node) {
+ScopeObject *getScopeObjectFromConstrainedType(FileInformation *FI, ASTnode *node) {
 	if (node->nodeType != ASTnodeType_constrainedType) abort();
 	ASTnode_constrainedType *data = (ASTnode_constrainedType *)node->value;
 	
@@ -96,18 +67,18 @@ BuilderType *getTypeFromConstrainedType(FileInformation *FI, ASTnode *node) {
 	buildLLVM(FI, NULL, NULL, NULL, NULL, &returnTypeList, data->type, 0, 0, 0);
 	if (returnTypeList == NULL) abort();
 	
-	if (((BuilderType *)returnTypeList->data)->scopeObject->scopeObjectType != ScopeObjectType_struct) {
+	if (((ScopeObject *)returnTypeList->data)->scopeObjectKind != ScopeObjectKind_struct) {
 		addStringToReportMsg("expected type");
 		
 		addStringToReportIndicator("'");
-		addSubStringToReportIndicator(((BuilderType *)returnTypeList->data)->scopeObject->key);
+		addSubStringToReportIndicator(ScopeObjectAlias_getName(((ScopeObject *)returnTypeList->data)->type));
 		addStringToReportIndicator("' is not a type");
 		compileError(FI, node->location);
 	}
 	
-	((BuilderType *)returnTypeList->data)->constraintNodes = data->constraints;
+	((ScopeObject *)returnTypeList->data)->constraintNodes = data->constraints;
 	
-	return (BuilderType *)returnTypeList->data;
+	return (ScopeObject *)returnTypeList->data;
 }
 
 void applyFacts(FileInformation *FI, ASTnode_infixOperator *operator) {
@@ -117,7 +88,7 @@ void applyFacts(FileInformation *FI, ASTnode_infixOperator *operator) {
 	
 	ScopeObject *scopeObject = getScopeObjectFromIdentifierNode(FI, (ASTnode *)operator->left->data);
 	
-	Fact *fact = linkedList_addNode(&scopeObject->type.factStack[FI->level], sizeof(Fact) + sizeof(Fact_expression));
+	Fact *fact = linkedList_addNode(&scopeObject->factStack[FI->level], sizeof(Fact) + sizeof(Fact_expression));
 	
 	fact->type = FactType_expression;
 	((Fact_expression *)fact->value)->operatorType = operator->operatorType;
@@ -125,7 +96,7 @@ void applyFacts(FileInformation *FI, ASTnode_infixOperator *operator) {
 	((Fact_expression *)fact->value)->rightConstant = (ASTnode *)operator->right->data;
 }
 
-int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_infixOperatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
+int addOperatorResultToType(FileInformation *FI, ScopeObject *type, ASTnode_infixOperatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
 	if (FI->level <= 0) abort();
 	if (leftNode->nodeType != rightNode->nodeType) return 0;
 	ASTnodeType sharedNodeType = leftNode->nodeType;
@@ -156,11 +127,11 @@ int addOperatorResultToType(FileInformation *FI, BuilderType *type, ASTnode_infi
 	}
 }
 
-int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_infixOperatorType operatorType, BuilderType *left, BuilderType *right) {
+int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_infixOperatorType operatorType, ScopeObject *left, ScopeObject *right) {
 	int resultIsTrue = 0;
 	
-	BuilderType *type = linkedList_addNode(list, sizeof(BuilderType));
-	*type = getTypeFromScopeObject(getScopeObjectFromString(FI, name));
+	ScopeObject *type = linkedList_addNode(list, sizeof(ScopeObject));
+	*type = ScopeObject_new(0, NULL, getScopeObjectFromString(FI, name), ScopeObjectKind_none);
 	
 	int leftIndex = FI->level;
 	while (leftIndex > 0) {
@@ -207,60 +178,59 @@ int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **lis
 	return resultIsTrue;
 }
 
-void expectType(FileInformation *FI, BuilderType *expectedType, BuilderType *actualType, SourceLocation location) {
-	if (expectedType->scopeObject != actualType->scopeObject) {
+void expectType(FileInformation *FI, ScopeObject *expectedType, ScopeObject *actualType, SourceLocation location) {
+	if (expectedType->type != actualType->type) {
 		addStringToReportMsg("unexpected type");
 		
 		addStringToReportIndicator("expected type '");
-		addSubStringToReportIndicator(expectedType->scopeObject->key);
+		addSubStringToReportIndicator(scopeObject_getAsAlias(expectedType->type)->key);
 		addStringToReportIndicator("' but got type '");
-		addSubStringToReportIndicator(actualType->scopeObject->key);
+		addSubStringToReportIndicator(scopeObject_getAsAlias(actualType->type)->key);
 		addStringToReportIndicator("'");
 		compileError(FI, location);
 	}
 	
-	if (expectedType->constraintNodes != NULL) {
-		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
-		if (constraintExpectedNode->nodeType != ASTnodeType_infixOperator) abort();
-		ASTnode_infixOperator *expectedData = (ASTnode_infixOperator *)constraintExpectedNode->value;
-		
-		ASTnode *leftNode = (ASTnode *)expectedData->left->data;
-		ASTnode *rightNode = (ASTnode *)expectedData->right->data;
-		
-		BuilderType *left;
-		if (leftNode->nodeType == ASTnodeType_selfReference) {
-			left = actualType;
-		} else {
-			linkedList_Node *leftTypes = NULL;
-			buildLLVM(FI, NULL, NULL, NULL, NULL, &leftTypes, expectedData->left, 0, 0, 0);
-			left = (BuilderType *)leftTypes->data;
-		}
-		
-		BuilderType *right;
-		if (rightNode->nodeType == ASTnodeType_selfReference) {
-			right = actualType;
-		} else {
-			linkedList_Node *rightTypes = NULL;
-			buildLLVM(FI, NULL, NULL, NULL, NULL, &rightTypes, expectedData->right, 0, 0, 0);
-			right = (BuilderType *)rightTypes->data;
-		}
-		
-		linkedList_Node *resultTypes = NULL;
-		if (!addTypeResultAfterOperationToList(FI, &resultTypes, "Bool", expectedData->operatorType, left, right)) {
-			addStringToReportMsg("constraint not met");
-			compileError(FI, location);
-		}
-	}
+//	if (expectedType->constraintNodes != NULL) {
+//		ASTnode *constraintExpectedNode = (ASTnode *)expectedType->constraintNodes->data;
+//		if (constraintExpectedNode->nodeType != ASTnodeType_infixOperator) abort();
+//		ASTnode_infixOperator *expectedData = (ASTnode_infixOperator *)constraintExpectedNode->value;
+//		
+//		ASTnode *leftNode = (ASTnode *)expectedData->left->data;
+//		ASTnode *rightNode = (ASTnode *)expectedData->right->data;
+//		
+//		BuilderType *left;
+//		if (leftNode->nodeType == ASTnodeType_selfReference) {
+//			left = actualType;
+//		} else {
+//			linkedList_Node *leftTypes = NULL;
+//			buildLLVM(FI, NULL, NULL, NULL, NULL, &leftTypes, expectedData->left, 0, 0, 0);
+//			left = (BuilderType *)leftTypes->data;
+//		}
+//		
+//		BuilderType *right;
+//		if (rightNode->nodeType == ASTnodeType_selfReference) {
+//			right = actualType;
+//		} else {
+//			linkedList_Node *rightTypes = NULL;
+//			buildLLVM(FI, NULL, NULL, NULL, NULL, &rightTypes, expectedData->right, 0, 0, 0);
+//			right = (BuilderType *)rightTypes->data;
+//		}
+//		
+//		linkedList_Node *resultTypes = NULL;
+//		if (!addTypeResultAfterOperationToList(FI, &resultTypes, "Bool", expectedData->operatorType, left, right)) {
+//			addStringToReportMsg("constraint not met");
+//			compileError(FI, location);
+//		}
+//	}
 }
 
 ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_Node **list, ASTnode *node) {
 	ASTnode_function *data = (ASTnode_function *)node->value;
 	
-	// make sure that the return type actually exists
-	BuilderType* returnType = getTypeFromConstrainedType(FI, data->returnType);
+	ScopeObject* returnType = getScopeObjectFromConstrainedType(FI, data->returnType);
 	
 	int compileTime = 0;
-	if (BuilderType_hasCoreName(returnType, "Type")) {
+	if (ScopeObjectAlias_hasCoreName(returnType, "Type")) {
 		compileTime = 1;
 	}
 	
@@ -269,18 +239,18 @@ ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_N
 	// make sure that the types of all arguments actually exist
 	linkedList_Node *currentArgument = data->argumentTypes;
 	while (currentArgument != NULL) {
-		BuilderType *currentArgumentType = getTypeFromConstrainedType(FI, (ASTnode *)currentArgument->data);
+		ScopeObject *currentArgumentType = getScopeObjectFromConstrainedType(FI, (ASTnode *)currentArgument->data);
 		
-		BuilderType *data = linkedList_addNode(&argumentTypes, sizeof(BuilderType));
+		ScopeObject *data = linkedList_addNode(&argumentTypes, sizeof(ScopeObject));
 		*data = *currentArgumentType;
 		
 		currentArgument = currentArgument->next;
 	}
 	
-	char *LLVMreturnType = BuilderType_getLLVMname(returnType, FI);
+	char *LLVMreturnType = ScopeObjectAlias_getLLVMname(returnType, FI);
 	
 	ScopeObject *functionScopeObject = linkedList_addNode(list, sizeof(ScopeObject) + sizeof(ScopeObject_function));
-	*functionScopeObject = ScopeObject_new(data->name, compileTime, FI, getTypeFromScopeObject(getScopeObjectFromString(coreFilePointer, "Type")), ScopeObjectType_function);
+	*functionScopeObject = ScopeObject_new(compileTime, NULL, getScopeObjectFromString(coreFilePointer, "Type"), ScopeObjectKind_function);
 	
 	if (compileTime) {
 		((ScopeObject_function *)functionScopeObject->value)->LLVMname = "LLVMname";
@@ -291,7 +261,7 @@ ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_N
 	}
 	((ScopeObject_function *)functionScopeObject->value)->argumentNames = data->argumentNames;
 	((ScopeObject_function *)functionScopeObject->value)->argumentTypes = argumentTypes;
-	((ScopeObject_function *)functionScopeObject->value)->returnType = *returnType;
+	((ScopeObject_function *)functionScopeObject->value)->returnType = returnType;
 	((ScopeObject_function *)functionScopeObject->value)->registerCount = 0;
 	((ScopeObject_function *)functionScopeObject->value)->debugInformationScopeID = 0;
 	
@@ -359,7 +329,7 @@ ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_N
 //			}
 //			
 //			// make sure the type actually exists
-//			BuilderType* type = getTypeFromConstrainedType(FI, propertyData->type);
+//			BuilderType* type = getScopeObjectFromConstrainedType(FI, propertyData->type);
 //
 //			char *LLVMtype = BuilderType_getLLVMname(type, FI);
 //			
@@ -417,13 +387,14 @@ ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_N
 //	CharAccumulator_appendChars(FI->topLevelStructSource, " }");
 //}
 
-void generateType(FileInformation *FI, CharAccumulator *source, BuilderType *type) {
-	if (type->scopeObject->scopeObjectType == ScopeObjectType_struct) {
-		if (FI != type->scopeObject->originFile && !FileInformation_declaredInLLVM(FI, type->scopeObject)) {
-//			generateStruct(FI, type->scopeObject, NULL, 0);
-		}
-	}
-	CharAccumulator_appendChars(source, BuilderType_getLLVMname(type, FI));
+void generateType(FileInformation *FI, CharAccumulator *source, ScopeObject *type) {
+	abort();
+//	if (type->scopeObject->scopeObjectType == ScopeObjectKind_struct) {
+//		if (FI != type->scopeObject->originFile && !FileInformation_declaredInLLVM(FI, type->scopeObject)) {
+////			generateStruct(FI, type->scopeObject, NULL, 0);
+//		}
+//	}
+//	CharAccumulator_appendChars(source, ScopeObjectAlias_getLLVMname(type, FI));
 }
 
 void buildFunctionCodeBlock(FileInformation *FI, ScopeObject *functionScopeObject, CharAccumulator *outerSource, linkedList_Node *codeBlock, SourceLocation location) {
@@ -434,123 +405,121 @@ void buildFunctionCodeBlock(FileInformation *FI, ScopeObject *functionScopeObjec
 	if (!functionHasReturned) {
 		addStringToReportMsg("function did not return");
 		
-		addStringToReportIndicator("the compiler cannot guarantee that function '");
-		addSubStringToReportIndicator(functionScopeObject->key);
-		addStringToReportIndicator("' returns");
+		addStringToReportIndicator("the compiler cannot guarantee that function the returns");
 		compileError(FI, location);
 	}
 }
 
 void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ScopeObject *functionScopeObject, ASTnode *node, int defineNew) {
-	ScopeObject_function *function = (ScopeObject_function *)functionScopeObject->value;
-	
-	if (functionScopeObject->compileTime) {
-		abort();
-	}
-	
-	if (defineNew) {
-		ASTnode_function *data = (ASTnode_function *)node->value;
-		
-		if (data->external) {
-			CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
-		} else {
-			CharAccumulator_appendChars(outerSource, "\n\ndefine ");
-		}
-	} else {
-		CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
-	}
-	
-	CharAccumulator_appendChars(outerSource, function->LLVMreturnType);
-	CharAccumulator_appendChars(outerSource, " @\"");
-	CharAccumulator_appendChars(outerSource, function->LLVMname);
-	CharAccumulator_appendChars(outerSource, "\"(");
-	
-	CharAccumulator functionSource = {100, 0, 0};
-	CharAccumulator_initialize(&functionSource);
-	
-	linkedList_Node *currentArgumentType = function->argumentTypes;
-	linkedList_Node *currentArgumentName = function->argumentNames;
-	if (currentArgumentType != NULL) {
-		int argumentCount =  linkedList_getCount(&function->argumentTypes);
-		while (1) {
-			ScopeObject *argumentTypeScopeObject = ((BuilderType *)currentArgumentType->data)->scopeObject;
-			
-			char *currentArgumentLLVMtype = BuilderType_getLLVMname((BuilderType *)currentArgumentType->data, FI);
-			CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
-			
-			if (defineNew) {
-				BuilderType type = *(BuilderType *)currentArgumentType->data;
-				
-				CharAccumulator_appendChars(outerSource, " %");
-				CharAccumulator_appendInt(outerSource, function->registerCount);
-				
-				CharAccumulator_appendChars(&functionSource, "\n\t%");
-				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
-				CharAccumulator_appendChars(&functionSource, " = alloca ");
-				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
-				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendInt(&functionSource, BuilderType_getByteAlign(&type));
-				
-				CharAccumulator_appendChars(&functionSource, "\n\tstore ");
-				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
-				CharAccumulator_appendChars(&functionSource, " %");
-				CharAccumulator_appendInt(&functionSource, function->registerCount);
-				CharAccumulator_appendChars(&functionSource, ", ptr %");
-				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
-				CharAccumulator_appendChars(&functionSource, ", align ");
-				CharAccumulator_appendInt(&functionSource, BuilderType_getByteAlign(&type));
-				
-				// TODO: hack with FI->level to include bindings at FI->level + 1 in expectUnusedName (for arguments with the same name)
-				FI->level++;
-				expectUnusedName(FI, (SubString *)currentArgumentName->data, node->location);
-				FI->level--;
-				
-				ScopeObject *argumentScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level + 1], sizeof(ScopeObject) + sizeof(ScopeObject_value));
-				*argumentScopeObject = ScopeObject_new((SubString *)currentArgumentName->data, 0, FI, type, ScopeObjectType_value);
-				*(ScopeObject_value *)argumentScopeObject->value = ScopeObject_value_new(function->registerCount + argumentCount + 1);
-				
-				function->registerCount++;
-			}
-			
-			if (currentArgumentType->next == NULL) {
-				break;
-			}
-			
-			CharAccumulator_appendChars(outerSource, ", ");
-			currentArgumentType = currentArgumentType->next;
-			currentArgumentName = currentArgumentName->next;
-		}
-		
-		if (defineNew) function->registerCount += argumentCount;
-	}
-	
-	CharAccumulator_appendChars(outerSource, ")");
-	
-	// This function attribute indicates that the function never raises an exception.
-	// If the function does raise an exception, its runtime behavior is undefined.
-	CharAccumulator_appendChars(outerSource, " nounwind");
-	
-	if (defineNew) {
-		ASTnode_function *data = (ASTnode_function *)node->value;
-		
-		if (!data->external) {
-			function->registerCount++;
-			
-			if (compilerOptions.includeDebugInformation) {
-				CharAccumulator_appendChars(outerSource, " !dbg !");
-				CharAccumulator_appendInt(outerSource, function->debugInformationScopeID);
-			}
-			CharAccumulator_appendChars(outerSource, " {");
-			CharAccumulator_appendChars(outerSource, functionSource.data);
-			buildFunctionCodeBlock(FI, functionScopeObject, outerSource, data->codeBlock, node->location);
-			
-			CharAccumulator_appendChars(outerSource, "\n}");
-		}
-	} else {
-		FileInformation_addToDeclaredInLLVM(FI, functionScopeObject);
-	}
-	
-	CharAccumulator_free(&functionSource);
+//	ScopeObject_function *function = (ScopeObject_function *)functionScopeObject->value;
+//	
+//	if (functionScopeObject->compileTime) {
+//		abort();
+//	}
+//	
+//	if (defineNew) {
+//		ASTnode_function *data = (ASTnode_function *)node->value;
+//		
+//		if (data->external) {
+//			CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
+//		} else {
+//			CharAccumulator_appendChars(outerSource, "\n\ndefine ");
+//		}
+//	} else {
+//		CharAccumulator_appendChars(outerSource, "\n\ndeclare ");
+//	}
+//	
+//	CharAccumulator_appendChars(outerSource, function->LLVMreturnType);
+//	CharAccumulator_appendChars(outerSource, " @\"");
+//	CharAccumulator_appendChars(outerSource, function->LLVMname);
+//	CharAccumulator_appendChars(outerSource, "\"(");
+//	
+//	CharAccumulator functionSource = {100, 0, 0};
+//	CharAccumulator_initialize(&functionSource);
+//	
+//	linkedList_Node *currentArgumentType = function->argumentTypes;
+//	linkedList_Node *currentArgumentName = function->argumentNames;
+//	if (currentArgumentType != NULL) {
+//		int argumentCount =  linkedList_getCount(&function->argumentTypes);
+//		while (1) {
+//			ScopeObject *argumentTypeScopeObject = ((ScopeObject *)currentArgumentType->data)->;
+//			
+//			char *currentArgumentLLVMtype = BuilderType_getLLVMname((BuilderType *)currentArgumentType->data, FI);
+//			CharAccumulator_appendChars(outerSource, currentArgumentLLVMtype);
+//			
+//			if (defineNew) {
+//				BuilderType type = *(BuilderType *)currentArgumentType->data;
+//				
+//				CharAccumulator_appendChars(outerSource, " %");
+//				CharAccumulator_appendInt(outerSource, function->registerCount);
+//				
+//				CharAccumulator_appendChars(&functionSource, "\n\t%");
+//				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
+//				CharAccumulator_appendChars(&functionSource, " = alloca ");
+//				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
+//				CharAccumulator_appendChars(&functionSource, ", align ");
+//				CharAccumulator_appendInt(&functionSource, BuilderType_getByteAlign(&type));
+//				
+//				CharAccumulator_appendChars(&functionSource, "\n\tstore ");
+//				CharAccumulator_appendChars(&functionSource, currentArgumentLLVMtype);
+//				CharAccumulator_appendChars(&functionSource, " %");
+//				CharAccumulator_appendInt(&functionSource, function->registerCount);
+//				CharAccumulator_appendChars(&functionSource, ", ptr %");
+//				CharAccumulator_appendInt(&functionSource, function->registerCount + argumentCount + 1);
+//				CharAccumulator_appendChars(&functionSource, ", align ");
+//				CharAccumulator_appendInt(&functionSource, BuilderType_getByteAlign(&type));
+//				
+//				// TODO: hack with FI->level to include bindings at FI->level + 1 in expectUnusedName (for arguments with the same name)
+//				FI->level++;
+//				expectUnusedName(FI, (SubString *)currentArgumentName->data, node->location);
+//				FI->level--;
+//				
+//				ScopeObject *argumentScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level + 1], sizeof(ScopeObject) + sizeof(ScopeObject_value));
+//				*argumentScopeObject = ScopeObject_new((SubString *)currentArgumentName->data, 0, FI, type, ScopeObjectKind_value);
+//				*(ScopeObject_value *)argumentScopeObject->value = ScopeObject_value_new(function->registerCount + argumentCount + 1);
+//				
+//				function->registerCount++;
+//			}
+//			
+//			if (currentArgumentType->next == NULL) {
+//				break;
+//			}
+//			
+//			CharAccumulator_appendChars(outerSource, ", ");
+//			currentArgumentType = currentArgumentType->next;
+//			currentArgumentName = currentArgumentName->next;
+//		}
+//		
+//		if (defineNew) function->registerCount += argumentCount;
+//	}
+//	
+//	CharAccumulator_appendChars(outerSource, ")");
+//	
+//	// This function attribute indicates that the function never raises an exception.
+//	// If the function does raise an exception, its runtime behavior is undefined.
+//	CharAccumulator_appendChars(outerSource, " nounwind");
+//	
+//	if (defineNew) {
+//		ASTnode_function *data = (ASTnode_function *)node->value;
+//		
+//		if (!data->external) {
+//			function->registerCount++;
+//			
+//			if (compilerOptions.includeDebugInformation) {
+//				CharAccumulator_appendChars(outerSource, " !dbg !");
+//				CharAccumulator_appendInt(outerSource, function->debugInformationScopeID);
+//			}
+//			CharAccumulator_appendChars(outerSource, " {");
+//			CharAccumulator_appendChars(outerSource, functionSource.data);
+//			buildFunctionCodeBlock(FI, functionScopeObject, outerSource, data->codeBlock, node->location);
+//			
+//			CharAccumulator_appendChars(outerSource, "\n}");
+//		}
+//	} else {
+//		FileInformation_addToDeclaredInLLVM(FI, functionScopeObject);
+//	}
+//	
+//	CharAccumulator_free(&functionSource);
 }
 
 FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSource, char *path) {
@@ -591,6 +560,9 @@ FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSo
 }
 
 int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
+	printf("TODO: buildLLVM\n");
+	exit(1);
+	
 	FI->level++;
 	if (FI->level > maxContextLevel) {
 		printf("level (%i) > maxContextLevel (%i)\n", FI->level, maxContextLevel);
@@ -623,7 +595,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 		
 		switch (node->nodeType) {
 			case ASTnodeType_constrainedType: {
-				addTypeFromBuilderType(FI, types, getTypeFromConstrainedType(FI, node));
+				addScopeObjectNone(FI, types, getScopeObjectFromConstrainedType(FI, node));
 				break;
 			}
 			
@@ -652,8 +624,9 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //				
 //				generateStruct(FI, structBinding, node, 1);
 				
+				abort();
 				if (types != NULL) {
-					addTypeFromString(FI, types, "Type", node);
+					// TODO
 				}
 				
 				break;
@@ -705,111 +678,111 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			}
 			
 			case ASTnodeType_call: {
-				if (outerFunction == NULL) {
-					addStringToReportMsg("function calls are only allowed in a function");
-					compileError(FI, node->location);
-				}
-				
-				ASTnode_call *data = (ASTnode_call *)node->value;
-				
-				CharAccumulator leftSource = {100, 0, 0};
-				CharAccumulator_initialize(&leftSource);
-				
-				linkedList_Node *expectedTypesForCall = NULL;
-				addTypeFromString(FI, &expectedTypesForCall, "Function", NULL);
-				
-				linkedList_Node *leftTypes = NULL;
-				buildLLVM(FI, outerFunction, outerSource, &leftSource, expectedTypesForCall, &leftTypes, data->left, 1, 0, 0);
-				
-				ScopeObject *functionToCallScopeObject = ((BuilderType *)leftTypes->data)->scopeObject;
-				ScopeObject_function *functionToCall = (ScopeObject_function *)functionToCallScopeObject->value;
-				
-				int expectedArgumentCount = linkedList_getCount(&functionToCall->argumentTypes);
-				int actualArgumentCount = linkedList_getCount(&data->arguments);
-				
-				if (expectedArgumentCount > actualArgumentCount) {
-					addStringToReportMsg("function did not get enough arguments");
-					
-					addStringToReportIndicator("'");
-					addSubStringToReportIndicator(functionToCallScopeObject->key);
-					addStringToReportIndicator("' expected ");
-					addIntToReportIndicator(expectedArgumentCount);
-					addStringToReportIndicator(" argument");
-					if (expectedArgumentCount != 1) addStringToReportIndicator("s");
-					addStringToReportIndicator(" but got ");
-					addIntToReportIndicator(actualArgumentCount);
-					addStringToReportIndicator(" argument");
-					if (actualArgumentCount != 1) addStringToReportIndicator("s");
-					compileError(FI, node->location);
-				}
-				if (expectedArgumentCount < actualArgumentCount) {
-					addStringToReportMsg("function got too many arguments");
-					
-					addStringToReportIndicator("'");
-					addSubStringToReportIndicator(functionToCallScopeObject->key);
-					addStringToReportIndicator("' expected ");
-					addIntToReportIndicator(expectedArgumentCount);
-					addStringToReportIndicator(" argument");
-					if (expectedArgumentCount != 1) addStringToReportIndicator("s");
-					addStringToReportIndicator(" but got ");
-					addIntToReportIndicator(actualArgumentCount);
-					addStringToReportIndicator(" argument");
-					if (actualArgumentCount != 1) addStringToReportIndicator("s");
-					compileError(FI, node->location);
-				}
-				
-				if (expectedTypes != NULL) {
-					expectType(FI, (BuilderType *)expectedTypes->data, &functionToCall->returnType, node->location);
-				}
-				
-				if (types != NULL) {
-					addTypeFromBuilderType(FI, types, &functionToCall->returnType);
-				}
-				
-				// TODO: move this out of ASTnodeType_call
-				if (FI != functionToCallScopeObject->originFile && !FileInformation_declaredInLLVM(FI, functionToCallScopeObject)) {
-					generateFunction(FI, FI->topLevelFunctionSource, functionToCallScopeObject, node, 0);
-				}
-				
-				CharAccumulator newInnerSource = {100, 0, 0};
-				CharAccumulator_initialize(&newInnerSource);
-				
-				buildLLVM(FI, outerFunction, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1, 1);
-				
-				if (outerSource != NULL) {
-					if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
-						CharAccumulator_appendChars(outerSource, "\n\t%");
-						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-						CharAccumulator_appendChars(outerSource, " = call ");
-						
-						if (innerSource != NULL) {
-							if (withTypes) {
-								CharAccumulator_appendChars(innerSource, functionToCall->LLVMreturnType);
-								CharAccumulator_appendChars(innerSource, " ");
-							}
-							CharAccumulator_appendChars(innerSource, "%");
-							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
-						}
-						
-						outerFunction->registerCount++;
-					} else {
-						CharAccumulator_appendChars(outerSource, "\n\tcall ");
-					}
-					CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
-					CharAccumulator_appendChars(outerSource, " @\"");
-					CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
-					CharAccumulator_appendChars(outerSource, "\"(");
-					CharAccumulator_appendChars(outerSource, newInnerSource.data);
-					CharAccumulator_appendChars(outerSource, ")");
-					
-					if (compilerOptions.includeDebugInformation) {
-						addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
-					}
-				}
-				
-				CharAccumulator_free(&newInnerSource);
-				
-				CharAccumulator_free(&leftSource);
+//				if (outerFunction == NULL) {
+//					addStringToReportMsg("function calls are only allowed in a function");
+//					compileError(FI, node->location);
+//				}
+//				
+//				ASTnode_call *data = (ASTnode_call *)node->value;
+//				
+//				CharAccumulator leftSource = {100, 0, 0};
+//				CharAccumulator_initialize(&leftSource);
+//				
+//				linkedList_Node *expectedTypesForCall = NULL;
+//				addScopeObjectFromString(FI, &expectedTypesForCall, "Function", NULL);
+//				
+//				linkedList_Node *leftTypes = NULL;
+//				buildLLVM(FI, outerFunction, outerSource, &leftSource, expectedTypesForCall, &leftTypes, data->left, 1, 0, 0);
+//				
+//				ScopeObject *functionToCallScopeObject = ((ScopeObject *)leftTypes->data)->scopeObject;
+//				ScopeObject_function *functionToCall = (ScopeObject_function *)functionToCallScopeObject->value;
+//				
+//				int expectedArgumentCount = linkedList_getCount(&functionToCall->argumentTypes);
+//				int actualArgumentCount = linkedList_getCount(&data->arguments);
+//				
+//				if (expectedArgumentCount > actualArgumentCount) {
+//					addStringToReportMsg("function did not get enough arguments");
+//					
+//					addStringToReportIndicator("'");
+//					addSubStringToReportIndicator(functionToCallScopeObject->key);
+//					addStringToReportIndicator("' expected ");
+//					addIntToReportIndicator(expectedArgumentCount);
+//					addStringToReportIndicator(" argument");
+//					if (expectedArgumentCount != 1) addStringToReportIndicator("s");
+//					addStringToReportIndicator(" but got ");
+//					addIntToReportIndicator(actualArgumentCount);
+//					addStringToReportIndicator(" argument");
+//					if (actualArgumentCount != 1) addStringToReportIndicator("s");
+//					compileError(FI, node->location);
+//				}
+//				if (expectedArgumentCount < actualArgumentCount) {
+//					addStringToReportMsg("function got too many arguments");
+//					
+//					addStringToReportIndicator("'");
+//					addSubStringToReportIndicator(functionToCallScopeObject->key);
+//					addStringToReportIndicator("' expected ");
+//					addIntToReportIndicator(expectedArgumentCount);
+//					addStringToReportIndicator(" argument");
+//					if (expectedArgumentCount != 1) addStringToReportIndicator("s");
+//					addStringToReportIndicator(" but got ");
+//					addIntToReportIndicator(actualArgumentCount);
+//					addStringToReportIndicator(" argument");
+//					if (actualArgumentCount != 1) addStringToReportIndicator("s");
+//					compileError(FI, node->location);
+//				}
+//				
+//				if (expectedTypes != NULL) {
+//					expectType(FI, (BuilderType *)expectedTypes->data, &functionToCall->returnType, node->location);
+//				}
+//				
+//				if (types != NULL) {
+//					addTypeFromBuilderType(FI, types, &functionToCall->returnType);
+//				}
+//				
+//				// TODO: move this out of ASTnodeType_call
+//				if (FI != functionToCallScopeObject->originFile && !FileInformation_declaredInLLVM(FI, functionToCallScopeObject)) {
+//					generateFunction(FI, FI->topLevelFunctionSource, functionToCallScopeObject, node, 0);
+//				}
+//				
+//				CharAccumulator newInnerSource = {100, 0, 0};
+//				CharAccumulator_initialize(&newInnerSource);
+//				
+//				buildLLVM(FI, outerFunction, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1, 1);
+//				
+//				if (outerSource != NULL) {
+//					if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
+//						CharAccumulator_appendChars(outerSource, "\n\t%");
+//						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+//						CharAccumulator_appendChars(outerSource, " = call ");
+//						
+//						if (innerSource != NULL) {
+//							if (withTypes) {
+//								CharAccumulator_appendChars(innerSource, functionToCall->LLVMreturnType);
+//								CharAccumulator_appendChars(innerSource, " ");
+//							}
+//							CharAccumulator_appendChars(innerSource, "%");
+//							CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
+//						}
+//						
+//						outerFunction->registerCount++;
+//					} else {
+//						CharAccumulator_appendChars(outerSource, "\n\tcall ");
+//					}
+//					CharAccumulator_appendChars(outerSource, functionToCall->LLVMreturnType);
+//					CharAccumulator_appendChars(outerSource, " @\"");
+//					CharAccumulator_appendChars(outerSource, functionToCall->LLVMname);
+//					CharAccumulator_appendChars(outerSource, "\"(");
+//					CharAccumulator_appendChars(outerSource, newInnerSource.data);
+//					CharAccumulator_appendChars(outerSource, ")");
+//					
+//					if (compilerOptions.includeDebugInformation) {
+//						addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
+//					}
+//				}
+//				
+//				CharAccumulator_free(&newInnerSource);
+//				
+//				CharAccumulator_free(&leftSource);
 				
 				break;
 			}
@@ -823,7 +796,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				ASTnode_while *data = (ASTnode_while *)node->value;
 				
 				linkedList_Node *expectedTypesForWhile = NULL;
-				addTypeFromString(FI, &expectedTypesForWhile, "Bool", NULL);
+				addScopeObjectFromString(FI, &expectedTypesForWhile, "Bool", NULL);
 				
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
@@ -884,7 +857,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				ASTnode_if *data = (ASTnode_if *)node->value;
 				
 				linkedList_Node *expectedTypesForIf = NULL;
-				addTypeFromString(FI, &expectedTypesForIf, "Bool", NULL);
+				addScopeObjectFromString(FI, &expectedTypesForIf, "Bool", NULL);
 				
 				CharAccumulator expressionSource = {100, 0, 0};
 				CharAccumulator_initialize(&expressionSource);
@@ -999,91 +972,91 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			}
 			
 			case ASTnodeType_return: {
-				if (outerFunction == NULL) {
-					addStringToReportMsg("return statements are only allowed in a function");
-					compileError(FI, node->location);
-				}
-				
-				ASTnode_return *data = (ASTnode_return *)node->value;
-				
-				if (data->expression == NULL) {
-					if (!BuilderType_hasCoreName(&outerFunction->returnType, "Void")) {
-						addStringToReportMsg("returning Void in a function that does not return Void.");
-						compileError(FI, node->location);
-					}
-					if (outerSource != NULL) {
-						CharAccumulator_appendChars(outerSource, "\n\tret void");
-					}
-				} else {
-					CharAccumulator newInnerSource = {100, 0, 0};
-					CharAccumulator_initialize(&newInnerSource);
-					
-					buildLLVM(FI, outerFunction, outerSource, &newInnerSource, typeToList(outerFunction->returnType), NULL, data->expression, 1, 1, 0);
-					
-					if (outerSource != NULL) {
-						CharAccumulator_appendChars(outerSource, "\n\tret ");
-						CharAccumulator_appendChars(outerSource, newInnerSource.data);
-					}
-					
-					CharAccumulator_free(&newInnerSource);
-				}
-				
-				if (outerSource != NULL && compilerOptions.includeDebugInformation) {
-					addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
-				}
-				
-				hasReturned = 1;
-				
-				outerFunction->registerCount++;
+//				if (outerFunction == NULL) {
+//					addStringToReportMsg("return statements are only allowed in a function");
+//					compileError(FI, node->location);
+//				}
+//				
+//				ASTnode_return *data = (ASTnode_return *)node->value;
+//				
+//				if (data->expression == NULL) {
+//					if (!BuilderType_hasCoreName(&outerFunction->returnType, "Void")) {
+//						addStringToReportMsg("returning Void in a function that does not return Void.");
+//						compileError(FI, node->location);
+//					}
+//					if (outerSource != NULL) {
+//						CharAccumulator_appendChars(outerSource, "\n\tret void");
+//					}
+//				} else {
+//					CharAccumulator newInnerSource = {100, 0, 0};
+//					CharAccumulator_initialize(&newInnerSource);
+//					
+//					buildLLVM(FI, outerFunction, outerSource, &newInnerSource, typeToList(outerFunction->returnType), NULL, data->expression, 1, 1, 0);
+//					
+//					if (outerSource != NULL) {
+//						CharAccumulator_appendChars(outerSource, "\n\tret ");
+//						CharAccumulator_appendChars(outerSource, newInnerSource.data);
+//					}
+//					
+//					CharAccumulator_free(&newInnerSource);
+//				}
+//				
+//				if (outerSource != NULL && compilerOptions.includeDebugInformation) {
+//					addDILocation(outerSource, outerFunction->debugInformationScopeID, node->location);
+//				}
+//				
+//				hasReturned = 1;
+//				
+//				outerFunction->registerCount++;
 				
 				break;
 			}
 				
 			case ASTnodeType_variableDefinition: {
-				if (outerFunction == NULL) {
-					addStringToReportMsg("variable definitions are only allowed in a function");
-					compileError(FI, node->location);
-				}
-				
-				ASTnode_variableDefinition *data = (ASTnode_variableDefinition *)node->value;
-				
-				expectUnusedName(FI, data->name, node->location);
-				
-				BuilderType* type = getTypeFromConstrainedType(FI, data->type);
-				
-				CharAccumulator expressionSource = {100, 0, 0};
-				CharAccumulator_initialize(&expressionSource);
-				
-				linkedList_Node *types = NULL;
-				buildLLVM(FI, outerFunction, outerSource, &expressionSource, typeToList(*type), &types, data->expression, 1, 1, 0);
-				
-				if (types != NULL) {
-					memcpy(type->factStack, ((BuilderType *)types->data)->factStack, sizeof(type->factStack));
-				}
-				
-				CharAccumulator_appendChars(outerSource, "\n\t%");
-				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-				CharAccumulator_appendChars(outerSource, " = alloca ");
-				generateType(FI, outerSource, type);
-				CharAccumulator_appendChars(outerSource, ", align ");
-				CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(type));
-				
-				if (data->expression != NULL) {
-					CharAccumulator_appendChars(outerSource, "\n\tstore ");
-					CharAccumulator_appendChars(outerSource, expressionSource.data);
-					CharAccumulator_appendChars(outerSource, ", ptr %");
-					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-					CharAccumulator_appendChars(outerSource, ", align ");
-					CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(type));
-				}
-				
-				ScopeObject *variableScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level], sizeof(ScopeObject) + sizeof(ScopeObject_value));
-				*variableScopeObject = ScopeObject_new(data->name, 0, FI, *type, ScopeObjectType_value);
-				*(ScopeObject_value *)variableScopeObject->value = ScopeObject_value_new(outerFunction->registerCount);
-				
-				outerFunction->registerCount++;
-				
-				CharAccumulator_free(&expressionSource);
+//				if (outerFunction == NULL) {
+//					addStringToReportMsg("variable definitions are only allowed in a function");
+//					compileError(FI, node->location);
+//				}
+//				
+//				ASTnode_variableDefinition *data = (ASTnode_variableDefinition *)node->value;
+//				
+//				expectUnusedName(FI, data->name, node->location);
+//				
+//				BuilderType* type = getScopeObjectFromConstrainedType(FI, data->type);
+//				
+//				CharAccumulator expressionSource = {100, 0, 0};
+//				CharAccumulator_initialize(&expressionSource);
+//				
+//				linkedList_Node *types = NULL;
+//				buildLLVM(FI, outerFunction, outerSource, &expressionSource, typeToList(*type), &types, data->expression, 1, 1, 0);
+//				
+//				if (types != NULL) {
+//					memcpy(type->factStack, ((BuilderType *)types->data)->factStack, sizeof(type->factStack));
+//				}
+//				
+//				CharAccumulator_appendChars(outerSource, "\n\t%");
+//				CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+//				CharAccumulator_appendChars(outerSource, " = alloca ");
+//				generateType(FI, outerSource, type);
+//				CharAccumulator_appendChars(outerSource, ", align ");
+//				CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(type));
+//				
+//				if (data->expression != NULL) {
+//					CharAccumulator_appendChars(outerSource, "\n\tstore ");
+//					CharAccumulator_appendChars(outerSource, expressionSource.data);
+//					CharAccumulator_appendChars(outerSource, ", ptr %");
+//					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
+//					CharAccumulator_appendChars(outerSource, ", align ");
+//					CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(type));
+//				}
+//				
+//				ScopeObject *variableScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level], sizeof(ScopeObject) + sizeof(ScopeObject_value));
+//				*variableScopeObject = ScopeObject_new(data->name, 0, FI, *type, ScopeObjectKind_value);
+//				*(ScopeObject_value *)variableScopeObject->value = ScopeObject_value_new(outerFunction->registerCount);
+//				
+//				outerFunction->registerCount++;
+//				
+//				CharAccumulator_free(&expressionSource);
 				
 				break;
 			}
@@ -1119,7 +1092,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					CharAccumulator_appendChars(outerSource, ", ptr ");
 					CharAccumulator_appendChars(outerSource, leftSource.data);
 					CharAccumulator_appendChars(outerSource, ", align ");
-					CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign((BuilderType *)leftType->data));
+					CharAccumulator_appendInt(outerSource, ScopeObjectAlias_getByteAlign((ScopeObject *)leftType->data));
 					
 					CharAccumulator_free(&rightSource);
 					CharAccumulator_free(&leftSource);
@@ -1251,21 +1224,21 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeft, data->left, 0, 0, 0);
 					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeft, NULL, data->left, 1, 1, 0);
 					
-					BuilderType *fromType = (BuilderType *)expectedTypeForLeft->data;
+					ScopeObject *fromType = (ScopeObject *)expectedTypeForLeft->data;
 					
-					BuilderType *toType = getTypeFromConstrainedType(FI, (ASTnode *)data->right->data);
+					ScopeObject *toType = getScopeObjectFromConstrainedType(FI, (ASTnode *)data->right->data);
 					
 					CharAccumulator_appendChars(outerSource, "\n\t%");
 					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, " = ");
 					
 					// make the type bigger
-					if (BuilderType_getByteSize(fromType) < BuilderType_getByteSize(toType)) {
+					if (ScopeObjectAlias_getByteSize(fromType) < ScopeObjectAlias_getByteSize(toType)) {
 						CharAccumulator_appendChars(outerSource, "sext ");
 					}
 					
 					// make the type smaller
-					else if (BuilderType_getByteSize(fromType) > BuilderType_getByteSize(toType)) {
+					else if (ScopeObjectAlias_getByteSize(fromType) > ScopeObjectAlias_getByteSize(toType)) {
 						CharAccumulator_appendChars(outerSource, "trunc ");
 					}
 					
@@ -1277,10 +1250,10 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					
 					CharAccumulator_appendChars(outerSource, leftInnerSource.data);
 					CharAccumulator_appendChars(outerSource, " to ");
-					CharAccumulator_appendChars(outerSource, BuilderType_getLLVMname(toType, FI));
+					CharAccumulator_appendChars(outerSource, ScopeObjectAlias_getLLVMname(toType, FI));
 					
 					if (withTypes) {
-						CharAccumulator_appendChars(innerSource, BuilderType_getLLVMname(toType, FI));
+						CharAccumulator_appendChars(innerSource, ScopeObjectAlias_getLLVMname(toType, FI));
 						CharAccumulator_appendChars(innerSource, " ");
 					}
 					CharAccumulator_appendChars(innerSource, "%");
@@ -1297,7 +1270,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				linkedList_Node *expectedTypeForLeftAndRight = NULL;
 				char *expectedLLVMtype = NULL;
 				if (expectedTypes != NULL) {
-					expectedLLVMtype = BuilderType_getLLVMname((BuilderType *)expectedTypes->data, FI);
+					expectedLLVMtype = ScopeObjectAlias_getLLVMname((ScopeObject *)expectedTypes->data, FI);
 				}
 				
 				if (
@@ -1320,8 +1293,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					
 					expectedTypeForLeftAndRight = leftType;
 					// if we did not find a number on the left side
-					if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
-						if (!BuilderType_hasCoreName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
+					if (!ScopeObjectAlias_isNumber((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+						if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypeForLeftAndRight->data, "__Number")) {
 							addStringToReportMsg("left side of operator expected a number");
 							compileError(FI, node->location);
 						}
@@ -1329,15 +1302,15 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 						// replace expectedTypeForLeftAndRight with the right type
 						expectedTypeForLeftAndRight = rightType;
 						// if we did not find a number on the right side
-						if (!BuilderType_isNumber((BuilderType *)expectedTypeForLeftAndRight->data)) {
-							if (!BuilderType_hasCoreName((BuilderType *)expectedTypeForLeftAndRight->data, "__Number")) {
+						if (!ScopeObjectAlias_isNumber((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypeForLeftAndRight->data, "__Number")) {
 								addStringToReportMsg("right side of operator expected a number");
 								compileError(FI, node->location);
 							}
 							
 							// default to Int32
 							expectedTypeForLeftAndRight = NULL;
-							addTypeFromString(FI, &expectedTypeForLeftAndRight, "Int32", NULL);
+							addScopeObjectFromString(FI, &expectedTypeForLeftAndRight, "Int32", NULL);
 						}
 					}
 				}
@@ -1381,10 +1354,10 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					}
 					
 					if (types != NULL) {
-						addTypeFromString(FI, types, "Bool", NULL);
+						addScopeObjectFromString(FI, types, "Bool", NULL);
 					}
 					
-					CharAccumulator_appendChars(outerSource, BuilderType_getLLVMname((BuilderType *)expectedTypeForLeftAndRight->data, FI));
+					CharAccumulator_appendChars(outerSource, ScopeObjectAlias_getLLVMname((ScopeObject *)expectedTypeForLeftAndRight->data, FI));
 				}
 				
 				else if (
@@ -1395,11 +1368,11 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					data->operatorType == ASTnode_infixOperatorType_modulo
 				) {
 					if (expectedTypes == NULL && types != NULL) {
-						addTypeFromBuilderType(FI, types, (BuilderType *)expectedTypeForLeftAndRight->data);
+						addScopeObjectNone(FI, types, (ScopeObject *)expectedTypeForLeftAndRight->data);
 					}
 					
 					if (expectedTypes != NULL && outerSource != NULL) {
-						addTypeFromBuilderType(FI, &expectedTypeForLeftAndRight, (BuilderType *)expectedTypes->data);
+						addScopeObjectNone(FI, &expectedTypeForLeftAndRight, (ScopeObject *)expectedTypes->data);
 						
 						buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
 						buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
@@ -1407,54 +1380,54 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 						
 						if (data->operatorType == ASTnode_infixOperatorType_add) {
-							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (ScopeObjectAlias_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = add ");
-								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 									CharAccumulator_appendChars(outerSource, "nsw ");
 								}
-							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fadd ");
 							} else {
 								abort();
 							}
 						} else if (data->operatorType == ASTnode_infixOperatorType_subtract) {
-							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (ScopeObjectAlias_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = sub ");
-								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 									CharAccumulator_appendChars(outerSource, "nsw ");
 								}
-							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fsub ");
 							} else {
 								abort();
 							}
 						} else if (data->operatorType == ASTnode_infixOperatorType_multiply) {
-							if (BuilderType_isInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (ScopeObjectAlias_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = mul ");
-								if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+								if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 									CharAccumulator_appendChars(outerSource, "nsw ");
 								}
-							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fmul ");
 							} else {
 								abort();
 							}
 						} else if (data->operatorType == ASTnode_infixOperatorType_divide) {
-							if (BuilderType_isUnsignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (ScopeObjectAlias_isUnsignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = udiv ");
-							} else if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = sdiv ");
-							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fdiv ");
 							} else {
 								abort();
 							}
 						} else if (data->operatorType == ASTnode_infixOperatorType_modulo) {
-							if (BuilderType_isUnsignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							if (ScopeObjectAlias_isUnsignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = urem ");
-							} else if (BuilderType_isSignedInt((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = srem ");
-							} else if (BuilderType_isFloat((BuilderType *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								addStringToReportMsg("modulo does not support floats");
 								
 								compileError(FI, node->location);
@@ -1473,11 +1446,10 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					data->operatorType == ASTnode_infixOperatorType_and ||
 					data->operatorType == ASTnode_infixOperatorType_or
 				) {
-					linkedList_Node *expectedTypesForIf = NULL;
-					addTypeFromString(FI, &expectedTypesForIf, "Bool", NULL);
+					addScopeObjectFromString(FI, &expectedTypeForLeftAndRight, "Bool", NULL);
 					
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypesForIf, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypesForIf, NULL, data->right, 1, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
 					
 					if (outerSource != NULL) {
 						CharAccumulator_appendChars(outerSource, "\n\t%");
@@ -1490,7 +1462,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					}
 					
 					if (types != NULL) {
-						addTypeFromString(FI, types, "Bool", NULL);
+						addScopeObjectFromString(FI, types, "Bool", NULL);
 					}
 				}
 				
@@ -1523,11 +1495,11 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			case ASTnodeType_bool: {
 				ASTnode_bool *data = (ASTnode_bool *)node->value;
 				
-				if (!BuilderType_hasCoreName((BuilderType *)expectedTypes->data, "Bool")) {
+				if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypes->data, "Bool")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
-					addSubStringToReportIndicator(BuilderType_getName((BuilderType *)expectedTypes->data));
+					addSubStringToReportIndicator(ScopeObjectAlias_getName((ScopeObject *)expectedTypes->data));
 					addStringToReportIndicator("' but got a bool");
 					compileError(FI, node->location);
 				}
@@ -1543,7 +1515,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				}
 				
 				if (types != NULL) {
-					addTypeFromString(FI, types, "Bool", node);
+					addScopeObjectFromString(FI, types, "Bool", node);
 				}
 				
 				break;
@@ -1553,21 +1525,21 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				ASTnode_number *data = (ASTnode_number *)node->value;
 				
 				if (types != NULL) {
-					addTypeFromString(FI, types, "__Number", node);
+					addScopeObjectFromString(FI, types, "__Number", node);
 				}
 				
 				if (expectedTypes != NULL) {
-					if (!BuilderType_isNumber((BuilderType *)expectedTypes->data)) {
+					if (!ScopeObjectAlias_isNumber((ScopeObject *)expectedTypes->data)) {
 						addStringToReportMsg("unexpected type");
 						
 						addStringToReportIndicator("expected type '");
-						addSubStringToReportIndicator(BuilderType_getName((BuilderType *)expectedTypes->data));
+						addSubStringToReportIndicator(ScopeObjectAlias_getName((ScopeObject *)expectedTypes->data));
 						addStringToReportIndicator("' but got a number.");
 						compileError(FI, node->location);
 					}
 					
 					if (withTypes) {
-						char *LLVMtype = BuilderType_getLLVMname((BuilderType *)(*currentExpectedType)->data, FI);
+						char *LLVMtype = ScopeObjectAlias_getLLVMname((ScopeObject *)(*currentExpectedType)->data, FI);
 						
 						CharAccumulator_appendChars(innerSource, LLVMtype);
 						CharAccumulator_appendChars(innerSource, " ");
@@ -1575,7 +1547,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				}
 				
 				if (innerSource != NULL) CharAccumulator_appendSubString(innerSource, data->string);
-				if (expectedTypes != NULL && BuilderType_isFloat((BuilderType *)expectedTypes->data)) {
+				if (expectedTypes != NULL && ScopeObjectAlias_isFloat((ScopeObject *)expectedTypes->data)) {
 					CharAccumulator_appendChars(innerSource, ".0");
 				}
 				
@@ -1585,11 +1557,11 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (expectedTypes != NULL && !BuilderType_hasCoreName((BuilderType *)expectedTypes->data, "Pointer")) {
+				if (expectedTypes != NULL && !ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypes->data, "Pointer")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
-					addSubStringToReportIndicator(BuilderType_getName((BuilderType *)expectedTypes->data));
+					addSubStringToReportIndicator(ScopeObjectAlias_getName((ScopeObject *)expectedTypes->data));
 					addStringToReportIndicator("' but got a string");
 					compileError(FI, node->location);
 				}
@@ -1649,7 +1621,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				CharAccumulator_free(&string);
 				
 				if (types != NULL) {
-					addTypeFromString(FI, types, "Pointer", node);
+					addScopeObjectFromString(FI, types, "Pointer", node);
 				}
 				
 				break;
@@ -1668,42 +1640,42 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					compileError(FI, node->location);
 				}
 				
-				if (variableScopeObject->scopeObjectType == ScopeObjectType_struct) {
+				if (variableScopeObject->scopeObjectKind == ScopeObjectKind_struct) {
 					if (types != NULL) {
-						addTypeFromScopeObject(FI, types, variableScopeObject);
+						addScopeObjectNone(FI, types, variableScopeObject);
 					}
-				} else if (variableScopeObject->scopeObjectType == ScopeObjectType_function) {
+				} else if (variableScopeObject->scopeObjectKind == ScopeObjectKind_function) {
 					if (expectedTypes != NULL) {
-						if (!BuilderType_hasCoreName((BuilderType *)expectedTypes->data, "Function")) {
+						if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypes->data, "Function")) {
 							addStringToReportMsg("unexpected type");
 							
 							addStringToReportIndicator("expected type '");
-							addSubStringToReportIndicator(BuilderType_getName((BuilderType *)expectedTypes->data));
+							addSubStringToReportIndicator(ScopeObjectAlias_getName((ScopeObject *)expectedTypes->data));
 							addStringToReportIndicator("' but got a function");
 							compileError(FI, node->location);
 						}
 					}
 					
 					if (types != NULL) {
-						addTypeFromScopeObject(FI, types, variableScopeObject);
+						addScopeObjectNone(FI, types, variableScopeObject);
 					}
-				} else if (variableScopeObject->scopeObjectType == ScopeObjectType_value) {
+				} else if (variableScopeObject->scopeObjectKind == ScopeObjectKind_value) {
 					if (variableScopeObject->compileTime) {
 						abort();
 					}
 					ScopeObject_value *value = (ScopeObject_value *)variableScopeObject->value;
 					
 					if (expectedTypes != NULL) {
-						expectType(FI, (BuilderType *)expectedTypes->data, &variableScopeObject->type, node->location);
+						expectType(FI, (ScopeObject *)expectedTypes->data, variableScopeObject->type, node->location);
 					}
 					
 					if (types != NULL) {
-						addTypeFromBuilderType(FI, types, &variableScopeObject->type);
+						addScopeObjectNone(FI, types, variableScopeObject->type);
 					}
 					
 					if (outerSource != NULL) {
 						if (withTypes) {
-							CharAccumulator_appendChars(innerSource, BuilderType_getLLVMname(&variableScopeObject->type, FI));
+							CharAccumulator_appendChars(innerSource, ScopeObjectAlias_getLLVMname(variableScopeObject->type, FI));
 							CharAccumulator_appendChars(innerSource, " ");
 						}
 						
@@ -1713,11 +1685,11 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 							CharAccumulator_appendChars(outerSource, "\n\t%");
 							CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 							CharAccumulator_appendChars(outerSource, " = load ");
-							CharAccumulator_appendChars(outerSource, BuilderType_getLLVMname(&variableScopeObject->type, FI));
+							CharAccumulator_appendChars(outerSource, ScopeObjectAlias_getLLVMname(variableScopeObject->type, FI));
 							CharAccumulator_appendChars(outerSource, ", ptr %");
 							CharAccumulator_appendInt(outerSource, value->LLVMRegister);
 							CharAccumulator_appendChars(outerSource, ", align ");
-							CharAccumulator_appendInt(outerSource, BuilderType_getByteAlign(&variableScopeObject->type));
+							CharAccumulator_appendInt(outerSource, ScopeObjectAlias_getByteAlign(variableScopeObject->type));
 							
 							if (innerSource != NULL) CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 							
@@ -1751,7 +1723,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				// if it is an identifier
 				if (node->nodeType == ASTnodeType_identifier) {
 					ASTnode_identifier *queryData = (ASTnode_identifier *)node->value;
-					printScopeObject(FI, getScopeObjectFromSubString(FI, queryData->name));
+					printScopeObject_alias(FI, getScopeObjectFromSubString(FI, queryData->name));
 //					printf("]");
 //					exit(0);
 				}
@@ -1781,7 +1753,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
 				ScopeObject *functionScopeObject = getScopeObjectFromSubString(FI, data->name);
-				if (functionScopeObject == NULL || functionScopeObject->scopeObjectType != ScopeObjectType_function) abort();
+				if (functionScopeObject == NULL || functionScopeObject->scopeObjectKind != ScopeObjectKind_function) abort();
 				ScopeObject_function *function = (ScopeObject_function *)functionScopeObject->value;
 				
 				if (functionScopeObject->compileTime) {

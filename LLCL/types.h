@@ -306,41 +306,47 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operat
 // context
 //
 
-struct BuilderType {
-	struct ScopeObject *scopeObject;
-	linkedList_Node *constraintNodes;
-	
-	/// Dictionary of BuilderTypes
-//	Dictionary *states;
-	/// [linkedList<Fact>]
-	linkedList_Node *factStack[maxContextLevel];
-};
-typedef struct BuilderType BuilderType;
-
 typedef enum {
-//	ScopeObjectType_simpleType,
-	ScopeObjectType_struct,
-	ScopeObjectType_function,
-	ScopeObjectType_value
-} ScopeObjectType;
+//	ScopeObjectKind_simpleType,
+	ScopeObjectKind_none,
+	ScopeObjectKind_alias,
+	ScopeObjectKind_struct,
+	ScopeObjectKind_function,
+	ScopeObjectKind_value
+} ScopeObjectKind;
 
 struct ScopeObject {
-	SubString *key;
-	
 	int compileTime;
-	FileInformation *originFile;
-	struct BuilderType type;
 	
-	ScopeObjectType scopeObjectType;
+//	struct ScopeObject *scopeObject;
+	linkedList_Node *constraintNodes;
+	
+	/// [linkedList<Fact>]
+	linkedList_Node *factStack[maxContextLevel];
+	
+	struct ScopeObject *type;
+	
+	ScopeObjectKind scopeObjectKind;
 	uint8_t value[] WORD_ALIGNED;
 };
 typedef struct ScopeObject ScopeObject;
 
-ScopeObject ScopeObject_new(SubString *key, int compileTime, FileInformation *originFile, BuilderType type, ScopeObjectType scopeObjectType);
+//struct ScopeObjectRef {
+//	ScopeObject *object;
+//};
+//typedef struct ScopeObjectRef ScopeObjectRef;
 
-BuilderType BuilderType_new(ScopeObject *scopeObject, linkedList_Node *constraintNodes);
+ScopeObject ScopeObject_new(int compileTime, linkedList_Node *constraintNodes, ScopeObject *type, ScopeObjectKind scopeObjectType);
 
-BuilderType getTypeFromScopeObject(ScopeObject *scopeObject);
+typedef struct ScopeObject_alias {
+	SubString *key;
+	ScopeObject *value;
+	
+	FileInformation *originFile;
+} ScopeObject_alias;
+
+// scopeObjectType == ScopeObjectKind_alias
+//typedef ScopeObject BuilderType;
 
 typedef struct {
 	char *LLVMname;
@@ -359,7 +365,7 @@ typedef struct {
 	linkedList_Node *argumentNames;
 	/// BuilderType
 	linkedList_Node *argumentTypes;
-	BuilderType returnType;
+	ScopeObject *returnType;
 	
 	// for LLVMIR registers
 	int registerCount;
@@ -375,25 +381,31 @@ ScopeObject_value ScopeObject_value_new(int LLVMRegister);
 int FileInformation_declaredInLLVM(FileInformation *FI, ScopeObject *pointer);
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ScopeObject *pointer);
 
-void addScopeObject_simpleType(linkedList_Node **context, char *name, char *LLVMtype, int byteSize, int byteAlign);
+ScopeObject *addAlias(linkedList_Node **list, SubString *key, ScopeObject *type, ScopeObject *value);
+void addSimpleType(linkedList_Node **list, char *name, char *LLVMname, int byteSize, int byteAlign);
+ScopeObject *addScopeObjectNone(FileInformation *FI, linkedList_Node **list, ScopeObject *scopeObject);
+void addScopeObjectFromString(FileInformation *FI, linkedList_Node **list, char *string, ASTnode *node);
 ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key);
 ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key);
 
-ASTnode *BuilderType_getResolvedValue(BuilderType *type, FileInformation *FI);
+ASTnode *ScopeObject_getResolvedValue(ScopeObject *type, FileInformation *FI);
 
-int BuilderType_hasName(BuilderType *type, char *name);
-int BuilderType_hasCoreName(BuilderType *type, char *name);
-int BuilderType_isSignedInt(BuilderType *type);
-int BuilderType_isUnsignedInt(BuilderType *type);
-int BuilderType_isInt(BuilderType *type);
-int BuilderType_isFloat(BuilderType *type);
-int BuilderType_isNumber(BuilderType *type);
+ScopeObject_alias *scopeObject_getAsAlias(ScopeObject *scopeObject);
+ScopeObject *ScopeObjectAlias_unalias(ScopeObject *scopeObject);
 
-char *BuilderType_getLLVMname(BuilderType *type, FileInformation *FI);
+int ScopeObjectAlias_hasName(ScopeObject *type, char *name);
+int ScopeObjectAlias_hasCoreName(ScopeObject *scopeObject, char *name) ;
+int ScopeObjectAlias_isSignedInt(ScopeObject *type);
+int ScopeObjectAlias_isUnsignedInt(ScopeObject *type);
+int ScopeObjectAlias_isInt(ScopeObject *type);
+int ScopeObjectAlias_isFloat(ScopeObject *type);
+int ScopeObjectAlias_isNumber(ScopeObject *type);
 
-int BuilderType_getByteSize(BuilderType *type);
-int BuilderType_getByteAlign(BuilderType *type);
+char *ScopeObjectAlias_getLLVMname(ScopeObject *type, FileInformation *FI);
 
-SubString *BuilderType_getName(BuilderType *type);
+int ScopeObjectAlias_getByteSize(ScopeObject *type);
+int ScopeObjectAlias_getByteAlign(ScopeObject *type);
+
+SubString *ScopeObjectAlias_getName(ScopeObject *type);
 
 #endif /* types_h */
