@@ -356,15 +356,6 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 				else if (SubString_string_cmp(&token->subString, "fn") == 0) {
 					*current = (*current)->next;
 					endIfCurrentIsEmpty()
-					Token *nameToken = ((Token *)((*current)->data));
-					
-					if (nameToken->type != TokenType_word) {
-						addStringToReportMsg("expected word after function keyword");
-						compileError(FI, nameToken->location);
-					}
-					
-					*current = (*current)->next;
-					endIfCurrentIsEmpty()
 					Token *openingParentheses = ((Token *)((*current)->data));
 					
 					if (openingParentheses->type != TokenType_separator || SubString_string_cmp(&openingParentheses->subString, "(") != 0) {
@@ -399,9 +390,8 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
 						data->nodeType = ASTnodeType_function;
-						data->location = nameToken->location;
+						data->location = token->location;
 						
-						((ASTnode_function *)data->value)->name = &nameToken->subString;
 						((ASTnode_function *)data->value)->external = 0;
 						((ASTnode_function *)data->value)->returnType = returnType;
 						((ASTnode_function *)data->value)->argumentNames = argumentNames;
@@ -413,9 +403,8 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 						ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_function));
 						
 						data->nodeType = ASTnodeType_function;
-						data->location = nameToken->location;
+						data->location = token->location;
 						
-						((ASTnode_function *)data->value)->name = &nameToken->subString;
 						((ASTnode_function *)data->value)->external = 1;
 						((ASTnode_function *)data->value)->returnType = returnType;
 						((ASTnode_function *)data->value)->argumentNames = argumentNames;
@@ -579,7 +568,46 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					((ASTnode_variableDefinition *)data->value)->expression = expression;
 				}
 				
-				// true constant
+				// constant definition
+				else if (SubString_string_cmp(&token->subString, "const") == 0) {
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *nameToken = ((Token *)((*current)->data));
+					if (nameToken->type != TokenType_word) {
+						addStringToReportMsg("expected word after const keyword");
+						compileError(FI, nameToken->location);
+					}
+					
+					*current = (*current)->next;
+					endIfCurrentIsEmpty()
+					Token *colon = ((Token *)((*current)->data));
+					if (colon->type != TokenType_separator || SubString_string_cmp(&colon->subString, ":") != 0) {
+						addStringToReportMsg("constant definition expected a colon");
+						compileError(FI, colon->location);
+					}
+					
+					*current = (*current)->next;
+					ASTnode *type = (ASTnode *)parseType(FI, current)->data;
+					
+					linkedList_Node *expression = NULL;
+					
+					Token *equals = ((Token *)((*current)->data));
+					if (equals->type == TokenType_operator && SubString_string_cmp(&equals->subString, "=") == 0) {
+						*current = (*current)->next;
+						expression = parse(FI, current, ParserMode_expression, 0, 0);
+					}
+					
+					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_constantDefinition));
+					
+					data->nodeType = ASTnodeType_constantDefinition;
+					data->location = token->location;
+					
+					((ASTnode_constantDefinition *)data->value)->name = &nameToken->subString;
+					((ASTnode_constantDefinition *)data->value)->type = type;
+					((ASTnode_constantDefinition *)data->value)->expression = expression;
+				}
+				
+				// true
 				else if (SubString_string_cmp(&token->subString, "true") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_bool));
 					data->nodeType = ASTnodeType_bool;
@@ -590,7 +618,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 					*current = (*current)->next;
 				}
 				
-				// false constant
+				// false
 				else if (SubString_string_cmp(&token->subString, "false") == 0) {
 					ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_bool));
 					data->nodeType = ASTnodeType_bool;
@@ -664,6 +692,7 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 						data->nodeType = ASTnodeType_call;
 						data->location = leftNode->location;
 						
+						((ASTnode_call *)data->value)->builtin = 0;
 						((ASTnode_call *)data->value)->left = left;
 						((ASTnode_call *)data->value)->arguments = arguments;
 					} else {
@@ -750,11 +779,23 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 				break;
 			}
 				
-			case TokenType_floatingType: {
+			case TokenType_builtinIndicator: {
 				*current = (*current)->next;
 				
-				linkedList_Node *type = parseType(FI, current);
-				linkedList_join(&AST, &type);
+				linkedList_Node *left = parse(FI, current, ParserMode_expression, 0, 1);
+				ASTnode *leftNode = (ASTnode *)left->data;
+				
+				*current = (*current)->next;
+				linkedList_Node *arguments = parse(FI, current, ParserMode_arguments, 0, 0);
+				
+				ASTnode *data = linkedList_addNode(&AST, sizeof(ASTnode) + sizeof(ASTnode_call));
+				
+				data->nodeType = ASTnodeType_call;
+				data->location = leftNode->location;
+				
+				((ASTnode_call *)data->value)->builtin = 1;
+				((ASTnode_call *)data->value)->left = left;
+				((ASTnode_call *)data->value)->arguments = arguments;
 				break;
 			}
 			
@@ -774,15 +815,6 @@ linkedList_Node *parse(FileInformation *FI, linkedList_Node **current, ParserMod
 			}
 			return AST;
 		}
-		
-		// return at the end of a generic expression
-//		if (
-//			parserMode == ParserMode_arguments &&
-//			((Token *)((*current)->data))->type == TokenType_operator &&
-//			SubString_string_cmp(&((Token *)((*current)->data))->subString, ">") == 0
-//		) {
-//			return AST;
-//		}
 		
 		if (!returnAtNonScopeResolutionOperator && ((Token *)((*current)->data))->type == TokenType_operator) {
 			continue;

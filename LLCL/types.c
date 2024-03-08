@@ -420,13 +420,25 @@ ScopeObject *addAlias(linkedList_Node **list, SubString *key, ScopeObject *type,
 	return alias;
 }
 
+// returns the type that all types are
+ScopeObject *getTypeType(void) {
+	return scopeObject_getAsAlias(getScopeObjectAliasFromString(coreFilePointer, "Type"))->value;
+}
+
 // note: originFile = coreFilePointer
 void addSimpleType(linkedList_Node **list, char *name, char *LLVMname, int byteSize, int byteAlign) {
-	ScopeObject *structScopeObject = linkedList_addNode(list, sizeof(ScopeObject) + sizeof(ScopeObject_struct));
-	*structScopeObject = ScopeObject_new(1, NULL, getScopeObjectFromString(coreFilePointer, "Type"), ScopeObjectKind_struct);
+	ScopeObject *structScopeObject = safeMalloc(sizeof(ScopeObject) + sizeof(ScopeObject_struct));
+	*structScopeObject = ScopeObject_new(1, NULL, getTypeType(), ScopeObjectKind_struct);
 	*(ScopeObject_struct *)structScopeObject->value = ScopeObject_struct_new(LLVMname, NULL, byteSize, byteAlign);
 	
-	addAlias(list, getSubStringFromString(name), getScopeObjectFromString(coreFilePointer, "Type"), structScopeObject);
+	addAlias(list, getSubStringFromString(name), getTypeType(), structScopeObject);
+}
+
+void addBuiltinFunction(linkedList_Node **list, char *name, char *description) {
+	ScopeObject *structScopeObject = safeMalloc(sizeof(ScopeObject) + sizeof(ScopeObject_builtinFunction));
+	*structScopeObject = ScopeObject_new(1, NULL, getTypeType(), ScopeObjectKind_builtinFunction);
+	
+	addAlias(list, getSubStringFromString(name), getTypeType(), structScopeObject);
 }
 
 ScopeObject *addScopeObjectNone(FileInformation *FI, linkedList_Node **list, ScopeObject *scopeObject) {
@@ -436,7 +448,7 @@ ScopeObject *addScopeObjectNone(FileInformation *FI, linkedList_Node **list, Sco
 }
 
 void addScopeObjectFromString(FileInformation *FI, linkedList_Node **list, char *string, ASTnode *node) {
-	ScopeObject *scopeObject = getScopeObjectFromString(FI, string);
+	ScopeObject *scopeObject = getScopeObjectAliasFromString(FI, string);
 	if (scopeObject == NULL) abort();
 	
 	ScopeObject *newScopeObject = addScopeObjectNone(FI, list, scopeObject);
@@ -444,7 +456,7 @@ void addScopeObjectFromString(FileInformation *FI, linkedList_Node **list, char 
 	Fact_newExpression(&newScopeObject->factStack[0], ASTnode_infixOperatorType_equivalent, NULL, node);
 }
 
-ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
+ScopeObject *getScopeObjectAliasFromString(FileInformation *FI, char *key) {
 	int index = FI->level;
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.scopeObjects[index];
@@ -477,7 +489,7 @@ ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key) {
 	return NULL;
 }
 
-ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key) {
+ScopeObject *getScopeObjectAliasFromSubString(FileInformation *FI, SubString *key) {
 	int index = FI->level;
 	while (index >= 0) {
 		linkedList_Node *current = FI->context.scopeObjects[index];

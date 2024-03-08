@@ -220,7 +220,7 @@ linkedList_Node *lex(FileInformation *FI) {
 		else if (character == '@') {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
-			data->type = TokenType_floatingType;
+			data->type = TokenType_builtinIndicator;
 			data->location = (SourceLocation){line, column, column + 1};
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;

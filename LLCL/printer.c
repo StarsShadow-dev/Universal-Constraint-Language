@@ -124,7 +124,7 @@ void printKeyword(int type, char *name, char *documentation) {
 }
 
 // scopeObject is an alias
-void printScopeObject_alias(FileInformation *FI, ScopeObject *scopeObject) {
+void printScopeObjectAlias(FileInformation *FI, ScopeObject *scopeObject) {
 	ScopeObject_alias *alias = scopeObject_getAsAlias(scopeObject);
 	int type;
 	SubString *name = alias->key;
@@ -206,7 +206,7 @@ void printScopeObjects(FileInformation *FI) {
 		while (current != NULL) {
 			ScopeObject *scopeObject = ((ScopeObject *)current->data);
 			
-			printScopeObject_alias(FI, scopeObject);
+			printScopeObjectAlias(FI, scopeObject);
 			
 			current = current->next;
 		}

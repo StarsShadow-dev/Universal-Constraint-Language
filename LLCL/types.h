@@ -138,7 +138,7 @@ typedef enum {
 	TokenType_operator,
 	TokenType_string,
 	TokenType_selfReference,
-	TokenType_floatingType // @
+	TokenType_builtinIndicator // @
 } TokenType;
 
 typedef struct {
@@ -156,6 +156,7 @@ typedef enum {
 	ASTnodeType_if,
 	ASTnodeType_return,
 	ASTnodeType_variableDefinition,
+	ASTnodeType_constantDefinition,
 	ASTnodeType_variableAssignment,
 	
 	ASTnodeType_infixOperator,
@@ -188,7 +189,6 @@ typedef struct {
 } ASTnode_struct;
 
 typedef struct {
-	SubString *name;
 	int external;
 	ASTnode *returnType;
 	linkedList_Node *argumentNames;
@@ -198,6 +198,7 @@ typedef struct {
 
 // a function call
 typedef struct {
+	int builtin;
 	linkedList_Node *left;
 	linkedList_Node *arguments;
 } ASTnode_call;
@@ -222,6 +223,12 @@ typedef struct {
 	ASTnode *type;
 	linkedList_Node *expression;
 } ASTnode_variableDefinition;
+
+typedef struct {
+	SubString *name;
+	ASTnode *type;
+	linkedList_Node *expression;
+} ASTnode_constantDefinition;
 
 typedef enum {
 	ASTnode_infixOperatorType_assignment,
@@ -312,6 +319,7 @@ typedef enum {
 	ScopeObjectKind_alias,
 	ScopeObjectKind_struct,
 	ScopeObjectKind_function,
+	ScopeObjectKind_builtinFunction,
 	ScopeObjectKind_value
 } ScopeObjectKind;
 
@@ -327,6 +335,8 @@ struct ScopeObject {
 	struct ScopeObject *type;
 	
 	ScopeObjectKind scopeObjectKind;
+	
+	
 	uint8_t value[] WORD_ALIGNED;
 };
 typedef struct ScopeObject ScopeObject;
@@ -373,6 +383,10 @@ typedef struct {
 } ScopeObject_function;
 
 typedef struct {
+	
+} ScopeObject_builtinFunction;
+
+typedef struct {
 	int LLVMRegister;
 //	char *LLVMname;
 } ScopeObject_value;
@@ -382,11 +396,13 @@ int FileInformation_declaredInLLVM(FileInformation *FI, ScopeObject *pointer);
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ScopeObject *pointer);
 
 ScopeObject *addAlias(linkedList_Node **list, SubString *key, ScopeObject *type, ScopeObject *value);
+ScopeObject *getTypeType(void);
 void addSimpleType(linkedList_Node **list, char *name, char *LLVMname, int byteSize, int byteAlign);
+void addBuiltinFunction(linkedList_Node **list, char *name, char *description);
 ScopeObject *addScopeObjectNone(FileInformation *FI, linkedList_Node **list, ScopeObject *scopeObject);
 void addScopeObjectFromString(FileInformation *FI, linkedList_Node **list, char *string, ASTnode *node);
-ScopeObject *getScopeObjectFromString(FileInformation *FI, char *key);
-ScopeObject *getScopeObjectFromSubString(FileInformation *FI, SubString *key);
+ScopeObject *getScopeObjectAliasFromString(FileInformation *FI, char *key);
+ScopeObject *getScopeObjectAliasFromSubString(FileInformation *FI, SubString *key);
 
 ASTnode *ScopeObject_getResolvedValue(ScopeObject *type, FileInformation *FI);
 

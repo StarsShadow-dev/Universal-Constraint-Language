@@ -263,6 +263,11 @@ int main(int argc, char **argv) {
 	// same for "__Number_and_it_should_not_be_in_IR"
 	addSimpleType(&coreFile.context.scopeObjects[0], "__Number", "should_not_be_in_IR", 0, 0);
 	
+	addBuiltinFunction(&coreFile.context.scopeObjects[0], "import", "`@import(path: TODO): Type`");
+	addBuiltinFunction(&coreFile.context.scopeObjects[0], "compileLog", "`@compileLog(...): Void` At compile time, prints the arguments to the standard out of the compiler.");
+//	addBuiltinFunction(&coreFile.context.scopeObjects[0], "opaque", "TODO");
+//	addBuiltinFunction(&coreFile.context.scopeObjects[0], "sizeOf", "`@sizeOf(type: Type): Size` Returns the number of bytes it takes to store `type`.");
+	
 	CharAccumulator *topLevelStructSource = safeMalloc(sizeof(CharAccumulator));
 	(*topLevelStructSource) = (CharAccumulator){100, 0, 0};
 	CharAccumulator_initialize(topLevelStructSource);

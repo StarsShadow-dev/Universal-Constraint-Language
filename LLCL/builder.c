@@ -25,12 +25,19 @@ void addDILocation(CharAccumulator *source, int ID, SourceLocation location) {
 	CharAccumulator_appendChars(source, ")");
 }
 
+linkedList_Node *scopeObjectToList(ScopeObject *scopeObject) {
+	linkedList_Node *list = NULL;
+//	ScopeObject *newScopeObject = linkedList_addNode(&list, sizeof(ScopeObject));
+//	*newScopeObject = ScopeObject_new(0, NULL, scopeObject, ScopeObjectKind_none);
+	return list;
+}
+
 /// if the node is a memberAccess operator the function calls itself until it gets to the end of the memberAccess operators
 ScopeObject *getScopeObjectFromIdentifierNode(FileInformation *FI, ASTnode *node) {
 	if (node->nodeType == ASTnodeType_identifier) {
 		ASTnode_identifier *data = (ASTnode_identifier *)node->value;
 		
-		return getScopeObjectFromSubString(FI, data->name);
+		return scopeObject_getAsAlias(getScopeObjectAliasFromSubString(FI, data->name))->value;
 	} else if (node->nodeType == ASTnodeType_infixOperator) {
 		ASTnode_infixOperator *data = (ASTnode_infixOperator *)node->value;
 		
@@ -45,7 +52,7 @@ ScopeObject *getScopeObjectFromIdentifierNode(FileInformation *FI, ASTnode *node
 }
 
 void expectUnusedName(FileInformation *FI, SubString *name, SourceLocation location) {
-	ScopeObject *scopeObject = getScopeObjectFromSubString(FI, name);
+	ScopeObject *scopeObject = getScopeObjectAliasFromSubString(FI, name);
 	if (scopeObject != NULL) {
 		addStringToReportMsg("the name '");
 		addSubStringToReportMsg(name);
@@ -66,15 +73,6 @@ ScopeObject *getScopeObjectFromConstrainedType(FileInformation *FI, ASTnode *nod
 	linkedList_Node *returnTypeList = NULL;
 	buildLLVM(FI, NULL, NULL, NULL, NULL, &returnTypeList, data->type, 0, 0, 0);
 	if (returnTypeList == NULL) abort();
-	
-	if (((ScopeObject *)returnTypeList->data)->scopeObjectKind != ScopeObjectKind_struct) {
-		addStringToReportMsg("expected type");
-		
-		addStringToReportIndicator("'");
-		addSubStringToReportIndicator(ScopeObjectAlias_getName(((ScopeObject *)returnTypeList->data)->type));
-		addStringToReportIndicator("' is not a type");
-		compileError(FI, node->location);
-	}
 	
 	((ScopeObject *)returnTypeList->data)->constraintNodes = data->constraints;
 	
@@ -131,7 +129,7 @@ int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **lis
 	int resultIsTrue = 0;
 	
 	ScopeObject *type = linkedList_addNode(list, sizeof(ScopeObject));
-	*type = ScopeObject_new(0, NULL, getScopeObjectFromString(FI, name), ScopeObjectKind_none);
+	*type = ScopeObject_new(0, NULL, getScopeObjectAliasFromString(FI, name), ScopeObjectKind_none);
 	
 	int leftIndex = FI->level;
 	while (leftIndex > 0) {
@@ -250,7 +248,7 @@ ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_N
 	char *LLVMreturnType = ScopeObjectAlias_getLLVMname(returnType, FI);
 	
 	ScopeObject *functionScopeObject = linkedList_addNode(list, sizeof(ScopeObject) + sizeof(ScopeObject_function));
-	*functionScopeObject = ScopeObject_new(compileTime, NULL, getScopeObjectFromString(coreFilePointer, "Type"), ScopeObjectKind_function);
+	*functionScopeObject = ScopeObject_new(compileTime, NULL, getTypeType(), ScopeObjectKind_function);
 	
 	if (compileTime) {
 		((ScopeObject_function *)functionScopeObject->value)->LLVMname = "LLVMname";
@@ -559,10 +557,7 @@ FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSo
 	return newFI;
 }
 
-int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {
-	printf("TODO: buildLLVM\n");
-	exit(1);
-	
+int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {	
 	FI->level++;
 	if (FI->level > maxContextLevel) {
 		printf("level (%i) > maxContextLevel (%i)\n", FI->level, maxContextLevel);
@@ -640,9 +635,6 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				
 				ASTnode_function *data = (ASTnode_function *)node->value;
 				
-				// make sure that the name is not already used
-				expectUnusedName(FI, ((ASTnode_function *)node->value)->name, node->location);
-				
 				char *LLVMname = NULL;
 				
 //				ScopeObject *nextSymbolScopeObject = getContextBindingFromString(FI, "core.nextSymbol");
@@ -666,9 +658,9 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //						LLVMname = safeMalloc(LLVMnameSize);
 //						snprintf(LLVMname, LLVMnameSize, "%d%s", FI->ID, data->name->start);
 //					} else {
-						int LLVMnameSize = data->name->length + 1;
-						LLVMname = safeMalloc(LLVMnameSize);
-						snprintf(LLVMname, LLVMnameSize, "%s", data->name->start);
+//						int LLVMnameSize = data->name->length + 1;
+//						LLVMname = safeMalloc(LLVMnameSize);
+//						snprintf(LLVMname, LLVMnameSize, "%s", data->name->start);
 //					}
 //				}
 				
@@ -678,13 +670,14 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			}
 			
 			case ASTnodeType_call: {
-//				if (outerFunction == NULL) {
-//					addStringToReportMsg("function calls are only allowed in a function");
-//					compileError(FI, node->location);
-//				}
-//				
-//				ASTnode_call *data = (ASTnode_call *)node->value;
-//				
+				ASTnode_call *data = (ASTnode_call *)node->value;
+				
+				if (data->builtin) {
+					
+				} else {
+					
+				}
+//
 //				CharAccumulator leftSource = {100, 0, 0};
 //				CharAccumulator_initialize(&leftSource);
 //				
@@ -1057,6 +1050,34 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //				outerFunction->registerCount++;
 //				
 //				CharAccumulator_free(&expressionSource);
+				
+				break;
+			}
+			
+			case ASTnodeType_constantDefinition: {
+				ASTnode_constantDefinition *data = (ASTnode_constantDefinition *)node->value;
+				
+				expectUnusedName(FI, data->name, node->location);
+				
+				ScopeObject* type = getScopeObjectFromConstrainedType(FI, data->type);
+				
+				CharAccumulator expressionSource = {100, 0, 0};
+				CharAccumulator_initialize(&expressionSource);
+//				
+//				linkedList_Node *types = NULL;
+//				buildLLVM(FI, outerFunction, outerSource, &expressionSource, scopeObjectToList(type), &types, data->expression, 1, 1, 0);
+//				
+//				if (types != NULL) {
+//					memcpy(type->factStack, ((BuilderType *)types->data)->factStack, sizeof(type->factStack));
+//				}
+//				
+//				ScopeObject *variableScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level], sizeof(ScopeObject) + sizeof(ScopeObject_value));
+//				*variableScopeObject = ScopeObject_new(data->name, 0, FI, *type, ScopeObjectKind_value);
+//				*(ScopeObject_value *)variableScopeObject->value = ScopeObject_value_new(outerFunction->registerCount);
+//				
+//				outerFunction->registerCount++;
+				
+				CharAccumulator_free(&expressionSource);
 				
 				break;
 			}
@@ -1723,7 +1744,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				// if it is an identifier
 				if (node->nodeType == ASTnodeType_identifier) {
 					ASTnode_identifier *queryData = (ASTnode_identifier *)node->value;
-					printScopeObject_alias(FI, getScopeObjectFromSubString(FI, queryData->name));
+					printScopeObjectAlias(FI, getScopeObjectAliasFromSubString(FI, queryData->name));
 //					printf("]");
 //					exit(0);
 				}
@@ -1749,19 +1770,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 		while (afterLoopCurrent != NULL) {
 			ASTnode *node = ((ASTnode *)afterLoopCurrent->data);
 			
-			if (node->nodeType == ASTnodeType_function) {
-				ASTnode_function *data = (ASTnode_function *)node->value;
-				
-				ScopeObject *functionScopeObject = getScopeObjectFromSubString(FI, data->name);
-				if (functionScopeObject == NULL || functionScopeObject->scopeObjectKind != ScopeObjectKind_function) abort();
-				ScopeObject_function *function = (ScopeObject_function *)functionScopeObject->value;
-				
-				if (functionScopeObject->compileTime) {
-					buildFunctionCodeBlock(FI, functionScopeObject, NULL, data->codeBlock, node->location);
-				} else {
-					generateFunction(FI, outerSource, functionScopeObject, node, 1);
-				}
-			}
+			
 			
 			afterLoopCurrent = afterLoopCurrent->next;
 		}
