@@ -34,8 +34,6 @@ linkedList_Node *lex(FileInformation *FI) {
 	int line = 1;
 	int column = 0;
 	
-	int lineBreaksInARow = 0;
-	
 	if (FI->context.currentSource == NULL) {
 		return NULL;
 	}
@@ -54,13 +52,6 @@ linkedList_Node *lex(FileInformation *FI) {
 			
 			index++;
 			
-			lineBreaksInARow++;
-			if (lineBreaksInARow == 5) {
-				// warning test
-				addStringToReportMsg("4 empty lines in a row");
-				compileWarning(FI, (SourceLocation){line, 0, 0}, WarningType_format);
-			}
-			
 			continue;
 		}
 		
@@ -70,8 +61,6 @@ linkedList_Node *lex(FileInformation *FI) {
 			column++;
 			continue;
 		}
-		
-		lineBreaksInARow = 0;
 		
 		// comment
 		if (character == '/' && FI->context.currentSource[index+1] == '/') {
@@ -124,7 +113,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_operator;
-			data->location = (SourceLocation){line, column, column + 2};
+			data->location = SourceLocation_new(FI, line, column, column + 2);
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 2;
 			
@@ -136,7 +125,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_operator;
-			data->location = (SourceLocation){line, column, column + 1};
+			data->location = SourceLocation_new(FI, line, column, column + 1);
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
@@ -165,7 +154,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_word;
-			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
+			data->location = SourceLocation_new(FI, line, columnStart, columnStart + end - start);
 			data->subString.start = FI->context.currentSource + start;
 			data->subString.length = end - start;
 		}
@@ -194,7 +183,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_number;
-			data->location = (SourceLocation){line, columnStart, columnStart + end - start};
+			data->location = SourceLocation_new(FI, line, columnStart, columnStart + end - start);
 			data->subString.start = FI->context.currentSource + start;
 			data->subString.length = end - start;
 		}
@@ -203,7 +192,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_selfReference;
-			data->location = (SourceLocation){line, column, column + 1};
+			data->location = SourceLocation_new(FI, line, column, column + 1);
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
@@ -212,7 +201,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_pound;
-			data->location = (SourceLocation){line, column, column + 1};
+			data->location = SourceLocation_new(FI, line, column, column + 1);
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
@@ -221,7 +210,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_builtinIndicator;
-			data->location = (SourceLocation){line, column, column + 1};
+			data->location = SourceLocation_new(FI, line, column, column + 1);
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
@@ -230,7 +219,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_ellipsis;
-			data->location = (SourceLocation){line, column, column + 3};
+			data->location = SourceLocation_new(FI, line, column, column + 3);
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 3;
 			
@@ -242,7 +231,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_separator;
-			data->location = (SourceLocation){line, column, column + 1};
+			data->location = SourceLocation_new(FI, line, column, column + 1);
 			data->subString.start = FI->context.currentSource + index;
 			data->subString.length = 1;
 		}
@@ -285,7 +274,7 @@ linkedList_Node *lex(FileInformation *FI) {
 			Token *data = linkedList_addNode(&tokens, sizeof(Token));
 			
 			data->type = TokenType_string;
-			data->location = (SourceLocation){line, columnStart - 1, columnStart + end - start + 1};
+			data->location = SourceLocation_new(FI, line, columnStart - 1, columnStart + end - start + 1);
 			data->subString.start = FI->context.currentSource + start;
 			data->subString.length = end - start;
 		}
@@ -294,7 +283,7 @@ linkedList_Node *lex(FileInformation *FI) {
 		
 		else {
 			printf("unexpected character '%c' (%d)\n", character, character);
-			compileError(FI, (SourceLocation){line, column, column + 1});
+			compileError(FI, SourceLocation_new(FI, line, column, column + 1));
 		}
 		
 		index++;

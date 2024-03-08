@@ -110,7 +110,7 @@ int addOperatorResultToType(FileInformation *FI, ScopeObject *type, ASTnode_infi
 			) {
 				ASTnode *node = safeMalloc(sizeof(ASTnode) + sizeof(ASTnode_bool));
 				node->nodeType = ASTnodeType_bool;
-				node->location = (SourceLocation){0};
+				node->location = SourceLocation_new(NULL, 0, 0, 0);
 				((ASTnode_bool *)node->value)->isTrue = 1;
 				
 				Fact_newExpression(&type->factStack[FI->level - 1], ASTnode_infixOperatorType_equivalent, NULL, node);
@@ -1607,7 +1607,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 							stringLength--;
 						} else {
 							printf("unexpected character in string after escape '%c'\n", character);
-							compileError(FI, (SourceLocation){node->location.line, node->location.columnStart + i + 1, node->location.columnEnd - (data->value->length - i)});
+							compileError(FI, SourceLocation_new(FI, node->location.line, node->location.columnStart + i + 1, node->location.columnEnd - (data->value->length - i)));
 						}
 						escaped = 0;
 					} else {

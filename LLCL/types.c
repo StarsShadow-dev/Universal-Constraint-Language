@@ -328,6 +328,10 @@ FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStruct
 // lexer, parser and builder
 //
 
+SourceLocation SourceLocation_new(FileInformation *originFile, int line, int columnStart, int columnEnd) {
+	return (SourceLocation){originFile, line, columnStart, columnEnd};
+}
+
 int FileInformation_declaredInLLVM(FileInformation *FI, ScopeObject *pointer) {
 	linkedList_Node *current = FI->context.declaredInLLVM;
 	
@@ -574,7 +578,7 @@ int ScopeObjectAlias_hasName(ScopeObject *scopeObject, char *name) {
 
 // from the core file and has name
 int ScopeObjectAlias_hasCoreName(ScopeObject *scopeObject, char *name) {
-	return scopeObject_getAsAlias(scopeObject)->originFile == coreFilePointer && ScopeObjectAlias_hasName(scopeObject, name);
+	return scopeObject_getAsAlias(scopeObject)->value->location.originFile == coreFilePointer && ScopeObjectAlias_hasName(scopeObject, name);
 }
 
 int ScopeObjectAlias_isSignedInt(ScopeObject *scopeObject) {

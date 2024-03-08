@@ -124,10 +124,14 @@ FileInformation *FileInformation_new(char *path, CharAccumulator *topLevelStruct
 // Pointers to those sub strings are used in builder AST nodes.
 
 typedef struct {
+	FileInformation *originFile;
+	
 	int line;
 	int columnStart;
 	int columnEnd;
 } SourceLocation;
+
+SourceLocation SourceLocation_new(FileInformation *originFile, int line, int columnStart, int columnEnd);
 
 typedef enum {
 	TokenType_word,
@@ -324,6 +328,8 @@ typedef enum {
 } ScopeObjectKind;
 
 struct ScopeObject {
+	SourceLocation location;
+	
 	int compileTime;
 	
 //	struct ScopeObject *scopeObject;
@@ -335,8 +341,6 @@ struct ScopeObject {
 	struct ScopeObject *type;
 	
 	ScopeObjectKind scopeObjectKind;
-	
-	
 	uint8_t value[] WORD_ALIGNED;
 };
 typedef struct ScopeObject ScopeObject;
@@ -351,8 +355,6 @@ ScopeObject ScopeObject_new(int compileTime, linkedList_Node *constraintNodes, S
 typedef struct ScopeObject_alias {
 	SubString *key;
 	ScopeObject *value;
-	
-	FileInformation *originFile;
 } ScopeObject_alias;
 
 // scopeObjectType == ScopeObjectKind_alias
