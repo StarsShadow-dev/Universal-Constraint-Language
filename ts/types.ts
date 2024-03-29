@@ -1,8 +1,16 @@
+//
+// general
+//
+
 export type SourceLocation = {
 	line: number,
 	startColumn: number,
 	endColumn: number,
 }
+
+//
+// tokens
+//
 
 export enum TokenType {
 	number,
@@ -22,6 +30,10 @@ export type Token = {
 	location: SourceLocation,
 }
 
+//
+// AST
+//
+
 type genericASTnode = {
 	location: SourceLocation,
 }
@@ -35,7 +47,7 @@ export type ASTtype = {
 		value: boolean,
 	},
 	"number": genericASTnode & {
-		value: string,
+		value: number,
 	},
 	"string": genericASTnode & {
 		value: string,
@@ -63,4 +75,33 @@ export type ASTtype = {
 	
 }
 
-export type ASTnode = ASTtype["bool"] | ASTtype["number"] | ASTtype["string"]
+export type ASTnode = ASTtype["bool"] |
+ASTtype["number"] |
+ASTtype["string"] |
+ASTtype["identifier"] |
+ASTtype["call"] |
+ASTtype["struct"]
+
+//
+// scope
+//
+
+type genericScopeObject = {
+	originLocation: SourceLocation,
+}
+
+export type ScopeObjectType = {
+	"bool": genericScopeObject & {
+		value: boolean,
+	},
+	"number": genericScopeObject & {
+		value: number,
+	},
+	"string": genericScopeObject & {
+		value: string,
+	},
+}
+
+export type ScopeObject = ScopeObjectType["bool"] |
+ScopeObjectType["number"] |
+ScopeObjectType["string"]

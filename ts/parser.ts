@@ -21,7 +21,6 @@ export function parse(tokens: Token[], i: number): ASTnode[] {
 		
 			default: {
 				compileError(token.location, `unknown token type ${TokenType[token.type]}`);
-				console.log("should not be reached");
 				break;
 			}
 		}

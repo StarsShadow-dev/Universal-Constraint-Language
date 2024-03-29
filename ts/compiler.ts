@@ -1,6 +1,5 @@
 import * as fs from 'fs/promises';
 
-import { Token } from './types';
 import { lex } from './lexer';
 import { parse } from './parser';
 
