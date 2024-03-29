@@ -1,7 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "ES5",
-		// "module": "system",
+		"target": "ES6",
 		"module": "nodenext",
 		"sourceMap": true,
 		"outDir": "./out",
@@ -10,5 +9,7 @@
 		
 		"removeComments": true,
 		"noImplicitAny": true,
+		
+		"pretty": true,
 	}
 }

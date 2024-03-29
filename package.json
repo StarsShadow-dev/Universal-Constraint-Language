@@ -4,6 +4,7 @@
 	"description": "",
 	"main": "ts/main.ts",
 	"scripts": {
+		"start": "tsc -p ./tsconfig.json && node ./main.js",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"author": "",

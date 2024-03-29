@@ -1,3 +1,5 @@
 import { compileFile } from "./compiler";
 
-compileFile("test/main.llcl");
+(async () => {
+	await compileFile("test/main.llcl");
+})();
