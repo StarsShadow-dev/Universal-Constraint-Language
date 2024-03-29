@@ -5,8 +5,8 @@ export type SourceLocation = {
 }
 
 export enum TokenType {
-	string,
 	number,
+	string,
 	word,
 	
 	separator,
@@ -21,3 +21,46 @@ export type Token = {
 	text: string,
 	location: SourceLocation,
 }
+
+type genericASTnode = {
+	location: SourceLocation,
+}
+
+export type ASTtype = {
+	//
+	// literals
+	//
+	
+	"bool": genericASTnode & {
+		value: boolean,
+	},
+	"number": genericASTnode & {
+		value: string,
+	},
+	"string": genericASTnode & {
+		value: string,
+	},
+	
+	//
+	// things you get a value from
+	//
+	
+	"identifier": genericASTnode & {
+		name: string,
+	},
+	
+	"call": genericASTnode & {
+		// TODO
+	},
+	
+	//
+	// structured things (what are these called?)
+	//
+	
+	"struct": genericASTnode & {
+		// TODO
+	},
+	
+}
+
+export type ASTnode = ASTtype["bool"] | ASTtype["number"] | ASTtype["string"]

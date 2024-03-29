@@ -1,3 +1,2 @@
-// 1
-const test = "a string"; // 2
-// 3
+// const test = "a string";
+1;
