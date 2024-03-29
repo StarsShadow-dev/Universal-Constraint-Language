@@ -90,8 +90,7 @@ void printLineWithIndicator(char *source, int *index, int columnStart, int colum
 			break;
 		} else if (character == '\t') {
 			// Make all tabs the size of 4 spaces,
-			// this is so that the positions of characters can be determined for monospace fonts,
-			// even if the size of tabs is changed.
+			// this is so that the positions of characters can be determined for monospace fonts.
 			printf("    ");
 			
 			i++;

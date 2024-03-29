@@ -6,3 +6,6 @@ tests/runTests
 
 test/build/*
 LLCL/in_LLCL/build/*
+
+node_modules
+out

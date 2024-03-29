@@ -238,7 +238,7 @@ void compileFile(FileInformation *FI) {
 //	struct timespec buildStartTime = getTimespec();
 	CharAccumulator LLVMbuildsource = {100, 0, 0};
 	CharAccumulator_initialize(&LLVMbuildsource);
-	buildLLVM(FI, NULL, &LLVMbuildsource, NULL, NULL, NULL, AST, 0, 0, 0);
+	buildLLVM(FI, NULL, &LLVMbuildsource, NULL, NULL, NULL, AST, false, false, false);
 //	struct timespec buildEndTime = getTimespec();
 	
 	CharAccumulator_appendChars(&LLVMsource, FI->topLevelStructSource->data);

@@ -18,9 +18,9 @@ int buildLLVM(
 	/// ASTnode
 	linkedList_Node *current,
 	
-	int loadVariables,
-	int withTypes,
-	int withCommas
+	Bool loadVariables,
+	Bool withTypes,
+	Bool withCommas
 );
 
 #endif /* builder_h */

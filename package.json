@@ -1,0 +1,14 @@
+{
+	"name": "llcl",
+	"version": "1.0.0",
+	"description": "",
+	"main": "ts/main.ts",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@types/node": "^20.11.30"
+	}
+}

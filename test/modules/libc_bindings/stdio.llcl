@@ -1,2 +1,0 @@
-fn putchar(char: Int32): Int32;
-fn printf(pointer: Pointer): Int32;

@@ -25,13 +25,6 @@ void addDILocation(CharAccumulator *source, int ID, SourceLocation location) {
 	CharAccumulator_appendChars(source, ")");
 }
 
-linkedList_Node *scopeObjectToList(ScopeObject *scopeObject) {
-	linkedList_Node *list = NULL;
-//	ScopeObject *newScopeObject = linkedList_addNode(&list, sizeof(ScopeObject));
-//	*newScopeObject = ScopeObject_new(0, NULL, scopeObject, ScopeObjectKind_none);
-	return list;
-}
-
 /// if the node is a memberAccess operator the function calls itself until it gets to the end of the memberAccess operators
 ScopeObject *getScopeObjectFromIdentifierNode(FileInformation *FI, ASTnode *node) {
 	if (node->nodeType == ASTnodeType_identifier) {
@@ -41,7 +34,7 @@ ScopeObject *getScopeObjectFromIdentifierNode(FileInformation *FI, ASTnode *node
 	} else if (node->nodeType == ASTnodeType_infixOperator) {
 		ASTnode_infixOperator *data = (ASTnode_infixOperator *)node->value;
 		
-		if (data->operatorType != ASTnode_infixOperatorType_memberAccess) abort();
+		if (data->operatorType != InfixOperatorType_memberAccess) abort();
 		
 		return getScopeObjectFromIdentifierNode(FI, (ASTnode *)data->left->data);
 	} else {
@@ -71,22 +64,22 @@ ScopeObject *getScopeObjectFromConstrainedType(FileInformation *FI, ASTnode *nod
 	ASTnode_constrainedType *data = (ASTnode_constrainedType *)node->value;
 	
 	linkedList_Node *returnTypeList = NULL;
-	buildLLVM(FI, NULL, NULL, NULL, NULL, &returnTypeList, data->type, 0, 0, 0);
+	buildLLVM(FI, NULL, NULL, NULL, NULL, &returnTypeList, data->type, false, false, false);
 	if (returnTypeList == NULL) abort();
 	
-	((ScopeObject *)returnTypeList->data)->constraintNodes = data->constraints;
+	ScopeObject_getAsConstrainedType((ScopeObject *)returnTypeList->data)->constraintNodes = data->constraints;
 	
 	return (ScopeObject *)returnTypeList->data;
 }
 
 void applyFacts(FileInformation *FI, ASTnode_infixOperator *operator) {
-	if (operator->operatorType != ASTnode_infixOperatorType_equivalent) return;
+	if (operator->operatorType != InfixOperatorType_equivalent) return;
 	if (((ASTnode *)operator->left->data)->nodeType != ASTnodeType_identifier) return;
 	if (((ASTnode *)operator->right->data)->nodeType != ASTnodeType_number) return;
 	
 	ScopeObject *scopeObject = getScopeObjectFromIdentifierNode(FI, (ASTnode *)operator->left->data);
 	
-	Fact *fact = linkedList_addNode(&scopeObject->factStack[FI->level], sizeof(Fact) + sizeof(Fact_expression));
+	Fact *fact = linkedList_addNode(&ScopeObject_getAsValue(scopeObject)->factStack[FI->level], sizeof(Fact) + sizeof(Fact_expression));
 	
 	fact->type = FactType_expression;
 	((Fact_expression *)fact->value)->operatorType = operator->operatorType;
@@ -94,7 +87,7 @@ void applyFacts(FileInformation *FI, ASTnode_infixOperator *operator) {
 	((Fact_expression *)fact->value)->rightConstant = (ASTnode *)operator->right->data;
 }
 
-int addOperatorResultToType(FileInformation *FI, ScopeObject *type, ASTnode_infixOperatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
+int addOperatorResultToType(FileInformation *FI, ScopeObject *type, InfixOperatorType operatorType, ASTnode *leftNode, ASTnode *rightNode) {
 	if (FI->level <= 0) abort();
 	if (leftNode->nodeType != rightNode->nodeType) return 0;
 	ASTnodeType sharedNodeType = leftNode->nodeType;
@@ -105,7 +98,7 @@ int addOperatorResultToType(FileInformation *FI, ScopeObject *type, ASTnode_infi
 			ASTnode_number *right = (ASTnode_number *)rightNode->value;
 			
 			if (
-				operatorType == ASTnode_infixOperatorType_equivalent &&
+				operatorType == InfixOperatorType_equivalent &&
 				left->value == right->value
 			) {
 				ASTnode *node = safeMalloc(sizeof(ASTnode) + sizeof(ASTnode_bool));
@@ -113,7 +106,7 @@ int addOperatorResultToType(FileInformation *FI, ScopeObject *type, ASTnode_infi
 				node->location = SourceLocation_new(NULL, 0, 0, 0);
 				((ASTnode_bool *)node->value)->isTrue = 1;
 				
-				Fact_newExpression(&type->factStack[FI->level - 1], ASTnode_infixOperatorType_equivalent, NULL, node);
+				Fact_newExpression(&ScopeObject_getAsValue(type)->factStack[FI->level - 1], InfixOperatorType_equivalent, NULL, node);
 				return 1;
 			}
 			return 0;
@@ -125,15 +118,14 @@ int addOperatorResultToType(FileInformation *FI, ScopeObject *type, ASTnode_infi
 	}
 }
 
-int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **list, char *name, ASTnode_infixOperatorType operatorType, ScopeObject *left, ScopeObject *right) {
+int addTypeResultAfterOperationToLevel(FileInformation *FI, ScopeLevel level, char *name, InfixOperatorType operatorType, ScopeObject *left, ScopeObject *right) {
 	int resultIsTrue = 0;
 	
-	ScopeObject *type = linkedList_addNode(list, sizeof(ScopeObject));
-	*type = ScopeObject_new(0, NULL, getScopeObjectAliasFromString(FI, name), ScopeObjectKind_none);
+	ScopeObject *type = addScopeObjectConstrainedType(level, NULL);
 	
 	int leftIndex = FI->level;
 	while (leftIndex > 0) {
-		linkedList_Node *leftCurrentFact = left->factStack[leftIndex];
+		linkedList_Node *leftCurrentFact = ScopeObject_getAsValue(left)->factStack[leftIndex];
 		
 		while (leftCurrentFact != NULL) {
 			Fact *leftFact = (Fact *)leftCurrentFact->data;
@@ -143,7 +135,7 @@ int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **lis
 				
 				int rightIndex = FI->level;
 				while (rightIndex > 0) {
-					linkedList_Node *rightCurrentFact = right->factStack[rightIndex];
+					linkedList_Node *rightCurrentFact = ScopeObject_getAsValue(right)->factStack[rightIndex];
 					
 					while (rightCurrentFact != NULL) {
 						Fact *rightFact = (Fact *)rightCurrentFact->data;
@@ -152,8 +144,8 @@ int addTypeResultAfterOperationToList(FileInformation *FI, linkedList_Node **lis
 							Fact_expression *rightExpressionFact = (Fact_expression *)rightFact->value;
 							
 							if (
-								leftExpressionFact->operatorType == ASTnode_infixOperatorType_equivalent &&
-								rightExpressionFact->operatorType == ASTnode_infixOperatorType_equivalent
+								leftExpressionFact->operatorType == InfixOperatorType_equivalent &&
+								rightExpressionFact->operatorType == InfixOperatorType_equivalent
 							) {
 								int isTrue = addOperatorResultToType(FI, type, operatorType, leftExpressionFact->rightConstant, rightExpressionFact->rightConstant);
 								if (isTrue) resultIsTrue = 1;
@@ -201,7 +193,7 @@ void expectType(FileInformation *FI, ScopeObject *expectedType, ScopeObject *act
 //			left = actualType;
 //		} else {
 //			linkedList_Node *leftTypes = NULL;
-//			buildLLVM(FI, NULL, NULL, NULL, NULL, &leftTypes, expectedData->left, 0, 0, 0);
+//			buildLLVM(FI, NULL, NULL, NULL, NULL, &leftTypes, expectedData->left, false, false, false);
 //			left = (BuilderType *)leftTypes->data;
 //		}
 //		
@@ -210,7 +202,7 @@ void expectType(FileInformation *FI, ScopeObject *expectedType, ScopeObject *act
 //			right = actualType;
 //		} else {
 //			linkedList_Node *rightTypes = NULL;
-//			buildLLVM(FI, NULL, NULL, NULL, NULL, &rightTypes, expectedData->right, 0, 0, 0);
+//			buildLLVM(FI, NULL, NULL, NULL, NULL, &rightTypes, expectedData->right, false, false, false);
 //			right = (BuilderType *)rightTypes->data;
 //		}
 //		
@@ -227,8 +219,8 @@ ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_N
 	
 	ScopeObject* returnType = getScopeObjectFromConstrainedType(FI, data->returnType);
 	
-	int compileTime = 0;
-	if (ScopeObjectAlias_hasCoreName(returnType, "Type")) {
+	Bool compileTime = 0;
+	if (ScopeObject_hasCoreName(returnType, "Type")) {
 		compileTime = 1;
 	}
 	
@@ -248,7 +240,7 @@ ScopeObject *addFunctionToList(char *LLVMname, FileInformation *FI, linkedList_N
 	char *LLVMreturnType = ScopeObjectAlias_getLLVMname(returnType, FI);
 	
 	ScopeObject *functionScopeObject = linkedList_addNode(list, sizeof(ScopeObject) + sizeof(ScopeObject_function));
-	*functionScopeObject = ScopeObject_new(compileTime, NULL, getTypeType(), ScopeObjectKind_function);
+	*functionScopeObject = ScopeObject_new(NULL, node->location, compileTime, false, NULL, getTypeType(), ScopeObjectKind_function);
 	
 	if (compileTime) {
 		((ScopeObject_function *)functionScopeObject->value)->LLVMname = "LLVMname";
@@ -398,7 +390,7 @@ void generateType(FileInformation *FI, CharAccumulator *source, ScopeObject *typ
 void buildFunctionCodeBlock(FileInformation *FI, ScopeObject *functionScopeObject, CharAccumulator *outerSource, linkedList_Node *codeBlock, SourceLocation location) {
 	ScopeObject_function *function = (ScopeObject_function *)functionScopeObject->value;
 	
-	int functionHasReturned = buildLLVM(FI, function, outerSource, NULL, NULL, NULL, codeBlock, 0, 0, 0);
+	int functionHasReturned = buildLLVM(FI, function, outerSource, NULL, NULL, NULL, codeBlock, false, false, false);
 	
 	if (!functionHasReturned) {
 		addStringToReportMsg("function did not return");
@@ -473,7 +465,7 @@ void generateFunction(FileInformation *FI, CharAccumulator *outerSource, ScopeOb
 //				FI->level--;
 //				
 //				ScopeObject *argumentScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level + 1], sizeof(ScopeObject) + sizeof(ScopeObject_value));
-//				*argumentScopeObject = ScopeObject_new((SubString *)currentArgumentName->data, 0, FI, type, ScopeObjectKind_value);
+//				*argumentScopeObject = ScopeObject_new((SubString *)currentArgumentName->data, false, false, FI, type, ScopeObjectKind_value);
 //				*(ScopeObject_value *)argumentScopeObject->value = ScopeObject_value_new(function->registerCount + argumentCount + 1);
 //				
 //				function->registerCount++;
@@ -557,7 +549,7 @@ FileInformation *importFile(FileInformation *currentFI, CharAccumulator *outerSo
 	return newFI;
 }
 
-int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, int loadVariables, int withTypes, int withCommas) {	
+int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccumulator *outerSource, CharAccumulator *innerSource, linkedList_Node *expectedTypes, linkedList_Node **types, linkedList_Node *current, Bool loadVariables, Bool withTypes, Bool withCommas) {	
 	FI->level++;
 	if (FI->level > maxContextLevel) {
 		printf("level (%i) > maxContextLevel (%i)\n", FI->level, maxContextLevel);
@@ -590,7 +582,9 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 		
 		switch (node->nodeType) {
 			case ASTnodeType_constrainedType: {
-				addScopeObjectNone(FI, types, getScopeObjectFromConstrainedType(FI, node));
+				ASTnode_constrainedType *data = (ASTnode_constrainedType *)node->value;
+				
+				addScopeObjectConstrainedType(types, data->constraints);
 				break;
 			}
 			
@@ -685,8 +679,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //				addScopeObjectFromString(FI, &expectedTypesForCall, "Function", NULL);
 //				
 //				linkedList_Node *leftTypes = NULL;
-//				buildLLVM(FI, outerFunction, outerSource, &leftSource, expectedTypesForCall, &leftTypes, data->left, 1, 0, 0);
-//				
+//				buildLLVM(FI, outerFunction, outerSource, &leftSource, expectedTypesForCall, &leftTypes, data->left, true, false, false);
+//
 //				ScopeObject *functionToCallScopeObject = ((ScopeObject *)leftTypes->data)->scopeObject;
 //				ScopeObject_function *functionToCall = (ScopeObject_function *)functionToCallScopeObject->value;
 //				
@@ -740,8 +734,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //				CharAccumulator newInnerSource = {100, 0, 0};
 //				CharAccumulator_initialize(&newInnerSource);
 //				
-//				buildLLVM(FI, outerFunction, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, 1, 1, 1);
-//				
+//				buildLLVM(FI, outerFunction, outerSource, &newInnerSource, functionToCall->argumentTypes, NULL, data->arguments, true, true, true);
+//
 //				if (outerSource != NULL) {
 //					if (strcmp(functionToCall->LLVMreturnType, "void") != 0) {
 //						CharAccumulator_appendChars(outerSource, "\n\t%");
@@ -798,13 +792,13 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				outerFunction->registerCount++;
 				CharAccumulator jump1_outerSource = {100, 0, 0};
 				CharAccumulator_initialize(&jump1_outerSource);
-				buildLLVM(FI, outerFunction, &jump1_outerSource, &expressionSource, expectedTypesForWhile, NULL, data->expression, 1, 1, 0);
+				buildLLVM(FI, outerFunction, &jump1_outerSource, &expressionSource, expectedTypesForWhile, NULL, data->expression, true, true, false);
 				
 				int jump2 = outerFunction->registerCount;
 				outerFunction->registerCount++;
 				CharAccumulator jump2_outerSource = {100, 0, 0};
 				CharAccumulator_initialize(&jump2_outerSource);
-				buildLLVM(FI, outerFunction, &jump2_outerSource, NULL, NULL, NULL, data->codeBlock, 0, 0, 0);
+				buildLLVM(FI, outerFunction, &jump2_outerSource, NULL, NULL, NULL, data->codeBlock, false, false, false);
 				
 				int endJump = outerFunction->registerCount;
 				outerFunction->registerCount++;
@@ -856,7 +850,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				CharAccumulator_initialize(&expressionSource);
 				
 				linkedList_Node *expressionTypes = NULL;
-				buildLLVM(FI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, &expressionTypes, data->expression, 1, 1, 0);
+				buildLLVM(FI, outerFunction, outerSource, &expressionSource, expectedTypesForIf, &expressionTypes, data->expression, true, true, false);
 				
 				int typesCount = linkedList_getCount(&expressionTypes);
 				
@@ -865,7 +859,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					
 					if (data->expression == NULL) {
 						addStringToReportIndicator("if statement condition is empty");
-					} else if (((ASTnode_infixOperator *)((ASTnode *)data->expression->data)->value)->operatorType == ASTnode_infixOperatorType_assignment) {
+					} else if (((ASTnode_infixOperator *)((ASTnode *)data->expression->data)->value)->operatorType == InfixOperatorType_assignment) {
 						addStringToReportIndicator("did you mean to use two equals?");
 					}
 					
@@ -886,7 +880,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				outerFunction->registerCount++;
 				CharAccumulator trueCodeBlockSource = {100, 0, 0};
 				CharAccumulator_initialize(&trueCodeBlockSource);
-				int trueHasReturned = buildLLVM(FI, outerFunction, &trueCodeBlockSource, NULL, NULL, NULL, data->trueCodeBlock, 0, 0, 0);
+				int trueHasReturned = buildLLVM(FI, outerFunction, &trueCodeBlockSource, NULL, NULL, NULL, data->trueCodeBlock, false, false, false);
 				CharAccumulator falseCodeBlockSource = {100, 0, 0};
 				CharAccumulator_initialize(&falseCodeBlockSource);
 				
@@ -918,7 +912,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				} else {
 					int jump2 = outerFunction->registerCount;
 					outerFunction->registerCount++;
-					int falseHasReturned = buildLLVM(FI, outerFunction, &falseCodeBlockSource, NULL, NULL, NULL, data->falseCodeBlock, 0, 0, 0);
+					int falseHasReturned = buildLLVM(FI, outerFunction, &falseCodeBlockSource, NULL, NULL, NULL, data->falseCodeBlock, false, false, false);
 					
 					endJump = outerFunction->registerCount;
 					outerFunction->registerCount++;
@@ -984,8 +978,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //					CharAccumulator newInnerSource = {100, 0, 0};
 //					CharAccumulator_initialize(&newInnerSource);
 //					
-//					buildLLVM(FI, outerFunction, outerSource, &newInnerSource, typeToList(outerFunction->returnType), NULL, data->expression, 1, 1, 0);
-//					
+//					buildLLVM(FI, outerFunction, outerSource, &newInnerSource, typeToList(outerFunction->returnType), NULL, data->expression, true, true, false);
+//
 //					if (outerSource != NULL) {
 //						CharAccumulator_appendChars(outerSource, "\n\tret ");
 //						CharAccumulator_appendChars(outerSource, newInnerSource.data);
@@ -1021,8 +1015,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //				CharAccumulator_initialize(&expressionSource);
 //				
 //				linkedList_Node *types = NULL;
-//				buildLLVM(FI, outerFunction, outerSource, &expressionSource, typeToList(*type), &types, data->expression, 1, 1, 0);
-//				
+//				buildLLVM(FI, outerFunction, outerSource, &expressionSource, typeToList(*type), &types, data->expression, true, true, false);
+//
 //				if (types != NULL) {
 //					memcpy(type->factStack, ((BuilderType *)types->data)->factStack, sizeof(type->factStack));
 //				}
@@ -1044,7 +1038,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //				}
 //				
 //				ScopeObject *variableScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level], sizeof(ScopeObject) + sizeof(ScopeObject_value));
-//				*variableScopeObject = ScopeObject_new(data->name, 0, FI, *type, ScopeObjectKind_value);
+//				*variableScopeObject = ScopeObject_new(data->name, false, false, FI, *type, ScopeObjectKind_value);
 //				*(ScopeObject_value *)variableScopeObject->value = ScopeObject_value_new(outerFunction->registerCount);
 //				
 //				outerFunction->registerCount++;
@@ -1055,29 +1049,29 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			}
 			
 			case ASTnodeType_constantDefinition: {
-				ASTnode_constantDefinition *data = (ASTnode_constantDefinition *)node->value;
-				
-				expectUnusedName(FI, data->name, node->location);
-				
-				ScopeObject* type = getScopeObjectFromConstrainedType(FI, data->type);
-				
-				CharAccumulator expressionSource = {100, 0, 0};
-				CharAccumulator_initialize(&expressionSource);
+//				ASTnode_constantDefinition *data = (ASTnode_constantDefinition *)node->value;
+//				
+//				expectUnusedName(FI, data->name, node->location);
+//				
+//				ScopeObject* type = getScopeObjectFromConstrainedType(FI, data->type);
+//				
+//				CharAccumulator expressionSource = {100, 0, 0};
+//				CharAccumulator_initialize(&expressionSource);
 //				
 //				linkedList_Node *types = NULL;
-//				buildLLVM(FI, outerFunction, outerSource, &expressionSource, scopeObjectToList(type), &types, data->expression, 1, 1, 0);
+//				buildLLVM(FI, outerFunction, outerSource, &expressionSource, scopeObjectNoneToList(type), &types, data->expression, true, true, false);
 //				
 //				if (types != NULL) {
-//					memcpy(type->factStack, ((BuilderType *)types->data)->factStack, sizeof(type->factStack));
+//					memcpy(ScopeObject_getAsValue(type)->factStack, ScopeObject_getAsValue((ScopeObject *)types->data)->factStack, sizeof(ScopeObject_getAsValue(type)->factStack));
 //				}
 //				
 //				ScopeObject *variableScopeObject = linkedList_addNode(&FI->context.scopeObjects[FI->level], sizeof(ScopeObject) + sizeof(ScopeObject_value));
-//				*variableScopeObject = ScopeObject_new(data->name, 0, FI, *type, ScopeObjectKind_value);
+//				*variableScopeObject = ScopeObject_new(NULL, node->location, false, false, NULL, type, ScopeObjectKind_alias);
 //				*(ScopeObject_value *)variableScopeObject->value = ScopeObject_value_new(outerFunction->registerCount);
 //				
 //				outerFunction->registerCount++;
-				
-				CharAccumulator_free(&expressionSource);
+//				
+//				CharAccumulator_free(&expressionSource);
 				
 				break;
 			}
@@ -1091,7 +1085,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				CharAccumulator rightInnerSource = {100, 0, 0};
 				CharAccumulator_initialize(&rightInnerSource);
 				
-				if (data->operatorType == ASTnode_infixOperatorType_assignment) {
+				if (data->operatorType == InfixOperatorType_assignment) {
 					if (outerFunction == NULL) {
 						addStringToReportMsg("variable assignments are only allowed in a function");
 						compileError(FI, node->location);
@@ -1102,11 +1096,11 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					CharAccumulator leftSource = {100, 0, 0};
 					CharAccumulator_initialize(&leftSource);
 					linkedList_Node *leftType = NULL;
-					buildLLVM(FI, outerFunction, outerSource, &leftSource, NULL, &leftType, data->left, 0, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &leftSource, NULL, &leftType, data->left, false, false, false);
 					
 					CharAccumulator rightSource = {100, 0, 0};
 					CharAccumulator_initialize(&rightSource);
-					buildLLVM(FI, outerFunction, outerSource, &rightSource, leftType, NULL, data->right, 1, 1, 0);
+					buildLLVM(FI, outerFunction, outerSource, &rightSource, leftType, NULL, data->right, true, true, false);
 					
 					CharAccumulator_appendChars(outerSource, "\n\tstore ");
 					CharAccumulator_appendChars(outerSource, rightSource.data);
@@ -1132,8 +1126,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //					};
 //					
 //					linkedList_Node *leftTypes = NULL;
-//					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypes, data->left, 0, 0, 0);
-//					
+//					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, NULL, &leftTypes, data->left, false, false, false);
+//
 //					ContextBinding *structBinding = ((BuilderType *)leftTypes->data)->binding;
 //					if (structBinding->type != ContextBindingType_struct) {
 //						addStringToReportMsg("left side of member access is not a struct");
@@ -1240,10 +1234,10 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 //					break;
 //				}
 				
-				else if (data->operatorType == ASTnode_infixOperatorType_cast) {
+				else if (data->operatorType == InfixOperatorType_cast) {
 					linkedList_Node *expectedTypeForLeft = NULL;
-					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeft, data->left, 0, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeft, NULL, data->left, 1, 1, 0);
+					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &expectedTypeForLeft, data->left, false, false, false);
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeft, NULL, data->left, true, true, false);
 					
 					ScopeObject *fromType = (ScopeObject *)expectedTypeForLeft->data;
 					
@@ -1299,23 +1293,23 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					 expectedTypes == NULL && types != NULL
 					) ||
 					(
-						data->operatorType == ASTnode_infixOperatorType_equivalent ||
-						data->operatorType == ASTnode_infixOperatorType_notEquivalent ||
-						data->operatorType == ASTnode_infixOperatorType_greaterThan ||
-						data->operatorType == ASTnode_infixOperatorType_lessThan
+						data->operatorType == InfixOperatorType_equivalent ||
+						data->operatorType == InfixOperatorType_notEquivalent ||
+						data->operatorType == InfixOperatorType_greaterThan ||
+						data->operatorType == InfixOperatorType_lessThan
 					 )
 				) {
 					//
 					// figure out what the type of both sides should be
 					//
 					
-					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &leftType, data->left, 0, 0, 0);
-					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &rightType, data->right, 0, 0, 0);
+					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &leftType, data->left, false, false, false);
+					buildLLVM(FI, outerFunction, NULL, NULL, NULL, &rightType, data->right, false, false, false);
 					
 					expectedTypeForLeftAndRight = leftType;
 					// if we did not find a number on the left side
-					if (!ScopeObjectAlias_isNumber((ScopeObject *)expectedTypeForLeftAndRight->data)) {
-						if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypeForLeftAndRight->data, "__Number")) {
+					if (!ScopeObject_isNumber((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+						if (!ScopeObject_hasCoreName((ScopeObject *)expectedTypeForLeftAndRight->data, "__Number")) {
 							addStringToReportMsg("left side of operator expected a number");
 							compileError(FI, node->location);
 						}
@@ -1323,8 +1317,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 						// replace expectedTypeForLeftAndRight with the right type
 						expectedTypeForLeftAndRight = rightType;
 						// if we did not find a number on the right side
-						if (!ScopeObjectAlias_isNumber((ScopeObject *)expectedTypeForLeftAndRight->data)) {
-							if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypeForLeftAndRight->data, "__Number")) {
+						if (!ScopeObject_isNumber((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							if (!ScopeObject_hasCoreName((ScopeObject *)expectedTypeForLeftAndRight->data, "__Number")) {
 								addStringToReportMsg("right side of operator expected a number");
 								compileError(FI, node->location);
 							}
@@ -1339,33 +1333,33 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				// all of these operators are very similar and even use the same 'icmp' instruction
 				// https://llvm.org/docs/LangRef.html#fcmp-instruction
 				if (
-					data->operatorType == ASTnode_infixOperatorType_equivalent ||
-					data->operatorType == ASTnode_infixOperatorType_notEquivalent ||
-					data->operatorType == ASTnode_infixOperatorType_greaterThan ||
-					data->operatorType == ASTnode_infixOperatorType_lessThan
+					data->operatorType == InfixOperatorType_equivalent ||
+					data->operatorType == InfixOperatorType_notEquivalent ||
+					data->operatorType == InfixOperatorType_greaterThan ||
+					data->operatorType == InfixOperatorType_lessThan
 				) {
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, true, false, false);
+					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, true, false, false);
 					CharAccumulator_appendChars(outerSource, "\n\t%");
 					CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 					CharAccumulator_appendChars(outerSource, " = icmp ");
 					
-					if (data->operatorType == ASTnode_infixOperatorType_equivalent) {
+					if (data->operatorType == InfixOperatorType_equivalent) {
 						// eq: yields true if the operands are equal, false otherwise. No sign interpretation is necessary or performed.
 						CharAccumulator_appendChars(outerSource, "eq ");
 					}
 					
-					else if (data->operatorType == ASTnode_infixOperatorType_notEquivalent) {
+					else if (data->operatorType == InfixOperatorType_notEquivalent) {
 						// ne: yields true if the operands are unequal, false otherwise. No sign interpretation is necessary or performed.
 						CharAccumulator_appendChars(outerSource, "ne ");
 					}
 					
-					else if (data->operatorType == ASTnode_infixOperatorType_greaterThan) {
+					else if (data->operatorType == InfixOperatorType_greaterThan) {
 						// sgt: interprets the operands as signed values and yields true if op1 is greater than op2.
 						CharAccumulator_appendChars(outerSource, "sgt ");
 					}
 					
-					else if (data->operatorType == ASTnode_infixOperatorType_lessThan) {
+					else if (data->operatorType == InfixOperatorType_lessThan) {
 						// slt: interprets the operands as signed values and yields true if op1 is less than op2.
 						CharAccumulator_appendChars(outerSource, "slt ");
 					}
@@ -1382,73 +1376,73 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				}
 				
 				else if (
-					data->operatorType == ASTnode_infixOperatorType_add ||
-					data->operatorType == ASTnode_infixOperatorType_subtract ||
-					data->operatorType == ASTnode_infixOperatorType_multiply ||
-					data->operatorType == ASTnode_infixOperatorType_divide ||
-					data->operatorType == ASTnode_infixOperatorType_modulo
+					data->operatorType == InfixOperatorType_add ||
+					data->operatorType == InfixOperatorType_subtract ||
+					data->operatorType == InfixOperatorType_multiply ||
+					data->operatorType == InfixOperatorType_divide ||
+					data->operatorType == InfixOperatorType_modulo
 				) {
 					if (expectedTypes == NULL && types != NULL) {
-						addScopeObjectNone(FI, types, (ScopeObject *)expectedTypeForLeftAndRight->data);
+						addScopeObjectValue(types, (ScopeObject *)expectedTypeForLeftAndRight->data);
 					}
 					
 					if (expectedTypes != NULL && outerSource != NULL) {
-						addScopeObjectNone(FI, &expectedTypeForLeftAndRight, (ScopeObject *)expectedTypes->data);
+						addScopeObjectValue(&expectedTypeForLeftAndRight, (ScopeObject *)expectedTypes->data);
 						
-						buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-						buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
+						buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, true, false, false);
+						buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, true, false, false);
 						CharAccumulator_appendChars(outerSource, "\n\t%");
 						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 						
-						if (data->operatorType == ASTnode_infixOperatorType_add) {
-							if (ScopeObjectAlias_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+						if (data->operatorType == InfixOperatorType_add) {
+							if (ScopeObject_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = add ");
-								if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+								if (ScopeObject_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 									CharAccumulator_appendChars(outerSource, "nsw ");
 								}
-							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObject_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fadd ");
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_infixOperatorType_subtract) {
-							if (ScopeObjectAlias_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+						} else if (data->operatorType == InfixOperatorType_subtract) {
+							if (ScopeObject_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = sub ");
-								if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+								if (ScopeObject_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 									CharAccumulator_appendChars(outerSource, "nsw ");
 								}
-							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObject_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fsub ");
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_infixOperatorType_multiply) {
-							if (ScopeObjectAlias_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+						} else if (data->operatorType == InfixOperatorType_multiply) {
+							if (ScopeObject_isInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = mul ");
-								if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+								if (ScopeObject_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 									CharAccumulator_appendChars(outerSource, "nsw ");
 								}
-							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObject_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fmul ");
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_infixOperatorType_divide) {
-							if (ScopeObjectAlias_isUnsignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+						} else if (data->operatorType == InfixOperatorType_divide) {
+							if (ScopeObject_isUnsignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = udiv ");
-							} else if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObject_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = sdiv ");
-							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObject_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = fdiv ");
 							} else {
 								abort();
 							}
-						} else if (data->operatorType == ASTnode_infixOperatorType_modulo) {
-							if (ScopeObjectAlias_isUnsignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+						} else if (data->operatorType == InfixOperatorType_modulo) {
+							if (ScopeObject_isUnsignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = urem ");
-							} else if (ScopeObjectAlias_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObject_isSignedInt((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								CharAccumulator_appendChars(outerSource, " = srem ");
-							} else if (ScopeObjectAlias_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
+							} else if (ScopeObject_isFloat((ScopeObject *)expectedTypeForLeftAndRight->data)) {
 								addStringToReportMsg("modulo does not support floats");
 								
 								compileError(FI, node->location);
@@ -1464,20 +1458,20 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				}
 				
 				else if (
-					data->operatorType == ASTnode_infixOperatorType_and ||
-					data->operatorType == ASTnode_infixOperatorType_or
+					data->operatorType == InfixOperatorType_and ||
+					data->operatorType == InfixOperatorType_or
 				) {
 					addScopeObjectFromString(FI, &expectedTypeForLeftAndRight, "Bool", NULL);
 					
-					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, 1, 0, 0);
-					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, 1, 0, 0);
+					buildLLVM(FI, outerFunction, outerSource, &leftInnerSource, expectedTypeForLeftAndRight, NULL, data->left, true, false, false);
+					buildLLVM(FI, outerFunction, outerSource, &rightInnerSource, expectedTypeForLeftAndRight, NULL, data->right, true, false, false);
 					
 					if (outerSource != NULL) {
 						CharAccumulator_appendChars(outerSource, "\n\t%");
 						CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
-						if (data->operatorType == ASTnode_infixOperatorType_and) {
+						if (data->operatorType == InfixOperatorType_and) {
 							CharAccumulator_appendChars(outerSource, " = and i1");
-						} else if (data->operatorType == ASTnode_infixOperatorType_or) {
+						} else if (data->operatorType == InfixOperatorType_or) {
 							CharAccumulator_appendChars(outerSource, " = or i1");
 						}
 					}
@@ -1516,7 +1510,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			case ASTnodeType_bool: {
 				ASTnode_bool *data = (ASTnode_bool *)node->value;
 				
-				if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypes->data, "Bool")) {
+				if (!ScopeObject_hasCoreName((ScopeObject *)expectedTypes->data, "Bool")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -1550,7 +1544,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				}
 				
 				if (expectedTypes != NULL) {
-					if (!ScopeObjectAlias_isNumber((ScopeObject *)expectedTypes->data)) {
+					if (!ScopeObject_isNumber((ScopeObject *)expectedTypes->data)) {
 						addStringToReportMsg("unexpected type");
 						
 						addStringToReportIndicator("expected type '");
@@ -1568,7 +1562,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 				}
 				
 				if (innerSource != NULL) CharAccumulator_appendSubString(innerSource, data->string);
-				if (expectedTypes != NULL && ScopeObjectAlias_isFloat((ScopeObject *)expectedTypes->data)) {
+				if (expectedTypes != NULL && ScopeObject_isFloat((ScopeObject *)expectedTypes->data)) {
 					CharAccumulator_appendChars(innerSource, ".0");
 				}
 				
@@ -1578,7 +1572,7 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			case ASTnodeType_string: {
 				ASTnode_string *data = (ASTnode_string *)node->value;
 				
-				if (expectedTypes != NULL && !ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypes->data, "Pointer")) {
+				if (expectedTypes != NULL && !ScopeObject_hasCoreName((ScopeObject *)expectedTypes->data, "Pointer")) {
 					addStringToReportMsg("unexpected type");
 					
 					addStringToReportIndicator("expected type '");
@@ -1651,8 +1645,8 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 			case ASTnodeType_identifier: {
 				ASTnode_identifier *data = (ASTnode_identifier *)node->value;
 				
-				ScopeObject *variableScopeObject = getScopeObjectFromIdentifierNode(FI, node);
-				if (variableScopeObject == NULL) {
+				ScopeObject *scopeObject = getScopeObjectFromIdentifierNode(FI, node);
+				if (scopeObject == NULL) {
 					addStringToReportMsg("value not in scope");
 					
 					addStringToReportIndicator("nothing named '");
@@ -1661,13 +1655,13 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					compileError(FI, node->location);
 				}
 				
-				if (variableScopeObject->scopeObjectKind == ScopeObjectKind_struct) {
+				if (scopeObject->scopeObjectKind == ScopeObjectKind_struct) {
 					if (types != NULL) {
-						addScopeObjectNone(FI, types, variableScopeObject);
+						ScopeLevel_addScopeObject(types, scopeObject);
 					}
-				} else if (variableScopeObject->scopeObjectKind == ScopeObjectKind_function) {
+				} else if (scopeObject->scopeObjectKind == ScopeObjectKind_function) {
 					if (expectedTypes != NULL) {
-						if (!ScopeObjectAlias_hasCoreName((ScopeObject *)expectedTypes->data, "Function")) {
+						if (!ScopeObject_hasCoreName((ScopeObject *)expectedTypes->data, "Function")) {
 							addStringToReportMsg("unexpected type");
 							
 							addStringToReportIndicator("expected type '");
@@ -1678,25 +1672,29 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 					}
 					
 					if (types != NULL) {
-						addScopeObjectNone(FI, types, variableScopeObject);
+						ScopeLevel_addScopeObject(types, scopeObject);
 					}
-				} else if (variableScopeObject->scopeObjectKind == ScopeObjectKind_value) {
-					if (variableScopeObject->compileTime) {
+				} else if (scopeObject->scopeObjectKind == ScopeObjectKind_value) {
+					if (scopeObject->compileTime) {
 						abort();
 					}
-					ScopeObject_value *value = (ScopeObject_value *)variableScopeObject->value;
+					ScopeObject_value *value = (ScopeObject_value *)scopeObject->value;
 					
 					if (expectedTypes != NULL) {
-						expectType(FI, (ScopeObject *)expectedTypes->data, variableScopeObject->type, node->location);
+						expectType(FI, (ScopeObject *)expectedTypes->data, scopeObject->type, node->location);
 					}
 					
 					if (types != NULL) {
-						addScopeObjectNone(FI, types, variableScopeObject->type);
+						if (loadVariables) {
+							addScopeObjectValue(types, scopeObject->type);
+						} else {
+							abort();
+						}
 					}
 					
 					if (outerSource != NULL) {
 						if (withTypes) {
-							CharAccumulator_appendChars(innerSource, ScopeObjectAlias_getLLVMname(variableScopeObject->type, FI));
+							CharAccumulator_appendChars(innerSource, ScopeObjectAlias_getLLVMname(scopeObject->type, FI));
 							CharAccumulator_appendChars(innerSource, " ");
 						}
 						
@@ -1706,11 +1704,11 @@ int buildLLVM(FileInformation *FI, ScopeObject_function *outerFunction, CharAccu
 							CharAccumulator_appendChars(outerSource, "\n\t%");
 							CharAccumulator_appendInt(outerSource, outerFunction->registerCount);
 							CharAccumulator_appendChars(outerSource, " = load ");
-							CharAccumulator_appendChars(outerSource, ScopeObjectAlias_getLLVMname(variableScopeObject->type, FI));
+							CharAccumulator_appendChars(outerSource, ScopeObjectAlias_getLLVMname(scopeObject->type, FI));
 							CharAccumulator_appendChars(outerSource, ", ptr %");
 							CharAccumulator_appendInt(outerSource, value->LLVMRegister);
 							CharAccumulator_appendChars(outerSource, ", align ");
-							CharAccumulator_appendInt(outerSource, ScopeObjectAlias_getByteAlign(variableScopeObject->type));
+							CharAccumulator_appendInt(outerSource, ScopeObjectAlias_getByteAlign(scopeObject->type));
 							
 							if (innerSource != NULL) CharAccumulator_appendInt(innerSource, outerFunction->registerCount);
 							

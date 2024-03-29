@@ -1,16 +1,1 @@
-const number: Int32 = 1;
-
-// {
-// 	@compileLog("number is ", number);
-// }
-
-// const test = fn(): Type {
-// 	return struct {};
-// };
-
-// const main = fn(): Int32 {
-// 	run(fn(): Void {
-		
-// 	});
-// 	return 0;
-// };
+const test = "a string";

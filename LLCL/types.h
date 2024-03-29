@@ -7,6 +7,15 @@
 #define WORD_ALIGNED __attribute__ ((aligned(8)))
 
 //
+// Bool
+//
+
+typedef enum {
+	false = 0,
+	true = 1,
+} Bool;
+
+//
 // SubString
 //
 
@@ -134,6 +143,25 @@ typedef struct {
 SourceLocation SourceLocation_new(FileInformation *originFile, int line, int columnStart, int columnEnd);
 
 typedef enum {
+	InfixOperatorType_assignment,
+	InfixOperatorType_equivalent,
+	InfixOperatorType_notEquivalent,
+	InfixOperatorType_greaterThan,
+	InfixOperatorType_lessThan,
+	InfixOperatorType_add,
+	InfixOperatorType_subtract,
+	InfixOperatorType_multiply,
+	InfixOperatorType_divide,
+	InfixOperatorType_modulo,
+	InfixOperatorType_and,
+	InfixOperatorType_or,
+	InfixOperatorType_memberAccess,
+	
+	// node: the right of operatorType_cast is a type
+	InfixOperatorType_cast
+} InfixOperatorType;
+
+typedef enum {
 	TokenType_word,
 	TokenType_number,
 	TokenType_pound, // #
@@ -234,27 +262,8 @@ typedef struct {
 	linkedList_Node *expression;
 } ASTnode_constantDefinition;
 
-typedef enum {
-	ASTnode_infixOperatorType_assignment,
-	ASTnode_infixOperatorType_equivalent,
-	ASTnode_infixOperatorType_notEquivalent,
-	ASTnode_infixOperatorType_greaterThan,
-	ASTnode_infixOperatorType_lessThan,
-	ASTnode_infixOperatorType_add,
-	ASTnode_infixOperatorType_subtract,
-	ASTnode_infixOperatorType_multiply,
-	ASTnode_infixOperatorType_divide,
-	ASTnode_infixOperatorType_modulo,
-	ASTnode_infixOperatorType_and,
-	ASTnode_infixOperatorType_or,
-	ASTnode_infixOperatorType_memberAccess,
-	
-	// node: the right of operatorType_cast is a type
-	ASTnode_infixOperatorType_cast
-} ASTnode_infixOperatorType;
-
 typedef struct {
-	ASTnode_infixOperatorType operatorType;
+	InfixOperatorType operatorType;
 	linkedList_Node *left;
 	linkedList_Node *right;
 } ASTnode_infixOperator;
@@ -300,7 +309,7 @@ typedef struct {
 } Fact;
 
 typedef struct {
-	ASTnode_infixOperatorType operatorType;
+	InfixOperatorType operatorType;
 	ASTnode *left;
 	ASTnode *rightConstant;
 } Fact_expression;
@@ -311,7 +320,7 @@ typedef struct {
 	linkedList_Node *falseFacts;
 } Fact_if;
 
-void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operatorType, ASTnode *left, ASTnode *rightConstant);
+void Fact_newExpression(linkedList_Node **head, InfixOperatorType operatorType, ASTnode *left, ASTnode *rightConstant);
 
 //
 // context
@@ -319,24 +328,22 @@ void Fact_newExpression(linkedList_Node **head, ASTnode_infixOperatorType operat
 
 typedef enum {
 //	ScopeObjectKind_simpleType,
-	ScopeObjectKind_none,
+//	ScopeObjectKind_none,
 	ScopeObjectKind_alias,
 	ScopeObjectKind_struct,
 	ScopeObjectKind_function,
 	ScopeObjectKind_builtinFunction,
-	ScopeObjectKind_value
+	ScopeObjectKind_value,
+	ScopeObjectKind_constrainedType,
 } ScopeObjectKind;
 
 struct ScopeObject {
+	SubString *name;
+	
 	SourceLocation location;
 	
-	int compileTime;
-	
-//	struct ScopeObject *scopeObject;
-	linkedList_Node *constraintNodes;
-	
-	/// [linkedList<Fact>]
-	linkedList_Node *factStack[maxContextLevel];
+	Bool compileTime;
+	Bool canInferType;
 	
 	struct ScopeObject *type;
 	
@@ -345,20 +352,16 @@ struct ScopeObject {
 };
 typedef struct ScopeObject ScopeObject;
 
-//struct ScopeObjectRef {
-//	ScopeObject *object;
-//};
-//typedef struct ScopeObjectRef ScopeObjectRef;
+ScopeObject ScopeObject_new(SubString *name, SourceLocation location, Bool compileTime, Bool canInferType, linkedList_Node *constraintNodes, ScopeObject *type, ScopeObjectKind scopeObjectType);
 
-ScopeObject ScopeObject_new(int compileTime, linkedList_Node *constraintNodes, ScopeObject *type, ScopeObjectKind scopeObjectType);
+typedef linkedList_Node **ScopeLevel;
+void ScopeLevel_addScopeObject(ScopeLevel level, ScopeObject *scopeObject);
 
-typedef struct ScopeObject_alias {
+typedef struct {
 	SubString *key;
 	ScopeObject *value;
 } ScopeObject_alias;
-
-// scopeObjectType == ScopeObjectKind_alias
-//typedef ScopeObject BuilderType;
+ScopeObject_alias ScopeObject_alias_new(SubString *key, ScopeObject *value);
 
 typedef struct {
 	char *LLVMname;
@@ -391,33 +394,44 @@ typedef struct {
 typedef struct {
 	int LLVMRegister;
 //	char *LLVMname;
+	
+	/// [linkedList<Fact>]
+	linkedList_Node *factStack[maxContextLevel];
 } ScopeObject_value;
 ScopeObject_value ScopeObject_value_new(int LLVMRegister);
+ScopeObject_value *ScopeObject_getAsValue(ScopeObject *scopeObject);
+ScopeObject *addScopeObjectValue(ScopeLevel level, ScopeObject *type);
+
+typedef struct {
+	linkedList_Node *constraintNodes;
+} ScopeObject_constrainedType;
+ScopeObject_constrainedType ScopeObject_constrainedType_new(linkedList_Node *constraintNodes);
+ScopeObject_constrainedType *ScopeObject_getAsConstrainedType(ScopeObject *scopeObject);
+ScopeObject *addScopeObjectConstrainedType(ScopeLevel level, linkedList_Node *constraintNodes);
 
 int FileInformation_declaredInLLVM(FileInformation *FI, ScopeObject *pointer);
 void FileInformation_addToDeclaredInLLVM(FileInformation *FI, ScopeObject *pointer);
 
-ScopeObject *addAlias(linkedList_Node **list, SubString *key, ScopeObject *type, ScopeObject *value);
+ScopeObject *addAlias(ScopeLevel level, SubString *key, ScopeObject *type, ScopeObject *value);
 ScopeObject *getTypeType(void);
-void addSimpleType(linkedList_Node **list, char *name, char *LLVMname, int byteSize, int byteAlign);
-void addBuiltinFunction(linkedList_Node **list, char *name, char *description);
-ScopeObject *addScopeObjectNone(FileInformation *FI, linkedList_Node **list, ScopeObject *scopeObject);
-void addScopeObjectFromString(FileInformation *FI, linkedList_Node **list, char *string, ASTnode *node);
+void addBuiltinType(ScopeLevel level, char *name, char *LLVMname, int byteSize, int byteAlign);
+void addBuiltinFunction(ScopeLevel level, char *name, char *description);
+void addScopeObjectFromString(FileInformation *FI, ScopeLevel level, char *string, ASTnode *node);
 ScopeObject *getScopeObjectAliasFromString(FileInformation *FI, char *key);
 ScopeObject *getScopeObjectAliasFromSubString(FileInformation *FI, SubString *key);
 
-ASTnode *ScopeObject_getResolvedValue(ScopeObject *type, FileInformation *FI);
+ASTnode *ScopeObjectValue_getResolvedValue(ScopeObject *type, FileInformation *FI);
 
 ScopeObject_alias *scopeObject_getAsAlias(ScopeObject *scopeObject);
 ScopeObject *ScopeObjectAlias_unalias(ScopeObject *scopeObject);
 
-int ScopeObjectAlias_hasName(ScopeObject *type, char *name);
-int ScopeObjectAlias_hasCoreName(ScopeObject *scopeObject, char *name) ;
-int ScopeObjectAlias_isSignedInt(ScopeObject *type);
-int ScopeObjectAlias_isUnsignedInt(ScopeObject *type);
-int ScopeObjectAlias_isInt(ScopeObject *type);
-int ScopeObjectAlias_isFloat(ScopeObject *type);
-int ScopeObjectAlias_isNumber(ScopeObject *type);
+int ScopeObject_hasName(ScopeObject *type, char *name);
+int ScopeObject_hasCoreName(ScopeObject *scopeObject, char *name) ;
+int ScopeObject_isSignedInt(ScopeObject *type);
+int ScopeObject_isUnsignedInt(ScopeObject *type);
+int ScopeObject_isInt(ScopeObject *type);
+int ScopeObject_isFloat(ScopeObject *type);
+int ScopeObject_isNumber(ScopeObject *type);
 
 char *ScopeObjectAlias_getLLVMname(ScopeObject *type, FileInformation *FI);
 

@@ -236,32 +236,32 @@ int main(int argc, char **argv) {
 //	*data = ScopeObject_new(1, NULL, NULL, ScopeObjectKind_struct);
 //	*(ScopeObject_struct *)data->value = ScopeObject_struct_new("should_not_be_in_IR", NULL, 0, 0);
 	
-	addSimpleType(&coreFile.context.scopeObjects[0], "Void", "void", 0, 0);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Void", "void", 0, 0);
 	
-	addSimpleType(&coreFile.context.scopeObjects[0], "Int8", "i8", 1, 1);
-	addSimpleType(&coreFile.context.scopeObjects[0], "Int16", "i16", 2, 2);
-	addSimpleType(&coreFile.context.scopeObjects[0], "Int32", "i32", 4, 4);
-	addSimpleType(&coreFile.context.scopeObjects[0], "Int64", "i64", 8, 8);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Int8", "i8", 1, 1);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Int16", "i16", 2, 2);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Int32", "i32", 4, 4);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Int64", "i64", 8, 8);
 	
-	addSimpleType(&coreFile.context.scopeObjects[0], "UInt8", "i8", 1, 1);
-	addSimpleType(&coreFile.context.scopeObjects[0], "UInt16", "i16", 2, 2);
-	addSimpleType(&coreFile.context.scopeObjects[0], "UInt32", "i32", 4, 4);
-	addSimpleType(&coreFile.context.scopeObjects[0], "UInt64", "i64", 8, 8);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "UInt8", "i8", 1, 1);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "UInt16", "i16", 2, 2);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "UInt32", "i32", 4, 4);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "UInt64", "i64", 8, 8);
 	
-	addSimpleType(&coreFile.context.scopeObjects[0], "Float16", "half", 2, 2);
-	addSimpleType(&coreFile.context.scopeObjects[0], "Float32", "float", 4, 4);
-	addSimpleType(&coreFile.context.scopeObjects[0], "Float64", "double", 8, 8);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Float16", "half", 2, 2);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Float32", "float", 4, 4);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Float64", "double", 8, 8);
 	
-	addSimpleType(&coreFile.context.scopeObjects[0], "_Vector", "should_not_be_in_IR", 0, 0);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "_Vector", "should_not_be_in_IR", 0, 0);
 	
 	// how much space should be made for an i1?
 	// I will do one byte for now
-	addSimpleType(&coreFile.context.scopeObjects[0], "Bool", "i1", 1, 1);
-	addSimpleType(&coreFile.context.scopeObjects[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Bool", "i1", 1, 1);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Pointer", "ptr", pointer_byteSize, pointer_byteSize);
 	
-	addSimpleType(&coreFile.context.scopeObjects[0], "Function", "should_not_be_in_IR", pointer_byteSize, pointer_byteSize);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "Function", "should_not_be_in_IR", pointer_byteSize, pointer_byteSize);
 	// same for "__Number_and_it_should_not_be_in_IR"
-	addSimpleType(&coreFile.context.scopeObjects[0], "__Number", "should_not_be_in_IR", 0, 0);
+	addBuiltinType(&coreFile.context.scopeObjects[0], "__Number", "should_not_be_in_IR", 0, 0);
 	
 	addBuiltinFunction(&coreFile.context.scopeObjects[0], "import", "`@import(path: TODO): Type`");
 	addBuiltinFunction(&coreFile.context.scopeObjects[0], "compileLog", "`@compileLog(...): Void` At compile time, prints the arguments to the standard out of the compiler.");
