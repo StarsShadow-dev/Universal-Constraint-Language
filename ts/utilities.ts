@@ -1,5 +1,9 @@
 import { exit } from "process";
 
-export function unreachable() {
-	throw new Error("unreachable code reached");
+export default {
+	unreachable(): never {
+		debugger;
+		console.error("unreachable code reached");
+		exit(1);
+	}
 }

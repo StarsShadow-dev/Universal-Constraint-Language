@@ -3,8 +3,9 @@ import {
 	Token,
 	
 	ASTnode,
-} from './types';
+} from "./types";
 import { compileError } from "./report";
+import utilities from "./utilities";
 
 export function parse(tokens: Token[], i: number): ASTnode[] {
 	let AST: ASTnode[] = [];
@@ -20,7 +21,7 @@ export function parse(tokens: Token[], i: number): ASTnode[] {
 			}
 		
 			default: {
-				compileError(token.location, `unknown token type ${TokenType[token.type]}`);
+				utilities.unreachable();
 				break;
 			}
 		}
