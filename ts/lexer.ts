@@ -1,11 +1,44 @@
 import { TokenType, Token } from './types';
 
-function wordStart(char: string): boolean {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char == '_';
+function wordStart(text: string, i: number): boolean {
+	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_';
 }
 
-function wordContinue(char: string): boolean {
-	return wordStart(char) || (char >= '0' && char <= '9');
+function wordContinue(text: string, i: number): boolean {
+	return wordStart(text, i) || (text[i] >= '0' && text[i] <= '9');
+}
+
+function oneCharacterOperator(text: string, i: number): boolean {
+	return text[i] == '>' ||
+	text[i] == '<' ||
+	text[i] == '=' ||
+	text[i] == '+' ||
+	text[i] == '-' ||
+	text[i] == '*' ||
+	text[i] == '/' ||
+	text[i] == '%' ||
+	text[i] == '.';
+}
+
+function twoCharacterOperator(text: string, i: number): boolean {
+	return text[i] == '=' && text[i+1] == '=' ||
+	text[i] == '!' && text[i+1] == '=' ||
+	text[i] == ':' && text[i+1] == ':' ||
+	text[i] == '&' && text[i+1] == '&' ||
+	text[i] == '|' && text[i+1] == '|' ||
+	text[i] == 'a' && text[i+1] == 's';
+}
+
+function separator(text: string, i: number): boolean {
+	return text[i] == '(' ||
+	text[i] == ')' ||
+	text[i] == '{' ||
+	text[i] == '}'  ||
+	text[i] == '[' ||
+	text[i] == ']' ||
+	text[i] == ':' ||
+	text[i] == ';' ||
+	text[i] == ',';
 }
 
 export function lex(text: string): Token[] {
@@ -16,9 +49,7 @@ export function lex(text: string): Token[] {
 	let columnStartI = 0
 	
 	for (let i = 0; i < text.length; i++) {
-		const char = text[i];
-		
-		if (char == "\n") {
+		if (text[i] == "\n") {
 			line++;
 			column = 0;
 			columnStartI = i;
@@ -31,21 +62,48 @@ export function lex(text: string): Token[] {
 		const startColumn = column;
 		
 		// comment
-		if (char == '/' && text[i+1] == '/') {
+		if (text[i] == '/' && text[i+1] == '/') {
 			i += 2;
 			for (; i < text.length; i++) {
-				console.log("A");
 				if (text[i+1] == "\n") {
 					break;
 				}
 			}
 		}
 		
+		// else if (twoCharacterOperator(text, i)) {
+			
+		// }
+		
+		else if (oneCharacterOperator(text, i)) {
+			tokens.push({
+				type: TokenType.operator,
+				text: text[i],
+				location: {
+					line: line,
+					startColumn: startColumn,
+					endColumn: startColumn,
+				},
+			});
+		}
+		
+		else if (separator(text, i)) {
+			tokens.push({
+				type: TokenType.separator,
+				text: text[i],
+				location: {
+					line: line,
+					startColumn: startColumn,
+					endColumn: startColumn,
+				},
+			});
+		}
+		
 		// word
-		else if (wordStart(char)) {
+		else if (wordStart(text, i)) {
 			let str = "";
 			for (; i < text.length; i++) {
-				if (wordContinue(text[i])) {
+				if (wordContinue(text, i)) {
 					str += text[i];	
 				} else {
 					break;
@@ -66,7 +124,7 @@ export function lex(text: string): Token[] {
 		}
 		
 		// string
-		else if (char == "\"") {
+		else if (text[i] == "\"") {
 			i++;
 			let str = "";
 			for (; i < text.length; i++) {
