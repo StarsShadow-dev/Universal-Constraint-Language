@@ -23,7 +23,6 @@ function oneCharacterOperator(text: string, i: number): boolean {
 function twoCharacterOperator(text: string, i: number): boolean {
 	return text[i] == '=' && text[i+1] == '=' ||
 	text[i] == '!' && text[i+1] == '=' ||
-	text[i] == ':' && text[i+1] == ':' ||
 	text[i] == '&' && text[i+1] == '&' ||
 	text[i] == '|' && text[i+1] == '|' ||
 	text[i] == 'a' && text[i+1] == 's';
