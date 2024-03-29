@@ -4,6 +4,7 @@ import {
 	
 	ASTnode,
 } from './types';
+import { compileError } from "./report";
 
 export function parse(tokens: Token[], i: number): ASTnode[] {
 	let AST: ASTnode[] = [];
@@ -19,7 +20,9 @@ export function parse(tokens: Token[], i: number): ASTnode[] {
 			}
 		
 			default: {
-				throw new Error("error");
+				compileError(token.location, `unknown token type ${TokenType[token.type]}`);
+				console.log("should not be reached");
+				break;
 			}
 		}
 	}
