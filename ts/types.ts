@@ -38,53 +38,51 @@ type genericASTnode = {
 	location: SourceLocation,
 }
 
-export type ASTtype = {
-	//
-	// literals
-	//
-	
-	"bool": genericASTnode & {
-		type: "bool",
-		value: boolean,
-	},
-	"number": genericASTnode & {
-		type: "number",
-		value: number,
-	},
-	"string": genericASTnode & {
-		type: "string",
-		value: string,
-	},
-	
-	//
-	// things you get a value from
-	//
-	
-	"identifier": genericASTnode & {
-		type: "identifier",
-		name: string,
-	},
-	
-	// "call": genericASTnode & {
-	// 	// TODO
-	// },
-	
-	//
-	// structured things (what are these called?)
-	//
-	
-	// "struct": genericASTnode & {
-	// 	// TODO
-	// },
-	
-}
+export type ASTnode = 
 
-export type ASTnode = ASTtype["bool"] |
-ASTtype["number"] |
-ASTtype["string"] |
-ASTtype["identifier"]
-// ASTtype["call"] |
-// ASTtype["struct"]
+//
+// literals
+//
+
+genericASTnode & {
+	type: "bool",
+	value: boolean,
+} | genericASTnode & {
+	type: "number",
+	value: number,
+} | genericASTnode & {
+	type: "string",
+	value: string,
+} |
+
+//
+// things you get a value from
+//
+
+genericASTnode & {
+	type: "identifier",
+	name: string,
+} | genericASTnode & {
+	type: "call",
+} |
+
+//
+// structured things (what are these called?)
+//
+
+genericASTnode & {
+	type: "assignment",
+} | genericASTnode & {
+	type: "function",
+} | genericASTnode & {
+	type: "struct",
+} | genericASTnode & {
+	type: "while",
+} | genericASTnode & {
+	type: "if",
+} | genericASTnode & {
+	type: "return",
+}
 
 //
 // scope

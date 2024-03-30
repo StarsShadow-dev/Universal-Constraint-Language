@@ -9,13 +9,13 @@ export async function compileFile(filePath: string) {
 	
 	console.log("text:", text);
 	
-	let tokens = lex(text);
+	const tokens = lex(text);
 	console.log("tokens:", tokens);
 	
-	let AST = parse(tokens, 0);
+	const AST = parse(tokens, 0);
 	console.log("AST:", AST);
 	
-	let scopeList = build(AST);
+	const scopeList = build(AST);
 	console.log("scopeList:", scopeList);
 }
 

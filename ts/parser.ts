@@ -23,14 +23,12 @@ export function parse(tokens: Token[], i: number): ASTnode[] {
 	while (i < tokens.length) {
 		const token = forward();
 		
-		console.log("token", token)
-		
 		switch (token.type) {
 			case TokenType.number: {
 				AST.push({
 					type: "number",
 					location: token.location,
-					value: 0,
+					value: Number(token.text),
 				});
 				break;
 			}
