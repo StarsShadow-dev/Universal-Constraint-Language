@@ -12,16 +12,18 @@ import { SourceLocation } from './types';
 
 const lineNumberPadding = 4;
 
-async function _compileError(location: SourceLocation, msg: string, indicator: string) {
+// TODO: This can read the same file twice, if there are two indicators in a file.
+async function displayIndicator(location: SourceLocation, msg: string) {
 	const text = await fs.readFile(location.path, { encoding: 'utf8' });
 	// console.log("compileError location:", location);
-	stderr.write(`error: ${msg}\n`);
+	
+	stderr.write(`at ${location.path}:${location.line}}\n\n`);
 	
 	let i = 0;
 	let line = 1;
 	
 	function writeLine() {
-		stderr.write((line + "").padStart(lineNumberPadding, "0"));
+		stderr.write(line.toString().padStart(lineNumberPadding, "0"));
 		stderr.write(" |");
 		for (; i < text.length; i++) {
 			if (text[i] == "\n") line++;
@@ -40,12 +42,40 @@ async function _compileError(location: SourceLocation, msg: string, indicator: s
 		
 		i++;
 		writeLine();
+		stderr.write(`${msg}\n`);
 	}
 	
-	process.exitCode = 1;
+	stderr.write(`\n`);
 }
 
-export function compileError(location: SourceLocation, msg: string, indicator: string): never {
-	_compileError(location, msg, indicator);
-	throw "__do nothing__";
+export class CompileError {
+	private msg: string
+	private indicators: {
+		location: SourceLocation,
+		msg: string,
+	}[]
+	
+	constructor(msg: string) {
+		this.msg = msg;
+		this.indicators = []
+	}
+	
+	public indicator(location: SourceLocation, msg: string): CompileError {
+		this.indicators.push({
+			location: location,
+			msg: msg,
+		});
+		return this;
+	}
+	
+	public fatal(): never {
+		stderr.write(`error: ${this.msg}\n`);
+		(async () => {
+			for (const indicator of this.indicators) {
+				await displayIndicator(indicator.location, indicator.msg);
+			}
+		})();
+		process.exitCode = 1;
+		throw "__do nothing__";
+	}
 }

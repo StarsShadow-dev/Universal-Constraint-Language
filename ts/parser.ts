@@ -4,7 +4,7 @@ import {
 	
 	ASTnode,
 } from "./types";
-import { compileError } from "./report";
+import { CompileError } from "./report";
 import utilities from "./utilities";
 
 export type ParserContext = {
@@ -49,12 +49,12 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 				if (token.text == "const") {
 					const name = forward();
 					if (name.type != TokenType.word) {
-						compileError(name.location, "expected name", "");
+						new CompileError("expected name").indicator(name.location, "here").fatal();
 					}
 					
 					const equals = forward();
 					if (equals.type != TokenType.operator || equals.text != "=") {
-						compileError(equals.location, "expected equals", "");
+						new CompileError("expected equals").indicator(equals.location, "here").fatal();
 					}
 					
 					const value = parse(context, ParserMode.single);
@@ -77,7 +77,7 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 			}
 			
 			case TokenType.separator: {
-				compileError(token.location, "unexpected separator", "");
+				new CompileError("unexpected separator").indicator(token.location, "here").fatal();
 				break;
 			}
 		
@@ -94,7 +94,7 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 		if (needsSemicolon) {
 			const semicolon = forward();
 			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
-				compileError(semicolon.location, "expected a semicolon", "");
+				new CompileError("expected a semicolon").indicator(semicolon.location, "here").fatal();
 			}
 		}
 	}

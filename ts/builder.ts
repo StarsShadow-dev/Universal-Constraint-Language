@@ -3,7 +3,7 @@ import {
 	ScopeObject,
 } from "./types";
 import utilities from "./utilities";
-import { compileError } from "./report";
+import { CompileError } from "./report";
 
 export type BuilderContext = {
 	scopeLevels: ScopeObject[][],
@@ -85,10 +85,13 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 						// scopeList.push(alias);
 						scopeList.push(alias.value[0]);
 					} else {
-						compileError(node.location, "alias used before its definition", "");
+						new CompileError("alias used before its definition")
+							.indicator(node.location, "identifier here")
+							.indicator(alias.originLocation, "alias defined here")
+							.fatal();
 					}
 				} else {
-					compileError(node.location, "alias does not exist", "");
+					new CompileError("alias does not exist").indicator(node.location, "here").fatal();
 				}
 				break;
 			}
