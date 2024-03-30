@@ -5,7 +5,7 @@ import {
 	ParserMode,
 	parse,
 } from './parser';
-import { build } from './builder';
+import { BuilderContext, build } from './builder';
 
 export async function compileFile(filePath: string) {
 	const text = await fs.readFile(filePath, { encoding: 'utf8' });
@@ -21,8 +21,13 @@ export async function compileFile(filePath: string) {
 	}, ParserMode.normal);
 	console.log("AST:", JSON.stringify(AST, undefined, 4));
 	
-	const scopeList = build(AST);
-	console.log("scopeList:", scopeList);
+	const builderContext: BuilderContext = {
+		scopeLevels: [[]],
+		level: -1,
+	};
+	const scopeList = build(builderContext, AST);
+	console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
+	console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
 }
 
 export function test() {

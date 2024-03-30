@@ -3,14 +3,9 @@ import {
 	Token,
 	
 	ASTnode,
-	AssignmentType,
 } from "./types";
 import { compileError } from "./report";
 import utilities from "./utilities";
-
-function needsSemicolon(node: ASTnode): boolean {
-	return true;
-}
 
 export type ParserContext = {
 	tokens: Token[],
@@ -34,6 +29,8 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 	while (context.i < context.tokens.length) {
 		const token = forward();
 		
+		let needsSemicolon = true;
+		
 		switch (token.type) {
 			case TokenType.number: {
 				AST.push({
@@ -50,19 +47,24 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 			
 			case TokenType.word: {
 				if (token.text == "const") {
-					const left = parse(context, ParserMode.single);
+					const name = forward();
+					if (name.type != TokenType.word) {
+						compileError(name.location, "expected name", "");
+					}
+					
 					const equals = forward();
 					if (equals.type != TokenType.operator || equals.text != "=") {
 						compileError(equals.location, "expected equals", "");
 					}
-					const right = parse(context, ParserMode.single);
+					
+					const value = parse(context, ParserMode.single);
 					
 					AST.push({
-						type: "assignment",
+						type: "definition",
 						location: token.location,
-						assignmentType: AssignmentType.constant,
-						left: left,
-						right: right,
+						mutable: false,
+						name: name.text,
+						value: value,
 					});
 				} else {
 					AST.push({
@@ -89,7 +91,7 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 			return AST;
 		}
 		
-		if (needsSemicolon(AST[AST.length - 1])) {
+		if (needsSemicolon) {
 			const semicolon = forward();
 			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
 				compileError(semicolon.location, "expected a semicolon", "");

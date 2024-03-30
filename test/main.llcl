@@ -1,3 +1,13 @@
 // 1
-const test = 1; // 2
+test;
+const test = 5;
+test;
 // 3
+
+// const test = fn() {
+// 	main;
+// }
+
+// const main = fn() {
+// 	test;
+// }
