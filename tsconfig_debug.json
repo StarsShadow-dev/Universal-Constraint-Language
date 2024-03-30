@@ -2,12 +2,12 @@
 	"compilerOptions": {
 		"target": "ES6",
 		"module": "nodenext",
-		"sourceMap": false,
+		"sourceMap": true,
 		"outDir": "./out",
 		
 		"strict": true,
 		"removeComments": true,
 		"noImplicitAny": true,
-		"pretty": true,
+		"pretty": true
 	}
 }
