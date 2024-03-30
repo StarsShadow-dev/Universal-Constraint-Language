@@ -6,7 +6,7 @@
 // Instead, I use process.exitCode which should not interrupt any standard out functions.
 
 import * as fs from 'fs/promises';
-import { exit, stdout } from 'process';
+import { exit, stderr } from 'process';
 
 import { SourceLocation } from './types';
 
@@ -14,23 +14,23 @@ const lineNumberPadding = 4;
 
 async function _compileError(location: SourceLocation, msg: string, indicator: string) {
 	const text = await fs.readFile(location.path, { encoding: 'utf8' });
-	console.log("compileError location:", location);
-	console.log("msg:", msg);
+	// console.log("compileError location:", location);
+	stderr.write(`error: ${msg}\n`);
 	
 	let i = 0;
 	let line = 1;
 	
 	function writeLine() {
-		stdout.write((line + "").padStart(lineNumberPadding, "0"));
-		stdout.write(" |");
+		stderr.write((line + "").padStart(lineNumberPadding, "0"));
+		stderr.write(" |");
 		for (; i < text.length; i++) {
 			if (text[i] == "\n") line++;
 			
 			if (line != location.line) continue;
 			
-			stdout.write(text[i]);
+			stderr.write(text[i]);
 		}
-		stdout.write("\n");
+		stderr.write("\n");
 	}
 	
 	for (; i < text.length; i++) {
