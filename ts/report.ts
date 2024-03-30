@@ -2,6 +2,9 @@
 // I need to wait for fs.readFile, but waiting would cause the compiler to continue.
 // So I throw "__do nothing__". (the exception is caught in main.ts, and nothing is done with it)
 
+// I would use exit, but apparently some standard out functions can get broken if you use exit.
+// Instead, I use process.exitCode which should not interrupt any standard out functions.
+
 import * as fs from 'fs/promises';
 import { exit, stdout } from 'process';
 
@@ -37,7 +40,6 @@ async function _compileError(location: SourceLocation, msg: string, indicator: s
 	}
 	
 	process.exitCode = 1;
-	// exit(1);
 }
 
 export function compileError(location: SourceLocation, msg: string, indicator: string): never {
