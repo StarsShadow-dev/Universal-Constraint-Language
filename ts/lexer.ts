@@ -5,7 +5,11 @@ function wordStart(text: string, i: number): boolean {
 }
 
 function wordContinue(text: string, i: number): boolean {
-	return wordStart(text, i) || (text[i] >= '0' && text[i] <= '9');
+	return wordStart(text, i) || base10Number(text, i);
+}
+
+function base10Number(text: string, i: number): boolean {
+	return text[i] >= '0' && text[i] <= '9';
 }
 
 function oneCharacterOperator(text: string, i: number): boolean {
@@ -94,6 +98,29 @@ export function lex(text: string): Token[] {
 					line: line,
 					startColumn: startColumn,
 					endColumn: startColumn,
+				},
+			});
+		}
+		
+		else if (base10Number(text, i)) {
+			let str = "";
+			for (; i < text.length; i++) {
+				if (base10Number(text, i)) {
+					str += text[i];	
+				} else {
+					break;
+				}
+			}
+			
+			i--;
+			
+			tokens.push({
+				type: TokenType.number,
+				text: str,
+				location: {
+					line: line,
+					startColumn: startColumn,
+					endColumn: startColumn + str.length - 1,
 				},
 			});
 		}

@@ -44,12 +44,15 @@ export type ASTtype = {
 	//
 	
 	"bool": genericASTnode & {
+		type: "bool",
 		value: boolean,
 	},
 	"number": genericASTnode & {
+		type: "number",
 		value: number,
 	},
 	"string": genericASTnode & {
+		type: "string",
 		value: string,
 	},
 	
@@ -58,29 +61,30 @@ export type ASTtype = {
 	//
 	
 	"identifier": genericASTnode & {
+		type: "identifier",
 		name: string,
 	},
 	
-	"call": genericASTnode & {
-		// TODO
-	},
+	// "call": genericASTnode & {
+	// 	// TODO
+	// },
 	
 	//
 	// structured things (what are these called?)
 	//
 	
-	"struct": genericASTnode & {
-		// TODO
-	},
+	// "struct": genericASTnode & {
+	// 	// TODO
+	// },
 	
 }
 
 export type ASTnode = ASTtype["bool"] |
 ASTtype["number"] |
 ASTtype["string"] |
-ASTtype["identifier"] |
-ASTtype["call"] |
-ASTtype["struct"]
+ASTtype["identifier"]
+// ASTtype["call"] |
+// ASTtype["struct"]
 
 //
 // scope

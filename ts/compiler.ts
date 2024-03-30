@@ -9,8 +9,10 @@ export async function compileFile(filePath: string) {
 	console.log("text:", text);
 	
 	let tokens = lex(text);
-	// console.log("tokens:", tokens);
+	console.log("tokens:", tokens);
+	
 	let AST = parse(tokens, 0);
+	console.log("AST:", AST);
 }
 
 export function test() {
