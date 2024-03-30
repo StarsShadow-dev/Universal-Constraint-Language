@@ -1,7 +1,10 @@
 import * as fs from 'fs/promises';
 
 import { lex } from './lexer';
-import { parse } from './parser';
+import {
+	ParserMode,
+	parse,
+} from './parser';
 import { build } from './builder';
 
 export async function compileFile(filePath: string) {
@@ -12,8 +15,11 @@ export async function compileFile(filePath: string) {
 	const tokens = lex(text);
 	console.log("tokens:", tokens);
 	
-	const AST = parse(tokens, 0);
-	console.log("AST:", AST);
+	const AST = parse({
+		tokens: tokens,
+		i: 0,
+	}, ParserMode.normal);
+	console.log("AST:", JSON.stringify(AST, undefined, 4));
 	
 	const scopeList = build(AST);
 	console.log("scopeList:", scopeList);

@@ -8,6 +8,12 @@ export type SourceLocation = {
 	endColumn: number,
 }
 
+export enum AssignmentType {
+	constant,
+	variable,
+	reassignment,
+}
+
 //
 // tokens
 //
@@ -72,6 +78,9 @@ genericASTnode & {
 
 genericASTnode & {
 	type: "assignment",
+	assignmentType: AssignmentType,
+	left: ASTnode[],
+	right: ASTnode[],
 } | genericASTnode & {
 	type: "function",
 } | genericASTnode & {
@@ -103,5 +112,14 @@ export type ScopeObject = genericScopeObject & {
 	value: string,
 } | genericScopeObject & {
 	type: "complexValue",
+	// TODO
+} | genericScopeObject & {
+	type: "alias",
+	// TODO
+} | genericScopeObject & {
+	type: "function",
+	// TODO
+} | genericScopeObject & {
+	type: "struct",
 	// TODO
 }
