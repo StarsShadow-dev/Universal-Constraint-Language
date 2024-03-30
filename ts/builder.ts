@@ -43,7 +43,7 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 				originLocation: node.location,
 				mutable: node.mutable,
 				name: node.name,
-				value: value,
+				value: null,
 			});	
 		}
 	}
@@ -52,7 +52,15 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 		const node = AST[i];
 		
 		if (node.type == "definition") {
-			continue;	
+			const alias = getScopeObject(context, node.name);
+			if (alias && alias.type == "alias") {
+				const value = build(context, node.value);
+				
+				alias.value = value;
+			} else {
+				utilities.unreachable();
+			}
+			continue;
 		}
 		
 		switch (node.type) {
@@ -73,10 +81,14 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 			case "identifier": {
 				const alias = getScopeObject(context, node.name);
 				if (alias && alias.type == "alias") {
-					// scopeList.push(alias);
-					scopeList.push(alias.value[0]);
+					if (alias.value) {
+						// scopeList.push(alias);
+						scopeList.push(alias.value[0]);
+					} else {
+						compileError(node.location, "alias used before its definition", "");
+					}
 				} else {
-					compileError(node.location, "", "");
+					compileError(node.location, "alias does not exist", "");
 				}
 				break;
 			}

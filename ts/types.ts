@@ -116,7 +116,7 @@ export type ScopeObject = genericScopeObject & {
 	type: "alias",
 	mutable: boolean,
 	name: string,
-	value: ScopeObject[],
+	value: ScopeObject[] | null,
 } | genericScopeObject & {
 	type: "function",
 	// TODO

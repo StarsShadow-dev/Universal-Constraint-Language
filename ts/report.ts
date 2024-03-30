@@ -10,6 +10,8 @@ import { exit, stdout } from 'process';
 
 import { SourceLocation } from './types';
 
+const lineNumberPadding = 4;
+
 async function _compileError(location: SourceLocation, msg: string, indicator: string) {
 	const text = await fs.readFile(location.path, { encoding: 'utf8' });
 	console.log("compileError location:", location);
@@ -19,7 +21,8 @@ async function _compileError(location: SourceLocation, msg: string, indicator: s
 	let line = 1;
 	
 	function writeLine() {
-		stdout.write("    ");
+		stdout.write((line + "").padStart(lineNumberPadding, "0"));
+		stdout.write(" |");
 		for (; i < text.length; i++) {
 			if (text[i] == "\n") line++;
 			
