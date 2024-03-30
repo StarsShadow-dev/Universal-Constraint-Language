@@ -94,18 +94,16 @@ type genericScopeObject = {
 	originLocation: SourceLocation,
 }
 
-export type ScopeObjectType = {
-	"bool": genericScopeObject & {
-		value: boolean,
-	},
-	"number": genericScopeObject & {
-		value: number,
-	},
-	"string": genericScopeObject & {
-		value: string,
-	},
+export type ScopeObject = genericScopeObject & {
+	type: "bool",
+	value: boolean,
+} | genericScopeObject & {
+	type: "number",
+	value: number,
+} | genericScopeObject & {
+	type: "string",
+	value: string,
+} | genericScopeObject & {
+	type: "complexValue",
+	// TODO
 }
-
-export type ScopeObject = ScopeObjectType["bool"] |
-ScopeObjectType["number"] |
-ScopeObjectType["string"]

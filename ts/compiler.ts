@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 
 import { lex } from './lexer';
 import { parse } from './parser';
+import { build } from './builder';
 
 export async function compileFile(filePath: string) {
 	const text = await fs.readFile(filePath, { encoding: 'utf8' });
@@ -13,6 +14,9 @@ export async function compileFile(filePath: string) {
 	
 	let AST = parse(tokens, 0);
 	console.log("AST:", AST);
+	
+	let scopeList = build(AST);
+	console.log("scopeList:", scopeList);
 }
 
 export function test() {
