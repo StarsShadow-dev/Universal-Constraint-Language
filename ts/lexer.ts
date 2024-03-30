@@ -44,7 +44,7 @@ function separator(text: string, i: number): boolean {
 	text[i] == ',';
 }
 
-export function lex(text: string): Token[] {
+export function lex(filePath: string, text: string): Token[] {
 	let tokens: Token[] = [];
 	
 	let line = 1;
@@ -83,6 +83,7 @@ export function lex(text: string): Token[] {
 				type: TokenType.operator,
 				text: text[i],
 				location: {
+					path: filePath,
 					line: line,
 					startColumn: startColumn,
 					endColumn: startColumn,
@@ -95,6 +96,7 @@ export function lex(text: string): Token[] {
 				type: TokenType.separator,
 				text: text[i],
 				location: {
+					path: filePath,
 					line: line,
 					startColumn: startColumn,
 					endColumn: startColumn,
@@ -118,6 +120,7 @@ export function lex(text: string): Token[] {
 				type: TokenType.number,
 				text: str,
 				location: {
+					path: filePath,
 					line: line,
 					startColumn: startColumn,
 					endColumn: startColumn + str.length - 1,
@@ -142,6 +145,7 @@ export function lex(text: string): Token[] {
 				type: TokenType.word,
 				text: str,
 				location: {
+					path: filePath,
 					line: line,
 					startColumn: startColumn,
 					endColumn: startColumn + str.length - 1,
@@ -165,6 +169,7 @@ export function lex(text: string): Token[] {
 				type: TokenType.string,
 				text: str,
 				location: {
+					path: filePath,
 					line: line,
 					startColumn: startColumn,
 					endColumn: startColumn + str.length + 1,

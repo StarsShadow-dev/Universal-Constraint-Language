@@ -12,7 +12,7 @@ export async function compileFile(filePath: string) {
 	
 	console.log("text:", text);
 	
-	const tokens = lex(text);
+	const tokens = lex(filePath, text);
 	console.log("tokens:", tokens);
 	
 	const AST = parse({

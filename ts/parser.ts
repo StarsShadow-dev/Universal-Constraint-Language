@@ -54,7 +54,7 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 					const left = parse(context, ParserMode.single);
 					const equals = forward();
 					if (equals.type != TokenType.operator || equals.text != "=") {
-						compileError(equals.location, "expected equals");
+						compileError(equals.location, "expected equals", "");
 					}
 					const right = parse(context, ParserMode.single);
 					
@@ -76,7 +76,7 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 			}
 			
 			case TokenType.separator: {
-				compileError(token.location, "unexpected separator");
+				compileError(token.location, "unexpected separator", "");
 				break;
 			}
 		
@@ -93,7 +93,7 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 		if (needsSemicolon(AST[AST.length - 1])) {
 			const semicolon = forward();
 			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
-				compileError(semicolon.location, "expected a semicolon");
+				compileError(semicolon.location, "expected a semicolon", "");
 			}
 		}
 	}

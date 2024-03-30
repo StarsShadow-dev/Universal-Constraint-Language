@@ -3,6 +3,7 @@
 //
 
 export type SourceLocation = {
+	path: string,
 	line: number,
 	startColumn: number,
 	endColumn: number,
