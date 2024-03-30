@@ -6,7 +6,8 @@ import { compileFile } from "./compiler";
 	} catch (error) {
 		if (error == "__do nothing__") {
 			return;
+		} else {
+			throw error;
 		}
-		throw error;
 	}
 })();

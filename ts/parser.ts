@@ -49,7 +49,6 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 			}
 			
 			case TokenType.word: {
-				debugger;
 				if (token.text == "const") {
 					const left = parse(context, ParserMode.single);
 					const equals = forward();

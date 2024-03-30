@@ -11,10 +11,33 @@ async function _compileError(location: SourceLocation, msg: string, indicator: s
 	const text = await fs.readFile(location.path, { encoding: 'utf8' });
 	console.log("compileError location:", location);
 	console.log("msg:", msg);
-	for (let i = 0; i < text.length; i++) {
-		stdout.write(text[i]);
+	
+	let i = 0;
+	let line = 1;
+	
+	function writeLine() {
+		stdout.write("    ");
+		for (; i < text.length; i++) {
+			if (text[i] == "\n") line++;
+			
+			if (line != location.line) continue;
+			
+			stdout.write(text[i]);
+		}
+		stdout.write("\n");
 	}
-	exit(1);
+	
+	for (; i < text.length; i++) {
+		if (text[i] == "\n") line++;
+		
+		if (line != location.line) continue;
+		
+		i++;
+		writeLine();
+	}
+	
+	process.exitCode = 1;
+	// exit(1);
 }
 
 export function compileError(location: SourceLocation, msg: string, indicator: string): never {
