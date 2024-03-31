@@ -15,6 +15,7 @@ export type ParserContext = {
 export enum ParserMode {
 	normal,
 	single,
+	comma,
 }
 
 export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): ASTnode[] {
@@ -105,7 +106,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here").fatal();
 				}
 				
-				const callArguments = parse(context, ParserMode.normal, ")");
+				const callArguments = parse(context, ParserMode.comma, ")");
 				
 				AST.push({
 					type: "builtinCall",
@@ -142,10 +143,18 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
+		if (mode == ParserMode.comma) {
+			const comma = forward();
+			if (comma.type != TokenType.separator || comma.text != ",") {
+				new CompileError("expected a comma").indicator(comma.location, "here").fatal();
+			}
+			needsSemicolon = false;
+		}
+		
 		if (needsSemicolon) {
 			const semicolon = forward();
 			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
-				new CompileError("expected a semicolon").indicator(semicolon.location, "here").fatal();
+				new CompileError(`expected a semicolon but got '${semicolon.text}'`).indicator(semicolon.location, "here").fatal();
 			}
 		}
 	}

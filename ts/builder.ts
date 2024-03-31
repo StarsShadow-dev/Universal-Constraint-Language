@@ -1,3 +1,5 @@
+import { stdout } from 'process';
+
 import {
 	ASTnode,
 	ScopeObject,
@@ -50,6 +52,11 @@ class BC {
 				.indicator(node.location, "expected no more arguments")
 				.fatal();
 		}
+	}
+	
+	public next(): ScopeObject {
+		const scopeObject = this.scopeObjects[this.i];
+		return scopeObject;
 	}
 }
 
@@ -156,7 +163,11 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 				const bc = new BC(node, callArguments, node.callArguments);
 				
 				if (node.name == "compileLog") {
-					console.log("[compileLog]",  bc.string());
+					stdout.write("[compileLog]");
+					while (bc.next()) {
+						stdout.write(` ${bc.string()}`);	
+					}
+					stdout.write("\n");
 					bc.done();
 				}
 				break;
