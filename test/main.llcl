@@ -1,13 +1,5 @@
-// 1
-test;
-const test = 5;
-test;
-// 3
-
-// const test = fn() {
-// 	main;
-// }
-
 // const main = fn() {
-// 	test;
+	
 // }
+
+@compileLog();

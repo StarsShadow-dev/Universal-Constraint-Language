@@ -65,6 +65,12 @@ genericASTnode & {
 	name: string,
 } | genericASTnode & {
 	type: "call",
+	left: ASTnode[],
+	arguments: ASTnode[],
+} | genericASTnode & {
+	type: "builtinCall",
+	name: string,
+	callArguments: ASTnode[],
 } |
 
 //

@@ -18,7 +18,7 @@ export async function compileFile(filePath: string) {
 	const AST = parse({
 		tokens: tokens,
 		i: 0,
-	}, ParserMode.normal);
+	}, ParserMode.normal, null);
 	console.log("AST:", JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {

@@ -104,6 +104,19 @@ export function lex(filePath: string, text: string): Token[] {
 			});
 		}
 		
+		else if (text[i] == "@") {
+			tokens.push({
+				type: TokenType.builtinIndicator,
+				text: text[i],
+				location: {
+					path: filePath,
+					line: line,
+					startColumn: startColumn,
+					endColumn: startColumn,
+				},
+			});
+		}
+		
 		else if (base10Number(text, i)) {
 			let str = "";
 			for (; i < text.length; i++) {

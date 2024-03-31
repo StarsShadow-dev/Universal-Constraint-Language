@@ -17,11 +17,16 @@ export enum ParserMode {
 	single,
 }
 
-export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
+export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): ASTnode[] {
 	let AST: ASTnode[] = [];
 	
 	function forward(): Token {
 		const token = context.tokens[context.i];
+		
+		if (!token) {
+			new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+		}
+		
 		context.i++
 		return token;
 	}
@@ -42,6 +47,11 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 			}
 			
 			case TokenType.string: {
+				AST.push({
+					type: "string",
+					location: token.location,
+					value: token.text,
+				});
 				break;
 			}
 			
@@ -57,7 +67,7 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 						new CompileError("expected equals").indicator(equals.location, "here").fatal();
 					}
 					
-					const value = parse(context, ParserMode.single);
+					const value = parse(context, ParserMode.single, null);
 					
 					AST.push({
 						type: "definition",
@@ -77,7 +87,32 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 			}
 			
 			case TokenType.separator: {
+				if (token.text == endAt) {
+					return AST;
+				}
 				new CompileError("unexpected separator").indicator(token.location, "here").fatal();
+				break;
+			}
+			
+			case TokenType.builtinIndicator: {
+				const name = forward();
+				if (name.type != TokenType.word) {
+					new CompileError("expected name").indicator(name.location, "here").fatal();
+				}
+				
+				const openingParentheses = forward();
+				if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+					new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here").fatal();
+				}
+				
+				const callArguments = parse(context, ParserMode.normal, ")");
+				
+				AST.push({
+					type: "builtinCall",
+					location: name.location,
+					name: name.text,
+					callArguments: callArguments,
+				});
 				break;
 			}
 		
@@ -89,6 +124,22 @@ export function parse(context: ParserContext, mode: ParserMode): ASTnode[] {
 		
 		if (mode == ParserMode.single) {
 			return AST;
+		}
+		
+		if (endAt != null) {
+			const atToken = context.tokens[context.i];
+			if (atToken.type == TokenType.separator) {
+				if (atToken.text == ")" || atToken.text == "}" || atToken.text == "]") {
+					if (endAt == atToken.text) {
+						context.i++;
+						return AST;
+					} else {
+						new CompileError("unexpected separator")
+							.indicator(atToken.location, `expected '${endAt} but got '${atToken.text}'`)
+							.fatal();
+					}
+				}
+			}
 		}
 		
 		if (needsSemicolon) {

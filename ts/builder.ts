@@ -5,6 +5,54 @@ import {
 import utilities from "./utilities";
 import { CompileError } from "./report";
 
+// builtin constructor
+class BC {
+	private builtinNode: ASTnode
+	private scopeObjects: ScopeObject[]
+	private nodes: ASTnode[]
+	private i: number
+	
+	constructor(builtinNode: ASTnode, scopeObjects: ScopeObject[], nodes: ASTnode[]) {
+		this.builtinNode = builtinNode;
+		this.scopeObjects = scopeObjects;
+		this.nodes = nodes;
+		this.i = 0;
+	}
+	
+	public "string" = (): string => {
+		const scopeObject = this.scopeObjects[this.i];
+		const node = this.nodes[this.i];
+		
+		if (!scopeObject || !node) {
+			new CompileError("builtin argument error")
+				.indicator(this.builtinNode.location, "expected a string but there are no more arguments")
+				.fatal();
+		}
+		
+		this.i++;
+		
+		if (scopeObject.type == "string") {
+			return scopeObject.value;
+		} else {
+			new CompileError("builtin argument error")
+				.indicator(node.location, "expected a string")
+				.fatal();
+		}
+		
+		return "";
+	}
+	
+	public done() {
+		const node = this.nodes[this.i];
+		
+		if (node) {
+			new CompileError("builtin argument error")
+				.indicator(node.location, "expected no more arguments")
+				.fatal();
+		}
+	}
+}
+
 export type BuilderContext = {
 	scopeLevels: ScopeObject[][],
 	level: number,
@@ -36,8 +84,6 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 		const node = AST[i];
 		
 		if (node.type == "definition") {
-			const value = build(context, node.value);
-			
 			context.scopeLevels[context.level].push({
 				type: "alias",
 				originLocation: node.location,
@@ -73,8 +119,14 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 					originLocation: node.location,
 					value: node.value,
 				});
+				break;
 			}
 			case "string": {
+				scopeList.push({
+					type: "string",
+					originLocation: node.location,
+					value: node.value,
+				});
 				break;
 			}
 			
@@ -96,6 +148,17 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 				break;
 			}
 			case "call": {
+				break;
+			}
+			case "builtinCall": {
+				const callArguments = build(context, node.callArguments);
+				
+				const bc = new BC(node, callArguments, node.callArguments);
+				
+				if (node.name == "compileLog") {
+					console.log("[compileLog]",  bc.string());
+					bc.done();
+				}
 				break;
 			}
 			
