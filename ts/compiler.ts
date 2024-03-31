@@ -1,3 +1,4 @@
+import { ScopeObject } from "./types";
 import { lex } from './lexer';
 import {
 	ParserMode,
@@ -5,6 +6,7 @@ import {
 } from './parser';
 import { BuilderContext, build } from './builder';
 import utilities from './utilities';
+import { CompileError } from "./report";
 
 export function compileFile(filePath: string) {
 	const text = utilities.readFile(filePath);
@@ -24,7 +26,18 @@ export function compileFile(filePath: string) {
 		scopeLevels: [[]],
 		level: -1,
 	};
-	const scopeList = build(builderContext, AST);
+	
+	let scopeList: ScopeObject[] = [];
+	
+	try {
+		scopeList = build(builderContext, AST, null);	
+	} catch (error) {
+		if (error instanceof CompileError) {
+			console.log("uncaught compiler error");
+			error.fatal();
+		}
+	}
+	
 	console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
 }

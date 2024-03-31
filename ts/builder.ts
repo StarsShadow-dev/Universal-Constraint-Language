@@ -1,6 +1,7 @@
 import { stdout } from 'process';
 
 import {
+	SourceLocation,
 	ASTnode,
 	ScopeObject,
 } from "./types";
@@ -26,9 +27,8 @@ class BC {
 		const node = this.nodes[this.i];
 		
 		if (!scopeObject || !node) {
-			new CompileError("builtin argument error")
-				.indicator(this.builtinNode.location, "expected a string but there are no more arguments")
-				.fatal();
+			throw new CompileError("builtin argument error")
+				.indicator(this.builtinNode.location, "expected a string but there are no more arguments");
 		}
 		
 		this.i++;
@@ -36,21 +36,17 @@ class BC {
 		if (scopeObject.type == "string") {
 			return scopeObject.value;
 		} else {
-			new CompileError("builtin argument error")
-				.indicator(node.location, "expected a string")
-				.fatal();
+			throw new CompileError("builtin argument error")
+				.indicator(node.location, "expected a string");
 		}
-		
-		return "";
 	}
 	
 	public done() {
 		const node = this.nodes[this.i];
 		
 		if (node) {
-			new CompileError("builtin argument error")
-				.indicator(node.location, "expected no more arguments")
-				.fatal();
+			throw new CompileError("builtin argument error")
+				.indicator(node.location, "expected no more arguments");
 		}
 	}
 	
@@ -82,9 +78,24 @@ function getScopeObject(context: BuilderContext, name: string): ScopeObject | nu
 	return null;
 }
 
-export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
+export function build(context: BuilderContext, AST: ASTnode[], sackMarker: {name: string, location: SourceLocation} | null): ScopeObject[] {
 	context.level++;
 	
+	let scopeList: ScopeObject[] = [];
+	
+	try {
+		scopeList = _build(context, AST);
+	} catch (error) {
+		console.log("error", error);
+		throw error;
+	}
+	
+	context.level--;
+	
+	return scopeList;
+}
+
+export function _build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 	let scopeList: ScopeObject[] = [];
 	
 	for (let i = 0; i < AST.length; i++) {
@@ -107,7 +118,7 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 		if (node.type == "definition") {
 			const alias = getScopeObject(context, node.name);
 			if (alias && alias.type == "alias") {
-				const value = build(context, node.value);
+				const value = build(context, node.value, null);
 				
 				alias.value = value;
 			} else {
@@ -144,13 +155,12 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 						// scopeList.push(alias);
 						scopeList.push(alias.value[0]);
 					} else {
-						new CompileError("alias used before its definition")
+						throw new CompileError("alias used before its definition")
 							.indicator(node.location, "identifier here")
-							.indicator(alias.originLocation, "alias defined here")
-							.fatal();
+							.indicator(alias.originLocation, "alias defined here");
 					}
 				} else {
-					new CompileError("alias does not exist").indicator(node.location, "here").fatal();
+					throw new CompileError("alias does not exist").indicator(node.location, "here");
 				}
 				break;
 			}
@@ -158,17 +168,19 @@ export function build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 				break;
 			}
 			case "builtinCall": {
-				const callArguments = build(context, node.callArguments);
+				const callArguments = build(context, node.callArguments, null);
 				
 				const bc = new BC(node, callArguments, node.callArguments);
 				
 				if (node.name == "compileLog") {
-					stdout.write("[compileLog]");
+					let str = "[compileLog]";
 					while (bc.next()) {
-						stdout.write(` ${bc.string()}`);	
+						str += " " + bc.string();
 					}
-					stdout.write("\n");
+					str += "\n"
 					bc.done();
+					
+					stdout.write(str);
 				}
 				break;
 			}

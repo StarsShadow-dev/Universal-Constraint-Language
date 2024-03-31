@@ -10,10 +10,8 @@ import utilities from './utilities';
 
 const lineNumberPadding = 4;
 
-export var encounteredError: boolean = false;
-
 // TODO: This can read the same file twice, if there are two indicators in a file.
-async function displayIndicator(location: SourceLocation, msg: string) {
+function displayIndicator(location: SourceLocation, msg: string) {
 	const text = utilities.readFile(location.path);
 	// console.log("compileError location:", location);
 	
@@ -69,14 +67,10 @@ export class CompileError {
 	}
 	
 	public fatal(): never {
-		encounteredError = true;
-		
 		stderr.write(`error: ${this.msg}\n`);
-		(async () => {
-			for (const indicator of this.indicators) {
-				await displayIndicator(indicator.location, indicator.msg);
-			}
-		})();
+		for (const indicator of this.indicators) {
+			displayIndicator(indicator.location, indicator.msg);
+		}
 		process.exitCode = 1;
 		throw "__do nothing__";
 	}
