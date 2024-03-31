@@ -1,23 +1,23 @@
 // A very weird way to end compilation.
-// I need to wait for fs.readFile, but waiting would cause the compiler to continue.
-// So I throw "__do nothing__". (the exception is caught in main.ts, and nothing is done with it)
-
+// I throw "__do nothing__". (the exception is caught in main.ts, and nothing is done with it)
 // I would use exit, but apparently some standard out functions can get broken if you use exit.
 // Instead, I use process.exitCode which should not interrupt any standard out functions.
 
-import * as fs from 'fs/promises';
 import { exit, stderr } from 'process';
 
 import { SourceLocation } from './types';
+import utilities from './utilities';
 
 const lineNumberPadding = 4;
 
+export var encounteredError: boolean = false;
+
 // TODO: This can read the same file twice, if there are two indicators in a file.
 async function displayIndicator(location: SourceLocation, msg: string) {
-	const text = await fs.readFile(location.path, { encoding: 'utf8' });
+	const text = utilities.readFile(location.path);
 	// console.log("compileError location:", location);
 	
-	stderr.write(`at ${location.path}:${location.line}}\n\n`);
+	stderr.write(`at ${location.path}:${location.line}\n\n`);
 	
 	let i = 0;
 	let line = 1;
@@ -69,6 +69,8 @@ export class CompileError {
 	}
 	
 	public fatal(): never {
+		encounteredError = true;
+		
 		stderr.write(`error: ${this.msg}\n`);
 		(async () => {
 			for (const indicator of this.indicators) {

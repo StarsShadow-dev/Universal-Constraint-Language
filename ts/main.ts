@@ -1,13 +1,11 @@
 import { compileFile } from "./compiler";
 
-(async () => {
-	try {
-		await compileFile("test/main.llcl");	
-	} catch (error) {
-		if (error == "__do nothing__") {
-			return;
-		} else {
-			throw error;
-		}
+try {
+	compileFile("test/main.llcl");	
+} catch (error) {
+	if (error == "__do nothing__") {
+		// do nothing
+	} else {
+		throw error;
 	}
-})();
+}

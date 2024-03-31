@@ -1,14 +1,13 @@
-import * as fs from 'fs/promises';
-
 import { lex } from './lexer';
 import {
 	ParserMode,
 	parse,
 } from './parser';
 import { BuilderContext, build } from './builder';
+import utilities from './utilities';
 
-export async function compileFile(filePath: string) {
-	const text = await fs.readFile(filePath, { encoding: 'utf8' });
+export function compileFile(filePath: string) {
+	const text = utilities.readFile(filePath);
 	
 	console.log("text:", text);
 	

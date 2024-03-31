@@ -2,4 +2,4 @@
 	
 // }
 
-@compileLog("testing the log", "2");
+@compileLog(1);
