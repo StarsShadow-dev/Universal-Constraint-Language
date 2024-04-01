@@ -7,6 +7,7 @@ import {
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, displayIndicator, CompileError } from "./report";
+import { builtinScopeLevel } from './builtin';
 
 let nextSymbolName = 0;
 
@@ -68,20 +69,17 @@ export type BuilderOptions = {
 }
 
 function getScopeObject(context: BuilderContext, name: string): ScopeObject | null {
-	if (name == "String") {
-		return {
-			type: "alias",
-			mutable: false,
-			originLocation: "core",
-			name: "String",
-			value: [
-				{
-					type: "type",
-					originLocation: "core",
-					name: "core:String"
+	{
+		for (let i = 0; i < builtinScopeLevel.length; i++) {
+			const scopeObject = builtinScopeLevel[i];
+			if (scopeObject.type == "alias") {
+				if (scopeObject.name == name) {
+					return scopeObject;
 				}
-			]
-		};
+			} else {
+				utilities.unreachable();
+			}
+		}
 	}
 	for (let level = context.level; level >= 0; level--) {
 		for (let i = 0; i < context.scopeLevels[level].length; i++) {

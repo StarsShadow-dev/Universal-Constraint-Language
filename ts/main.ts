@@ -1,4 +1,7 @@
+import { setUpBuiltin } from "./builtin";
 import { compileFile } from "./compiler";
+
+setUpBuiltin();
 
 try {
 	compileFile("test/main.llcl");
