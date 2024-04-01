@@ -5,6 +5,7 @@ import {
 	ScopeObject,
 } from "./types";
 import { CompileError } from "./report";
+import utilities from "./utilities";
 
 export let builtinScopeLevel: ScopeObject[] = [];
 
@@ -94,5 +95,7 @@ export function builtinCall(node: ASTnode, callArguments: ScopeObject[]): ScopeO
 			
 			return;
 		}	
+	} else {
+		utilities.unreachable();
 	}
 }

@@ -1,4 +1,4 @@
-import { TokenType, Token } from './types';
+import { TokenType, Token } from "./types";
 
 function wordStart(text: string, i: number): boolean {
 	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_';

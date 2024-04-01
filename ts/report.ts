@@ -3,10 +3,10 @@
 // I would use exit, but apparently some standard out functions can get broken if you use exit.
 // Instead, I use process.exitCode which should not interrupt any standard out functions.
 
-import { exit, stderr } from 'process';
+import { exit, stderr } from "process";
 
-import { SourceLocation } from './types';
-import utilities from './utilities';
+import { SourceLocation } from "./types";
+import utilities from "./utilities";
 
 const lineNumberPadding = 4;
 

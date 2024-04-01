@@ -1,11 +1,11 @@
 import { ScopeObject } from "./types";
-import { lex } from './lexer';
+import { lex } from "./lexer";
 import {
 	ParserMode,
 	parse,
 } from './parser';
-import { BuilderContext, build } from './builder';
-import utilities from './utilities';
+import { BuilderContext, build } from "./builder";
+import utilities from "./utilities";
 import { CompileError } from "./report";
 
 export function compileFile(filePath: string) {

@@ -1,4 +1,4 @@
-import { stdout } from 'process';
+import { stdout } from "process";
 
 import {
 	SourceLocation,
@@ -7,7 +7,7 @@ import {
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, displayIndicator, CompileError } from "./report";
-import { builtinCall, builtinScopeLevel } from './builtin';
+import { builtinScopeLevel, builtinCall } from "./builtin";
 
 let nextSymbolName = 0;
 
