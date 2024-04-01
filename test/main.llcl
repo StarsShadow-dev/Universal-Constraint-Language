@@ -1,8 +1,7 @@
-String;
-
-const main = fn() {
-	// @compileLog("testing");
-	// name;
+const main = fn(): String {
+	@compileLog("in main");
+	ret "Hello, World!";
+	@compileLog("Bye, World!");
 };
 
-main();
+@compileLog(main());

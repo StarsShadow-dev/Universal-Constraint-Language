@@ -99,6 +99,7 @@ genericASTnode & {
 	type: "if",
 } | genericASTnode & {
 	type: "return",
+	value: ASTnode[],
 }
 
 //

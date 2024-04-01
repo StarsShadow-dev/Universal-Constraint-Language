@@ -122,6 +122,16 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
+				else if (token.text == "ret") {
+					const value = parse(context, ParserMode.single, null);
+					
+					AST.push({
+						type: "return",
+						location: token.location,
+						value: value,
+					});
+				}
+				
 				else {
 					AST.push({
 						type: "identifier",
@@ -168,13 +178,41 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
-		const nextToken = context.tokens[context.i];
-		
 		if (mode == ParserMode.single) {
 			return AST;
 		}
 		
+		if (next().type == TokenType.separator && next().text == "(") {
+			const left = AST.pop();
+			if (left != undefined) {
+				forward();
+				const callArguments = parse(context, ParserMode.comma, ")");
+				
+				AST.push({
+					type: "call",
+					location: next().location,
+					left: [left],
+					callArguments: callArguments,
+				});
+			} else {
+				utilities.unreachable();
+			}
+			debugger;
+		}
+		
+		if (mode != ParserMode.comma && needsSemicolon) {
+			if (!next()) {
+				new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here").fatal();
+			}
+			const semicolon = forward();
+			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
+				new CompileError(`expected a semicolon but got '${semicolon.text}'`).indicator(semicolon.location, "here").fatal();
+			}
+		}
+		
 		if (endAt != null) {
+			const nextToken = next();
+			
 			if (nextToken.type == TokenType.separator) {
 				if (nextToken.text == ")" || nextToken.text == "}" || nextToken.text == "]") {
 					if (endAt == nextToken.text) {
@@ -193,34 +231,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			const comma = forward();
 			if (comma.type != TokenType.separator || comma.text != ",") {
 				new CompileError("expected a comma").indicator(comma.location, "here").fatal();
-			}
-			needsSemicolon = false;
-		}
-		
-		if (nextToken.type == TokenType.separator && nextToken.text == "(") {
-			const left = AST.pop();
-			if (left != undefined) {
-				forward();
-				const callArguments = parse(context, ParserMode.comma, ")");
-				
-				AST.push({
-					type: "call",
-					location: nextToken.location,
-					left: [left],
-					callArguments: callArguments,
-				});
-			} else {
-				utilities.unreachable();
-			}
-		}
-		
-		if (needsSemicolon) {
-			if (!nextToken) {
-				new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here").fatal();
-			}
-			const semicolon = forward();
-			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
-				new CompileError(`expected a semicolon but got '${semicolon.text}'`).indicator(semicolon.location, "here").fatal();
 			}
 		}
 	}

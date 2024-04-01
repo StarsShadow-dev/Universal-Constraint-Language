@@ -66,6 +66,7 @@ export type BuilderContext = {
 
 export type BuilderOptions = {
 	getAlias: boolean,
+	resultAtRet: boolean,
 }
 
 function getScopeObject(context: BuilderContext, name: string): ScopeObject | null {
@@ -110,6 +111,7 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		} else {
 			scopeList = _build(context, AST, {
 				getAlias: false,
+				resultAtRet: false,
 			});
 		}
 	} catch (error) {
@@ -127,6 +129,12 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 
 export function _build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions): ScopeObject[] {
 	let scopeList: ScopeObject[] = [];
+	
+	function addToScopeList(scopeObject: ScopeObject) {
+		if (!options.resultAtRet) {
+			scopeList.push(scopeObject);	
+		}
+	}
 	
 	for (let i = 0; i < AST.length; i++) {
 		const node = AST[i];
@@ -166,7 +174,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "number": {
-				scopeList.push({
+				addToScopeList({
 					type: "number",
 					originLocation: node.location,
 					value: node.value,
@@ -174,7 +182,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "string": {
-				scopeList.push({
+				addToScopeList({
 					type: "string",
 					originLocation: node.location,
 					value: node.value,
@@ -187,9 +195,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				if (alias && alias.type == "alias") {
 					if (alias.value) {
 						if (options.getAlias) {
-							scopeList.push(alias);	
+							addToScopeList(alias);	
 						} else {
-							scopeList.push(alias.value[0]);
+							addToScopeList(alias.value[0]);
 						}
 					} else {
 						throw new CompileError(`alias '${node.name}' used before its definition`)
@@ -206,10 +214,14 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const callArguments = build(context, node.callArguments, null, null);
 				
 				if (functionToCall.type == "function") {
-					const result = build(context, functionToCall.AST, null, {
+					const result = build(context, functionToCall.AST, {
+						getAlias: false,
+						resultAtRet: true,
+					}, {
 						location: functionToCall.originLocation,
 						msg: `function ${functionToCall.name}`,
-					});
+					})[0];
+					addToScopeList(result);
 				} else {
 					utilities.unreachable();
 				}
@@ -243,7 +255,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 					returnType = build(context, node.returnType, null, null);	
 				}
 				
-				scopeList.push({
+				addToScopeList({
 					type: "function",
 					originLocation: node.location,
 					name: `${nextSymbolName}`,
@@ -263,7 +275,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "return": {
-				break;
+				if (!options.resultAtRet) {
+					throw new CompileError("unexpected return").indicator(node.location, "here");
+				}
+				const value = build(context, node.value, null, null)[0];
+				scopeList.push(value);
+				return scopeList;
 			}
 		
 			default: {
