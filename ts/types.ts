@@ -7,7 +7,7 @@ export type SourceLocation = {
 	line: number,
 	startColumn: number,
 	endColumn: number,
-}
+} | "core"
 
 //
 // tokens
@@ -89,6 +89,7 @@ genericASTnode & {
 } | genericASTnode & {
 	type: "function",
 	functionArguments: ASTnode[],
+	returnType: ASTnode[] | null,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	type: "struct",
@@ -128,8 +129,12 @@ export type ScopeObject = genericScopeObject & {
 } | genericScopeObject & {
 	type: "function",
 	name: string,
+	returnType: ScopeObject[] | null,
 	AST: ASTnode[],
 } | genericScopeObject & {
 	type: "struct",
 	// TODO
+} | genericScopeObject & {
+	type: "type",
+	name: string,
 }

@@ -68,6 +68,21 @@ export type BuilderOptions = {
 }
 
 function getScopeObject(context: BuilderContext, name: string): ScopeObject | null {
+	if (name == "String") {
+		return {
+			type: "alias",
+			mutable: false,
+			originLocation: "core",
+			name: "String",
+			value: [
+				{
+					type: "type",
+					originLocation: "core",
+					name: "core:String"
+				}
+			]
+		};
+	}
 	for (let level = context.level; level >= 0; level--) {
 		for (let i = 0; i < context.scopeLevels[level].length; i++) {
 			const scopeObject = context.scopeLevels[level][i];
@@ -134,7 +149,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			if (alias && alias.type == "alias") {
 				const value = build(context, node.value, null, null);
 				
-				if (node.value[0].type == "function" && value[0].type == "function") {
+				if (node.value[0].type == "function" && value[0].type == "function" && value[0].originLocation != "core") {
 					value[0].name = `${value[0].originLocation.path}:${alias.name}`;
 				}
 				
@@ -176,12 +191,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 							scopeList.push(alias.value[0]);
 						}
 					} else {
-						throw new CompileError("alias used before its definition")
+						throw new CompileError(`alias '${node.name}' used before its definition`)
 							.indicator(node.location, "identifier here")
 							.indicator(alias.originLocation, "alias defined here");
 					}
 				} else {
-					throw new CompileError("alias does not exist").indicator(node.location, "here");
+					throw new CompileError(`alias '${node.name}' does not exist`).indicator(node.location, "here");
 				}
 				break;
 			}
@@ -222,10 +237,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "function": {
+				let returnType = null;
+				if (node.returnType) {
+					returnType = build(context, node.returnType, null, null);	
+				}
+				
 				scopeList.push({
 					type: "function",
 					originLocation: node.location,
 					name: `${nextFunctionName}`,
+					returnType: returnType,
 					AST: node.codeBlock,
 				});
 				nextFunctionName++;

@@ -12,38 +12,46 @@ const lineNumberPadding = 4;
 
 // TODO: This can read the same file twice, if there are two indicators in a file.
 function displayIndicator(location: SourceLocation, msg: string) {
-	const text = utilities.readFile(location.path);
-	// console.log("compileError location:", location);
-	
-	stderr.write(`at ${location.path}:${location.line}\n\n`);
-	
-	let i = 0;
-	let line = 1;
-	
-	function writeLine() {
-		stderr.write(line.toString().padStart(lineNumberPadding, "0"));
-		stderr.write(" |");
+	if (location != "core") {
+		const text = utilities.readFile(location.path);
+		// console.log("compileError location:", location);
+		
+		stderr.write(`at ${location.path}:${location.line}\n\n`);
+		
+		let i = 0;
+		let line = 1;
+		
+		function writeLine() {
+			if (location != "core") {
+				stderr.write(line.toString().padStart(lineNumberPadding, "0"));
+				stderr.write(" |");
+				for (; i < text.length; i++) {
+					if (text[i] == "\n") line++;
+					
+					if (line != location.line) continue;
+					
+					stderr.write(text[i]);
+				}
+				stderr.write("\n");
+			} else {
+				utilities.unreachable();
+			}
+		}
+		
 		for (; i < text.length; i++) {
 			if (text[i] == "\n") line++;
 			
 			if (line != location.line) continue;
 			
-			stderr.write(text[i]);
+			i++;
+			writeLine();
+			stderr.write(`${msg}\n`);
 		}
-		stderr.write("\n");
-	}
-	
-	for (; i < text.length; i++) {
-		if (text[i] == "\n") line++;
 		
-		if (line != location.line) continue;
-		
-		i++;
-		writeLine();
-		stderr.write(`${msg}\n`);
+		stderr.write(`\n`);	
+	} else {
+		stderr.write(`at core\n\n`);
 	}
-	
-	stderr.write(`\n`);
 }
 
 export class CompileError {

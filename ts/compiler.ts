@@ -11,10 +11,10 @@ import { CompileError } from "./report";
 export function compileFile(filePath: string) {
 	const text = utilities.readFile(filePath);
 	
-	console.log("text:", text);
+	// console.log("text:", text);
 	
 	const tokens = lex(filePath, text);
-	console.log("tokens:", tokens);
+	// console.log("tokens:", tokens);
 	
 	const AST = parse({
 		tokens: tokens,

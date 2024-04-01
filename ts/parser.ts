@@ -32,6 +32,16 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		return token;
 	}
 	
+	function next(): Token {
+		const token = context.tokens[context.i];
+		
+		if (!token) {
+			new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+		}
+		
+		return token;
+	}
+	
 	while (context.i < context.tokens.length) {
 		const token = forward();
 		
@@ -87,6 +97,15 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					
 					const functionArguments = parse(context, ParserMode.comma, ")");
 					
+					let returnType: ASTnode[] | null = null;
+					
+					const colonOrBracket = next();
+					if (colonOrBracket.type == TokenType.separator && colonOrBracket.text == ":") {
+						forward();
+						
+						returnType = parse(context, ParserMode.single, null);
+					}
+					
 					const openingBracket = forward();
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
 						new CompileError("expected openingBracket").indicator(openingBracket.location, "here").fatal();
@@ -98,6 +117,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						type: "function",
 						location: token.location,
 						functionArguments: functionArguments,
+						returnType: returnType,
 						codeBlock: codeBlock,
 					});
 				}
@@ -148,21 +168,21 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
-		const next = context.tokens[context.i];
+		const nextToken = context.tokens[context.i];
 		
 		if (mode == ParserMode.single) {
 			return AST;
 		}
 		
 		if (endAt != null) {
-			if (next.type == TokenType.separator) {
-				if (next.text == ")" || next.text == "}" || next.text == "]") {
-					if (endAt == next.text) {
+			if (nextToken.type == TokenType.separator) {
+				if (nextToken.text == ")" || nextToken.text == "}" || nextToken.text == "]") {
+					if (endAt == nextToken.text) {
 						context.i++;
 						return AST;
 					} else {
 						new CompileError("unexpected separator")
-							.indicator(next.location, `expected '${endAt} but got '${next.text}'`)
+							.indicator(nextToken.location, `expected '${endAt} but got '${nextToken.text}'`)
 							.fatal();
 					}
 				}
@@ -177,7 +197,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			needsSemicolon = false;
 		}
 		
-		if (next.type == TokenType.separator && next.text == "(") {
+		if (nextToken.type == TokenType.separator && nextToken.text == "(") {
 			const left = AST.pop();
 			if (left != undefined) {
 				forward();
@@ -185,7 +205,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				AST.push({
 					type: "call",
-					location: next.location,
+					location: nextToken.location,
 					left: [left],
 					callArguments: callArguments,
 				});
@@ -195,7 +215,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (needsSemicolon) {
-			if (!next) {
+			if (!nextToken) {
 				new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here").fatal();
 			}
 			const semicolon = forward();
