@@ -25,6 +25,7 @@ export function compileFile(filePath: string) {
 	const builderContext: BuilderContext = {
 		scopeLevels: [],
 		level: -1,
+		codeGenText: {},
 	};
 	
 	let scopeList: ScopeObject[] = [];
@@ -40,6 +41,8 @@ export function compileFile(filePath: string) {
 	
 	console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
+	
+	console.log("codeGenText:", JSON.stringify(builderContext.codeGenText, undefined, 4));
 }
 
 export function test() {

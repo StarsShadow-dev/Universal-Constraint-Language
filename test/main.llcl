@@ -1,7 +1,8 @@
 const main = fn(): String {
 	@compileLog("in main");
 	ret "Hello, World!";
-	@compileLog("Bye, World!");
 };
 
 @compileLog(main());
+
+@codeGen("top", "console.log(1)");

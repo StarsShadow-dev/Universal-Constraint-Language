@@ -6,6 +6,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
+import { BuilderContext } from "./builder";
 
 export let builtinScopeLevel: ScopeObject[] = [];
 
@@ -79,7 +80,7 @@ class FC {
 	}
 }
 
-export function builtinCall(node: ASTnode, callArguments: ScopeObject[]): ScopeObject | undefined {
+export function builtinCall(context: BuilderContext, node: ASTnode, callArguments: ScopeObject[]): ScopeObject | undefined {
 	if (node.kind == "builtinCall") {
 		const fc = new FC(node, callArguments, node.callArguments);
 		
@@ -92,10 +93,24 @@ export function builtinCall(node: ASTnode, callArguments: ScopeObject[]): ScopeO
 			fc.done();
 			
 			stdout.write(str);
+		} else if (node.name == "codeGen") {
+			let name = fc.string();
 			
-			return;
-		}	
+			let str = "";
+			while (fc.next()) {
+				str += fc.string();
+			}
+			fc.done();
+			
+			if (context.codeGenText[name] == undefined) {
+				context.codeGenText[name] = "";
+			}
+			
+			context.codeGenText[name] += str;
+		}
 	} else {
 		utilities.unreachable();
 	}
+	
+	return;
 }

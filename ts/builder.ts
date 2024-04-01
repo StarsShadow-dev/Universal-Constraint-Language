@@ -14,6 +14,7 @@ let nextSymbolName = 0;
 export type BuilderContext = {
 	scopeLevels: ScopeObject[][],
 	level: number,
+	codeGenText: any,
 }
 
 export type BuilderOptions = {
@@ -224,7 +225,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			}
 			case "builtinCall": {
 				const callArguments = build(context, node.callArguments, null, null);
-				builtinCall(node, callArguments);
+				builtinCall(context, node, callArguments);
 				break;
 			}
 			
