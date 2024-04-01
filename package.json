@@ -1,5 +1,5 @@
 {
-	"name": "llcl",
+	"name": "universal_constraint_language",
 	"version": "1.0.0",
 	"description": "",
 	"main": "ts/main.ts",
