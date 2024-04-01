@@ -6,13 +6,13 @@ export let builtinScopeLevel: ScopeObject[] = [];
 
 function addType(name: string) {
 	builtinScopeLevel.push({
-		type: "alias",
+		kind: "alias",
 		mutable: false,
 		originLocation: "core",
 		name: name,
 		value: [
 			{
-				type: "type",
+				kind: "type",
 				originLocation: "core",
 				name: "core:" + name
 			}
@@ -21,5 +21,7 @@ function addType(name: string) {
 }
 
 export function setUpBuiltin() {
+	addType("Bool");
+	addType("Number");
 	addType("String");
 }

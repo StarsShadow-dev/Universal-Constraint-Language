@@ -46,13 +46,13 @@ export type ASTnode =
 //
 
 genericASTnode & {
-	type: "bool",
+	kind: "bool",
 	value: boolean,
 } | genericASTnode & {
-	type: "number",
+	kind: "number",
 	value: number,
 } | genericASTnode & {
-	type: "string",
+	kind: "string",
 	value: string,
 } |
 
@@ -61,14 +61,14 @@ genericASTnode & {
 //
 
 genericASTnode & {
-	type: "identifier",
+	kind: "identifier",
 	name: string,
 } | genericASTnode & {
-	type: "call",
+	kind: "call",
 	left: ASTnode[],
 	callArguments: ASTnode[],
 } | genericASTnode & {
-	type: "builtinCall",
+	kind: "builtinCall",
 	name: string,
 	callArguments: ASTnode[],
 } |
@@ -78,27 +78,27 @@ genericASTnode & {
 //
 
 genericASTnode & {
-	type: "definition",
+	kind: "definition",
 	mutable: boolean,
 	name: string,
 	value: ASTnode[],
 } | genericASTnode & {
-	type: "assignment",
+	kind: "assignment",
 	left: ASTnode[],
 	right: ASTnode[],
 } | genericASTnode & {
-	type: "function",
+	kind: "function",
 	functionArguments: ASTnode[],
 	returnType: ASTnode[] | null,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
-	type: "struct",
+	kind: "struct",
 } | genericASTnode & {
-	type: "while",
+	kind: "while",
 } | genericASTnode & {
-	type: "if",
+	kind: "if",
 } | genericASTnode & {
-	type: "return",
+	kind: "return",
 	value: ASTnode[],
 }
 
@@ -111,31 +111,31 @@ type genericScopeObject = {
 }
 
 export type ScopeObject = genericScopeObject & {
-	type: "bool",
+	kind: "bool",
 	value: boolean,
 } | genericScopeObject & {
-	type: "number",
+	kind: "number",
 	value: number,
 } | genericScopeObject & {
-	type: "string",
+	kind: "string",
 	value: string,
 } | genericScopeObject & {
-	type: "complexValue",
+	kind: "complexValue",
 	// TODO
 } | genericScopeObject & {
-	type: "alias",
+	kind: "alias",
 	mutable: boolean,
 	name: string,
 	value: ScopeObject[] | null,
 } | genericScopeObject & {
-	type: "function",
+	kind: "function",
 	name: string,
 	returnType: ScopeObject[] | null,
 	AST: ASTnode[],
 } | genericScopeObject & {
-	type: "struct",
+	kind: "struct",
 	// TODO
 } | genericScopeObject & {
-	type: "type",
+	kind: "type",
 	name: string,
 }

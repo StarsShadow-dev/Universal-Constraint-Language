@@ -50,7 +50,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		switch (token.type) {
 			case TokenType.number: {
 				AST.push({
-					type: "number",
+					kind: "number",
 					location: token.location,
 					value: Number(token.text),
 				});
@@ -59,7 +59,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			
 			case TokenType.string: {
 				AST.push({
-					type: "string",
+					kind: "string",
 					location: token.location,
 					value: token.text,
 				});
@@ -81,7 +81,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					const value = parse(context, ParserMode.single, null);
 					
 					AST.push({
-						type: "definition",
+						kind: "definition",
 						location: token.location,
 						mutable: false,
 						name: name.text,
@@ -114,7 +114,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
 					AST.push({
-						type: "function",
+						kind: "function",
 						location: token.location,
 						functionArguments: functionArguments,
 						returnType: returnType,
@@ -126,7 +126,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					const value = parse(context, ParserMode.single, null);
 					
 					AST.push({
-						type: "return",
+						kind: "return",
 						location: token.location,
 						value: value,
 					});
@@ -134,7 +134,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				else {
 					AST.push({
-						type: "identifier",
+						kind: "identifier",
 						location: token.location,
 						name: token.text,
 					});
@@ -164,7 +164,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				const callArguments = parse(context, ParserMode.comma, ")");
 				
 				AST.push({
-					type: "builtinCall",
+					kind: "builtinCall",
 					location: name.location,
 					name: name.text,
 					callArguments: callArguments,
@@ -189,7 +189,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				const callArguments = parse(context, ParserMode.comma, ")");
 				
 				AST.push({
-					type: "call",
+					kind: "call",
 					location: next().location,
 					left: [left],
 					callArguments: callArguments,
@@ -197,7 +197,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			} else {
 				utilities.unreachable();
 			}
-			debugger;
 		}
 		
 		if (mode != ParserMode.comma && needsSemicolon) {
