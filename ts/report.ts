@@ -10,25 +10,30 @@ import utilities from './utilities';
 
 const lineNumberPadding = 4;
 
+export type Indicator = {
+	location: SourceLocation,
+	msg: string,
+}
+
 // TODO: This can read the same file twice, if there are two indicators in a file.
-function displayIndicator(location: SourceLocation, msg: string) {
-	if (location != "core") {
-		const text = utilities.readFile(location.path);
+export function displayIndicator(indicator: Indicator) {
+	if (indicator.location != "core") {
+		const text = utilities.readFile(indicator.location.path);
 		// console.log("compileError location:", location);
 		
-		stderr.write(`at ${location.path}:${location.line}\n\n`);
+		stderr.write(`at ${indicator.location.path}:${indicator.location.line}\n\n`);
 		
 		let i = 0;
 		let line = 1;
 		
 		function writeLine() {
-			if (location != "core") {
+			if (indicator.location != "core") {
 				stderr.write(line.toString().padStart(lineNumberPadding, "0"));
 				stderr.write(" |");
 				for (; i < text.length; i++) {
 					if (text[i] == "\n") line++;
 					
-					if (line != location.line) continue;
+					if (line != indicator.location.line) continue;
 					
 					stderr.write(text[i]);
 				}
@@ -41,11 +46,11 @@ function displayIndicator(location: SourceLocation, msg: string) {
 		for (; i < text.length; i++) {
 			if (text[i] == "\n") line++;
 			
-			if (line != location.line) continue;
+			if (line != indicator.location.line) continue;
 			
 			i++;
 			writeLine();
-			stderr.write(`${msg}\n`);
+			stderr.write(`${indicator.msg}\n`);
 		}
 		
 		stderr.write(`\n`);	
@@ -56,10 +61,7 @@ function displayIndicator(location: SourceLocation, msg: string) {
 
 export class CompileError {
 	private msg: string
-	private indicators: {
-		location: SourceLocation,
-		msg: string,
-	}[]
+	private indicators: Indicator[]
 	
 	constructor(msg: string) {
 		this.msg = msg;
@@ -77,7 +79,7 @@ export class CompileError {
 	public fatal(): never {
 		stderr.write(`error: ${this.msg}\n`);
 		for (const indicator of this.indicators) {
-			displayIndicator(indicator.location, indicator.msg);
+			displayIndicator(indicator);
 		}
 		process.exitCode = 1;
 		throw "__do nothing__";

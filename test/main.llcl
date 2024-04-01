@@ -1,10 +1,8 @@
 // String;
 
-const main = fn(): String {
-	@compileLog("testing");
+const main = fn() {
+	// @compileLog("testing");
+	name;
 };
 
-const main2 = main;
-
 main();
-main2();

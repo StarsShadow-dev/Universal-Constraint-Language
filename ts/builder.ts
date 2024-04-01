@@ -6,7 +6,7 @@ import {
 	ScopeObject,
 } from "./types";
 import utilities from "./utilities";
-import { CompileError } from "./report";
+import { Indicator, displayIndicator, CompileError } from "./report";
 
 let nextFunctionName = 0;
 
@@ -99,7 +99,7 @@ function getScopeObject(context: BuilderContext, name: string): ScopeObject | nu
 	return null;
 }
 
-export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: {name: string, location: SourceLocation} | null): ScopeObject[] {
+export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null): ScopeObject[] {
 	context.level++;
 	
 	let scopeList: ScopeObject[] = [];
@@ -115,7 +115,10 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 			});
 		}
 	} catch (error) {
-		console.log("error", error);
+		if (error instanceof CompileError && sackMarker != null) {
+			stdout.write("stack trace ");
+			displayIndicator(sackMarker);
+		}
 		throw error;
 	}
 	
@@ -207,7 +210,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				if (functionToCall.type == "function") {
 					const result = build(context, functionToCall.AST, null, {
 						location: functionToCall.originLocation,
-						name: `function ${functionToCall.name}`,
+						msg: `function ${functionToCall.name}`,
 					});
 				} else {
 					utilities.unreachable();
