@@ -1,10 +1,10 @@
-// const main = fn(): String {
-// 	@compileLog("in main");
-// 	ret "Hello, World!";
-// };
-
-// @compileLog(main());
-
-const log = fn() {
-	@codeGen("__out", "console.log(1);");
+const test = fn(string: String): String {
+	@compileLog("string = ", string);
+	ret string;
 };
+
+@compileLog(test("Hello, World!"));
+
+// const log = fn() {
+// 	@codeGen("__out", "console.log(1);");
+// };

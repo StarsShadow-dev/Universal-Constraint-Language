@@ -27,17 +27,17 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	
 	let actualType: ScopeObject = {} as ScopeObject;
 	if (actual.kind == "bool") {
-		const scopeObject = getScopeObject(context, "Bool");
+		const scopeObject = getAlias(context, "Bool");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
 			actualType = scopeObject.value[0];	
 		}
 	} else if (actual.kind == "number") {
-		const scopeObject = getScopeObject(context, "Number");
+		const scopeObject = getAlias(context, "Number");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
 			actualType = scopeObject.value[0];	
 		}
 	} else if (actual.kind == "string") {
-		const scopeObject = getScopeObject(context, "String");
+		const scopeObject = getAlias(context, "String");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
 			actualType = scopeObject.value[0];	
 		}
@@ -57,7 +57,7 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	}
 }
 
-function getScopeObject(context: BuilderContext, name: string): ScopeObject | null {
+function getAlias(context: BuilderContext, name: string): ScopeObject | null {
 	{
 		for (let i = 0; i < builtinScopeLevel.length; i++) {
 			const scopeObject = builtinScopeLevel[i];
@@ -84,6 +84,20 @@ function getScopeObject(context: BuilderContext, name: string): ScopeObject | nu
 	}
 	
 	return null;
+}
+
+function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
+	if (alias.kind == "alias") {
+		const oldAlias = getAlias(context, alias.name)
+		if (oldAlias) {
+			throw new CompileError(`alias '${alias.name}' already exists`)
+				.indicator(oldAlias.originLocation, "alias originally defined here")
+				.indicator(alias.originLocation, "alias redefined here");
+		}
+		context.scopeLevels[level].push(alias);
+	} else {
+		utilities.unreachable();
+	}
 }
 
 export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null): ScopeObject[] {
@@ -128,13 +142,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
-			context.scopeLevels[context.level].push({
+			addAlias(context, context.level, {
 				kind: "alias",
 				originLocation: node.location,
 				mutable: node.mutable,
 				name: node.name,
 				value: null,
-			});	
+			});
 		}
 	}
 	
@@ -142,7 +156,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
-			const alias = getScopeObject(context, node.name);
+			const alias = getAlias(context, node.name);
 			if (alias && alias.kind == "alias") {
 				const value = build(context, node.value, null, null);
 				
@@ -179,7 +193,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			}
 			
 			case "identifier": {
-				const alias = getScopeObject(context, node.name);
+				const alias = getAlias(context, node.name);
 				if (alias && alias.kind == "alias") {
 					if (alias.value) {
 						if (options.getAlias) {
@@ -202,6 +216,36 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const callArguments = build(context, node.callArguments, null, null);
 				
 				if (functionToCall.kind == "function") {
+					if (callArguments.length > functionToCall.functionArguments.length) {
+						throw new CompileError(`too many arguments passed to function '${functionToCall.name}'`)
+							.indicator(node.location, "function call here");
+					}
+					
+					if (callArguments.length < functionToCall.functionArguments.length) {
+						throw new CompileError(`not enough arguments passed to function '${functionToCall.name}'`)
+							.indicator(node.location, "function call here");
+					}
+					
+					for (let index = 0; index < functionToCall.functionArguments.length; index++) {
+						const argument = functionToCall.functionArguments[index];
+						
+						if (argument.kind == "argument") {
+							expectType(context, argument.type[0], callArguments[index],
+								new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+									.indicator(callArguments[index].originLocation, "argument here")
+									.indicator(argument.originLocation, "argument defined here")
+							);
+							
+							addAlias(context, context.level, {
+								kind: "alias",
+								originLocation: node.location,
+								mutable: false,
+								name: argument.name,
+								value: [callArguments[index]],
+							});	
+						}
+					}
+					
 					const result = build(context, functionToCall.AST, {
 						getAlias: false,
 						resultAtRet: true,
@@ -235,13 +279,33 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			case "function": {
 				let returnType = null;
 				if (node.returnType) {
-					returnType = build(context, node.returnType, null, null);	
+					returnType = build(context, node.returnType, null, null);
+				}
+				
+				let functionArguments: ScopeObject[] = [];
+				
+				for (let index = 0; index < node.functionArguments.length; index++) {
+					const argument = node.functionArguments[index];
+					
+					if (argument.kind == "argument") {
+						const argumentType = build(context, argument.type, null, null);
+						
+						functionArguments.push({
+							kind: "argument",
+							originLocation: argument.location,
+							name: argument.name,
+							type: argumentType,
+						});	
+					} else {
+						utilities.unreachable();
+					}
 				}
 				
 				addToScopeList({
 					kind: "function",
 					originLocation: node.location,
 					name: `${nextSymbolName}`,
+					functionArguments: functionArguments,
 					returnType: returnType,
 					AST: node.codeBlock,
 				});

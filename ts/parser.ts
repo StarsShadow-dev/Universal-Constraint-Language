@@ -18,6 +18,54 @@ export enum ParserMode {
 	comma,
 }
 
+function parseFunctionArguments(context: ParserContext): ASTnode[] {
+	let AST: ASTnode[] = [];
+	
+	function forward(): Token {
+		const token = context.tokens[context.i];
+		
+		if (!token) {
+			new CompileError("unexpected end of file in function arguments").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+		}
+		
+		context.i++
+		return token;
+	}
+	
+	while (context.i < context.tokens.length) {
+		const name = forward();
+		if (name.type != TokenType.word) {
+			new CompileError("expected name in function arguments").indicator(name.location, "here").fatal();
+		}
+		
+		const colon = forward();
+		if (colon.type != TokenType.separator || colon.text != ":") {
+			new CompileError("expected colon in function arguments").indicator(colon.location, "here").fatal();
+		}
+		
+		const type = parse(context, ParserMode.single, null);
+		
+		const end = forward();
+		
+		AST.push({
+			kind: "argument",
+			location: name.location,
+			name: name.text,
+			type: type,
+		});
+		
+		if (end.type == TokenType.separator && end.text == ")") {
+			return AST;
+		} else if (end.type == TokenType.separator && end.text == ",") {
+			continue;
+		} else {
+			new CompileError("expected a comma in function arguments").indicator(end.location, "here").fatal();
+		}
+	}
+	
+	return AST;
+}
+
 export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): ASTnode[] {
 	let AST: ASTnode[] = [];
 	
@@ -95,7 +143,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here").fatal();
 					}
 					
-					const functionArguments = parse(context, ParserMode.comma, ")");
+					const functionArguments = parseFunctionArguments(context);
 					
 					let returnType: ASTnode[] | null = null;
 					

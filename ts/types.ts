@@ -100,6 +100,10 @@ genericASTnode & {
 } | genericASTnode & {
 	kind: "return",
 	value: ASTnode[],
+} | genericASTnode & {
+	kind: "argument",
+	name: string,
+	type: ASTnode[],
 }
 
 //
@@ -130,6 +134,7 @@ export type ScopeObject = genericScopeObject & {
 } | genericScopeObject & {
 	kind: "function",
 	name: string,
+	functionArguments: ScopeObject[],
 	returnType: ScopeObject[] | null,
 	AST: ASTnode[],
 } | genericScopeObject & {
@@ -138,4 +143,8 @@ export type ScopeObject = genericScopeObject & {
 } | genericScopeObject & {
 	kind: "type",
 	name: string,
+} | genericScopeObject & {
+	kind: "argument",
+	name: string,
+	type: ScopeObject[],
 }

@@ -85,9 +85,9 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		const fc = new FC(node, callArguments, node.callArguments);
 		
 		if (node.name == "compileLog") {
-			let str = "[compileLog]";
+			let str = "[compileLog] ";
 			while (fc.next()) {
-				str += " " + fc.string();
+				str += fc.string();
 			}
 			str += "\n"
 			fc.done();
