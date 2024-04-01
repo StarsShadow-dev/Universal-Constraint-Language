@@ -8,7 +8,7 @@ import {
 import utilities from "./utilities";
 import { Indicator, displayIndicator, CompileError } from "./report";
 
-let nextFunctionName = 0;
+let nextSymbolName = 0;
 
 // builtin constructor
 class BC {
@@ -153,7 +153,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const value = build(context, node.value, null, null);
 				
 				if (node.value[0].type == "function" && value[0].type == "function" && value[0].originLocation != "core") {
-					value[0].name = `${value[0].originLocation.path}:${alias.name}`;
+					value[0].name += `:${value[0].originLocation.path}:${alias.name}`;
 				}
 				
 				alias.value = value;
@@ -248,11 +248,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				scopeList.push({
 					type: "function",
 					originLocation: node.location,
-					name: `${nextFunctionName}`,
+					name: `${nextSymbolName}`,
 					returnType: returnType,
 					AST: node.codeBlock,
 				});
-				nextFunctionName++;
+				nextSymbolName++;
 				break;
 			}
 			case "struct": {

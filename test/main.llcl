@@ -2,7 +2,7 @@
 
 const main = fn() {
 	// @compileLog("testing");
-	name;
+	// name;
 };
 
 main();
