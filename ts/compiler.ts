@@ -1,3 +1,5 @@
+import * as fs from "fs";
+
 import { ScopeObject } from "./types";
 import { lex } from "./lexer";
 import {
@@ -43,6 +45,13 @@ export function compileFile(filePath: string) {
 	console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
 	
 	console.log("codeGenText:", JSON.stringify(builderContext.codeGenText, undefined, 4));
+	
+	if (typeof builderContext.codeGenText.top == "string") {
+		let newPath = filePath.split(".");
+		newPath.pop();
+		newPath.push("js");
+		fs.writeFileSync(newPath.join("."), builderContext.codeGenText.top);
+	}
 }
 
 export function test() {

@@ -5,4 +5,4 @@ const main = fn(): String {
 
 @compileLog(main());
 
-@codeGen("top", "console.log(1)");
+@codeGen("top", "console.log(1);");
