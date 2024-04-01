@@ -23,14 +23,14 @@ export function compileFile(filePath: string) {
 	console.log("AST:", JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {
-		scopeLevels: [[]],
+		scopeLevels: [],
 		level: -1,
 	};
 	
 	let scopeList: ScopeObject[] = [];
 	
 	try {
-		scopeList = build(builderContext, AST, null);	
+		scopeList = build(builderContext, AST, null, null);
 	} catch (error) {
 		if (error instanceof CompileError) {
 			console.log("uncaught compiler error");

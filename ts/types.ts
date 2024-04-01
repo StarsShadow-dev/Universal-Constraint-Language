@@ -66,7 +66,7 @@ genericASTnode & {
 } | genericASTnode & {
 	type: "call",
 	left: ASTnode[],
-	arguments: ASTnode[],
+	callArguments: ASTnode[],
 } | genericASTnode & {
 	type: "builtinCall",
 	name: string,
@@ -88,6 +88,8 @@ genericASTnode & {
 	right: ASTnode[],
 } | genericASTnode & {
 	type: "function",
+	functionArguments: ASTnode[],
+	codeBlock: ASTnode[],
 } | genericASTnode & {
 	type: "struct",
 } | genericASTnode & {
@@ -125,7 +127,8 @@ export type ScopeObject = genericScopeObject & {
 	value: ScopeObject[] | null,
 } | genericScopeObject & {
 	type: "function",
-	// TODO
+	name: string,
+	AST: ASTnode[],
 } | genericScopeObject & {
 	type: "struct",
 	// TODO

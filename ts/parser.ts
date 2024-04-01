@@ -77,7 +77,32 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						name: name.text,
 						value: value,
 					});
-				} else {
+				}
+				
+				else if (token.text == "fn") {
+					const openingParentheses = forward();
+					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+						new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here").fatal();
+					}
+					
+					const functionArguments = parse(context, ParserMode.comma, ")");
+					
+					const openingBracket = forward();
+					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+						new CompileError("expected openingBracket").indicator(openingBracket.location, "here").fatal();
+					}
+					
+					const codeBlock = parse(context, ParserMode.normal, "}");
+					
+					AST.push({
+						type: "function",
+						location: token.location,
+						functionArguments: functionArguments,
+						codeBlock: codeBlock,
+					});
+				}
+				
+				else {
 					AST.push({
 						type: "identifier",
 						location: token.location,
@@ -123,20 +148,21 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
+		const next = context.tokens[context.i];
+		
 		if (mode == ParserMode.single) {
 			return AST;
 		}
 		
 		if (endAt != null) {
-			const atToken = context.tokens[context.i];
-			if (atToken.type == TokenType.separator) {
-				if (atToken.text == ")" || atToken.text == "}" || atToken.text == "]") {
-					if (endAt == atToken.text) {
+			if (next.type == TokenType.separator) {
+				if (next.text == ")" || next.text == "}" || next.text == "]") {
+					if (endAt == next.text) {
 						context.i++;
 						return AST;
 					} else {
 						new CompileError("unexpected separator")
-							.indicator(atToken.location, `expected '${endAt} but got '${atToken.text}'`)
+							.indicator(next.location, `expected '${endAt} but got '${next.text}'`)
 							.fatal();
 					}
 				}
@@ -151,7 +177,27 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			needsSemicolon = false;
 		}
 		
+		if (next.type == TokenType.separator && next.text == "(") {
+			const left = AST.pop();
+			if (left != undefined) {
+				forward();
+				const callArguments = parse(context, ParserMode.comma, ")");
+				
+				AST.push({
+					type: "call",
+					location: next.location,
+					left: [left],
+					callArguments: callArguments,
+				});
+			} else {
+				utilities.unreachable();
+			}
+		}
+		
 		if (needsSemicolon) {
+			if (!next) {
+				new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here").fatal();
+			}
 			const semicolon = forward();
 			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
 				new CompileError(`expected a semicolon but got '${semicolon.text}'`).indicator(semicolon.location, "here").fatal();

@@ -1,5 +1,8 @@
-// const main = fn() {
-	
-// }
+const main = fn() {
+	@compileLog("testing");
+};
 
-@compileLog(1);
+const main2 = main;
+
+main();
+main2();

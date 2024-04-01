@@ -8,6 +8,8 @@ import {
 import utilities from "./utilities";
 import { CompileError } from "./report";
 
+let nextFunctionName = 0;
+
 // builtin constructor
 class BC {
 	private builtinNode: ASTnode
@@ -61,6 +63,10 @@ export type BuilderContext = {
 	level: number,
 }
 
+export type BuilderOptions = {
+	getAlias: boolean,
+}
+
 function getScopeObject(context: BuilderContext, name: string): ScopeObject | null {
 	for (let level = context.level; level >= 0; level--) {
 		for (let i = 0; i < context.scopeLevels[level].length; i++) {
@@ -78,13 +84,21 @@ function getScopeObject(context: BuilderContext, name: string): ScopeObject | nu
 	return null;
 }
 
-export function build(context: BuilderContext, AST: ASTnode[], sackMarker: {name: string, location: SourceLocation} | null): ScopeObject[] {
+export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: {name: string, location: SourceLocation} | null): ScopeObject[] {
 	context.level++;
 	
 	let scopeList: ScopeObject[] = [];
 	
+	context.scopeLevels[context.level] = [];
+	
 	try {
-		scopeList = _build(context, AST);
+		if (options) {
+			scopeList = _build(context, AST, options);	
+		} else {
+			scopeList = _build(context, AST, {
+				getAlias: false,
+			});
+		}
 	} catch (error) {
 		console.log("error", error);
 		throw error;
@@ -95,7 +109,7 @@ export function build(context: BuilderContext, AST: ASTnode[], sackMarker: {name
 	return scopeList;
 }
 
-export function _build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
+export function _build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions): ScopeObject[] {
 	let scopeList: ScopeObject[] = [];
 	
 	for (let i = 0; i < AST.length; i++) {
@@ -118,7 +132,11 @@ export function _build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 		if (node.type == "definition") {
 			const alias = getScopeObject(context, node.name);
 			if (alias && alias.type == "alias") {
-				const value = build(context, node.value, null);
+				const value = build(context, node.value, null, null);
+				
+				if (node.value[0].type == "function" && value[0].type == "function") {
+					value[0].name = `${value[0].originLocation.path}:${alias.name}`;
+				}
 				
 				alias.value = value;
 			} else {
@@ -152,8 +170,11 @@ export function _build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 				const alias = getScopeObject(context, node.name);
 				if (alias && alias.type == "alias") {
 					if (alias.value) {
-						// scopeList.push(alias);
-						scopeList.push(alias.value[0]);
+						if (options.getAlias) {
+							scopeList.push(alias);	
+						} else {
+							scopeList.push(alias.value[0]);
+						}
 					} else {
 						throw new CompileError("alias used before its definition")
 							.indicator(node.location, "identifier here")
@@ -165,10 +186,22 @@ export function _build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 				break;
 			}
 			case "call": {
+				const functionToCall = build(context, node.left, null, null)[0];
+				const callArguments = build(context, node.callArguments, null, null);
+				
+				if (functionToCall.type == "function") {
+					const result = build(context, functionToCall.AST, null, {
+						location: functionToCall.originLocation,
+						name: `function ${functionToCall.name}`,
+					});
+				} else {
+					utilities.unreachable();
+				}
+				
 				break;
 			}
 			case "builtinCall": {
-				const callArguments = build(context, node.callArguments, null);
+				const callArguments = build(context, node.callArguments, null, null);
 				
 				const bc = new BC(node, callArguments, node.callArguments);
 				
@@ -189,6 +222,13 @@ export function _build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 				break;
 			}
 			case "function": {
+				scopeList.push({
+					type: "function",
+					originLocation: node.location,
+					name: `${nextFunctionName}`,
+					AST: node.codeBlock,
+				});
+				nextFunctionName++;
 				break;
 			}
 			case "struct": {
@@ -211,6 +251,5 @@ export function _build(context: BuilderContext, AST: ASTnode[]): ScopeObject[] {
 		}
 	}
 	
-	context.level--;
 	return scopeList;
 }
