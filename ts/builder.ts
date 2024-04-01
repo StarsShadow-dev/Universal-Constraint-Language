@@ -7,57 +7,9 @@ import {
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, displayIndicator, CompileError } from "./report";
-import { builtinScopeLevel } from './builtin';
+import { builtinCall, builtinScopeLevel } from './builtin';
 
 let nextSymbolName = 0;
-
-// builtin constructor
-class BC {
-	private builtinNode: ASTnode
-	private scopeObjects: ScopeObject[]
-	private nodes: ASTnode[]
-	private i: number
-	
-	constructor(builtinNode: ASTnode, scopeObjects: ScopeObject[], nodes: ASTnode[]) {
-		this.builtinNode = builtinNode;
-		this.scopeObjects = scopeObjects;
-		this.nodes = nodes;
-		this.i = 0;
-	}
-	
-	public "string" = (): string => {
-		const scopeObject = this.scopeObjects[this.i];
-		const node = this.nodes[this.i];
-		
-		if (!scopeObject || !node) {
-			throw new CompileError("builtin argument error")
-				.indicator(this.builtinNode.location, "expected a string but there are no more arguments");
-		}
-		
-		this.i++;
-		
-		if (scopeObject.kind == "string") {
-			return scopeObject.value;
-		} else {
-			throw new CompileError("builtin argument error")
-				.indicator(node.location, "expected a string");
-		}
-	}
-	
-	public done() {
-		const node = this.nodes[this.i];
-		
-		if (node) {
-			throw new CompileError("builtin argument error")
-				.indicator(node.location, "expected no more arguments");
-		}
-	}
-	
-	public next(): ScopeObject {
-		const scopeObject = this.scopeObjects[this.i];
-		return scopeObject;
-	}
-}
 
 export type BuilderContext = {
 	scopeLevels: ScopeObject[][],
@@ -272,19 +224,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			}
 			case "builtinCall": {
 				const callArguments = build(context, node.callArguments, null, null);
-				
-				const bc = new BC(node, callArguments, node.callArguments);
-				
-				if (node.name == "compileLog") {
-					let str = "[compileLog]";
-					while (bc.next()) {
-						str += " " + bc.string();
-					}
-					str += "\n"
-					bc.done();
-					
-					stdout.write(str);
-				}
+				builtinCall(node, callArguments);
 				break;
 			}
 			

@@ -1,5 +1,4 @@
 const main = fn(): String {
-	ret 3;
 	@compileLog("in main");
 	ret "Hello, World!";
 	@compileLog("Bye, World!");
