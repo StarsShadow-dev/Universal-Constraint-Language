@@ -12,7 +12,6 @@ import { CompileError } from "./report";
 
 export function compileFile(filePath: string) {
 	const text = utilities.readFile(filePath);
-	
 	// console.log("text:", text);
 	
 	const tokens = lex(filePath, text);
@@ -46,14 +45,12 @@ export function compileFile(filePath: string) {
 	
 	console.log("codeGenText:", JSON.stringify(builderContext.codeGenText, undefined, 4));
 	
-	if (typeof builderContext.codeGenText.top == "string") {
+	if (typeof builderContext.codeGenText["__out"] == "string") {
 		let newPath = filePath.split(".");
 		newPath.pop();
 		newPath.push("js");
-		fs.writeFileSync(newPath.join("."), builderContext.codeGenText.top);
+		fs.writeFileSync(newPath.join("."), builderContext.codeGenText["__out"]);
+	} else {
+		console.log("no '__out'");
 	}
-}
-
-export function test() {
-	return "from test";
 }
