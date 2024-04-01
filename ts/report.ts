@@ -46,11 +46,11 @@ export function displayIndicator(indicator: Indicator) {
 		for (; i < text.length; i++) {
 			if (text[i] == "\n") line++;
 			
-			if (line != indicator.location.line) continue;
-			
-			i++;
-			writeLine();
-			stderr.write(`${indicator.msg}\n`);
+			if (line == indicator.location.line) {
+				if (text[i] == "\n") i++;
+				writeLine();
+				stderr.write(`${indicator.msg}\n`);
+			}
 		}
 		
 		stderr.write(`\n`);	
@@ -60,7 +60,7 @@ export function displayIndicator(indicator: Indicator) {
 }
 
 export class CompileError {
-	private msg: string
+	msg: string
 	private indicators: Indicator[]
 	
 	constructor(msg: string) {

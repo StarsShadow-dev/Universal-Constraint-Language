@@ -69,32 +69,35 @@ export type BuilderOptions = {
 	resultAtRet: boolean,
 }
 
-function expectType(context: BuilderContext, expected: ScopeObject, actual: ScopeObject, location: SourceLocation) {
-	let expectedType: ScopeObject = {} as ScopeObject;
-	if (expected.kind == "bool") {
+function expectType(context: BuilderContext, expected: ScopeObject, actual: ScopeObject, compileError: CompileError) {
+	let expectedType: ScopeObject = expected;
+	
+	let actualType: ScopeObject = {} as ScopeObject;
+	if (actual.kind == "bool") {
 		const scopeObject = getScopeObject(context, "Bool");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			expectedType = scopeObject.value[0];	
+			actualType = scopeObject.value[0];	
 		}
-	} else if (expected.kind == "number") {
+	} else if (actual.kind == "number") {
 		const scopeObject = getScopeObject(context, "Number");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			expectedType = scopeObject.value[0];	
+			actualType = scopeObject.value[0];	
 		}
-	} else if (expected.kind == "string") {
+	} else if (actual.kind == "string") {
 		const scopeObject = getScopeObject(context, "String");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			expectedType = scopeObject.value[0];	
+			actualType = scopeObject.value[0];	
 		}
 	} else {
-		expectedType = expected;
+		actualType = actual;
 	}
-	
-	let actualType: ScopeObject = actual;
 	
 	if (expectedType.kind == "type" && actualType.kind == "type") {
 		if (expectedType.name != actualType.name) {
-			throw new CompileError(`expected type ${expectedType.name} but got type ${actualType.name}`).indicator(location, "here");
+			compileError.msg = compileError.msg
+				.replace("$expectedTypeName", expectedType.name)
+				.replace("$actualTypeName", actualType.name);
+			throw compileError;
 		}
 	} else {
 		utilities.unreachable();
@@ -254,7 +257,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 						msg: `function ${functionToCall.name}`,
 					})[0];
 					if (result && functionToCall.returnType) {
-						expectType(context, result, functionToCall.returnType[0], node.location);
+						expectType(context, functionToCall.returnType[0], result,
+							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+								.indicator(node.location, "call here")
+								.indicator(functionToCall.originLocation, "function defined here")
+						);
 					}
 					addToScopeList(result);
 				} else {
