@@ -1,9 +1,0 @@
-/*
-error: error message
-8  |
-9  |#error("error message", "error indicator");
-    ^ error indicator
-
-*/
-
-#error("error message", "error indicator");

@@ -1,9 +1,0 @@
-fn main(): Int8 {
-	var number: Int32 = 97;
-
-	putchar(number);
-
-	return 0;
-}
-
-fn putchar(char: Int32): Int32;

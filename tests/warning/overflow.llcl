@@ -1,7 +1,0 @@
-/*
-TODO
-*/
-
-fn main(): Int8 {
-	return 255;
-}
