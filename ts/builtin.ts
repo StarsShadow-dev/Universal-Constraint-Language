@@ -12,6 +12,8 @@ import path from "path";
 
 export let builtinScopeLevel: ScopeObject[] = [];
 
+let onCodeGen: any = {};
+
 function addType(name: string) {
 	builtinScopeLevel.push({
 		kind: "alias",
@@ -29,9 +31,15 @@ function addType(name: string) {
 }
 
 export function setUpBuiltin() {
-	addType("Bool");
-	addType("Number");
-	addType("String");
+	if (builtinScopeLevel.length == 0) {
+		addType("Bool");
+		addType("Number");
+		addType("String");	
+	}
+	
+	if (Object.keys(onCodeGen).length != 0) {
+		onCodeGen = {};
+	}
 }
 
 // builtin function constructor
@@ -106,8 +114,6 @@ class FC {
 		}
 	}
 }
-
-const onCodeGen: any = {};
 
 export function builtinCall(context: BuilderContext, node: ASTnode, callArguments: ScopeObject[]): ScopeObject | undefined {
 	if (node.kind == "builtinCall") {

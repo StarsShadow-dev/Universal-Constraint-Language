@@ -1,4 +1,5 @@
-// line 1
-// line 2
+// compError
+// error: alias 'a' does not exist
+// tests/compError/AliasDoesNotExist.ucl:5 -> here
 
 a;

@@ -69,7 +69,7 @@ export function lex(filePath: string, text: string): Token[] {
 			let str = "";
 			i += 2;
 			for (; i < text.length; i++) {
-				if (text[i+1] == "\n") {
+				if (!text[i+1] || text[i+1] == "\n") {
 					break;
 				} else {
 					str += text[i+1];
@@ -82,7 +82,7 @@ export function lex(filePath: string, text: string): Token[] {
 				tokens[tokens.length - 1].type == TokenType.comment
 			) {
 				const lastComment = tokens[tokens.length - 1];
-				if (lastComment.location != "builtin" && lastComment.location.line + 1 == line) {
+				if (lastComment.location != "builtin") {
 					lastComment.text += "\n" + str;
 					continue;
 				}

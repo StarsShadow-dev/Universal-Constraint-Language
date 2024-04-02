@@ -16,28 +16,39 @@ export type Indicator = {
 }
 
 // TODO: This can read the same file twice, if there are two indicators in a file.
-export function displayIndicator(indicator: Indicator) {
+export function getIndicator(indicator: Indicator, fancyIndicators: boolean): string {
+	let errorText = "";
+	
+	if (!fancyIndicators) {
+		if (indicator.location != "builtin") {
+			errorText += `${indicator.location.path}:${indicator.location.line} -> ${indicator.msg}`;
+			return errorText;
+		} else {
+			utilities.unreachable();
+		}
+	}
+	
 	if (indicator.location != "builtin") {
 		const text = utilities.readFile(indicator.location.path);
 		// console.log("compileError location:", location);
 		
-		stderr.write(`at ${indicator.location.path}:${indicator.location.line}\n\n`);
+		errorText += `at ${indicator.location.path}:${indicator.location.line}\n\n`;
 		
 		let i = 0;
 		let line = 1;
 		
 		function writeLine() {
 			if (indicator.location != "builtin") {
-				stderr.write(line.toString().padStart(lineNumberPadding, "0"));
-				stderr.write(" |");
+				errorText += line.toString().padStart(lineNumberPadding, "0");
+				errorText += " |";
 				for (; i < text.length; i++) {
 					if (text[i] == "\n") line++;
 					
 					if (line != indicator.location.line) continue;
 					
-					stderr.write(text[i]);
+					errorText += text[i];
 				}
-				stderr.write("\n");
+				errorText += "\n";
 			} else {
 				utilities.unreachable();
 			}
@@ -49,14 +60,16 @@ export function displayIndicator(indicator: Indicator) {
 			if (line == indicator.location.line) {
 				if (text[i] == "\n") i++;
 				writeLine();
-				stderr.write(`${indicator.msg}\n`);
+				errorText += `${indicator.msg}\n`;
 			}
 		}
 		
-		stderr.write(`\n`);	
+		errorText += `\n`;	
 	} else {
-		stderr.write(`at builtin\n\n`);
+		errorText += `at builtin\n\n`;
 	}
+	
+	return errorText;
 }
 
 export class CompileError {
@@ -76,12 +89,11 @@ export class CompileError {
 		return this;
 	}
 	
-	public fatal(): never {
-		stderr.write(`error: ${this.msg}\n`);
+	public getText(fancyIndicators: boolean): string {
+		let text = `error: ${this.msg}\n`;
 		for (const indicator of this.indicators) {
-			displayIndicator(indicator);
+			text += getIndicator(indicator, fancyIndicators);
 		}
-		process.exitCode = 1;
-		throw "__do nothing__";
+		return text;
 	}
 }

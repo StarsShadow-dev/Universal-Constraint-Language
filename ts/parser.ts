@@ -25,7 +25,8 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 		const token = context.tokens[context.i];
 		
 		if (!token) {
-			new CompileError("unexpected end of file in function arguments").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+			throw new CompileError("unexpected end of file in function arguments")
+				.indicator(context.tokens[context.i-1].location, "last token here");	
 		}
 		
 		context.i++
@@ -36,7 +37,7 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 		const token = context.tokens[context.i];
 		
 		if (!token) {
-			new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+			throw new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here");
 		}
 		
 		return token;
@@ -50,12 +51,12 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 	while (context.i < context.tokens.length) {
 		const name = forward();
 		if (name.type != TokenType.word) {
-			new CompileError("expected name in function arguments").indicator(name.location, "here").fatal();
+			throw new CompileError("expected name in function arguments").indicator(name.location, "here");
 		}
 		
 		const colon = forward();
 		if (colon.type != TokenType.separator || colon.text != ":") {
-			new CompileError("expected colon in function arguments").indicator(colon.location, "here").fatal();
+			throw new CompileError("expected colon in function arguments").indicator(colon.location, "here");
 		}
 		
 		const type = parse(context, ParserMode.single, null);
@@ -74,7 +75,7 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 		} else if (end.type == TokenType.separator && end.text == ",") {
 			continue;
 		} else {
-			new CompileError("expected a comma in function arguments").indicator(end.location, "here").fatal();
+			throw new CompileError("expected a comma in function arguments").indicator(end.location, "here");
 		}
 	}
 	
@@ -88,7 +89,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		const token = context.tokens[context.i];
 		
 		if (!token) {
-			new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+			throw new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here");
 		}
 		
 		context.i++
@@ -99,7 +100,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		const token = context.tokens[context.i];
 		
 		if (!token) {
-			new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+			throw new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here");
 		}
 		
 		return token;
@@ -112,8 +113,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		switch (token.type) {
 			case TokenType.comment: {
-				needsSemicolon = false;
-				break;
+				continue;
 			}
 			
 			case TokenType.number: {
@@ -138,12 +138,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				if (token.text == "const") {
 					const name = forward();
 					if (name.type != TokenType.word) {
-						new CompileError("expected name").indicator(name.location, "here").fatal();
+						throw new CompileError("expected name").indicator(name.location, "here");
 					}
 					
 					const equals = forward();
 					if (equals.type != TokenType.operator || equals.text != "=") {
-						new CompileError("expected equals").indicator(equals.location, "here").fatal();
+						throw new CompileError("expected equals").indicator(equals.location, "here");
 					}
 					
 					const value = parse(context, ParserMode.single, null);
@@ -160,7 +160,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				else if (token.text == "fn") {
 					const openingParentheses = forward();
 					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
-						new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here").fatal();
+						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 					}
 					
 					const functionArguments = parseFunctionArguments(context);
@@ -176,7 +176,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					
 					const openingBracket = forward();
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
-						new CompileError("expected openingBracket").indicator(openingBracket.location, "here").fatal();
+						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
 					
 					const codeBlock = parse(context, ParserMode.normal, "}");
@@ -214,19 +214,19 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				if (token.text == endAt) {
 					return AST;
 				}
-				new CompileError("unexpected separator").indicator(token.location, "here").fatal();
+				throw new CompileError("unexpected separator").indicator(token.location, "here");
 				break;
 			}
 			
 			case TokenType.builtinIndicator: {
 				const name = forward();
 				if (name.type != TokenType.word) {
-					new CompileError("expected name").indicator(name.location, "here").fatal();
+					throw new CompileError("expected name").indicator(name.location, "here");
 				}
 				
 				const openingParentheses = forward();
 				if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
-					new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here").fatal();
+					throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 				}
 				
 				const callArguments = parse(context, ParserMode.comma, ")");
@@ -269,11 +269,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode != ParserMode.comma && needsSemicolon) {
 			if (!next()) {
-				new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here").fatal();
+				throw new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here");
 			}
 			const semicolon = forward();
 			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
-				new CompileError(`expected a semicolon but got '${semicolon.text}'`).indicator(semicolon.location, "here").fatal();
+				throw new CompileError(`expected a semicolon but got '${semicolon.text}'`).indicator(semicolon.location, "here");
 			}
 		}
 		
@@ -286,9 +286,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						context.i++;
 						return AST;
 					} else {
-						new CompileError("unexpected separator")
-							.indicator(nextToken.location, `expected '${endAt} but got '${nextToken.text}'`)
-							.fatal();
+						throw new CompileError("unexpected separator")
+							.indicator(nextToken.location, `expected '${endAt} but got '${nextToken.text}'`);
 					}
 				}
 			}
@@ -297,7 +296,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		if (mode == ParserMode.comma) {
 			const comma = forward();
 			if (comma.type != TokenType.separator || comma.text != ",") {
-				new CompileError("expected a comma").indicator(comma.location, "here").fatal();
+				throw new CompileError("expected a comma").indicator(comma.location, "here");
 			}
 		}
 	}

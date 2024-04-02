@@ -6,7 +6,7 @@ import {
 	ScopeObject,
 } from "./types";
 import utilities from "./utilities";
-import { Indicator, displayIndicator, CompileError } from "./report";
+import { Indicator, getIndicator, CompileError } from "./report";
 import { builtinScopeLevel, builtinCall } from "./builtin";
 
 let nextSymbolName = 0;
@@ -176,8 +176,7 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		}
 	} catch (error) {
 		if (error instanceof CompileError && sackMarker != null) {
-			stdout.write("stack trace ");
-			displayIndicator(sackMarker);
+			stdout.write(`stack trace ${getIndicator(sackMarker, true)}`);
 		}
 		context.scopeLevels[context.level] = [];
 		context.level--;

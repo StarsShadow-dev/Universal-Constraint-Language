@@ -35,7 +35,9 @@ export function compileFile(filePath: string) {
 	} catch (error) {
 		if (error instanceof CompileError) {
 			console.log("uncaught compiler error");
-			error.fatal();
+			console.log(error.getText(true));
+			process.exitCode = 1;
+			return;
 		} else {
 			throw error;
 		}
