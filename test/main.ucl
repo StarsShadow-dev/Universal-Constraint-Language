@@ -1,5 +1,7 @@
 @onCodeGen("fn", fn() {
-	@addCodeGen("top", "function name() {\n");
+	@addCodeGen("top", "function ");
+	@moveCodeGen("top", "__fn_name");
+	@addCodeGen("top", "() {\n");
 	@moveCodeGen("top", "fn_out");
 	@addCodeGen("top", "}");
 });

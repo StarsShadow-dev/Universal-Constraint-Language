@@ -191,9 +191,9 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const fn = fc.function();
 			fc.done();
 			
-			debugger;
-			
 			if (onCodeGen["fn"]) {
+				context.codeGenText["__fn_name"] = name;
+				
 				callFunction(context, fn, [], "builtin");
 				callFunction(context, onCodeGen["fn"], [], "builtin");
 			}
