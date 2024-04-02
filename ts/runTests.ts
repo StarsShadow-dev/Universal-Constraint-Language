@@ -15,11 +15,11 @@ import { setUpBuiltin } from "./builtin";
 import path from "path";
 
 function testSuccess() {
-	console.log("test success!");
+	console.log("\n\t\x1B[32mtest success!\x1B[0m\n");
 }
 
 function testFailure(msg: string) {
-	console.log(`test failure:\n${msg}`);
+	console.log(`\n\t\x1B[31mtest failure:\n${msg}\x1B[0m\n`);
 	process.exitCode = 1;
 }
 
@@ -38,10 +38,9 @@ function testFile(filePath: string) {
 	}
 	
 	let comments = tokens[0].text.split("\n");
-	
 	let mode = comments.shift();
-	if (mode != "compError") {
-		throw `mode != "compError" mode = "${mode}"`;
+	if (mode != "compError" && mode != "compPass") {
+		throw `unknown mode "${mode}"`;
 	}
 
 	const AST = parse({
@@ -62,29 +61,39 @@ function testFile(filePath: string) {
 		scopeList = build(builderContext, AST, null, null);
 	} catch (error) {
 		if (error instanceof CompileError) {
-			const expectedOutput = comments.join("\n");
-			const actualOutput = error.getText(false);
-			if (expectedOutput == actualOutput) {
-				testSuccess();
+			if (mode == "compPass") {
+				testFailure(`compilation failed, output = ${error.getText(false)}`);
 			} else {
-				testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+				const expectedOutput = comments.join("\n");
+				const actualOutput = error.getText(false);
+				if (expectedOutput == actualOutput) {
+					testSuccess();
+				} else {
+					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+				}
 			}
+			
 			return;
 		} else {
 			throw error;
 		}
 	}
 	
-	const expectedOutput = comments.join("\n");
-	testFailure(`expected error output = ${expectedOutput}\nactual output = success`);
+	if (mode == "compError") {
+		const expectedOutput = comments.join("\n");
+		testFailure(`expected error output = ${expectedOutput}\nactual output = success`);
+	} else {
+		testSuccess();
+	}
 }
 
 function testDir(dirPath: string) {
 	const files = fs.readdirSync(dirPath);
-	console.log(files);
+	// console.log(files);
 	files.forEach((file) => {
 		testFile(path.join(dirPath, file));
 	})
 }
 
 testDir("./tests/compError");
+testDir("./tests/compPass");
