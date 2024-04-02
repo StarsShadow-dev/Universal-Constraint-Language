@@ -19,7 +19,7 @@ export function compileFile(filePath: string) {
 		tokens: tokens,
 		i: 0,
 	}, ParserMode.normal, null);
-	console.log("AST:", JSON.stringify(AST, undefined, 4));
+	// console.log("AST:", JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {
 		scopeLevels: [],
@@ -41,6 +41,6 @@ export function compileFile(filePath: string) {
 		}
 	}
 	
-	console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
-	console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
+	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
+	// console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
 }

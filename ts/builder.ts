@@ -101,6 +101,61 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
+export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation): ScopeObject {
+	if (functionToCall.kind == "function") {
+		if (callArguments.length > functionToCall.functionArguments.length) {
+			throw new CompileError(`too many arguments passed to function '${functionToCall.name}'`)
+				.indicator(location, "function call here");
+		}
+		
+		if (callArguments.length < functionToCall.functionArguments.length) {
+			throw new CompileError(`not enough arguments passed to function '${functionToCall.name}'`)
+				.indicator(location, "function call here");
+		}
+		
+		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
+			const argument = functionToCall.functionArguments[index];
+			
+			if (argument.kind == "argument") {
+				expectType(context, argument.type[0], callArguments[index],
+					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+						.indicator(callArguments[index].originLocation, "argument here")
+						.indicator(argument.originLocation, "argument defined here")
+				);
+				
+				addAlias(context, context.level + 1, {
+					kind: "alias",
+					originLocation: argument.originLocation,
+					mutable: false,
+					name: argument.name,
+					value: [callArguments[index]],
+				});	
+			}
+		}
+		
+		const result = build(context, functionToCall.AST, {
+			getAlias: false,
+			resultAtRet: true,
+		}, {
+			location: functionToCall.originLocation,
+			msg: `function ${functionToCall.name}`,
+		})[0];
+		if (result && functionToCall.returnType) {
+			expectType(context, functionToCall.returnType[0], result,
+				new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+					.indicator(location, "call here")
+					.indicator(functionToCall.originLocation, "function defined here")
+			);
+		}
+		
+		return result;
+	} else {
+		utilities.unreachable();
+	}
+	
+	return {} as ScopeObject;
+}
+
 export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null): ScopeObject[] {
 	context.level++;
 	
@@ -166,7 +221,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			if (alias && alias.kind == "alias") {
 				const value = build(context, node.value, null, null);
 				
-				if (node.value[0].kind == "function" && value[0].kind == "function" && value[0].originLocation != "core") {
+				if (node.value[0].kind == "function" && value[0].kind == "function" && value[0].originLocation != "builtin") {
 					value[0].name += `:${value[0].originLocation.path}:${alias.name}`;
 				}
 				
@@ -221,55 +276,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const functionToCall = build(context, node.left, null, null)[0];
 				const callArguments = build(context, node.callArguments, null, null);
 				
-				if (functionToCall.kind == "function") {
-					if (callArguments.length > functionToCall.functionArguments.length) {
-						throw new CompileError(`too many arguments passed to function '${functionToCall.name}'`)
-							.indicator(node.location, "function call here");
-					}
-					
-					if (callArguments.length < functionToCall.functionArguments.length) {
-						throw new CompileError(`not enough arguments passed to function '${functionToCall.name}'`)
-							.indicator(node.location, "function call here");
-					}
-					
-					for (let index = 0; index < functionToCall.functionArguments.length; index++) {
-						const argument = functionToCall.functionArguments[index];
-						
-						if (argument.kind == "argument") {
-							expectType(context, argument.type[0], callArguments[index],
-								new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-									.indicator(callArguments[index].originLocation, "argument here")
-									.indicator(argument.originLocation, "argument defined here")
-							);
-							
-							addAlias(context, context.level + 1, {
-								kind: "alias",
-								originLocation: node.location,
-								mutable: false,
-								name: argument.name,
-								value: [callArguments[index]],
-							});	
-						}
-					}
-					
-					const result = build(context, functionToCall.AST, {
-						getAlias: false,
-						resultAtRet: true,
-					}, {
-						location: functionToCall.originLocation,
-						msg: `function ${functionToCall.name}`,
-					})[0];
-					if (result && functionToCall.returnType) {
-						expectType(context, functionToCall.returnType[0], result,
-							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-								.indicator(node.location, "call here")
-								.indicator(functionToCall.originLocation, "function defined here")
-						);
-					}
-					addToScopeList(result);
-				} else {
-					utilities.unreachable();
-				}
+				const result = callFunction(context, functionToCall, callArguments, node.location);
+				
+				addToScopeList(result);
 				
 				break;
 			}

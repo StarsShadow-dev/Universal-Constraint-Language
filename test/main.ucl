@@ -1,12 +1,20 @@
-const logJS = fn(string: String) {
-	@codeGen("__out", "console.log(\"", string, "\");\n");
+@onCodeGen("fn_start", fn() {
+	@codeGen("__out", "function name() {\n");
+});
+
+@onCodeGen("fn_end", fn() {
+	@codeGen("__out", "}");
+});
+
+const log = fn(string: String) {
+    @codeGen("__out", "console.log(\"log\", string);\n");
 };
 
-const logPY = fn(string: String) {
-	@codeGen("__out", "print(\"", string, "\")\n");
+const exportTest = fn() {
+	log("Hello, World!");
+	log("Bye, World!");
 };
 
-logJS("Hello, World!");
-logPY("Hello, World!");
+@export("test", exportTest);
 
-@writeTofile("__out", "./out/test.txt");
+@writeTofile("__out", "./out/main.js");

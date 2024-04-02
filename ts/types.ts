@@ -7,7 +7,7 @@ export type SourceLocation = {
 	line: number,
 	startColumn: number,
 	endColumn: number,
-} | "core"
+} | "builtin"
 
 //
 // tokens

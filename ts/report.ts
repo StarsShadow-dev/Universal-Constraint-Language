@@ -17,7 +17,7 @@ export type Indicator = {
 
 // TODO: This can read the same file twice, if there are two indicators in a file.
 export function displayIndicator(indicator: Indicator) {
-	if (indicator.location != "core") {
+	if (indicator.location != "builtin") {
 		const text = utilities.readFile(indicator.location.path);
 		// console.log("compileError location:", location);
 		
@@ -27,7 +27,7 @@ export function displayIndicator(indicator: Indicator) {
 		let line = 1;
 		
 		function writeLine() {
-			if (indicator.location != "core") {
+			if (indicator.location != "builtin") {
 				stderr.write(line.toString().padStart(lineNumberPadding, "0"));
 				stderr.write(" |");
 				for (; i < text.length; i++) {
@@ -55,7 +55,7 @@ export function displayIndicator(indicator: Indicator) {
 		
 		stderr.write(`\n`);	
 	} else {
-		stderr.write(`at core\n\n`);
+		stderr.write(`at builtin\n\n`);
 	}
 }
 

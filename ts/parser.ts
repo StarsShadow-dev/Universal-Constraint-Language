@@ -32,6 +32,21 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 		return token;
 	}
 	
+	function next(): Token {
+		const token = context.tokens[context.i];
+		
+		if (!token) {
+			new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here").fatal();	
+		}
+		
+		return token;
+	}
+	
+	if (next().type == TokenType.separator && next().text == ")") {
+		forward();
+		return AST;
+	}
+	
 	while (context.i < context.tokens.length) {
 		const name = forward();
 		if (name.type != TokenType.word) {
@@ -45,14 +60,14 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 		
 		const type = parse(context, ParserMode.single, null);
 		
-		const end = forward();
-		
 		AST.push({
 			kind: "argument",
 			location: name.location,
 			name: name.text,
 			type: type,
 		});
+		
+		const end = forward();
 		
 		if (end.type == TokenType.separator && end.text == ")") {
 			return AST;
