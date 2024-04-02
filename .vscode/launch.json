@@ -19,6 +19,9 @@
 				"type": "typescript",
 				"tsconfig": "tsconfig_debug.json",
 			},
+			"args": [
+				"tests/compError/AliasDoesNotExist.ucl"
+			]
 		}
 	]
 }

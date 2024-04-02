@@ -13,7 +13,7 @@ export function compileFile(filePath: string) {
 	// console.log("text:", text);
 	
 	const tokens = lex(filePath, text);
-	// console.log("tokens:", tokens);
+	console.log("tokens:", tokens);
 	
 	const AST = parse({
 		tokens: tokens,

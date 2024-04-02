@@ -66,12 +66,38 @@ export function lex(filePath: string, text: string): Token[] {
 		
 		// comment
 		if (text[i] == '/' && text[i+1] == '/') {
+			let str = "";
 			i += 2;
 			for (; i < text.length; i++) {
 				if (text[i+1] == "\n") {
 					break;
+				} else {
+					str += text[i+1];
 				}
 			}
+			
+			if (
+				tokens.length > 0 &&
+				tokens[tokens.length - 1] &&
+				tokens[tokens.length - 1].type == TokenType.comment
+			) {
+				const lastComment = tokens[tokens.length - 1];
+				if (lastComment.location != "builtin" && lastComment.location.line + 1 == line) {
+					lastComment.text += "\n" + str;
+					continue;
+				}
+			}
+			
+			tokens.push({
+				type: TokenType.comment,
+				text: str,
+				location: {
+					path: filePath,
+					line: line,
+					startColumn: startColumn,
+					endColumn: startColumn,
+				},
+			});
 		}
 		
 		// else if (twoCharacterOperator(text, i)) {

@@ -111,6 +111,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		let needsSemicolon = true;
 		
 		switch (token.type) {
+			case TokenType.comment: {
+				needsSemicolon = false;
+				break;
+			}
+			
 			case TokenType.number: {
 				AST.push({
 					kind: "number",

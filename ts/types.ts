@@ -14,6 +14,8 @@ export type SourceLocation = {
 //
 
 export enum TokenType {
+	comment,
+	
 	number,
 	string,
 	word,
