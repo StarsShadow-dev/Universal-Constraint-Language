@@ -1,10 +1,6 @@
-const test = fn(string: String): String {
+const log = fn(string: String) {
 	@compileLog("string = ", string);
-	ret string;
+	@codeGen("__out", "console.log(\"", string, "\");");
 };
 
-@compileLog(test("Hello, World!"));
-
-// const log = fn() {
-// 	@codeGen("__out", "console.log(1);");
-// };
+log("\"Hello, World!\"");

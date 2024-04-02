@@ -171,7 +171,18 @@ export function lex(filePath: string, text: string): Token[] {
 			i++;
 			let str = "";
 			for (; i < text.length; i++) {
-				if (text[i] != "\"") {
+				if (text[i] != "\"") { // "
+					if (text[i] == "\\") { // \
+						if (text[i+1] == "n") {
+							str += "\n";
+						} else if (text[i+1] == "\"") { // "
+							str += "\"";
+						} else if (text[i+1] == "\\") { // \
+							str += "\\";
+						}
+						i++;
+						continue;
+					}
 					str += text[i];	
 				} else {
 					break;
