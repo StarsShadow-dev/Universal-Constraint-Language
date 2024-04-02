@@ -3,4 +3,4 @@ node_modules
 out
 old
 
-test/main.js
+test/out

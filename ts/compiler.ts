@@ -1,5 +1,3 @@
-import * as fs from "fs";
-
 import { ScopeObject } from "./types";
 import { lex } from "./lexer";
 import {
@@ -27,6 +25,7 @@ export function compileFile(filePath: string) {
 		scopeLevels: [],
 		level: -1,
 		codeGenText: {},
+		filePath: filePath,
 	};
 	
 	let scopeList: ScopeObject[] = [];
@@ -42,15 +41,4 @@ export function compileFile(filePath: string) {
 	
 	console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
-	
-	console.log("codeGenText:", JSON.stringify(builderContext.codeGenText, undefined, 4));
-	
-	if (typeof builderContext.codeGenText["__out"] == "string") {
-		let newPath = filePath.split(".");
-		newPath.pop();
-		newPath.push("js");
-		fs.writeFileSync(newPath.join("."), builderContext.codeGenText["__out"]);
-	} else {
-		console.log("no '__out'");
-	}
 }

@@ -1,6 +1,12 @@
-const log = fn(string: String) {
-	@compileLog("string = ", string);
-	@codeGen("__out", "console.log(\"", string, "\");");
+const logJS = fn(string: String) {
+	@codeGen("__out", "console.log(\"", string, "\");\n");
 };
 
-log("\"Hello, World!\"");
+const logPY = fn(string: String) {
+	@codeGen("__out", "print(\"", string, "\")\n");
+};
+
+logJS("Hello, World!");
+logPY("Hello, World!");
+
+@writeTofile("__out", "./out/test.txt");

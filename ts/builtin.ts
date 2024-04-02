@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import { stdout } from "process";
 
 import {
@@ -7,6 +8,7 @@ import {
 import { CompileError } from "./report";
 import utilities from "./utilities";
 import { BuilderContext } from "./builder";
+import path from "path";
 
 export let builtinScopeLevel: ScopeObject[] = [];
 
@@ -107,6 +109,19 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			}
 			
 			context.codeGenText[name] += str;
+		} else if (node.name == "writeTofile") {
+			let name = fc.string();
+			let outPath = fc.string();
+			fc.done();
+			
+			if (typeof context.codeGenText[name] == "string") {
+				const newPath = path.join(path.dirname(context.filePath), outPath);
+				
+				fs.writeFileSync(newPath, context.codeGenText[name]);
+				context.codeGenText[name] = "";
+			} else {
+				throw new CompileError(`unable to write '${name}' to file '${outPath}' because '${name}' does not exist`).indicator(node.location, "here");
+			}
 		}
 	} else {
 		utilities.unreachable();

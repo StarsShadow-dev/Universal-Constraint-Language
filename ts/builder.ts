@@ -15,6 +15,7 @@ export type BuilderContext = {
 	scopeLevels: ScopeObject[][],
 	level: number,
 	codeGenText: any,
+	filePath: string,
 }
 
 export type BuilderOptions = {
@@ -105,7 +106,9 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 	
 	let scopeList: ScopeObject[] = [];
 	
-	context.scopeLevels[context.level] = [];
+	if (context.scopeLevels[context.level] == undefined) {
+		context.scopeLevels[context.level] = [];	
+	}
 	
 	try {
 		if (options) {
@@ -121,9 +124,12 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 			stdout.write("stack trace ");
 			displayIndicator(sackMarker);
 		}
+		context.scopeLevels[context.level] = [];
+		context.level--;
 		throw error;
 	}
 	
+	context.scopeLevels[context.level] = [];
 	context.level--;
 	
 	return scopeList;
@@ -236,7 +242,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 									.indicator(argument.originLocation, "argument defined here")
 							);
 							
-							addAlias(context, context.level, {
+							addAlias(context, context.level + 1, {
 								kind: "alias",
 								originLocation: node.location,
 								mutable: false,
