@@ -122,7 +122,9 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			fc.done();
 			
 			stdout.write(str);
-		} else if (node.name == "codeGen") {
+		}
+		
+		else if (node.name == "addCodeGen") {
 			let name = fc.string();
 			
 			let str = "";
@@ -136,6 +138,22 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			}
 			
 			context.codeGenText[name] += str;
+		}
+		
+		else if (node.name == "moveCodeGen") {
+			let destName = fc.string();
+			let srcName = fc.string();
+			fc.done();
+			
+			if (context.codeGenText[destName] == undefined) {
+				context.codeGenText[destName] = "";
+			}
+			
+			if (context.codeGenText[srcName]) {
+				context.codeGenText[destName] += context.codeGenText[srcName];
+			}
+			
+			context.codeGenText[srcName] = "";
 		}
 		
 		else if (node.name == "onCodeGen") {
@@ -175,14 +193,9 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			
 			debugger;
 			
-			if (onCodeGen["fn_start"]) {
-				callFunction(context, onCodeGen["fn_start"], [], "builtin");
-			}
-			
-			callFunction(context, fn, [], "builtin");
-			
-			if (onCodeGen["fn_end"]) {
-				callFunction(context, onCodeGen["fn_end"], [], "builtin");
+			if (onCodeGen["fn"]) {
+				callFunction(context, fn, [], "builtin");
+				callFunction(context, onCodeGen["fn"], [], "builtin");
 			}
 		}
 		

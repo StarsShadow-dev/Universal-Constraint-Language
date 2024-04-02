@@ -1,13 +1,11 @@
-@onCodeGen("fn_start", fn() {
-	@codeGen("__out", "function name() {\n");
-});
-
-@onCodeGen("fn_end", fn() {
-	@codeGen("__out", "}");
+@onCodeGen("fn", fn() {
+	@addCodeGen("top", "function name() {\n");
+	@moveCodeGen("top", "fn_out");
+	@addCodeGen("top", "}");
 });
 
 const log = fn(string: String) {
-    @codeGen("__out", "console.log(\"log\", string);\n");
+	@addCodeGen("fn_out", "console.log(\"", string, "\");\n");
 };
 
 const exportTest = fn() {
@@ -17,4 +15,4 @@ const exportTest = fn() {
 
 @export("test", exportTest);
 
-@writeTofile("__out", "./out/main.js");
+@writeTofile("top", "./out/main.js");
