@@ -3,7 +3,7 @@
 import { setUpBuiltin } from "./builtin";
 import { compileFile } from "./compiler";
 
-setUpBuiltin();
+setUpBuiltin(false);
 
 const filePath = process.argv[2];
 

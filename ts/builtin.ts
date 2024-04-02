@@ -10,6 +10,8 @@ import utilities from "./utilities";
 import { BuilderContext, callFunction } from "./builder";
 import path from "path";
 
+let fileSystemDisabled = false;
+
 export let builtinScopeLevel: ScopeObject[] = [];
 
 let onCodeGen: any = {};
@@ -30,7 +32,8 @@ function addType(name: string) {
 	});
 }
 
-export function setUpBuiltin() {
+export function setUpBuiltin(disableFileSystem: boolean) {
+	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
 		addType("Bool");
 		addType("Number");
@@ -170,7 +173,15 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			onCodeGen[name] = fn;
 		}
 		
+		// else if (node.name == "writeToStdout") {
+			
+		// }
+		
 		else if (node.name == "writeTofile") {
+			if (fileSystemDisabled) {
+				utilities.unreachable();
+			}
+			
 			let name = fc.string();
 			let outPath = fc.string();
 			fc.done();

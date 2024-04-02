@@ -1,0 +1,4 @@
+// compOut
+// testing
+
+@addCodeGen("top", "testing");

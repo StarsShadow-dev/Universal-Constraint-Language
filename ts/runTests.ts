@@ -26,7 +26,7 @@ function testFailure(msg: string) {
 function testFile(filePath: string) {
 	console.log(`running test: '${filePath}'`);
 	
-	setUpBuiltin();
+	setUpBuiltin(true);
 	
 	const text = utilities.readFile(filePath);
 
@@ -39,7 +39,7 @@ function testFile(filePath: string) {
 	
 	let comments = tokens[0].text.split("\n");
 	let mode = comments.shift();
-	if (mode != "compError" && mode != "compPass") {
+	if (mode != "compError" && mode != "compPass" && mode != "compOut") {
 		throw `unknown mode "${mode}"`;
 	}
 
@@ -82,8 +82,16 @@ function testFile(filePath: string) {
 	if (mode == "compError") {
 		const expectedOutput = comments.join("\n");
 		testFailure(`expected error output = ${expectedOutput}\nactual output = success`);
-	} else {
+	} else if (mode == "compPass") {
 		testSuccess();
+	} else if (mode == "compOut") {
+		const expectedOutput = comments.join("\n");
+		const actualOutput = builderContext.codeGenText["top"];
+		if (expectedOutput == actualOutput) {
+			testSuccess();
+		} else {
+			testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+		}
 	}
 }
 
@@ -97,3 +105,4 @@ function testDir(dirPath: string) {
 
 testDir("./tests/compError");
 testDir("./tests/compPass");
+testDir("./tests/compOut");
