@@ -3,7 +3,7 @@
 	@moveCodeGen("top", "__fn_name");
 	@addCodeGen("top", "() {\n");
 	@moveCodeGen("top", "fn_out");
-	@addCodeGen("top", "}");
+	@addCodeGen("top", "}\n");
 });
 
 const log = fn(string: String) {
