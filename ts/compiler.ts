@@ -36,6 +36,8 @@ export function compileFile(filePath: string) {
 		if (error instanceof CompileError) {
 			console.log("uncaught compiler error");
 			error.fatal();
+		} else {
+			throw error;
 		}
 	}
 	

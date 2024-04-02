@@ -116,6 +116,11 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			
 			if (typeof context.codeGenText[name] == "string") {
 				const newPath = path.join(path.dirname(context.filePath), outPath);
+				const dir = path.dirname(newPath);
+				
+				if (!fs.existsSync(dir)) {
+					fs.mkdirSync(dir, { recursive: true });
+				}
 				
 				fs.writeFileSync(newPath, context.codeGenText[name]);
 				context.codeGenText[name] = "";
