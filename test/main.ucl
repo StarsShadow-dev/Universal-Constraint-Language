@@ -8,16 +8,3 @@
 // @export("test", exportTest);
 
 // @writeToStdout("top");
-
-const a = "test";
-
-const f1 = fn() {
-	const b = "testing";
-	ret fn() {
-		@compileLog(a);
-		@compileLog(b);
-	};
-};
-
-const f2 = f1();
-f2();

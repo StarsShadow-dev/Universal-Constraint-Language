@@ -1,0 +1,17 @@
+// compOut
+// in a
+// in b
+
+const a = "in a";
+
+const f1 = fn() {
+	const b = "in b";
+	ret fn() {
+		@addCodeGen("top", a);
+		@addCodeGen("top", "\n");
+		@addCodeGen("top", b);
+	};
+};
+
+const f2 = f1();
+f2();
