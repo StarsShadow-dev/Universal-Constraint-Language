@@ -128,7 +128,7 @@ export type ScopeObject = genericScopeObject & {
 	value: string,
 } | genericScopeObject & {
 	kind: "complexValue",
-	// TODO
+	type: ScopeObject[],
 } | genericScopeObject & {
 	kind: "alias",
 	mutable: boolean,

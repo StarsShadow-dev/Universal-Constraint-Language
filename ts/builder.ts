@@ -101,35 +101,53 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
-export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation): ScopeObject {
+export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean): ScopeObject {
 	if (functionToCall.kind == "function") {
-		if (callArguments.length > functionToCall.functionArguments.length) {
-			throw new CompileError(`too many arguments passed to function '${functionToCall.name}'`)
-				.indicator(location, "function call here");
-		}
-		
-		if (callArguments.length < functionToCall.functionArguments.length) {
-			throw new CompileError(`not enough arguments passed to function '${functionToCall.name}'`)
-				.indicator(location, "function call here");
+		if (!fillComplex) {
+			if (callArguments.length > functionToCall.functionArguments.length) {
+				throw new CompileError(`too many arguments passed to function '${functionToCall.name}'`)
+					.indicator(location, "function call here");
+			}
+			
+			if (callArguments.length < functionToCall.functionArguments.length) {
+				throw new CompileError(`not enough arguments passed to function '${functionToCall.name}'`)
+					.indicator(location, "function call here");
+			}	
 		}
 		
 		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 			const argument = functionToCall.functionArguments[index];
 			
 			if (argument.kind == "argument") {
-				expectType(context, argument.type[0], callArguments[index],
-					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-						.indicator(callArguments[index].originLocation, "argument here")
-						.indicator(argument.originLocation, "argument defined here")
-				);
-				
-				addAlias(context, context.level + 1, {
-					kind: "alias",
-					originLocation: argument.originLocation,
-					mutable: false,
-					name: argument.name,
-					value: [callArguments[index]],
-				});	
+				if (fillComplex) {
+					addAlias(context, context.level + 1, {
+						kind: "alias",
+						originLocation: argument.originLocation,
+						mutable: false,
+						name: argument.name,
+						value: [{
+							kind: "complexValue",
+							originLocation: argument.originLocation,
+							type: argument.type,
+						}],
+					});
+				} else {
+					expectType(context, argument.type[0], callArguments[index],
+						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+							.indicator(callArguments[index].originLocation, "argument here")
+							.indicator(argument.originLocation, "argument defined here")
+					);
+					
+					addAlias(context, context.level + 1, {
+						kind: "alias",
+						originLocation: argument.originLocation,
+						mutable: false,
+						name: argument.name,
+						value: [callArguments[index]],
+					});		
+				}
+			} else {
+				utilities.unreachable();
 			}
 		}
 		
@@ -275,7 +293,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const functionToCall = build(context, node.left, null, null)[0];
 				const callArguments = build(context, node.callArguments, null, null);
 				
-				const result = callFunction(context, functionToCall, callArguments, node.location);
+				const result = callFunction(context, functionToCall, callArguments, node.location, false);
 				
 				addToScopeList(result);
 				

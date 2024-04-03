@@ -32,6 +32,14 @@ function addType(name: string) {
 	});
 }
 
+function getString(value: string): ScopeObject {
+	return {
+		kind: "string",
+		originLocation: "builtin",
+		value: value,
+	};
+}
+
 export function setUpBuiltin(disableFileSystem: boolean) {
 	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
@@ -216,8 +224,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			if (onCodeGen["fn"]) {
 				context.codeGenText["__fn_name"] = name;
 				
-				callFunction(context, fn, [], "builtin");
-				callFunction(context, onCodeGen["fn"], [], "builtin");
+				callFunction(context, fn, [], "builtin", true);
+				callFunction(context, onCodeGen["fn"], [getString(name)], "builtin", false);
 			}
 		}
 		

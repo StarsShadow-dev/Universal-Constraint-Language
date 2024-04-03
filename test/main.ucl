@@ -1,6 +1,6 @@
-@onCodeGen("fn", fn() {
+@onCodeGen("fn", fn(name: String) {
 	@addCodeGen("top", "function ");
-	@moveCodeGen("top", "__fn_name");
+	@addCodeGen("top", name);
 	@addCodeGen("top", "() {\n");
 	@moveCodeGen("top", "fn_out");
 	@addCodeGen("top", "}\n");
