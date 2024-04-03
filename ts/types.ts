@@ -147,7 +147,7 @@ export type ScopeObject = genericScopeObject & {
 	AST: ASTnode[],
 } | genericScopeObject & {
 	kind: "struct",
-	// TODO
+	properties: ScopeObject[],
 } | genericScopeObject & {
 	kind: "type",
 	name: string,

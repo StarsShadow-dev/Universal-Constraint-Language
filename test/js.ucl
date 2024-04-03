@@ -1,0 +1,15 @@
+@onCodeGen("fn", fn(name: String) {
+	@addCodeGen("top", "function ");
+	@addCodeGen("top", name);
+	@addCodeGen("top", "() {\n");
+	@moveCodeGen("top", "fn_out");
+	@addCodeGen("top", "}\n");
+});
+
+const log = fn(string: String) {
+	var i = 0;
+	while (i < 5) {
+		@addCodeGen("fn_out", "console.log(\"", string, "\");\n");
+		i = i + 1;
+	}
+};

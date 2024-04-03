@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import { stdout } from "process";
+import path from "path";
 
+import { compileFile } from "./compiler";
 import {
 	ASTnode,
 	ScopeObject,
@@ -8,7 +10,6 @@ import {
 import { CompileError } from "./report";
 import utilities from "./utilities";
 import { BuilderContext, callFunction } from "./builder";
-import path from "path";
 
 let fileSystemDisabled = false;
 
@@ -35,6 +36,14 @@ function getString(value: string): ScopeObject {
 		kind: "string",
 		originLocation: "builtin",
 		value: value,
+	};
+}
+
+function getStruct(properties: ScopeObject[]): ScopeObject {
+	return {
+		kind: "struct",
+		originLocation: "builtin",
+		properties: properties,
 	};
 }
 
@@ -212,6 +221,15 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			} else {
 				throw new CompileError(`unable to write '${name}' to file '${outPath}' because '${name}' does not exist`).indicator(node.location, "here");
 			}
+		}
+		
+		else if (node.name == "import") {
+			const filePath = fc.string();
+			fc.done();
+			
+			const scopeLevels = compileFile(path.join(path.dirname(context.filePath), filePath));
+			
+			return getStruct(scopeLevels[0]);
 		}
 		
 		else if (node.name == "export") {

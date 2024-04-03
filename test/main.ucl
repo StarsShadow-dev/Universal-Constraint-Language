@@ -1,26 +1,10 @@
-// @onCodeGen("fn", fn(name: String) {
-// 	@addCodeGen("top", "function ");
-// 	@addCodeGen("top", name);
-// 	@addCodeGen("top", "() {\n");
-// 	@moveCodeGen("top", "fn_out");
-// 	@addCodeGen("top", "}\n");
-// });
+const js = @import("./js.ucl");
 
-// const log = fn(string: String) {
-// 	@addCodeGen("fn_out", "console.log(\"", string, "\");\n");
-// };
+const exportTest = fn() {
+	js.log("Hello, World!");
+	js.log("Bye, World!");
+};
 
-// const exportTest = fn() {
-// 	log("Hello, World!");
-// 	log("Bye, World!");
-// };
+@export("test", exportTest);
 
-// @export("test", exportTest);
-
-// @writeToStdout("top");
-
-var i = 0;
-while (i < 5) {
-	@compileLog("testing");
-	i = i + 1;
-}
+@writeToStdout("top");

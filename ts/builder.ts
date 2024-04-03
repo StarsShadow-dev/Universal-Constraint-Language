@@ -201,7 +201,9 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		throw error;
 	}
 	
-	context.scopeLevels[context.level] = [];
+	if (context.level != 0) {
+		context.scopeLevels[context.level] = [];	
+	}
 	context.level--;
 	
 	return scopeList;
@@ -230,8 +232,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 		}
 	}
 	
-	for (let i = 0; i < AST.length; i++) {
-		const node = AST[i];
+	for (let index = 0; index < AST.length; index++) {
+		const node = AST[index];
 		
 		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name);
@@ -306,7 +308,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			}
 			case "builtinCall": {
 				const callArguments = build(context, node.callArguments, null, null);
-				builtinCall(context, node, callArguments);
+				const result = builtinCall(context, node, callArguments);
+				if (result) {
+					addToScopeList(result);
+				}
 				break;
 			}
 			case "operator": {
@@ -328,7 +333,32 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 					} else {
 						utilities.unreachable();
 					}
-				} else {
+				}
+				
+				else if (node.operatorText == ".") {
+					const left = build(context, node.left, null, null)[0];
+					
+					if (left.kind == "struct" && node.right[0].kind == "identifier") {
+						for (let i = 0; i < left.properties.length; i++) {
+							const alias = left.properties[i];
+							if (alias.kind == "alias" && alias.value) {
+								if (alias.name == node.right[0].name) {
+									if (options.getAlias) {
+										addToScopeList(alias);	
+									} else {
+										addToScopeList(alias.value);
+									}
+								}
+							} else {
+								utilities.unreachable();
+							}
+						}
+					} else {
+						utilities.unreachable();
+					}
+				}
+				
+				else {
 					const left = build(context, node.left, null, null)[0];
 					const right = build(context, node.right, null, null)[0];
 					
@@ -369,8 +399,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				
 				let functionArguments: ScopeObject[] = [];
 				
-				for (let index = 0; index < node.functionArguments.length; index++) {
-					const argument = node.functionArguments[index];
+				for (let i = 0; i < node.functionArguments.length; i++) {
+					const argument = node.functionArguments[i];
 					
 					if (argument.kind == "argument") {
 						const argumentType = build(context, argument.type, null, null);

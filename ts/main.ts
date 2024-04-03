@@ -2,9 +2,20 @@
 
 import { setUpBuiltin } from "./builtin";
 import { compileFile } from "./compiler";
+import { CompileError } from "./report";
 
 setUpBuiltin(false);
 
 const filePath = process.argv[2];
 
-compileFile(filePath);
+try {
+	compileFile(filePath);
+} catch (error) {
+	if (error instanceof CompileError) {
+		console.log("uncaught compiler error");
+		console.log(error.getText(true));
+		process.exitCode = 1;
+	} else {
+		throw error;	
+	}
+}

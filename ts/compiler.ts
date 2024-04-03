@@ -8,7 +8,7 @@ import { BuilderContext, build } from "./builder";
 import utilities from "./utilities";
 import { CompileError } from "./report";
 
-export function compileFile(filePath: string) {
+export function compileFile(filePath: string): ScopeObject[][] {
 	const text = utilities.readFile(filePath);
 	// console.log("text:", text);
 	
@@ -17,23 +17,11 @@ export function compileFile(filePath: string) {
 	
 	let AST: ASTnode[] = [];
 	
-	try {
-		AST = parse({
-			tokens: tokens,
-			i: 0,
-		}, ParserMode.normal, null);
-	} catch (error) {
-		if (error instanceof CompileError) {
-			console.log("could not parse");
-			console.log(error.getText(true));
-			process.exitCode = 1;
-			return;
-		} else {
-			throw error;
-		}
-	}
-	
-	console.log("AST:", JSON.stringify(AST, undefined, 4));
+	AST = parse({
+		tokens: tokens,
+		i: 0,
+	}, ParserMode.normal, null);
+	// console.log("AST:", JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {
 		scopeLevels: [],
@@ -42,19 +30,10 @@ export function compileFile(filePath: string) {
 		filePath: filePath,
 	};
 	
-	try {
-		const scopeList = build(builderContext, AST, null, null);
-	} catch (error) {
-		if (error instanceof CompileError) {
-			console.log("uncaught compiler error");
-			console.log(error.getText(true));
-			process.exitCode = 1;
-			return;
-		} else {
-			throw error;
-		}
-	}
+	build(builderContext, AST, null, null);
 	
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	// console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
+	
+	return builderContext.scopeLevels;
 }
