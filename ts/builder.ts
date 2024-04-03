@@ -30,17 +30,17 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	if (actual.kind == "bool") {
 		const scopeObject = getAlias(context, "Bool");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			actualType = scopeObject.value[0];	
+			actualType = scopeObject.value;	
 		}
 	} else if (actual.kind == "number") {
 		const scopeObject = getAlias(context, "Number");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			actualType = scopeObject.value[0];	
+			actualType = scopeObject.value;	
 		}
 	} else if (actual.kind == "string") {
 		const scopeObject = getAlias(context, "String");
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			actualType = scopeObject.value[0];	
+			actualType = scopeObject.value;	
 		}
 	} else {
 		actualType = actual;
@@ -125,11 +125,11 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						originLocation: argument.originLocation,
 						mutable: false,
 						name: argument.name,
-						value: [{
+						value: {
 							kind: "complexValue",
 							originLocation: argument.originLocation,
 							type: argument.type,
-						}],
+						},
 					});
 				} else {
 					expectType(context, argument.type[0], callArguments[index],
@@ -143,7 +143,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						originLocation: argument.originLocation,
 						mutable: false,
 						name: argument.name,
-						value: [callArguments[index]],
+						value: callArguments[index],
 					});		
 				}
 			} else {
@@ -236,10 +236,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name);
 			if (alias && alias.kind == "alias") {
-				const value = build(context, node.value, null, null);
+				const value = build(context, node.value, null, null)[0];
 				
-				if (node.value[0].kind == "function" && value[0].kind == "function" && value[0].originLocation != "builtin") {
-					value[0].name += `:${value[0].originLocation.path}:${alias.name}`;
+				if (node.value[0].kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
+					value.name += `:${value.originLocation.path}:${alias.name}`;
 				}
 				
 				alias.value = value;
@@ -277,7 +277,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 						if (options.getAlias) {
 							addToScopeList(alias);	
 						} else {
-							addToScopeList(alias.value[0]);
+							addToScopeList(alias.value);
 						}
 					} else {
 						throw new CompileError(`alias '${node.name}' used before its definition`)
@@ -302,6 +302,42 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			case "builtinCall": {
 				const callArguments = build(context, node.callArguments, null, null);
 				builtinCall(context, node, callArguments);
+				break;
+			}
+			case "operator": {
+				if (node.operatorText == "=") {
+					const left = build(context, node.left, {
+						getAlias: true,
+						resultAtRet: false,
+					}, null)[0];
+					const right = build(context, node.right, null, null)[0];
+					
+					if (left.kind == "alias") {
+						if (!left.mutable) {
+							throw new CompileError(`the alias '${left.name}' is not mutable`)
+								.indicator(node.location, "reassignment here")
+								.indicator(left.originLocation, "alias defined here");
+						}
+						
+						left.value = right;
+					} else {
+						utilities.unreachable();
+					}
+				} else {
+					const left = build(context, node.left, null, null)[0];
+					const right = build(context, node.right, null, null)[0];
+					
+					if (left.kind == "number" && right.kind == "number") {
+						if (node.operatorText == "+") {
+							addToScopeList({
+								kind: "number",
+								originLocation: node.location,
+								value: left.value + right.value,
+							});
+						}
+					}
+				}
+				
 				break;
 			}
 			

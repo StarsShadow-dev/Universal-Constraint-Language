@@ -138,7 +138,7 @@ export type ScopeObject = genericScopeObject & {
 	kind: "alias",
 	mutable: boolean,
 	name: string,
-	value: ScopeObject[] | null,
+	value: ScopeObject | null,
 } | genericScopeObject & {
 	kind: "function",
 	name: string,

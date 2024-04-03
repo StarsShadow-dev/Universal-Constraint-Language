@@ -22,13 +22,11 @@ function addType(name: string) {
 		mutable: false,
 		originLocation: "builtin",
 		name: name,
-		value: [
-			{
-				kind: "type",
-				originLocation: "builtin",
-				name: "builtin:" + name
-			}
-		]
+		value: {
+			kind: "type",
+			originLocation: "builtin",
+			name: "builtin:" + name
+		},
 	});
 }
 
