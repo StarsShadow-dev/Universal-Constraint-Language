@@ -123,6 +123,6 @@ function testDir(dirPath: string) {
 	})
 }
 
-testDir("./tests/compError");
 testDir("./tests/compPass");
+testDir("./tests/compError");
 testDir("./tests/compOut");

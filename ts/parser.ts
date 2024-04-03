@@ -214,7 +214,13 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenType.word: {
-				if (token.text == "const" || token.text == "var") {
+				if (token.text == "true" || token.text == "false") {
+					AST.push({
+						kind: "bool",
+						location: token.location,
+						value: token.text == "true",
+					});
+				} else if (token.text == "const" || token.text == "var") {
 					const name = forward();
 					if (name.type != TokenType.word) {
 						throw new CompileError("expected name").indicator(name.location, "here");
@@ -266,6 +272,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						condition: condition,
 						codeBlock: codeBlock,
 					});
+					
+					needsSemicolon = false;
 				}
 				
 				else if (token.text == "fn") {

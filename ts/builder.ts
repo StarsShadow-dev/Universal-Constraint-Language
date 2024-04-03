@@ -251,6 +251,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 		
 		switch (node.kind) {
 			case "bool": {
+				addToScopeList({
+					kind: "bool",
+					originLocation: node.location,
+					value: node.value,
+				});
 				break;
 			}
 			case "number": {
