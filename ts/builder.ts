@@ -16,6 +16,7 @@ export type BuilderContext = {
 	level: number,
 	codeGenText: any,
 	filePath: string,
+	visible: ScopeObject[],
 }
 
 export type BuilderOptions = {
@@ -59,18 +60,19 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 }
 
 function getAlias(context: BuilderContext, name: string): ScopeObject | null {
-	{
-		for (let i = 0; i < builtinScopeLevel.length; i++) {
-			const scopeObject = builtinScopeLevel[i];
-			if (scopeObject.kind == "alias") {
-				if (scopeObject.name == name) {
-					return scopeObject;
-				}
-			} else {
-				utilities.unreachable();
+	// builtin
+	for (let i = 0; i < builtinScopeLevel.length; i++) {
+		const scopeObject = builtinScopeLevel[i];
+		if (scopeObject.kind == "alias") {
+			if (scopeObject.name == name) {
+				return scopeObject;
 			}
+		} else {
+			utilities.unreachable();
 		}
 	}
+	
+	// scopeLevels
 	for (let level = context.level; level >= 0; level--) {
 		for (let i = 0; i < context.scopeLevels[level].length; i++) {
 			const scopeObject = context.scopeLevels[level][i];
@@ -84,7 +86,32 @@ function getAlias(context: BuilderContext, name: string): ScopeObject | null {
 		}
 	}
 	
+	// visible
+	for (let i = 0; i < context.visible.length; i++) {
+		const scopeObject = context.visible[i];
+		if (scopeObject.kind == "alias") {
+			if (scopeObject.name == name) {
+				return scopeObject;
+			}
+		} else {
+			utilities.unreachable();
+		}
+	}
+	
 	return null;
+}
+
+function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
+	let list: ScopeObject[] = [];
+	
+	for (let level = context.level; level >= 0; level--) {
+		for (let i = 0; i < context.scopeLevels[level].length; i++) {
+			const scopeObject = context.scopeLevels[level][i];
+			list.push(scopeObject);
+		}
+	}
+	
+	return list;
 }
 
 function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
@@ -240,6 +267,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			if (alias && alias.kind == "alias") {
 				const value = build(context, [node.value], null, null)[0];
 				
+				if (!value) {
+					throw new CompileError(`no value for alias`).indicator(node.location, "here");
+				}
+				
 				if (node.value.kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
 					value.name += `:${value.originLocation.path}:${alias.name}`;
 				}
@@ -300,10 +331,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const functionToCall = build(context, node.left, null, null)[0];
 				const callArguments = build(context, node.callArguments, null, null);
 				
-				const result = callFunction(context, functionToCall, callArguments, node.location, false);
-				
-				addToScopeList(result);
-				
+				if (functionToCall.kind == "function") {
+					const oldVisible = context.visible;
+					context.visible = functionToCall.visible;
+					const result = callFunction(context, functionToCall, callArguments, node.location, false);	
+					context.visible = oldVisible;
+					
+					addToScopeList(result);
+				} else {
+					utilities.unreachable();
+				}
 				break;
 			}
 			case "builtinCall": {
@@ -416,6 +453,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 					}
 				}
 				
+				const visible = getVisibleAsliases(context);
+				
 				addToScopeList({
 					kind: "function",
 					originLocation: node.location,
@@ -423,6 +462,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 					functionArguments: functionArguments,
 					returnType: returnType,
 					AST: node.codeBlock,
+					visible: visible,
 				});
 				nextSymbolName++;
 				break;

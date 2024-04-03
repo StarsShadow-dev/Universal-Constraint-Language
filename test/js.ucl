@@ -6,9 +6,20 @@
 	@addCodeGen("top", "}\n");
 });
 
+var indentation = 0;
+
+const addIndentation = fn() {
+	var i = 0;
+	while (i < indentation) {
+		@addCodeGen("fn_out", "\t");
+		i = i + 1;
+	}
+};
+
 const log = fn(string: String) {
 	var i = 0;
 	while (i < 5) {
+		addIndentation();
 		@addCodeGen("fn_out", "console.log(\"", string, "\");\n");
 		i = i + 1;
 	}

@@ -73,6 +73,7 @@ function testFile(filePath: string) {
 		level: -1,
 		codeGenText: {},
 		filePath: filePath,
+		visible: [],
 	};
 
 	let scopeList: ScopeObject[] = [];

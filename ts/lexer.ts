@@ -203,6 +203,8 @@ export function lex(filePath: string, text: string): Token[] {
 					if (text[i] == "\\") { // \
 						if (text[i+1] == "n") {
 							str += "\n";
+						} else if (text[i+1] == "t") {
+							str += "\t";
 						} else if (text[i+1] == "\"") { // "
 							str += "\"";
 						} else if (text[i+1] == "\\") { // \

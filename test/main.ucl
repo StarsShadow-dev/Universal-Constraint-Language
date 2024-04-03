@@ -1,10 +1,23 @@
-const js = @import("./js.ucl");
+// const js = @import("./js.ucl");
 
-const exportTest = fn() {
-	js.log("Hello, World!");
-	js.log("Bye, World!");
+// const exportTest = fn() {
+// 	js.log("Hello, World!");
+// 	js.log("Bye, World!");
+// };
+
+// @export("test", exportTest);
+
+// @writeToStdout("top");
+
+const a = "test";
+
+const f1 = fn() {
+	const b = "testing";
+	ret fn() {
+		@compileLog(a);
+		@compileLog(b);
+	};
 };
 
-@export("test", exportTest);
-
-@writeToStdout("top");
+const f2 = f1();
+f2();

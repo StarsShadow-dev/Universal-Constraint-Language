@@ -374,10 +374,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
-		if (mode == ParserMode.single) {
-			return AST;
-		}
-		
 		if (context.tokens[context.i] && next().type == TokenType.separator && next().text == "(") {
 			const left = AST.pop();
 			if (left != undefined) {
@@ -393,6 +389,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			} else {
 				utilities.unreachable();
 			}
+		}
+		
+		if (mode == ParserMode.single) {
+			return AST;
 		}
 		
 		if (mode != ParserMode.comma && needsSemicolon) {

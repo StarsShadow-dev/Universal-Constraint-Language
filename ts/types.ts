@@ -145,6 +145,7 @@ export type ScopeObject = genericScopeObject & {
 	functionArguments: ScopeObject[],
 	returnType: ScopeObject[] | null,
 	AST: ASTnode[],
+	visible: ScopeObject[],
 } | genericScopeObject & {
 	kind: "struct",
 	properties: ScopeObject[],
