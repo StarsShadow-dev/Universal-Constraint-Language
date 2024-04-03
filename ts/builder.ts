@@ -236,9 +236,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name);
 			if (alias && alias.kind == "alias") {
-				const value = build(context, node.value, null, null)[0];
+				const value = build(context, [node.value], null, null)[0];
 				
-				if (node.value[0].kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
+				if (node.value.kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
 					value.name += `:${value.originLocation.path}:${alias.name}`;
 				}
 				

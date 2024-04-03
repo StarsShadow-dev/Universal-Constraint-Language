@@ -85,7 +85,7 @@ genericASTnode & {
 	kind: "definition",
 	mutable: boolean,
 	name: string,
-	value: ASTnode[],
+	value: ASTnode,
 } | genericASTnode & {
 	kind: "assignment",
 	left: ASTnode[],

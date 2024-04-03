@@ -225,7 +225,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected equals").indicator(equals.location, "here");
 					}
 					
-					const value = parse(context, ParserMode.single, null);
+					const value = parse(context, ParserMode.single, null)[0];
+					
+					if (!value) {
+						throw new CompileError("empty definition").indicator(name.location, "here");
+					}
 					
 					AST.push({
 						kind: "definition",
@@ -353,11 +357,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
-		if (!context.tokens[context.i]) {
-			return AST;
-		}
-		
-		if (next().type == TokenType.operator) {
+		if (context.tokens[context.i] && next().type == TokenType.operator) {
 			const left = AST.pop();
 			if (left != undefined) {
 				AST.push(parseOperators(context, left, 0));
@@ -370,7 +370,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			return AST;
 		}
 		
-		if (next().type == TokenType.separator && next().text == "(") {
+		if (context.tokens[context.i] && next().type == TokenType.separator && next().text == "(") {
 			const left = AST.pop();
 			if (left != undefined) {
 				forward();
@@ -388,7 +388,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (mode != ParserMode.comma && needsSemicolon) {
-			if (!next()) {
+			if (!context.tokens[context.i]) {
 				throw new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here");
 			}
 			const semicolon = forward();

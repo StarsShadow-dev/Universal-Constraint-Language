@@ -40,11 +40,33 @@ function testFile(filePath: string) {
 	if (mode != "compError" && mode != "compPass" && mode != "compOut") {
 		throw `unknown mode "${mode}"`;
 	}
-
-	const AST = parse({
-		tokens: tokens,
-		i: 0,
-	}, ParserMode.normal, null);
+	
+	let AST;
+	
+	try {
+		AST = parse({
+			tokens: tokens,
+			i: 0,
+		}, ParserMode.normal, null);
+	} catch (error) {
+		if (error instanceof CompileError) {
+			if (mode == "compPass") {
+				testFailure(`compilation failed, output = ${error.getText(false)}`);
+			} else {
+				const expectedOutput = comments.join("\n");
+				const actualOutput = error.getText(false);
+				if (expectedOutput == actualOutput) {
+					testSuccess();
+				} else {
+					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+				}
+			}
+			
+			return;
+		} else {
+			throw error;
+		}
+	}
 
 	const builderContext: BuilderContext = {
 		scopeLevels: [],
