@@ -353,6 +353,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
+		if (!context.tokens[context.i]) {
+			return AST;
+		}
+		
 		if (next().type == TokenType.operator) {
 			const left = AST.pop();
 			if (left != undefined) {

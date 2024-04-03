@@ -334,6 +334,18 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 								originLocation: node.location,
 								value: left.value + right.value,
 							});
+						} else if (node.operatorText == "<") {
+							addToScopeList({
+								kind: "bool",
+								originLocation: node.location,
+								value: left.value < right.value,
+							});
+						} else if (node.operatorText == ">") {
+							addToScopeList({
+								kind: "bool",
+								originLocation: node.location,
+								value: left.value > right.value,
+							});
 						}
 					}
 				}
@@ -384,9 +396,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "while": {
-				const condition = build(context, node.condition, null, null);
-				
-				console.log(condition);
+				while (true) {
+					const condition = build(context, node.condition, null, null)[0];
+					
+					if (condition.kind == "bool") {
+						if (condition.value) {
+							build(context, node.codeBlock, null, null)[0];
+						} else {
+							break;
+						}
+					} else {
+						utilities.unreachable();
+					}	
+				}
 				break;
 			}
 			case "if": {

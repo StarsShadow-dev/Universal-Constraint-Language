@@ -19,7 +19,8 @@
 
 // @writeToStdout("top");
 
-var a = "test1";
-@compileLog(a);
-a = "test2";
-@compileLog(a);
+var i = 0;
+while (i < 5) {
+	@compileLog("testing");
+	i = i + 1;
+}
