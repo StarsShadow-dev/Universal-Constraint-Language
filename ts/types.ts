@@ -31,6 +31,7 @@ export type Token = {
 	type: TokenType,
 	text: string,
 	location: SourceLocation,
+	endLine?: number,
 }
 
 //

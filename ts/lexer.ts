@@ -82,8 +82,9 @@ export function lex(filePath: string, text: string): Token[] {
 				tokens[tokens.length - 1].type == TokenType.comment
 			) {
 				const lastComment = tokens[tokens.length - 1];
-				if (lastComment.location != "builtin") {
+				if (lastComment.location != "builtin" && lastComment.endLine && lastComment.endLine + 1 == line) {
 					lastComment.text += "\n" + str;
+					lastComment.endLine = line;
 					continue;
 				}
 			}
@@ -97,6 +98,7 @@ export function lex(filePath: string, text: string): Token[] {
 					startColumn: startColumn,
 					endColumn: startColumn,
 				},
+				endLine: line,
 			});
 		}
 		
