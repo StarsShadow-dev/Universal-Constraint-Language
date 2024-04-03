@@ -1,4 +1,4 @@
-import { ScopeObject } from "./types";
+import { ASTnode, ScopeObject } from "./types";
 import { lex } from "./lexer";
 import {
 	ParserMode,
@@ -15,11 +15,25 @@ export function compileFile(filePath: string) {
 	const tokens = lex(filePath, text);
 	// console.log("tokens:", tokens);
 	
-	const AST = parse({
-		tokens: tokens,
-		i: 0,
-	}, ParserMode.normal, null);
-	// console.log("AST:", JSON.stringify(AST, undefined, 4));
+	let AST: ASTnode[] = [];
+	
+	try {
+		AST = parse({
+			tokens: tokens,
+			i: 0,
+		}, ParserMode.normal, null);
+	} catch (error) {
+		if (error instanceof CompileError) {
+			console.log("could not parse");
+			console.log(error.getText(true));
+			process.exitCode = 1;
+			return;
+		} else {
+			throw error;
+		}
+	}
+	
+	console.log("AST:", JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {
 		scopeLevels: [],
@@ -28,10 +42,8 @@ export function compileFile(filePath: string) {
 		filePath: filePath,
 	};
 	
-	let scopeList: ScopeObject[] = [];
-	
 	try {
-		scopeList = build(builderContext, AST, null, null);
+		const scopeList = build(builderContext, AST, null, null);
 	} catch (error) {
 		if (error instanceof CompileError) {
 			console.log("uncaught compiler error");

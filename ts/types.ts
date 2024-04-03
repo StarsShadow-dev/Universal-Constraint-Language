@@ -59,10 +59,6 @@ genericASTnode & {
 	value: string,
 } |
 
-//
-// things you get a value from
-//
-
 genericASTnode & {
 	kind: "identifier",
 	name: string,
@@ -74,6 +70,11 @@ genericASTnode & {
 	kind: "builtinCall",
 	name: string,
 	callArguments: ASTnode[],
+} | genericASTnode & {
+	kind: "operator",
+	operatorText: string,
+	left: ASTnode[],
+	right: ASTnode[],
 } |
 
 //
@@ -98,8 +99,12 @@ genericASTnode & {
 	kind: "struct",
 } | genericASTnode & {
 	kind: "while",
+	condition: ASTnode[],
+	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "if",
+	condition: ASTnode[],
+	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "return",
 	value: ASTnode[],

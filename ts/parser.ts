@@ -18,6 +18,85 @@ export enum ParserMode {
 	comma,
 }
 
+function getOperatorPrecedence(operatorText: string): number {
+	if (operatorText == "=") {
+		return 1;
+	}
+	
+	else if (operatorText == "||") {
+		return 2;
+	}
+	
+	else if (operatorText == "&&") {
+		return 3;
+	}
+	
+	else if (
+		operatorText == "==" ||
+		operatorText == "!=" ||
+		operatorText == ">" ||
+		operatorText == "<"
+	) {
+		return 4;
+	}
+	
+	else if (
+		operatorText == "+" ||
+		operatorText == "-"
+	) {
+		return 5;
+	}
+	
+	else if (
+		operatorText == "*" ||
+		operatorText == "/" ||
+		operatorText == "%"
+	) {
+		return 6;
+	}
+	
+	else if (operatorText == "as") {
+		return 7;
+	}
+	
+	else if (operatorText == ".") {
+		return 8;
+	}
+	
+	else {
+		utilities.unreachable();
+		return -1;
+	}
+}
+
+function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: number): ASTnode {
+	if (!context.tokens[context.i]) {
+		return left;
+	}
+	
+	const nextOperator = context.tokens[context.i];
+	
+	if (nextOperator.type == TokenType.operator) {
+		const nextPrecedence = getOperatorPrecedence(nextOperator.text);
+		
+		if (nextPrecedence > lastPrecedence) {
+			let right: ASTnode;
+			context.i++;
+			right = parseOperators(context, parse(context, ParserMode.single, null)[0], nextPrecedence);
+			
+			return {
+				kind: "operator",
+				location: nextOperator.location,
+				operatorText: nextOperator.text,
+				left: [left],
+				right: [right],
+			}	
+		}
+	}
+	
+	return left;
+}
+
 function parseFunctionArguments(context: ParserContext): ASTnode[] {
 	let AST: ASTnode[] = [];
 	
@@ -135,7 +214,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenType.word: {
-				if (token.text == "const") {
+				if (token.text == "const" || token.text == "var") {
 					const name = forward();
 					if (name.type != TokenType.word) {
 						throw new CompileError("expected name").indicator(name.location, "here");
@@ -151,9 +230,37 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					AST.push({
 						kind: "definition",
 						location: token.location,
-						mutable: false,
+						mutable: token.text == "var",
 						name: name.text,
 						value: value,
+					});
+				}
+				
+				else if (token.text == "while") {
+					const openingParentheses = forward();
+					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
+					}
+					
+					const condition = parse(context, ParserMode.single, null);
+					
+					const closingParentheses = forward();
+					if (closingParentheses.type != TokenType.separator || closingParentheses.text != ")") {
+						throw new CompileError("expected closingParentheses").indicator(closingParentheses.location, "here");
+					}
+					
+					const openingBracket = forward();
+					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+					}
+					
+					const codeBlock = parse(context, ParserMode.normal, "}");
+					
+					AST.push({
+						kind: "while",
+						location: token.location,
+						condition: condition,
+						codeBlock: codeBlock,
 					});
 				}
 				
@@ -243,6 +350,15 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			default: {
 				utilities.unreachable();
 				break;
+			}
+		}
+		
+		if (next().type == TokenType.operator) {
+			const left = AST.pop();
+			if (left != undefined) {
+				AST.push(parseOperators(context, left, 0));
+			} else {
+				utilities.unreachable();
 			}
 		}
 		

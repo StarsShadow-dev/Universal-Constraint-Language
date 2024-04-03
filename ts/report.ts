@@ -1,10 +1,3 @@
-// A very weird way to end compilation.
-// I throw "__do nothing__". (the exception is caught in main.ts, and nothing is done with it)
-// I would use exit, but apparently some standard out functions can get broken if you use exit.
-// Instead, I use process.exitCode which should not interrupt any standard out functions.
-
-import { stderr } from "process";
-
 import { SourceLocation } from "./types";
 import utilities from "./utilities";
 

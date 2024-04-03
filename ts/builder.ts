@@ -348,6 +348,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "while": {
+				const condition = build(context, node.condition, null, null);
+				
+				console.log(condition);
 				break;
 			}
 			case "if": {
