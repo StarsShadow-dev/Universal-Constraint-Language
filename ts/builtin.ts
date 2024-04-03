@@ -173,17 +173,22 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			onCodeGen[name] = fn;
 		}
 		
-		// else if (node.name == "writeToStdout") {
+		else if (node.name == "writeToStdout") {
+			const name = fc.string();
+			fc.done();
 			
-		// }
+			stdout.write(context.codeGenText[name]);
+			
+			context.codeGenText[name] = "";
+		}
 		
 		else if (node.name == "writeTofile") {
 			if (fileSystemDisabled) {
 				utilities.unreachable();
 			}
 			
-			let name = fc.string();
-			let outPath = fc.string();
+			const name = fc.string();
+			const outPath = fc.string();
 			fc.done();
 			
 			if (typeof context.codeGenText[name] == "string") {

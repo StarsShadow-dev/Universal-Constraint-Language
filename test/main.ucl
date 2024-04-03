@@ -1,25 +1,20 @@
-// line 1
-// line 2
+@onCodeGen("fn", fn() {
+	@addCodeGen("top", "function ");
+	@moveCodeGen("top", "__fn_name");
+	@addCodeGen("top", "() {\n");
+	@moveCodeGen("top", "fn_out");
+	@addCodeGen("top", "}\n");
+});
 
-// line 3
+const log = fn(string: String) {
+	@addCodeGen("fn_out", "console.log(\"", string, "\");\n");
+};
 
-// @onCodeGen("fn", fn() {
-// 	@addCodeGen("top", "function ");
-// 	@moveCodeGen("top", "__fn_name");
-// 	@addCodeGen("top", "() {\n");
-// 	@moveCodeGen("top", "fn_out");
-// 	@addCodeGen("top", "}\n");
-// });
+const exportTest = fn() {
+	log("Hello, World!");
+	log("Bye, World!");
+};
 
-// const log = fn(string: String) {
-// 	@addCodeGen("fn_out", "console.log(\"", string, "\");\n");
-// };
+@export("test", exportTest);
 
-// const exportTest = fn() {
-// 	log("Hello, World!");
-// 	log("Bye, World!");
-// };
-
-// @export("test", exportTest);
-
-// @writeTofile("top", "./out/main.js");
+@writeToStdout("top");
