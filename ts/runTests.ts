@@ -1,5 +1,3 @@
-// tsc -p ./tsconfig.json && node out/runTests.js
-
 import * as fs from "fs";
 
 import { ScopeObject, TokenType } from "./types";
