@@ -21,7 +21,7 @@ export function compileFile(filePath: string): ScopeObject[][] {
 		tokens: tokens,
 		i: 0,
 	}, ParserMode.normal, null);
-	console.log("AST:", JSON.stringify(AST, undefined, 4));
+	console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {
 		scopeLevels: [],

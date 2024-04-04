@@ -6,7 +6,7 @@
 	@addCodeGen("top", "}\n");
 });
 
-var indentation = 0;
+var indentation = 1;
 
 const addIndentation = fn() {
 	var i = 0;

@@ -12,9 +12,9 @@ import { builtinScopeLevel, builtinCall } from "./builtin";
 let nextSymbolName = 0;
 
 export type BuilderContext = {
+	codeGenText: any,
 	scopeLevels: ScopeObject[][],
 	level: number,
-	codeGenText: any,
 	filePath: string,
 	visible: ScopeObject[],
 }
@@ -104,11 +104,18 @@ function getAlias(context: BuilderContext, name: string): ScopeObject | null {
 function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	let list: ScopeObject[] = [];
 	
+	// scopeLevels
 	for (let level = context.level; level >= 0; level--) {
 		for (let i = 0; i < context.scopeLevels[level].length; i++) {
 			const scopeObject = context.scopeLevels[level][i];
 			list.push(scopeObject);
 		}
+	}
+	
+	// visible
+	for (let i = 0; i < context.visible.length; i++) {
+		const scopeObject = context.visible[i];
+		list.push(scopeObject);
 	}
 	
 	return list;
@@ -141,6 +148,13 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 					.indicator(location, "function call here");
 			}	
 		}
+		
+		const oldLevel = context.level;
+		const oldScopeLevels = context.scopeLevels;
+		const oldVisible = context.visible;
+		context.level = -1;
+		context.scopeLevels = [[]];
+		context.visible = functionToCall.visible;
 		
 		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 			const argument = functionToCall.functionArguments[index];
@@ -185,6 +199,11 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			location: functionToCall.originLocation,
 			msg: `function ${functionToCall.name}`,
 		})[0];
+		
+		context.level = oldLevel;
+		context.scopeLevels = oldScopeLevels;
+		context.visible = oldVisible;
+		
 		if (result && functionToCall.returnType) {
 			expectType(context, functionToCall.returnType[0], result,
 				new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
@@ -313,7 +332,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				if (alias && alias.kind == "alias") {
 					if (alias.value) {
 						if (options.getAlias) {
-							addToScopeList(alias);	
+							addToScopeList(alias);
 						} else {
 							addToScopeList(alias.value);
 						}
@@ -332,10 +351,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const callArguments = build(context, node.callArguments, null, null);
 				
 				if (functionToCall.kind == "function") {
-					const oldVisible = context.visible;
-					context.visible = functionToCall.visible;
-					const result = callFunction(context, functionToCall, callArguments, node.location, false);	
-					context.visible = oldVisible;
+					const result = callFunction(context, functionToCall, callArguments, node.location, false);
 					
 					addToScopeList(result);
 				} else {
