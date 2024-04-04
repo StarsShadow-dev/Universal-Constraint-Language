@@ -6,7 +6,6 @@ import {
 } from './parser';
 import { BuilderContext, build } from "./builder";
 import utilities from "./utilities";
-import { CompileError } from "./report";
 
 export function compileFile(filePath: string): ScopeObject[][] {
 	const text = utilities.readFile(filePath);
@@ -25,11 +24,17 @@ export function compileFile(filePath: string): ScopeObject[][] {
 	
 	const builderContext: BuilderContext = {
 		codeGenText: {},
-		
-		scopeLevels: [],
-		level: -1,
 		filePath: filePath,
-		visible: [],
+		
+		scope: {
+			levels: [],
+			currentLevel: -1,
+			visible: [],	
+		},
+		
+		options: {
+			doCodeGen: false,
+		}
 	};
 	
 	build(builderContext, AST, null, null);
@@ -37,5 +42,5 @@ export function compileFile(filePath: string): ScopeObject[][] {
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	// console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
 	
-	return builderContext.scopeLevels;
+	return builderContext.scope.levels;
 }

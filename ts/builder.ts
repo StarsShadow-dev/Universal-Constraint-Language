@@ -4,26 +4,33 @@ import {
 	SourceLocation,
 	ASTnode,
 	ScopeObject,
+	unwrapScopeObject,
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, getIndicator, CompileError } from "./report";
 import { builtinScopeLevel, builtinCall, onCodeGen, getString } from "./builtin";
+import codeGen from "./codeGen";
 
 let nextSymbolName = 0;
 
-export type BuilderContext = {
-	codeGenText: any,
-	
-	scopeLevels: ScopeObject[][],
-	level: number,
-	filePath: string,
+export type ScopeInformation = {
+	levels: ScopeObject[][],
+	currentLevel: number,
 	visible: ScopeObject[],
 }
 
 export type BuilderOptions = {
 	doCodeGen: boolean,
-	getAlias: boolean,
-	resultAtRet: boolean,
+}
+
+export type BuilderContext = {
+	codeGenText: any,
+	
+	filePath: string,
+	
+	scope: ScopeInformation,
+	
+	options: BuilderOptions,
 }
 
 function expectType(context: BuilderContext, expected: ScopeObject, actual: ScopeObject, compileError: CompileError) {
@@ -75,9 +82,9 @@ function getAlias(context: BuilderContext, name: string): ScopeObject | null {
 	}
 	
 	// scopeLevels
-	for (let level = context.level; level >= 0; level--) {
-		for (let i = 0; i < context.scopeLevels[level].length; i++) {
-			const scopeObject = context.scopeLevels[level][i];
+	for (let level = context.scope.currentLevel; level >= 0; level--) {
+		for (let i = 0; i < context.scope.levels[level].length; i++) {
+			const scopeObject = context.scope.levels[level][i];
 			if (scopeObject.kind == "alias") {
 				if (scopeObject.name == name) {
 					return scopeObject;
@@ -89,8 +96,8 @@ function getAlias(context: BuilderContext, name: string): ScopeObject | null {
 	}
 	
 	// visible
-	for (let i = 0; i < context.visible.length; i++) {
-		const scopeObject = context.visible[i];
+	for (let i = 0; i < context.scope.visible.length; i++) {
+		const scopeObject = context.scope.visible[i];
 		if (scopeObject.kind == "alias") {
 			if (scopeObject.name == name) {
 				return scopeObject;
@@ -107,16 +114,16 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	let list: ScopeObject[] = [];
 	
 	// scopeLevels
-	for (let level = context.level; level >= 0; level--) {
-		for (let i = 0; i < context.scopeLevels[level].length; i++) {
-			const scopeObject = context.scopeLevels[level][i];
+	for (let level = context.scope.currentLevel; level >= 0; level--) {
+		for (let i = 0; i < context.scope.levels[level].length; i++) {
+			const scopeObject = context.scope.levels[level][i];
 			list.push(scopeObject);
 		}
 	}
 	
 	// visible
-	for (let i = 0; i < context.visible.length; i++) {
-		const scopeObject = context.visible[i];
+	for (let i = 0; i < context.scope.visible.length; i++) {
+		const scopeObject = context.scope.visible[i];
 		list.push(scopeObject);
 	}
 	
@@ -131,7 +138,7 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 				.indicator(oldAlias.originLocation, "alias originally defined here")
 				.indicator(alias.originLocation, "alias redefined here");
 		}
-		context.scopeLevels[level].push(alias);
+		context.scope.levels[level].push(alias);
 	} else {
 		utilities.unreachable();
 	}
@@ -151,19 +158,29 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}	
 		}
 		
-		const oldLevel = context.level;
-		const oldScopeLevels = context.scopeLevels;
-		const oldVisible = context.visible;
-		context.level = -1;
-		context.scopeLevels = [[]];
-		context.visible = functionToCall.visible;
+		const oldScope = context.scope;
+		context.scope = {
+			currentLevel: -1,
+			levels: [[]],
+			visible: functionToCall.visible,
+		}
 		
 		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 			const argument = functionToCall.functionArguments[index];
 			
+			const callArgument = unwrapScopeObject(callArguments[index]);
+			
 			if (argument.kind == "argument") {
+				let generatedName = null;
+				const originalAlias = callArguments[index];
+				if (originalAlias.kind == "alias") {
+					generatedName = originalAlias.generatedName
+				} else if (doCodeGen) {
+					generatedName = argument.name;
+				}
+				
 				if (fillComplex) {
-					addAlias(context, context.level + 1, {
+					addAlias(context, context.scope.currentLevel + 1, {
 						kind: "alias",
 						originLocation: argument.originLocation,
 						mutable: false,
@@ -173,21 +190,23 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 							originLocation: argument.originLocation,
 							type: argument.type,
 						},
+						generatedName: generatedName,
 					});
 				} else {
-					expectType(context, argument.type[0], callArguments[index],
+					expectType(context, unwrapScopeObject(argument.type[0]), callArgument,
 						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-							.indicator(callArguments[index].originLocation, "argument here")
+							.indicator(callArgument.originLocation, "argument here")
 							.indicator(argument.originLocation, "argument defined here")
 					);
 					
-					addAlias(context, context.level + 1, {
+					addAlias(context, context.scope.currentLevel + 1, {
 						kind: "alias",
 						originLocation: argument.originLocation,
 						mutable: false,
 						name: argument.name,
-						value: callArguments[index],
-					});		
+						value: callArgument,
+						generatedName: generatedName,
+					});	
 				}
 			} else {
 				utilities.unreachable();
@@ -196,16 +215,12 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		
 		const result = build(context, functionToCall.AST, {
 			doCodeGen: doCodeGen,
-			getAlias: false,
-			resultAtRet: true,
 		}, {
 			location: functionToCall.originLocation,
 			msg: `function ${functionToCall.name}`,
-		})[0];
+		}, true)[0];
 		
-		context.level = oldLevel;
-		context.scopeLevels = oldScopeLevels;
-		context.visible = oldVisible;
+		context.scope = oldScope;
 		
 		if (result && functionToCall.returnType) {
 			expectType(context, functionToCall.returnType[0], result,
@@ -222,47 +237,46 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 	}
 }
 
-export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null): ScopeObject[] {
-	context.level++;
+export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, resultAtRet?: boolean): ScopeObject[] {
+	context.scope.currentLevel++;
 	
 	let scopeList: ScopeObject[] = [];
 	
-	if (context.scopeLevels[context.level] == undefined) {
-		context.scopeLevels[context.level] = [];	
+	if (context.scope.levels[context.scope.currentLevel] == undefined) {
+		context.scope.levels[context.scope.currentLevel] = [];	
 	}
 	
 	try {
 		if (options) {
-			scopeList = _build(context, AST, options);	
+			const oldOptions = context.options;
+			context.options = options;
+			scopeList = _build(context, AST, resultAtRet == true);
+			context.options = oldOptions;
 		} else {
-			scopeList = _build(context, AST, {
-				doCodeGen: false,
-				getAlias: false,
-				resultAtRet: false,
-			});
+			scopeList = _build(context, AST, resultAtRet == true);
 		}
 	} catch (error) {
 		if (error instanceof CompileError && sackMarker != null) {
 			stdout.write(`stack trace ${getIndicator(sackMarker, true)}`);
 		}
-		context.scopeLevels[context.level] = [];
-		context.level--;
+		context.scope.levels[context.scope.currentLevel] = [];
+		context.scope.currentLevel--;
 		throw error;
 	}
 	
-	if (context.level != 0) {
-		context.scopeLevels[context.level] = [];	
+	if (context.scope.currentLevel != 0) {
+		context.scope.levels[context.scope.currentLevel] = [];	
 	}
-	context.level--;
+	context.scope.currentLevel--;
 	
 	return scopeList;
 }
 
-export function _build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions): ScopeObject[] {
+export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boolean): ScopeObject[] {
 	let scopeList: ScopeObject[] = [];
 	
 	function addToScopeList(scopeObject: ScopeObject) {
-		if (!options.resultAtRet) {
+		if (!resultAtRet) {
 			scopeList.push(scopeObject);	
 		}
 	}
@@ -271,12 +285,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
-			addAlias(context, context.level, {
+			addAlias(context, context.scope.currentLevel, {
 				kind: "alias",
 				originLocation: node.location,
 				mutable: node.mutable,
 				name: node.name,
 				value: null,
+				generatedName: codeGen.getNewName(context, node.name),
 			});
 		}
 	}
@@ -334,15 +349,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const alias = getAlias(context, node.name);
 				if (alias && alias.kind == "alias") {
 					if (alias.value) {
-						if (options.doCodeGen && onCodeGen["identifier"]) {
-							callFunction(context, onCodeGen["identifier"], [getString(alias.name)], "builtin", false, false);
+						if (alias.generatedName) {
+							codeGen.identifier(context, alias);
 						}
 						
-						if (options.getAlias) {
-							addToScopeList(alias);
-						} else {
-							addToScopeList(alias.value);
-						}
+						addToScopeList(alias);
 					} else {
 						throw new CompileError(`alias '${node.name}' used before its definition`)
 							.indicator(node.location, "identifier here")
@@ -354,8 +365,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "call": {
-				const functionToCall = build(context, node.left, null, null)[0];
-				const callArguments = build(context, node.callArguments, null, null);
+				const functionToCall = unwrapScopeObject(build(context, node.left, null, null)[0]);
+				const callArguments = build(context, node.callArguments, {
+					doCodeGen: false,
+				}, null);
 				
 				if (functionToCall.kind == "function") {
 					const result = callFunction(context, functionToCall, callArguments, node.location, false, false);
@@ -377,11 +390,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			}
 			case "operator": {
 				if (node.operatorText == "=") {
-					const left = build(context, node.left, {
-						doCodeGen: options.doCodeGen,
-						getAlias: true,
-						resultAtRet: false,
-					}, null)[0];
+					const left = build(context, node.left, null, null)[0];
 					const right = build(context, node.right, null, null)[0];
 					
 					if (left.kind == "alias") {
@@ -405,11 +414,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 							const alias = left.properties[i];
 							if (alias.kind == "alias" && alias.value) {
 								if (alias.name == node.right[0].name) {
-									if (options.getAlias) {
-										addToScopeList(alias);	
-									} else {
-										addToScopeList(alias.value);
-									}
+									addToScopeList(alias);
 								}
 							} else {
 								utilities.unreachable();
@@ -495,9 +500,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			case "codeGenerate": {
 				build(context, node.codeBlock, {
 					doCodeGen: true,
-					getAlias: false,
-					resultAtRet: false,
-				}, null);
+				}, null, resultAtRet);
 				break;
 			}
 			case "while": {
@@ -506,7 +509,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 					
 					if (condition.kind == "bool") {
 						if (condition.value) {
-							build(context, node.codeBlock, null, null)[0];
+							build(context, node.codeBlock, null, null, resultAtRet)[0];
 						} else {
 							break;
 						}
@@ -520,7 +523,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "return": {
-				if (!options.resultAtRet) {
+				if (!resultAtRet) {
 					throw new CompileError("unexpected return").indicator(node.location, "here");
 				}
 				const value = build(context, node.value, null, null)[0];

@@ -1,15 +1,31 @@
 const js = @import("./js.ucl");
 
+@onCodeGen("identifier", fn(name: String) {
+	@addCodeGen("fn_out", name);
+});
+
+@onCodeGen("fn", fn(name: String) {
+	@addCodeGen("top", "function ");
+	@addCodeGen("top", name);
+	@addCodeGen("top", "() {\n");
+	@moveCodeGen("top", "fn_out");
+	@addCodeGen("top", "}\n");
+});
+
+const log = fn(string: String) {
+	@addCodeGen("fn_out", "\tconsole.log(");
+	codeGenerate {
+		@compileDebug();
+		string;
+	}
+	@addCodeGen("fn_out", ");\n");
+};
+
 const exportTest = fn() {
 	// js.log("Hello, World!");
 	// js.log("Bye, World!");
 	const a = "testing";
-	
-	@addCodeGen("fn_out", "\tconsole.log(");
-	codeGenerate {
-		a;
-	}
-	@addCodeGen("fn_out", ");\n");
+	log(a);
 };
 
 @export("test", exportTest);

@@ -6,6 +6,7 @@ import { compileFile } from "./compiler";
 import {
 	ASTnode,
 	ScopeObject,
+	unwrapScopeObject,
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
@@ -28,6 +29,7 @@ function addType(name: string) {
 			originLocation: "builtin",
 			name: "builtin:" + name
 		},
+		generatedName: null,
 	});
 }
 
@@ -75,7 +77,7 @@ class FC {
 	}
 	
 	public "string" = (): string => {
-		const scopeObject = this.scopeObjects[this.i];
+		let scopeObject = this.scopeObjects[this.i];
 		const node = this.nodes[this.i];
 		
 		if (!scopeObject || !node) {
@@ -84,6 +86,8 @@ class FC {
 		}
 		
 		this.i++;
+		
+		scopeObject = unwrapScopeObject(scopeObject);
 		
 		if (scopeObject.kind == "string") {
 			return scopeObject.value;
@@ -94,7 +98,7 @@ class FC {
 	}
 	
 	public "function" = (): ScopeObject => {
-		const scopeObject = this.scopeObjects[this.i];
+		let scopeObject = this.scopeObjects[this.i];
 		const node = this.nodes[this.i];
 		
 		if (!scopeObject || !node) {
@@ -103,6 +107,8 @@ class FC {
 		}
 		
 		this.i++;
+		
+		scopeObject = unwrapScopeObject(scopeObject);
 		
 		if (scopeObject.kind == "function") {
 			return scopeObject;
@@ -146,6 +152,10 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			fc.done();
 			
 			stdout.write(str);
+		}
+		
+		else if (node.name == "compileDebug") {
+			debugger;
 		}
 		
 		else if (node.name == "addCodeGen") {
@@ -197,9 +207,11 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const name = fc.string();
 			fc.done();
 			
-			stdout.write(context.codeGenText[name]);
-			
-			context.codeGenText[name] = "";
+			if (context.codeGenText[name]) {
+				stdout.write(context.codeGenText[name]);
+				
+				context.codeGenText[name] = "";	
+			}
 		}
 		
 		else if (node.name == "writeTofile") {

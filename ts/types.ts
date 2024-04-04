@@ -138,6 +138,7 @@ export type ScopeObject = genericScopeObject & {
 	mutable: boolean,
 	name: string,
 	value: ScopeObject | null,
+	generatedName: string | null,
 } | genericScopeObject & {
 	kind: "function",
 	name: string,
@@ -155,4 +156,12 @@ export type ScopeObject = genericScopeObject & {
 	kind: "argument",
 	name: string,
 	type: ScopeObject[],
+}
+
+export function unwrapScopeObject(scopeObject: ScopeObject): ScopeObject {
+	if (scopeObject.kind == "alias" && scopeObject.value) {
+		return scopeObject.value;
+	}
+	
+	return scopeObject;
 }
