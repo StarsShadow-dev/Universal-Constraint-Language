@@ -15,7 +15,6 @@ const js = @import("./js.ucl");
 const log = fn(string: String) {
 	@addCodeGen("fn_out", "\tconsole.log(");
 	codeGenerate {
-		@compileDebug();
 		string;
 	}
 	@addCodeGen("fn_out", ");\n");

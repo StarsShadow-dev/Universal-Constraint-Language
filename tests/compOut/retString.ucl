@@ -1,0 +1,8 @@
+// compOut
+// testing
+
+const test = fn() {
+	ret "testing";
+};
+
+@addCodeGen("top", test());
