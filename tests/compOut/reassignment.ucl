@@ -1,0 +1,9 @@
+// compOut
+// test1
+// test2
+
+var a = "test1";
+@addCodeGen("top", a);
+@addCodeGen("top", "\n");
+a = "test2";
+@addCodeGen("top", a);
