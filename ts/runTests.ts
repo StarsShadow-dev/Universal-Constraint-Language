@@ -69,9 +69,10 @@ function testFile(filePath: string) {
 	}
 
 	const builderContext: BuilderContext = {
+		codeGenText: {},
+		
 		scopeLevels: [],
 		level: -1,
-		codeGenText: {},
 		filePath: filePath,
 		visible: [],
 	};

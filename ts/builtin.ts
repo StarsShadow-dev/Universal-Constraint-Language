@@ -15,7 +15,7 @@ let fileSystemDisabled = false;
 
 export let builtinScopeLevel: ScopeObject[] = [];
 
-let onCodeGen: any = {};
+export let onCodeGen: any = {};
 
 function addType(name: string) {
 	builtinScopeLevel.push({
@@ -31,7 +31,7 @@ function addType(name: string) {
 	});
 }
 
-function getString(value: string): ScopeObject {
+export function getString(value: string): ScopeObject {
 	return {
 		kind: "string",
 		originLocation: "builtin",
@@ -176,8 +176,13 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			if (context.codeGenText[srcName]) {
 				context.codeGenText[destName] += context.codeGenText[srcName];
 			}
+		}
+		
+		else if (node.name == "clearCodeGen") {
+			let name = fc.string();
+			fc.done();
 			
-			context.codeGenText[srcName] = "";
+			context.codeGenText[name] = "";
 		}
 		
 		else if (node.name == "onCodeGen") {
@@ -217,7 +222,6 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 				}
 				
 				fs.writeFileSync(newPath, context.codeGenText[name]);
-				context.codeGenText[name] = "";
 			} else {
 				throw new CompileError(`unable to write '${name}' to file '${outPath}' because '${name}' does not exist`).indicator(node.location, "here");
 			}
@@ -238,10 +242,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			fc.done();
 			
 			if (onCodeGen["fn"]) {
-				context.codeGenText["__fn_name"] = name;
-				
-				callFunction(context, fn, [], "builtin", true);
-				callFunction(context, onCodeGen["fn"], [getString(name)], "builtin", false);
+				callFunction(context, fn, [], "builtin", true, true);
+				callFunction(context, onCodeGen["fn"], [getString(name)], "builtin", false, false);
 			}
 		}
 		

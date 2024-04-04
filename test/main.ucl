@@ -1,8 +1,15 @@
 const js = @import("./js.ucl");
 
 const exportTest = fn() {
-	js.log("Hello, World!");
-	js.log("Bye, World!");
+	// js.log("Hello, World!");
+	// js.log("Bye, World!");
+	const a = "testing";
+	
+	@addCodeGen("fn_out", "\tconsole.log(");
+	codeGenerate {
+		a;
+	}
+	@addCodeGen("fn_out", ");\n");
 };
 
 @export("test", exportTest);

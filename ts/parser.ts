@@ -253,6 +253,23 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
+				else if (token.text == "codeGenerate") {
+					const openingBracket = forward();
+					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+					}
+					
+					const codeBlock = parse(context, ParserMode.normal, "}");
+					
+					AST.push({
+						kind: "codeGenerate",
+						location: token.location,
+						codeBlock: codeBlock,
+					});
+					
+					needsSemicolon = false;
+				}
+				
 				else if (token.text == "while") {
 					const openingParentheses = forward();
 					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {

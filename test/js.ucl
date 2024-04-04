@@ -1,3 +1,11 @@
+@onCodeGen("string", fn(text: String) {
+	@addCodeGen("fn_out", "\"", text, "\"");
+});
+
+@onCodeGen("identifier", fn(name: String) {
+	@addCodeGen("fn_out", name);
+});
+
 @onCodeGen("fn", fn(name: String) {
 	@addCodeGen("top", "function ");
 	@addCodeGen("top", name);

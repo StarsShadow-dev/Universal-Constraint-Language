@@ -7,12 +7,13 @@ import {
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, getIndicator, CompileError } from "./report";
-import { builtinScopeLevel, builtinCall } from "./builtin";
+import { builtinScopeLevel, builtinCall, onCodeGen, getString } from "./builtin";
 
 let nextSymbolName = 0;
 
 export type BuilderContext = {
 	codeGenText: any,
+	
 	scopeLevels: ScopeObject[][],
 	level: number,
 	filePath: string,
@@ -20,6 +21,7 @@ export type BuilderContext = {
 }
 
 export type BuilderOptions = {
+	doCodeGen: boolean,
 	getAlias: boolean,
 	resultAtRet: boolean,
 }
@@ -135,7 +137,7 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
-export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean): ScopeObject {
+export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, doCodeGen: boolean): ScopeObject {
 	if (functionToCall.kind == "function") {
 		if (!fillComplex) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
@@ -193,6 +195,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		}
 		
 		const result = build(context, functionToCall.AST, {
+			doCodeGen: doCodeGen,
 			getAlias: false,
 			resultAtRet: true,
 		}, {
@@ -215,9 +218,8 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		return result;
 	} else {
 		utilities.unreachable();
+		return {} as ScopeObject;
 	}
-	
-	return {} as ScopeObject;
 }
 
 export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null): ScopeObject[] {
@@ -234,6 +236,7 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 			scopeList = _build(context, AST, options);	
 		} else {
 			scopeList = _build(context, AST, {
+				doCodeGen: false,
 				getAlias: false,
 				resultAtRet: false,
 			});
@@ -331,6 +334,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const alias = getAlias(context, node.name);
 				if (alias && alias.kind == "alias") {
 					if (alias.value) {
+						if (options.doCodeGen && onCodeGen["identifier"]) {
+							callFunction(context, onCodeGen["identifier"], [getString(alias.name)], "builtin", false, false);
+						}
+						
 						if (options.getAlias) {
 							addToScopeList(alias);
 						} else {
@@ -351,11 +358,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				const callArguments = build(context, node.callArguments, null, null);
 				
 				if (functionToCall.kind == "function") {
-					const result = callFunction(context, functionToCall, callArguments, node.location, false);
+					const result = callFunction(context, functionToCall, callArguments, node.location, false, false);
 					
 					addToScopeList(result);
 				} else {
-					utilities.unreachable();
+					throw new CompileError(`attempting a function call on something other than a function`)
+						.indicator(node.location, "here");
 				}
 				break;
 			}
@@ -370,6 +378,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 			case "operator": {
 				if (node.operatorText == "=") {
 					const left = build(context, node.left, {
+						doCodeGen: options.doCodeGen,
 						getAlias: true,
 						resultAtRet: false,
 					}, null)[0];
@@ -441,9 +450,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			
-			case "assignment": {
-				break;
-			}
 			case "function": {
 				let returnType = null;
 				if (node.returnType) {
@@ -484,6 +490,14 @@ export function _build(context: BuilderContext, AST: ASTnode[], options: Builder
 				break;
 			}
 			case "struct": {
+				break;
+			}
+			case "codeGenerate": {
+				build(context, node.codeBlock, {
+					doCodeGen: true,
+					getAlias: false,
+					resultAtRet: false,
+				}, null);
 				break;
 			}
 			case "while": {

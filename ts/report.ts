@@ -87,7 +87,7 @@ export class CompileError {
 		for (let i = 0; i < this.indicators.length; i++) {
 			const indicator = this.indicators[i];
 			text += getIndicator(indicator, fancyIndicators);
-			if (this.indicators[i + 1]) {
+			if (!fancyIndicators && this.indicators[i + 1]) {
 				text += "\n";
 			}
 		}

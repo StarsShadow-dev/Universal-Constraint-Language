@@ -87,16 +87,15 @@ genericASTnode & {
 	name: string,
 	value: ASTnode,
 } | genericASTnode & {
-	kind: "assignment",
-	left: ASTnode[],
-	right: ASTnode[],
-} | genericASTnode & {
 	kind: "function",
 	functionArguments: ASTnode[],
 	returnType: ASTnode[] | null,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
+} | genericASTnode & {
+	kind: "codeGenerate",
+	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "while",
 	condition: ASTnode[],
