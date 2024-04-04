@@ -84,8 +84,12 @@ export class CompileError {
 	
 	public getText(fancyIndicators: boolean): string {
 		let text = `error: ${this.msg}\n`;
-		for (const indicator of this.indicators) {
+		for (let i = 0; i < this.indicators.length; i++) {
+			const indicator = this.indicators[i];
 			text += getIndicator(indicator, fancyIndicators);
+			if (this.indicators[i + 1]) {
+				text += "\n";
+			}
 		}
 		return text;
 	}

@@ -1,0 +1,7 @@
+// compError
+// error: the alias 'test' is not mutable
+// tests/compError/modifyConst.ucl:7 -> reassignment here
+// tests/compError/modifyConst.ucl:6 -> alias defined here
+
+const test = 1;
+test = 2;
