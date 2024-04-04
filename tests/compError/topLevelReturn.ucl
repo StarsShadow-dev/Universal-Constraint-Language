@@ -1,0 +1,5 @@
+// compError
+// error: unexpected return
+// tests/compError/topLevelReturn.ucl:5 -> here
+
+ret 10;
