@@ -520,6 +520,15 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "if": {
+				const condition = build(context, node.condition, null, null)[0];
+				
+				if (condition.kind == "bool") {
+					if (condition.value) {
+						build(context, node.codeBlock, null, null, resultAtRet)[0];
+					}
+				} else {
+					utilities.unreachable();
+				}	
 				break;
 			}
 			case "return": {

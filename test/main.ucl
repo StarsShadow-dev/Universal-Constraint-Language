@@ -1,32 +1,26 @@
-const js = @import("./js.ucl");
+// const js = @import("./js.ucl");
 
-@onCodeGen("identifier", fn(name: String) {
-	@addCodeGen("fn_out", name);
-});
+// const log = fn(string: String) {
+// 	@addCodeGen("fn_out", "\tconsole.log(");
+// 	codeGenerate {
+// 		string;
+// 	}
+// 	@addCodeGen("fn_out", ");\n");
+// };
 
-@onCodeGen("fn", fn(name: String) {
-	@addCodeGen("top", "function ");
-	@addCodeGen("top", name);
-	@addCodeGen("top", "() {\n");
-	@moveCodeGen("top", "fn_out");
-	@addCodeGen("top", "}\n");
-});
+// const exportTest = fn() {
+// 	// js.log("Hello, World!");
+// 	// js.log("Bye, World!");
+// 	const a = "testing";
+// 	log(a);
+// };
 
-const log = fn(string: String) {
-	@addCodeGen("fn_out", "\tconsole.log(");
-	codeGenerate {
-		string;
-	}
-	@addCodeGen("fn_out", ");\n");
-};
+// @export("test", exportTest);
 
-const exportTest = fn() {
-	// js.log("Hello, World!");
-	// js.log("Bye, World!");
-	const a = "testing";
-	log(a);
-};
+// @writeToStdout("top");
 
-@export("test", exportTest);
+if (true) {
+	@addCodeGen("top", "it is true");
+}
 
 @writeToStdout("top");

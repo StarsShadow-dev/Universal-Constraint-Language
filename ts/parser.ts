@@ -270,7 +270,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					needsSemicolon = false;
 				}
 				
-				else if (token.text == "while") {
+				else if (token.text == "while" || token.text == "if") {
 					const openingParentheses = forward();
 					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
 						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
@@ -290,12 +290,21 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
-					AST.push({
-						kind: "while",
-						location: token.location,
-						condition: condition,
-						codeBlock: codeBlock,
-					});
+					if (token.text == "while") {
+						AST.push({
+							kind: "while",
+							location: token.location,
+							condition: condition,
+							codeBlock: codeBlock,
+						});	
+					} else {
+						AST.push({
+							kind: "if",
+							location: token.location,
+							condition: condition,
+							codeBlock: codeBlock,
+						});	
+					}
 					
 					needsSemicolon = false;
 				}
