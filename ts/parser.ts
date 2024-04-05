@@ -191,7 +191,7 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 				type: type,
 			});	
 		} else {
-			utilities.unreachable();
+			throw new CompileError("function argument without a type").indicator(name.location, "here");
 		}
 		
 		const end = forward();
