@@ -104,6 +104,47 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 	return left;
 }
 
+function parseType(context: ParserContext): ASTnode & { kind: "typeUse" } | null {
+	let returnType: ASTnode & { kind: "typeUse" } | null = null;
+	
+	function forward(): Token {
+		const token = context.tokens[context.i];
+		
+		if (!token) {
+			throw new CompileError("unexpected end of file")
+				.indicator(context.tokens[context.i-1].location, "last token here");	
+		}
+		
+		context.i++
+		return token;
+	}
+	
+	function next(): Token {
+		const token = context.tokens[context.i];
+		
+		if (!token) {
+			throw new CompileError("unexpected end of file")
+				.indicator(context.tokens[context.i-1].location, "last token here");
+		}
+		
+		return token;
+	}
+	
+	const colon = next();
+	if (colon.type == TokenType.separator && colon.text == ":") {
+		forward();
+		
+		const node = parse(context, ParserMode.single, null)[0];
+		returnType = {
+			kind: "typeUse",
+			location: node.location,
+			value: node,
+		}
+	}
+	
+	return returnType;
+}
+
 function parseFunctionArguments(context: ParserContext): ASTnode[] {
 	let AST: ASTnode[] = [];
 	
@@ -140,19 +181,18 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 			throw new CompileError("expected name in function arguments").indicator(name.location, "here");
 		}
 		
-		const colon = forward();
-		if (colon.type != TokenType.separator || colon.text != ":") {
-			throw new CompileError("expected colon in function arguments").indicator(colon.location, "here");
+		const type = parseType(context);
+		
+		if (type) {
+			AST.push({
+				kind: "argument",
+				location: name.location,
+				name: name.text,
+				type: type,
+			});	
+		} else {
+			utilities.unreachable();
 		}
-		
-		const type = parse(context, ParserMode.single, null);
-		
-		AST.push({
-			kind: "argument",
-			location: name.location,
-			name: name.text,
-			type: type,
-		});
 		
 		const end = forward();
 		
@@ -317,14 +357,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					
 					const functionArguments = parseFunctionArguments(context);
 					
-					let returnType: ASTnode[] | null = null;
-					
-					const colonOrBracket = next();
-					if (colonOrBracket.type == TokenType.separator && colonOrBracket.text == ":") {
-						forward();
-						
-						returnType = parse(context, ParserMode.single, null);
-					}
+					const returnType = parseType(context);
 					
 					const openingBracket = forward();
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {

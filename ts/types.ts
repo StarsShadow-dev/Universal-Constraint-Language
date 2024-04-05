@@ -89,7 +89,7 @@ genericASTnode & {
 } | genericASTnode & {
 	kind: "function",
 	functionArguments: ASTnode[],
-	returnType: ASTnode[] | null,
+	returnType: ASTnode & { kind: "typeUse" } | null,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
@@ -110,7 +110,10 @@ genericASTnode & {
 } | genericASTnode & {
 	kind: "argument",
 	name: string,
-	type: ASTnode[],
+	type: ASTnode & { kind: "typeUse" },
+} | genericASTnode & {
+	kind: "typeUse",
+	value: ASTnode,
 }
 
 //

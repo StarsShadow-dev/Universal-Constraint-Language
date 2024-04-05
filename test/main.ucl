@@ -1,26 +1,20 @@
-// const js = @import("./js.ucl");
+const js = @import("./js.ucl");
 
-// const log = fn(string: String) {
-// 	@addCodeGen("fn_out", "\tconsole.log(");
-// 	codeGenerate {
-// 		string;
-// 	}
-// 	@addCodeGen("fn_out", ");\n");
-// };
+const log = fn(string: String) {
+	@addCodeGen("fn_out", "\tconsole.log(");
+	codeGenerate {
+		string;
+	}
+	@addCodeGen("fn_out", ");\n");
+};
 
-// const exportTest = fn() {
-// 	// js.log("Hello, World!");
-// 	// js.log("Bye, World!");
-// 	const a = "testing";
-// 	log(a);
-// };
+const exportTest = fn() {
+	// js.log("Hello, World!");
+	// js.log("Bye, World!");
+	const a = "testing";
+	log(a);
+};
 
-// @export("test", exportTest);
-
-// @writeToStdout("top");
-
-if (true) {
-	@addCodeGen("top", "it is true");
-}
+@export("test", exportTest);
 
 @writeToStdout("top");

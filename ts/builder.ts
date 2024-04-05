@@ -458,7 +458,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "function": {
 				let returnType = null;
 				if (node.returnType) {
-					returnType = build(context, node.returnType, null, null);
+					returnType = build(context, [node.returnType.value], null, null);
 				}
 				
 				let functionArguments: ScopeObject[] = [];
@@ -467,7 +467,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const argument = node.functionArguments[i];
 					
 					if (argument.kind == "argument") {
-						const argumentType = build(context, argument.type, null, null);
+						const argumentType = build(context, [argument.type.value], null, null);
 						
 						functionArguments.push({
 							kind: "argument",
