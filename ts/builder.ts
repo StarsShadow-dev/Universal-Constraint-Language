@@ -426,8 +426,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				else {
-					const left = build(context, node.left, null, null)[0];
-					const right = build(context, node.right, null, null)[0];
+					const left = unwrapScopeObject(build(context, node.left, null, null)[0]);
+					const right = unwrapScopeObject(build(context, node.right, null, null)[0]);
 					
 					if (left.kind == "number" && right.kind == "number") {
 						if (node.operatorText == "+") {

@@ -1,0 +1,13 @@
+// compOut
+// test
+// test
+// test
+// test
+// test
+// 
+
+var i = 0;
+while (i < 5) {
+	@addCodeGen("top", "test\n");
+	i = i + 1;
+}
