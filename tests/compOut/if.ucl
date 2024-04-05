@@ -1,0 +1,10 @@
+// compOut
+// in true
+
+if (true) {
+	@addCodeGen("top", "in true");	
+}
+
+if (false) {
+	@addCodeGen("top", "in false");	
+}
