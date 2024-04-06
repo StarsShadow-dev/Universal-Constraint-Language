@@ -5,6 +5,8 @@ import {
 	ASTnode,
 	ScopeObject,
 	unwrapScopeObject,
+	CodeGenText,
+	getCGText,
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, getIndicator, CompileError } from "./report";
@@ -16,20 +18,21 @@ let nextSymbolName = 0;
 export type ScopeInformation = {
 	levels: ScopeObject[][],
 	currentLevel: number,
-	visible: ScopeObject[],
+	
+	function: ScopeObject & { kind: "function" } | null,
+	
+	// the function that is being generated
+	generatingFunction: ScopeObject & { kind: "function" } | null,
 }
 
 export type BuilderOptions = {
-	doCodeGen: boolean,
+	compileTime: boolean,
+	codeGenText: CodeGenText,
 }
 
 export type BuilderContext = {
-	codeGenText: any,
-	
 	filePath: string,
-	
 	scope: ScopeInformation,
-	
 	options: BuilderOptions,
 }
 
@@ -96,14 +99,16 @@ function getAlias(context: BuilderContext, name: string): ScopeObject | null {
 	}
 	
 	// visible
-	for (let i = 0; i < context.scope.visible.length; i++) {
-		const scopeObject = context.scope.visible[i];
-		if (scopeObject.kind == "alias") {
-			if (scopeObject.name == name) {
-				return scopeObject;
+	if (context.scope.function) {
+		for (let i = 0; i < context.scope.function.visible.length; i++) {
+			const scopeObject = context.scope.function.visible[i];
+			if (scopeObject.kind == "alias") {
+				if (scopeObject.name == name) {
+					return scopeObject;
+				}
+			} else {
+				utilities.unreachable();
 			}
-		} else {
-			utilities.unreachable();
 		}
 	}
 	
@@ -122,9 +127,11 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	}
 	
 	// visible
-	for (let i = 0; i < context.scope.visible.length; i++) {
-		const scopeObject = context.scope.visible[i];
-		list.push(scopeObject);
+	if (context.scope.function) {
+		for (let i = 0; i < context.scope.function.visible.length; i++) {
+			const scopeObject = context.scope.function.visible[i];
+			list.push(scopeObject);
+		}
 	}
 	
 	return list;
@@ -144,16 +151,16 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
-export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, doCodeGen: boolean): ScopeObject {
+export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, compileTime: boolean, codeGenText: CodeGenText): ScopeObject {
 	if (functionToCall.kind == "function") {
 		if (!fillComplex) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
-				throw new CompileError(`too many arguments passed to function '${functionToCall.name}'`)
+				throw new CompileError(`too many arguments passed to function '${functionToCall.symbolName}'`)
 					.indicator(location, "function call here");
 			}
 			
 			if (callArguments.length < functionToCall.functionArguments.length) {
-				throw new CompileError(`not enough arguments passed to function '${functionToCall.name}'`)
+				throw new CompileError(`not enough arguments passed to function '${functionToCall.symbolName}'`)
 					.indicator(location, "function call here");
 			}	
 		}
@@ -162,8 +169,11 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		context.scope = {
 			currentLevel: -1,
 			levels: [[]],
-			visible: functionToCall.visible,
+			function: functionToCall,
+			generatingFunction: oldScope.generatingFunction,
 		}
+		
+		// context.scope.generatingFunction = functionToCall;
 		
 		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 			const argument = functionToCall.functionArguments[index];
@@ -171,12 +181,12 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			const callArgument = unwrapScopeObject(callArguments[index]);
 			
 			if (argument.kind == "argument") {
-				let generatedName = null;
-				const originalAlias = callArguments[index];
-				if (originalAlias.kind == "alias") {
-					generatedName = originalAlias.generatedName
-				} else if (doCodeGen) {
-					generatedName = argument.name;
+				let symbolName = argument.name;
+				{
+					const temp = callArguments[index];
+					if (temp.kind == "alias") {
+						symbolName = temp.symbolName;
+					}
 				}
 				
 				if (fillComplex) {
@@ -190,7 +200,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 							originLocation: argument.originLocation,
 							type: argument.type,
 						},
-						generatedName: generatedName,
+						symbolName: symbolName,
 					});
 				} else {
 					expectType(context, unwrapScopeObject(argument.type[0]), callArgument,
@@ -205,7 +215,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						mutable: false,
 						name: argument.name,
 						value: callArgument,
-						generatedName: generatedName,
+						symbolName: symbolName,
 					});	
 				}
 			} else {
@@ -213,21 +223,32 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 		}
 		
-		const result = build(context, functionToCall.AST, {
-			doCodeGen: doCodeGen,
+		let result = build(context, functionToCall.AST, {
+			compileTime: compileTime,
+			codeGenText: codeGenText,
 		}, {
 			location: functionToCall.originLocation,
-			msg: `function ${functionToCall.name}`,
+			msg: `function ${functionToCall.symbolName}`,
 		}, true)[0];
 		
 		context.scope = oldScope;
 		
-		if (result && functionToCall.returnType) {
-			expectType(context, functionToCall.returnType[0], result,
-				new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-					.indicator(location, "call here")
-					.indicator(functionToCall.originLocation, "function defined here")
-			);
+		if (result) {
+			if (functionToCall.returnType) {
+				expectType(context, functionToCall.returnType[0], result,
+					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+						.indicator(location, "call here")
+						.indicator(functionToCall.originLocation, "function defined here")
+				);	
+			} else {
+				// TODO: error
+				utilities.unreachable();
+			}
+		} else {
+			result = {
+				kind: "void",
+				originLocation: location,
+			}
 		}
 		
 		return result;
@@ -291,7 +312,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				mutable: node.mutable,
 				name: node.name,
 				value: null,
-				generatedName: codeGen.getNewName(context, node.name),
+				symbolName: node.name,
 			});
 		}
 	}
@@ -309,7 +330,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				if (node.value.kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
-					value.name += `:${value.originLocation.path}:${alias.name}`;
+					value.symbolName += `:${value.originLocation.path}:${alias.name}`;
 				}
 				
 				alias.value = value;
@@ -349,10 +370,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const alias = getAlias(context, node.name);
 				if (alias && alias.kind == "alias") {
 					if (alias.value) {
-						if (alias.generatedName) {
-							codeGen.identifier(context, alias);
-						}
-						
+						codeGen.load(context, alias);
 						addToScopeList(alias);
 					} else {
 						throw new CompileError(`alias '${node.name}' used before its definition`)
@@ -365,13 +383,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "call": {
-				const functionToCall = unwrapScopeObject(build(context, node.left, null, null)[0]);
+				const leftText = getCGText();
+				const functionToCall = unwrapScopeObject(build(context, node.left, {
+					compileTime: context.options.compileTime,
+					codeGenText: leftText,
+				}, null)[0]);
+				const argumentText = getCGText();
 				const callArguments = build(context, node.callArguments, {
-					doCodeGen: false,
+					compileTime: context.options.compileTime,
+					codeGenText: argumentText,
 				}, null);
 				
 				if (functionToCall.kind == "function") {
-					const result = callFunction(context, functionToCall, callArguments, node.location, false, false);
+					const result = callFunction(context, functionToCall, callArguments, node.location, false, false, context.options.codeGenText);
 					
 					addToScopeList(result);
 				} else {
@@ -381,7 +405,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "builtinCall": {
-				const callArguments = build(context, node.callArguments, null, null);
+				const argumentText = getCGText();
+				const callArguments = build(context, node.callArguments, {
+					compileTime: context.options.compileTime,
+					codeGenText: argumentText,
+				}, null);
 				const result = builtinCall(context, node, callArguments);
 				if (result) {
 					addToScopeList(result);
@@ -485,7 +513,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				addToScopeList({
 					kind: "function",
 					originLocation: node.location,
-					name: `${nextSymbolName}`,
+					symbolName: `${nextSymbolName}`,
 					functionArguments: functionArguments,
 					returnType: returnType,
 					AST: node.codeBlock,
@@ -495,12 +523,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "struct": {
-				break;
-			}
-			case "codeGenerate": {
-				build(context, node.codeBlock, {
-					doCodeGen: true,
-				}, null, resultAtRet);
 				break;
 			}
 			case "while": {

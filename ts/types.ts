@@ -9,6 +9,12 @@ export type SourceLocation = {
 	endColumn: number,
 } | "builtin"
 
+export type CodeGenText = [string] | null
+
+export function getCGText(): [string] {
+	return [""];
+}
+
 //
 // tokens
 //
@@ -134,6 +140,8 @@ export type ScopeObject = genericScopeObject & {
 	kind: "string",
 	value: string,
 } | genericScopeObject & {
+	kind: "void",
+} | genericScopeObject & {
 	kind: "complexValue",
 	type: ScopeObject[],
 } | genericScopeObject & {
@@ -141,10 +149,10 @@ export type ScopeObject = genericScopeObject & {
 	mutable: boolean,
 	name: string,
 	value: ScopeObject | null,
-	generatedName: string | null,
+	symbolName: string,
 } | genericScopeObject & {
 	kind: "function",
-	name: string,
+	symbolName: string,
 	functionArguments: ScopeObject[],
 	returnType: ScopeObject[] | null,
 	AST: ASTnode[],

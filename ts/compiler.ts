@@ -23,24 +23,26 @@ export function compileFile(filePath: string): ScopeObject[][] {
 	// console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {
-		codeGenText: {},
 		filePath: filePath,
 		
 		scope: {
 			levels: [],
 			currentLevel: -1,
-			visible: [],	
+			function: null,
+			generatingFunction: null,
 		},
 		
 		options: {
-			doCodeGen: false,
+			compileTime: false,
+			codeGenText: [""],
 		}
 	};
 	
-	build(builderContext, AST, null, null);
-	
+	const scopeList = build(builderContext, AST, null, null);
+	if (builderContext.options.codeGenText) {
+		console.log("codeGenText:", builderContext.options.codeGenText[0]);
+	}
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
-	// console.log("scopeLevels:", JSON.stringify(builderContext.scopeLevels, undefined, 4));
 	
 	return builderContext.scope.levels;
 }

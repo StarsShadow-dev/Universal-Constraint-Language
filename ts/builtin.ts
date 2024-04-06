@@ -6,11 +6,13 @@ import { compileFile } from "./compiler";
 import {
 	ASTnode,
 	ScopeObject,
+	getCGText,
 	unwrapScopeObject,
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
 import { BuilderContext, callFunction } from "./builder";
+import codeGen from "./codeGen";
 
 let fileSystemDisabled = false;
 
@@ -21,15 +23,15 @@ export let onCodeGen: any = {};
 function addType(name: string) {
 	builtinScopeLevel.push({
 		kind: "alias",
-		mutable: false,
 		originLocation: "builtin",
+		mutable: false,
 		name: name,
 		value: {
 			kind: "type",
 			originLocation: "builtin",
 			name: "builtin:" + name
 		},
-		generatedName: null,
+		symbolName: "",
 	});
 }
 
@@ -97,7 +99,7 @@ class FC {
 		}
 	}
 	
-	public "function" = (): ScopeObject => {
+	public "function" = (): ScopeObject & { kind: "function" } => {
 		let scopeObject = this.scopeObjects[this.i];
 		const node = this.nodes[this.i];
 		
@@ -111,6 +113,25 @@ class FC {
 		scopeObject = unwrapScopeObject(scopeObject);
 		
 		if (scopeObject.kind == "function") {
+			return scopeObject;
+		} else {
+			throw new CompileError("builtin argument error")
+				.indicator(node.location, "expected a function");
+		}
+	}
+	
+	public "alias" = (): ScopeObject & { kind: "alias" } => {
+		let scopeObject = this.scopeObjects[this.i];
+		const node = this.nodes[this.i];
+		
+		if (!scopeObject || !node) {
+			throw new CompileError("builtin argument error")
+				.indicator(this.builtinNode.location, "expected an alias but there are no more arguments");
+		}
+		
+		this.i++;
+		
+		if (scopeObject.kind == "alias") {
 			return scopeObject;
 		} else {
 			throw new CompileError("builtin argument error")
@@ -167,11 +188,17 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			}
 			fc.done();
 			
-			if (context.codeGenText[name] == undefined) {
-				context.codeGenText[name] = "";
+			if (context.options.codeGenText) {
+				context.options.codeGenText[0] += str;
+			} else {
+				console.log("no context.options.codeGenText", str);
 			}
 			
-			context.codeGenText[name] += str;
+			// if (context.codeGenText[name] == undefined) {
+			// 	context.codeGenText[name] = "";
+			// }
+			
+			// context.codeGenText[name] += str;
 		}
 		
 		else if (node.name == "moveCodeGen") {
@@ -179,20 +206,20 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			let srcName = fc.string();
 			fc.done();
 			
-			if (context.codeGenText[destName] == undefined) {
-				context.codeGenText[destName] = "";
-			}
+			// if (context.codeGenText[destName] == undefined) {
+			// 	context.codeGenText[destName] = "";
+			// }
 			
-			if (context.codeGenText[srcName]) {
-				context.codeGenText[destName] += context.codeGenText[srcName];
-			}
+			// if (context.codeGenText[srcName]) {
+			// 	context.codeGenText[destName] += context.codeGenText[srcName];
+			// }
 		}
 		
 		else if (node.name == "clearCodeGen") {
 			let name = fc.string();
 			fc.done();
 			
-			context.codeGenText[name] = "";
+			// context.codeGenText[name] = "";
 		}
 		
 		else if (node.name == "onCodeGen") {
@@ -207,11 +234,11 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const name = fc.string();
 			fc.done();
 			
-			if (context.codeGenText[name]) {
-				stdout.write(context.codeGenText[name]);
+			// if (context.codeGenText[name]) {
+			// 	stdout.write(context.codeGenText[name]);
 				
-				context.codeGenText[name] = "";	
-			}
+			// 	context.codeGenText[name] = "";	
+			// }
 		}
 		
 		else if (node.name == "writeTofile") {
@@ -223,20 +250,20 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const outPath = fc.string();
 			fc.done();
 			
-			if (typeof context.codeGenText[name] == "string") {
-				const newPath = path.join(path.dirname(context.filePath), outPath);
-				const dir = path.dirname(newPath);
+			// if (typeof context.codeGenText[name] == "string") {
+			// 	const newPath = path.join(path.dirname(context.filePath), outPath);
+			// 	const dir = path.dirname(newPath);
 				
-				console.log(`writing to '${outPath}':\n${context.codeGenText[name]}`);
+			// 	console.log(`writing to '${outPath}':\n${context.codeGenText[name]}`);
 				
-				if (!fs.existsSync(dir)) {
-					fs.mkdirSync(dir, { recursive: true });
-				}
+			// 	if (!fs.existsSync(dir)) {
+			// 		fs.mkdirSync(dir, { recursive: true });
+			// 	}
 				
-				fs.writeFileSync(newPath, context.codeGenText[name]);
-			} else {
-				throw new CompileError(`unable to write '${name}' to file '${outPath}' because '${name}' does not exist`).indicator(node.location, "here");
-			}
+			// 	fs.writeFileSync(newPath, context.codeGenText[name]);
+			// } else {
+			// 	throw new CompileError(`unable to write '${name}' to file '${outPath}' because '${name}' does not exist`).indicator(node.location, "here");
+			// }
 		}
 		
 		else if (node.name == "import") {
@@ -250,13 +277,19 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		
 		else if (node.name == "export") {
 			const name = fc.string();
-			const fn = fc.function();
+			const fnAlias = fc.alias();
+			const fn = unwrapScopeObject(fnAlias);
 			fc.done();
 			
-			if (onCodeGen["fn"]) {
-				callFunction(context, fn, [], "builtin", true, true);
-				callFunction(context, onCodeGen["fn"], [getString(name)], "builtin", false, false);
+			if (fn.kind == "function") {
+				fn.symbolName = name;
 			}
+			
+			const text = getCGText();
+			debugger;
+			callFunction(context, fn, [], "builtin", true, false, text);
+			
+			codeGen.function(context, fn, text);
 		}
 		
 		else {
