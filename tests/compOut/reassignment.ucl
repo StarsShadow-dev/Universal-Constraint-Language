@@ -3,7 +3,7 @@
 // test2
 
 var a = "test1";
-@addCodeGen("top", a);
-@addCodeGen("top", "\n");
+@addTopCodeGen(a);
+@addTopCodeGen("\n");
 a = "test2";
-@addCodeGen("top", a);
+@addTopCodeGen(a);

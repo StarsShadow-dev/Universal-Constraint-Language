@@ -11,6 +11,7 @@ import utilities from "./utilities";
 import { CompileError } from "./report";
 import { setUpBuiltin } from "./builtin";
 import path from "path";
+import codeGen from "./codeGen";
 
 function testSuccess() {
 	console.log("\n\t\x1B[32mtest success!\x1B[0m\n");
@@ -25,6 +26,8 @@ function testFile(filePath: string) {
 	console.log(`running test: '${filePath}'`);
 	
 	setUpBuiltin(true);
+	
+	codeGen.getTop()[0] = "";
 	
 	const text = utilities.readFile(filePath);
 
@@ -114,14 +117,13 @@ function testFile(filePath: string) {
 	} else if (mode == "compPass") {
 		testSuccess();
 	} else if (mode == "compOut") {
-		console.log("TODO");
-		// const expectedOutput = comments.join("\n");
-		// const actualOutput = builderContext.codeGenText["top"];
-		// if (expectedOutput == actualOutput) {
-		// 	testSuccess();
-		// } else {
-		// 	testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
-		// }
+		const expectedOutput = comments.join("\n");
+		const actualOutput = codeGen.getTop()[0];
+		if (expectedOutput == actualOutput) {
+			testSuccess();
+		} else {
+			testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+		}
 	}
 }
 

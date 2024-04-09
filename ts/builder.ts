@@ -241,7 +241,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		
 		if (result) {
 			if (functionToCall.returnType) {
-				expectType(context, functionToCall.returnType[0], result,
+				expectType(context, unwrapScopeObject(functionToCall.returnType[0]), result,
 					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 						.indicator(location, "call here")
 						.indicator(functionToCall.originLocation, "function defined here")
