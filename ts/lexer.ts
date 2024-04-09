@@ -67,7 +67,10 @@ export function lex(filePath: string, text: string): Token[] {
 		// comment
 		if (text[i] == '/' && text[i+1] == '/') {
 			let str = "";
-			i += 2;
+			
+			i++;
+			if (text[i+1] == " ") i++;
+			
 			for (; i < text.length; i++) {
 				if (!text[i+1] || text[i+1] == "\n") {
 					break;
