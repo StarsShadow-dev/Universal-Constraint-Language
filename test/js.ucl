@@ -1,4 +1,5 @@
 @onCodeGen("start", fn() {
+	@addTopCodeGen("\"use strict\";\n");
 	@addTopCodeGen("const symbols = {};\n");
 });
 
