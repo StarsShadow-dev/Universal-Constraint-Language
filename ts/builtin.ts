@@ -193,12 +193,16 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			} else {
 				console.log("no context.options.codeGenText", str);
 			}
+		}
+		
+		else if (node.name == "addTopCodeGen") {
+			let str = "";
+			while (fc.next()) {
+				str += fc.string();
+			}
+			fc.done();
 			
-			// if (context.codeGenText[name] == undefined) {
-			// 	context.codeGenText[name] = "";
-			// }
-			
-			// context.codeGenText[name] += str;
+			codeGen.getTop()[0] += str;
 		}
 		
 		else if (node.name == "moveCodeGen") {

@@ -1,5 +1,5 @@
 @onCodeGen("start", fn() {
-	@addCodeGen("const symbols = {};\n");
+	@addTopCodeGen("const symbols = {};\n");
 });
 
 @onCodeGen("string", fn(text: String) {
