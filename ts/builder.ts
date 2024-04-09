@@ -247,8 +247,9 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						.indicator(functionToCall.originLocation, "function defined here")
 				);	
 			} else {
-				// TODO: error
-				utilities.unreachable();
+				throw new CompileError(`void function returned a value`)
+					.indicator(location, "call here")
+					.indicator(functionToCall.originLocation, "function defined here");
 			}
 		} else {
 			result = {
