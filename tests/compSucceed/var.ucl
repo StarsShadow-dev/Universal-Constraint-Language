@@ -1,4 +1,4 @@
-// compPass
+// compSucceed
 
 var test = 3;
 test = 9;

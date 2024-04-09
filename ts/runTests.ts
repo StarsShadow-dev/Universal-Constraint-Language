@@ -40,7 +40,7 @@ function testFile(filePath: string) {
 	
 	let comments = tokens[0].text.split("\n");
 	let mode = comments.shift();
-	if (mode != "compError" && mode != "compPass" && mode != "compOut") {
+	if (mode != "compError" && mode != "compSucceed" && mode != "compOut") {
 		throw `unknown mode "${mode}"`;
 	}
 	
@@ -53,7 +53,7 @@ function testFile(filePath: string) {
 		}, ParserMode.normal, null);
 	} catch (error) {
 		if (error instanceof CompileError) {
-			if (mode == "compPass") {
+			if (mode == "compSucceed") {
 				testFailure(`compilation failed, output = ${error.getText(false)}`);
 			} else {
 				const expectedOutput = comments.join("\n");
@@ -93,7 +93,7 @@ function testFile(filePath: string) {
 		scopeList = build(builderContext, AST, null, null);
 	} catch (error) {
 		if (error instanceof CompileError) {
-			if (mode == "compPass") {
+			if (mode == "compSucceed") {
 				testFailure(`compilation failed, output = ${error.getText(false)}`);
 			} else {
 				const expectedOutput = comments.join("\n");
@@ -114,7 +114,7 @@ function testFile(filePath: string) {
 	if (mode == "compError") {
 		const expectedOutput = comments.join("\n");
 		testFailure(`expected error output = ${expectedOutput}\nactual output = success`);
-	} else if (mode == "compPass") {
+	} else if (mode == "compSucceed") {
 		testSuccess();
 	} else if (mode == "compOut") {
 		const expectedOutput = comments.join("\n");
@@ -135,6 +135,6 @@ function testDir(dirPath: string) {
 	})
 }
 
-testDir("./tests/compPass");
+testDir("./tests/compSucceed");
 testDir("./tests/compError");
 testDir("./tests/compOut");
