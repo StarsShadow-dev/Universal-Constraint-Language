@@ -13,16 +13,25 @@ import { setUpBuiltin } from "./builtin";
 import path from "path";
 import codeGen from "./codeGen";
 
+let total = 0;
+let succeeded = 0;
+let failed = 0;
+
 function testSuccess() {
 	console.log("\n\t\x1B[32mtest success!\x1B[0m\n");
+	succeeded++;
 }
 
 function testFailure(msg: string) {
 	console.log(`\n\t\x1B[31mtest failure:\n${msg}\x1B[0m\n`);
+	failed++;
+	
 	process.exitCode = 1;
 }
 
 function testFile(filePath: string) {
+	total++;
+	
 	console.log(`running test: '${filePath}'`);
 	
 	setUpBuiltin(true);
@@ -138,3 +147,7 @@ function testDir(dirPath: string) {
 testDir("./tests/compSucceed");
 testDir("./tests/compError");
 testDir("./tests/compOut");
+
+console.log(`total ${total}`);
+console.log(`succeeded ${succeeded}/${total}`);
+console.log(`failed ${failed}/${total}`);
