@@ -1,7 +1,7 @@
 // compError
 // error: void function returned a value
-// tests/compError/retFromVoidFunction.ucl:10 -> call here
-// tests/compError/retFromVoidFunction.ucl:6 -> function defined here
+// tests/compError/retValueInVoidFunction.ucl:10 -> call here
+// tests/compError/retValueInVoidFunction.ucl:6 -> function defined here
 
 const test = fn() {
 	ret 5;
