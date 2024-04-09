@@ -258,12 +258,16 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 		}
 		
-		if (!compileTime) {
-			if (callDest) codeGen.call(callDest, context, functionToCall);
-			codeGen.function(codeGen.getTop(), context, functionToCall, text);
+		if (functionToCall.forceInline) {
+			if (callDest) callDest[0] += text[0];
+		} else {
+			if (!compileTime) {
+				if (callDest) codeGen.call(callDest, context, functionToCall);
+				codeGen.function(codeGen.getTop(), context, functionToCall, text);
+			}
+			
+			if (innerDest) innerDest[0] += text[0];
 		}
-		
-		if (innerDest) innerDest[0] += text[0];
 		
 		return result;
 	} else {
@@ -409,7 +413,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}, null);
 				
 				if (functionToCall.kind == "function") {
-					const result = callFunction(context, functionToCall, callArguments, node.location, false, false, context.options.codeGenText, null);
+					const result = callFunction(context, functionToCall, callArguments, node.location, false, context.options.compileTime, context.options.codeGenText, null);
 					
 					addToScopeList(result);
 				} else {
@@ -529,6 +533,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				addToScopeList({
 					kind: "function",
+					forceInline: node.forceInline,
 					originLocation: node.location,
 					symbolName: `${nextSymbolName}`,
 					functionArguments: functionArguments,

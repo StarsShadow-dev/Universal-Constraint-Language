@@ -94,6 +94,7 @@ genericASTnode & {
 	value: ASTnode,
 } | genericASTnode & {
 	kind: "function",
+	forceInline: boolean,
 	functionArguments: ASTnode[],
 	returnType: ASTnode & { kind: "typeUse" } | null,
 	codeBlock: ASTnode[],
@@ -152,6 +153,7 @@ export type ScopeObject = genericScopeObject & {
 	symbolName: string,
 } | genericScopeObject & {
 	kind: "function",
+	forceInline: boolean,
 	symbolName: string,
 	functionArguments: ScopeObject[],
 	returnType: ScopeObject[] | null,

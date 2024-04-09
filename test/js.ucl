@@ -1,3 +1,7 @@
+const indent = inline fn() {
+	@addCodeGen("\t");
+};
+
 @onCodeGen("start", fn() {
 	@addTopCodeGen("\"use strict\";\n");
 	@addTopCodeGen("const symbols = {};\n");
@@ -20,6 +24,7 @@
 });
 
 @onCodeGen("call", fn(name: String) {
+	indent();
 	@addCodeGen("symbols[\"");
 	@addCodeGen(name);
 	@addCodeGen("\"](");
@@ -27,7 +32,7 @@
 });
 
 const log = fn(string: String) {
-	@compileDebug();
+	indent();
 	@addCodeGen("console.log(");
 	string;
 	@addCodeGen(");\n");
