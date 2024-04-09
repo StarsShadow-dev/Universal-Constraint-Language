@@ -1,0 +1,10 @@
+// compError
+// error: void function returned a value
+// tests/compError/retFromVoidFunction_export.ucl:10 -> call here
+// tests/compError/retFromVoidFunction_export.ucl:6 -> function defined here
+
+const test = fn() {
+	ret 5;
+};
+
+@export("test", test);

@@ -17,7 +17,8 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 			errorText += `${indicator.location.path}:${indicator.location.line} -> ${indicator.msg}`;
 			return errorText;
 		} else {
-			utilities.unreachable();
+			errorText += `builtin -> ${indicator.msg}`;
+			return errorText;
 		}
 	}
 	
