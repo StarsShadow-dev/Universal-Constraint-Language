@@ -13,6 +13,10 @@ import { Indicator, getIndicator, CompileError } from "./report";
 import { builtinScopeLevel, builtinCall, onCodeGen, getString } from "./builtin";
 import codeGen from "./codeGen";
 
+function doCodeGen(context: BuilderContext): boolean {
+	return !context.options.compileTime;
+}
+
 let nextSymbolName = 0;
 
 export type ScopeInformation = {
@@ -151,7 +155,7 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
-export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, compileTime: boolean, codeGenText: CodeGenText): ScopeObject {
+export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, compileTime: boolean, callDest: CodeGenText, innerDest: CodeGenText): ScopeObject {
 	if (functionToCall.kind == "function") {
 		if (!fillComplex) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
@@ -182,12 +186,12 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			
 			if (argument.kind == "argument") {
 				let symbolName = argument.name;
-				{
-					const temp = callArguments[index];
-					if (temp.kind == "alias") {
-						symbolName = temp.symbolName;
-					}
-				}
+				// {
+				// 	const temp = callArguments[index];
+				// 	if (temp.kind == "alias") {
+				// 		symbolName = temp.symbolName;
+				// 	}
+				// }
 				
 				if (fillComplex) {
 					addAlias(context, context.scope.currentLevel + 1, {
@@ -223,9 +227,11 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 		}
 		
+		const text = getCGText();
+		
 		let result = build(context, functionToCall.AST, {
 			compileTime: compileTime,
-			codeGenText: codeGenText,
+			codeGenText: text,
 		}, {
 			location: functionToCall.originLocation,
 			msg: `function ${functionToCall.symbolName}`,
@@ -250,6 +256,13 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				originLocation: location,
 			}
 		}
+		
+		if (!compileTime) {
+			if (callDest) codeGen.call(callDest, context, functionToCall);
+			codeGen.function(codeGen.getTop(), context, functionToCall, text);
+		}
+		
+		if (innerDest) innerDest[0] += text[0];
 		
 		return result;
 	} else {
@@ -370,7 +383,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const alias = getAlias(context, node.name);
 				if (alias && alias.kind == "alias") {
 					if (alias.value) {
-						codeGen.load(context, alias);
+						if (doCodeGen(context)) codeGen.load(context.options.codeGenText, context, alias);
 						addToScopeList(alias);
 					} else {
 						throw new CompileError(`alias '${node.name}' used before its definition`)
@@ -395,7 +408,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}, null);
 				
 				if (functionToCall.kind == "function") {
-					const result = callFunction(context, functionToCall, callArguments, node.location, false, false, context.options.codeGenText);
+					const result = callFunction(context, functionToCall, callArguments, node.location, false, false, context.options.codeGenText, null);
 					
 					addToScopeList(result);
 				} else {
@@ -435,7 +448,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				else if (node.operatorText == ".") {
-					const left = build(context, node.left, null, null)[0];
+					const left = unwrapScopeObject(build(context, node.left, null, null)[0]);
 					
 					if (left.kind == "struct" && node.right[0].kind == "identifier") {
 						for (let i = 0; i < left.properties.length; i++) {
@@ -495,7 +508,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const argument = node.functionArguments[i];
 					
 					if (argument.kind == "argument") {
-						const argumentType = build(context, [argument.type.value], null, null);
+						const argumentType = build(context, [argument.type.value], {
+							codeGenText: null,
+							compileTime: true,
+						}, null);
 						
 						functionArguments.push({
 							kind: "argument",

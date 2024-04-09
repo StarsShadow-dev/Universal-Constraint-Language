@@ -6,6 +6,7 @@ import {
 } from './parser';
 import { BuilderContext, build } from "./builder";
 import utilities from "./utilities";
+import codeGen from "./codeGen";
 
 export function compileFile(filePath: string): ScopeObject[][] {
 	const text = utilities.readFile(filePath);
@@ -38,10 +39,12 @@ export function compileFile(filePath: string): ScopeObject[][] {
 		}
 	};
 	
+	codeGen.start(builderContext);
 	const scopeList = build(builderContext, AST, null, null);
-	if (builderContext.options.codeGenText) {
-		console.log("codeGenText:", builderContext.options.codeGenText[0]);
-	}
+	console.log(`top '${filePath}':\n\n${codeGen.getTop()[0]}`);
+	// if (builderContext.options.codeGenText) {
+	// 	console.log(`codeGenText '${filePath}':`, builderContext.options.codeGenText[0]);
+	// }
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	
 	return builderContext.scope.levels;

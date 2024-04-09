@@ -1,34 +1,33 @@
+@onCodeGen("start", fn() {
+	@addCodeGen("const symbols = {};\n");
+});
+
 @onCodeGen("string", fn(text: String) {
-	@addCodeGen("fn_out", "\"", text, "\"");
+	@addCodeGen("\"", text, "\"");
 });
 
 @onCodeGen("identifier", fn(name: String) {
-	@addCodeGen("fn_out", name);
+	@addCodeGen(name);
 });
 
-@onCodeGen("fn", fn(name: String) {
-	@addCodeGen("top", "function ");
-	@addCodeGen("top", name);
-	@addCodeGen("top", "() {\n");
-	@moveCodeGen("top", "fn_out");
-	@addCodeGen("top", "}\n");
+@onCodeGen("fn", fn(name: String, codeBlockText: String) {
+	@addCodeGen("symbols[\"");
+	@addCodeGen(name);
+	@addCodeGen("\"] = () => {\n");
+	@addCodeGen(codeBlockText);
+	@addCodeGen("}\n");
 });
 
-var indentation = 1;
-
-const addIndentation = fn() {
-	var i = 0;
-	while (i < indentation) {
-		@addCodeGen("fn_out", "\t");
-		i = i + 1;
-	}
-};
+@onCodeGen("call", fn(name: String) {
+	@addCodeGen("symbols[\"");
+	@addCodeGen(name);
+	@addCodeGen("\"](");
+	@addCodeGen(");\n");
+});
 
 const log = fn(string: String) {
-	var i = 0;
-	while (i < 5) {
-		addIndentation();
-		@addCodeGen("fn_out", "console.log(\"", string, "\");\n");
-		i = i + 1;
-	}
+	@compileDebug();
+	@addCodeGen("console.log(");
+	string;
+	@addCodeGen(");\n");
 };

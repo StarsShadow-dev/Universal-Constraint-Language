@@ -14,6 +14,8 @@ import utilities from "./utilities";
 import { BuilderContext, callFunction } from "./builder";
 import codeGen from "./codeGen";
 
+let started = false;
+
 let fileSystemDisabled = false;
 
 export let builtinScopeLevel: ScopeObject[] = [];
@@ -180,8 +182,6 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "addCodeGen") {
-			let name = fc.string();
-			
 			let str = "";
 			while (fc.next()) {
 				str += fc.string();
@@ -285,11 +285,12 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 				fn.symbolName = name;
 			}
 			
-			const text = getCGText();
-			debugger;
-			callFunction(context, fn, [], "builtin", true, false, text);
+			if (!started) {
+				codeGen.start(context);
+				started = true;
+			}
 			
-			codeGen.function(context, fn, text);
+			callFunction(context, fn, [], "builtin", true, false, null, null);
 		}
 		
 		else {
