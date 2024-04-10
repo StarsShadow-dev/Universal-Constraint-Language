@@ -7,7 +7,6 @@
 		"start": "tsc -p ./tsconfig.json && node ./main.js"
 	},
 	"author": "",
-	"license": "ISC",
 	"dependencies": {
 		"@types/node": "^20.11.30"
 	}
