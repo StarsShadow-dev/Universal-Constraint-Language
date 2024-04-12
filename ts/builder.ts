@@ -40,37 +40,54 @@ export type BuilderContext = {
 	options: BuilderOptions,
 }
 
+function getAsComptimeType(type: ScopeObject, location?: SourceLocation): ScopeObject & { kind: "type" } {
+	if (type.kind == "type") {
+		if (!location) location = "builtin";
+		return {
+			kind: "type",
+			originLocation: location,
+			name: type.name,
+			comptime: true,
+		}	
+	} else {
+		throw utilities.unreachable();
+	}
+}
+
+export function getTypeDescription(type: ScopeObject & { kind: "type" }) {
+	return `${type.name}`;
+}
+
+export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObject {
+	let actualType: ScopeObject;
+	if (value.kind == "bool") {
+		actualType = getAsComptimeType(unwrapScopeObject(getAlias(context, "Bool")));
+	} else if (value.kind == "number") {
+		actualType = getAsComptimeType(unwrapScopeObject(getAlias(context, "Number")));
+	} else if (value.kind == "string") {
+		actualType = getAsComptimeType(unwrapScopeObject(getAlias(context, "String")));
+	} else if (value.kind == "type") {
+		actualType = getAsComptimeType(unwrapScopeObject(getAlias(context, "Type")));
+	} else {
+		actualType = value;
+	}
+	
+	return actualType;
+}
+
 function expectType(context: BuilderContext, expected: ScopeObject, actual: ScopeObject, compileError: CompileError) {
 	let expectedType: ScopeObject = expected;
 	
-	let actualType: ScopeObject = {} as ScopeObject;
-	if (actual.kind == "bool") {
-		const scopeObject = getAlias(context, "Bool");
-		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			actualType = scopeObject.value;	
-		}
-	} else if (actual.kind == "number") {
-		const scopeObject = getAlias(context, "Number");
-		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			actualType = scopeObject.value;	
-		}
-	} else if (actual.kind == "string") {
-		const scopeObject = getAlias(context, "String");
-		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			actualType = scopeObject.value;	
-		}
-	} else if (actual.kind == "type") {
-		const scopeObject = getAlias(context, "Type");
-		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
-			actualType = scopeObject.value;	
-		}
-	} else {
-		actualType = actual;
-	}
+	const actualType = getTypeOf(context, actual);
 	
 	if (expectedType.kind == "type" && actualType.kind == "type") {
 		if (expectedType == unwrapScopeObject(getAlias(context, "Any"))) {
 			return;
+		}
+		
+		if (expectedType.comptime && !actualType.comptime) {
+			compileError.msg = `expected type ${getTypeDescription(expectedType)} that is a compile time type, but got type ${getTypeDescription(actualType)} that is not a compile time type`;
+			throw compileError;
 		}
 		
 		if (expectedType.name != actualType.name) {
@@ -193,7 +210,9 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			
 			const callArgument = unwrapScopeObject(callArguments[index]);
 			
-			if (argument.kind == "argument") {
+			const argumentType = unwrapScopeObject(argument.type);
+			
+			if (argument.kind == "argument" && argumentType.kind == "type") {
 				let symbolName = argument.name;
 				// {
 				// 	const temp = callArguments[index];
@@ -214,9 +233,10 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 							type: argument.type,
 						},
 						symbolName: symbolName,
+						type: argumentType,
 					});
 				} else {
-					expectType(context, unwrapScopeObject(argument.type[0]), callArgument,
+					expectType(context, argumentType, callArgument,
 						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 							.indicator(callArgument.originLocation, "argument here")
 							.indicator(argument.originLocation, "argument defined here")
@@ -229,6 +249,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						name: argument.name,
 						value: callArgument,
 						symbolName: symbolName,
+						type: argumentType,
 					});	
 				}
 			} else {
@@ -340,6 +361,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				name: node.name,
 				value: null,
 				symbolName: node.name,
+				type: null,
 			});
 		}
 	}
@@ -350,7 +372,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name);
 			if (alias && alias.kind == "alias") {
-				const value = build(context, [node.value], null, null)[0];
+				const value = unwrapScopeObject(build(context, [node.value], null, null)[0]);
 				
 				if (!value) {
 					throw new CompileError(`no value for alias`).indicator(node.location, "here");
@@ -360,7 +382,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					value.symbolName += `:${value.originLocation.path}:${alias.name}`;
 				}
 				
+				const type = getTypeOf(context, value);
+				
 				alias.value = value;
+				alias.type = type;
 			} else {
 				utilities.unreachable();
 			}
@@ -510,6 +535,15 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				break;
 			}
+			case "comptime": {
+				const value = unwrapScopeObject(build(context, [node.value], null, null)[0]);
+				if (value.kind == "type") {
+					addToScopeList(getAsComptimeType(value, node.location));
+				} else {
+					utilities.unreachable();
+				}
+				break;
+			}
 			
 			case "function": {
 				let returnType = null;
@@ -517,7 +551,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					returnType = build(context, [node.returnType.value], null, null);
 				}
 				
-				let functionArguments: ScopeObject[] = [];
+				let functionArguments: (ScopeObject & { kind: "argument" })[] = [];
 				
 				for (let i = 0; i < node.functionArguments.length; i++) {
 					const argument = node.functionArguments[i];
@@ -526,7 +560,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						const argumentType = build(context, [argument.type.value], {
 							codeGenText: null,
 							compileTime: true,
-						}, null);
+						}, null)[0];
 						
 						functionArguments.push({
 							kind: "argument",
@@ -561,7 +595,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				build(context, node.codeBlock, {
 					codeGenText: context.options.codeGenText,
 					compileTime: false,
-				}, null)
+				}, null);
 				break;
 			}
 			case "while": {

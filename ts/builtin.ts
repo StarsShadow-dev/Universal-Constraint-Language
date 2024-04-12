@@ -11,7 +11,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { BuilderContext, callFunction } from "./builder";
+import { BuilderContext, callFunction, getTypeDescription } from "./builder";
 import codeGen from "./codeGen";
 
 let started = false;
@@ -22,6 +22,13 @@ export let builtinScopeLevel: ScopeObject[] = [];
 
 export let onCodeGen: any = {};
 
+const typeType: ScopeObject & { kind: "type" }  = {
+	kind: "type",
+	originLocation: "builtin",
+	name: "builtin:Type",
+	comptime: true,
+};
+
 function addType(name: string) {
 	builtinScopeLevel.push({
 		kind: "alias",
@@ -31,9 +38,11 @@ function addType(name: string) {
 		value: {
 			kind: "type",
 			originLocation: "builtin",
-			name: "builtin:" + name
+			name: "builtin:" + name,
+			comptime: false,
 		},
 		symbolName: "",
+		type: typeType,
 	});
 }
 
@@ -64,7 +73,15 @@ function getStruct(properties: ScopeObject[]): ScopeObject {
 export function setUpBuiltin(disableFileSystem: boolean) {
 	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
-		addType("Type");
+		builtinScopeLevel.push({
+			kind: "alias",
+			originLocation: "builtin",
+			mutable: false,
+			name: "Type",
+			value: typeType,
+			symbolName: "",
+			type: typeType,
+		});
 		addType("Bool");
 		addType("Number");
 		addType("String");
@@ -90,64 +107,64 @@ class FC {
 		this.i = 0;
 	}
 	
-	public "string" = (): string => {
+	public get(name: string, comptime: boolean, unwrap?: boolean): ScopeObject {
+		if (unwrap == undefined) unwrap = true;
+		
 		let scopeObject = this.scopeObjects[this.i];
 		const node = this.nodes[this.i];
 		
 		if (!scopeObject || !node) {
 			throw new CompileError("builtin argument error")
-				.indicator(this.builtinNode.location, "expected a string but there are no more arguments");
+				.indicator(this.builtinNode.location, `expected ${name} but there are no more arguments`);
 		}
 		
 		this.i++;
 		
-		scopeObject = unwrapScopeObject(scopeObject);
-		
-		if (scopeObject.kind == "string") {
-			return scopeObject.value;
-		} else {
-			throw new CompileError("builtin argument error")
-				.indicator(node.location, "expected a string");
-		}
-	}
-	
-	public "function" = (): ScopeObject & { kind: "function" } => {
-		let scopeObject = this.scopeObjects[this.i];
-		const node = this.nodes[this.i];
-		
-		if (!scopeObject || !node) {
-			throw new CompileError("builtin argument error")
-				.indicator(this.builtinNode.location, "expected a function but there are no more arguments");
+		if (comptime && scopeObject.kind == "alias") {
+			if (scopeObject.type) {
+				if (scopeObject.type.kind == "type" && !scopeObject.type.comptime) {
+					throw new CompileError("builtin argument error")
+						.indicator(node.location, `expected a comptime ${name}, but it is not comptime.`);
+				}
+			} else {
+				utilities.unreachable();
+			}
 		}
 		
-		this.i++;
+		if (unwrap) scopeObject = unwrapScopeObject(scopeObject);
 		
-		scopeObject = unwrapScopeObject(scopeObject);
-		
-		if (scopeObject.kind == "function") {
+		if (scopeObject.kind == name) {
 			return scopeObject;
 		} else {
 			throw new CompileError("builtin argument error")
-				.indicator(node.location, "expected a function");
+				.indicator(node.location, `expected ${name}`);
 		}
 	}
 	
-	public "alias" = (): ScopeObject & { kind: "alias" } => {
-		let scopeObject = this.scopeObjects[this.i];
-		const node = this.nodes[this.i];
-		
-		if (!scopeObject || !node) {
-			throw new CompileError("builtin argument error")
-				.indicator(this.builtinNode.location, "expected an alias but there are no more arguments");
-		}
-		
-		this.i++;
-		
-		if (scopeObject.kind == "alias") {
-			return scopeObject;
+	public "string" = (comptime: boolean): string => {
+		const value = this.get("string", comptime);
+		if (value.kind == "string") {
+			return value.value;
 		} else {
-			throw new CompileError("builtin argument error")
-				.indicator(node.location, "expected a function");
+			throw utilities.unreachable();
+		}
+	}
+	
+	public "function" = (comptime: boolean): ScopeObject & { kind: "function" } => {
+		const value = this.get("function", comptime);
+		if (value.kind == "function") {
+			return value;
+		} else {
+			throw utilities.unreachable();
+		}
+	}
+	
+	public "alias" = (comptime: boolean): ScopeObject & { kind: "alias" } => {
+		const value = this.get("alias", comptime, false);
+		if (value.kind == "alias") {
+			return value;
+		} else {
+			throw utilities.unreachable();
 		}
 	}
 	
@@ -179,7 +196,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		if (node.name == "compileLog") {
 			let str = "[compileLog] ";
 			while (fc.next()) {
-				str += fc.string();
+				str += fc.string(true);
 			}
 			str += "\n"
 			fc.done();
@@ -194,7 +211,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		else if (node.name == "addCodeGen") {
 			let str = "";
 			while (fc.next()) {
-				str += fc.string();
+				str += fc.string(true);
 			}
 			fc.done();
 			
@@ -208,7 +225,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		else if (node.name == "addTopCodeGen") {
 			let str = "";
 			while (fc.next()) {
-				str += fc.string();
+				str += fc.string(true);
 			}
 			fc.done();
 			
@@ -216,8 +233,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "moveCodeGen") {
-			let destName = fc.string();
-			let srcName = fc.string();
+			let destName = fc.string(true);
+			let srcName = fc.string(true);
 			fc.done();
 			
 			// if (context.codeGenText[destName] == undefined) {
@@ -230,22 +247,22 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "clearCodeGen") {
-			let name = fc.string();
+			let name = fc.string(true);
 			fc.done();
 			
 			// context.codeGenText[name] = "";
 		}
 		
 		else if (node.name == "onCodeGen") {
-			const name = fc.string();
-			const fn = fc.function();
+			const name = fc.string(true);
+			const fn = fc.function(true);
 			fc.done();
 			
 			onCodeGen[name] = fn;
 		}
 		
 		else if (node.name == "writeToStdout") {
-			const name = fc.string();
+			const name = fc.string(true);
 			fc.done();
 			
 			// if (context.codeGenText[name]) {
@@ -260,8 +277,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 				utilities.unreachable();
 			}
 			
-			const name = fc.string();
-			const outPath = fc.string();
+			const name = fc.string(true);
+			const outPath = fc.string(true);
 			fc.done();
 			
 			// if (typeof context.codeGenText[name] == "string") {
@@ -281,7 +298,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "import") {
-			const filePath = fc.string();
+			const filePath = fc.string(true);
 			fc.done();
 			
 			const scopeLevels = compileFile(path.join(path.dirname(context.filePath), filePath));
@@ -290,8 +307,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "export") {
-			const name = fc.string();
-			const fnAlias = fc.alias();
+			const name = fc.string(true);
+			const fnAlias = fc.alias(true);
 			const fn = unwrapScopeObject(fnAlias);
 			fc.done();
 			

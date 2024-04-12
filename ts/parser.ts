@@ -339,6 +339,15 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					}
 				}
 				
+				else if (token.text == "comptime") {
+					const node = parse(context, ParserMode.single, null)[0];
+					AST.push({
+						kind: "comptime",
+						location: token.location,
+						value: node,
+					});
+				}
+				
 				else if (token.text == "fn") {
 					parseFunction(context, AST, token.location, false);
 				}

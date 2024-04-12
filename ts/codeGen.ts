@@ -42,7 +42,7 @@ export default {
 				for (let i = 0; i < fn.functionArguments.length; i++) {
 					const argument = fn.functionArguments[i];
 					if (argument.kind == "argument") {
-						callFunction(context, onCodeGen["fn_arg"], [getString(argument.name), unwrapScopeObject(argument.type[0]), getBool(fn.functionArguments[i+1] != undefined)], "builtin", false, true, null, argDest, null);
+						callFunction(context, onCodeGen["fn_arg"], [getString(argument.name), unwrapScopeObject(argument.type), getBool(fn.functionArguments[i+1] != undefined)], "builtin", false, true, null, argDest, null);
 					} else {
 						utilities.unreachable();
 					}

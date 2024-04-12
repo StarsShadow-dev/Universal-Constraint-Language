@@ -83,6 +83,9 @@ genericASTnode & {
 	operatorText: string,
 	left: ASTnode[],
 	right: ASTnode[],
+} | genericASTnode & {
+	kind: "comptime",
+	value: ASTnode,
 } |
 
 //
@@ -146,18 +149,19 @@ export type ScopeObject = genericScopeObject & {
 	kind: "void",
 } | genericScopeObject & {
 	kind: "complexValue",
-	type: ScopeObject[],
+	type: ScopeObject,
 } | genericScopeObject & {
 	kind: "alias",
 	mutable: boolean,
 	name: string,
 	value: ScopeObject | null,
 	symbolName: string,
+	type: ScopeObject | null,
 } | genericScopeObject & {
 	kind: "function",
 	forceInline: boolean,
 	symbolName: string,
-	functionArguments: ScopeObject[],
+	functionArguments: (ScopeObject & { kind: "argument" })[],
 	returnType: ScopeObject[] | null,
 	AST: ASTnode[],
 	visible: ScopeObject[],
@@ -167,10 +171,12 @@ export type ScopeObject = genericScopeObject & {
 } | genericScopeObject & {
 	kind: "type",
 	name: string,
+	// must be compile time
+	comptime: boolean,
 } | genericScopeObject & {
 	kind: "argument",
 	name: string,
-	type: ScopeObject[],
+	type: ScopeObject,
 }
 
 export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {

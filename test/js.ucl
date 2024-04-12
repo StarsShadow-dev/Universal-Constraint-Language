@@ -7,22 +7,22 @@ const indent = inline fn() {
 	@addTopCodeGen("const symbols = {};\n");
 });
 
-@onCodeGen("string", fn(text: String) {
+@onCodeGen("string", fn(text: comptime String) {
 	@addCodeGen("\"", text, "\"");
 });
 
-@onCodeGen("identifier", fn(name: String) {
+@onCodeGen("identifier", fn(name: comptime String) {
 	@addCodeGen(name);
 });
 
-@onCodeGen("fn_arg", fn(name: String, type: Type, more: Bool) {
+@onCodeGen("fn_arg", fn(name: comptime String, type: comptime Type, more: comptime Bool) {
 	@addCodeGen(name);
 	if (more) {
 		@addCodeGen(",");
 	}
 });
 
-@onCodeGen("fn", fn(name: String, argumentText: String, codeBlockText: String) {
+@onCodeGen("fn", fn(name: comptime String, argumentText: comptime String, codeBlockText: comptime String) {
 	@addCodeGen("symbols[\"");
 	@addCodeGen(name);
 	@addCodeGen("\"] = (");
@@ -32,14 +32,14 @@ const indent = inline fn() {
 	@addCodeGen("}\n");
 });
 
-@onCodeGen("call_arg", fn(thing: String, more: Bool) {
+@onCodeGen("call_arg", fn(thing: comptime String, more: comptime Bool) {
 	@addCodeGen(thing);
 	if (more) {
 		@addCodeGen(",");
 	}
 });
 
-@onCodeGen("call", fn(name: String, argumentText: String) {
+@onCodeGen("call", fn(name: comptime String, argumentText: comptime String) {
 	indent();
 	@addCodeGen("symbols[\"");
 	@addCodeGen(name);
