@@ -59,11 +59,20 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
 			actualType = scopeObject.value;	
 		}
+	} else if (actual.kind == "type") {
+		const scopeObject = getAlias(context, "Type");
+		if (scopeObject && scopeObject.kind == "alias" && scopeObject.value) {
+			actualType = scopeObject.value;	
+		}
 	} else {
 		actualType = actual;
 	}
 	
 	if (expectedType.kind == "type" && actualType.kind == "type") {
+		if (expectedType == unwrapScopeObject(getAlias(context, "Any"))) {
+			return;
+		}
+		
 		if (expectedType.name != actualType.name) {
 			compileError.msg = compileError.msg
 				.replace("$expectedTypeName", expectedType.name)
@@ -155,7 +164,7 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
-export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, compileTime: boolean, callDest: CodeGenText, innerDest: CodeGenText): ScopeObject {
+export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, compileTime: boolean, callDest: CodeGenText, innerDest: CodeGenText, argumentText: CodeGenText | null): ScopeObject {
 	if (functionToCall.kind == "function") {
 		if (!fillComplex) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
@@ -262,7 +271,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			if (callDest) callDest[0] += text[0];
 		} else {
 			if (!compileTime) {
-				if (callDest) codeGen.call(callDest, context, functionToCall);
+				if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
 				codeGen.function(codeGen.getTop(), context, functionToCall, text);
 			}
 			
@@ -381,6 +390,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					originLocation: node.location,
 					value: node.value,
 				});
+				if (doCodeGen(context)) codeGen.string(context.options.codeGenText, context, node.value);
 				break;
 			}
 			
@@ -413,7 +423,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}, null);
 				
 				if (functionToCall.kind == "function") {
-					const result = callFunction(context, functionToCall, callArguments, node.location, false, context.options.compileTime, context.options.codeGenText, null);
+					const result = callFunction(context, functionToCall, callArguments, node.location, false, context.options.compileTime, context.options.codeGenText, null, argumentText);
 					
 					addToScopeList(result);
 				} else {
@@ -547,6 +557,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "struct": {
 				break;
 			}
+			case "codeGenerate": {
+				build(context, node.codeBlock, {
+					codeGenText: context.options.codeGenText,
+					compileTime: false,
+				}, null)
+				break;
+			}
 			case "while": {
 				while (true) {
 					const condition = build(context, node.condition, null, null)[0];
@@ -564,7 +581,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "if": {
-				const condition = build(context, node.condition, null, null)[0];
+				const condition = unwrapScopeObject(build(context, node.condition, null, null)[0]);
 				
 				if (condition.kind == "bool") {
 					if (condition.value) {

@@ -37,6 +37,14 @@ function addType(name: string) {
 	});
 }
 
+export function getBool(value: boolean): ScopeObject {
+	return {
+		kind: "bool",
+		originLocation: "builtin",
+		value: value,
+	};
+}
+
 export function getString(value: string): ScopeObject {
 	return {
 		kind: "string",
@@ -56,9 +64,11 @@ function getStruct(properties: ScopeObject[]): ScopeObject {
 export function setUpBuiltin(disableFileSystem: boolean) {
 	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
+		addType("Type");
 		addType("Bool");
 		addType("Number");
-		addType("String");	
+		addType("String");
+		addType("Any");
 	}
 	
 	if (Object.keys(onCodeGen).length != 0) {
@@ -294,7 +304,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 				started = true;
 			}
 			
-			callFunction(context, fn, [], node.location, true, false, null, null);
+			callFunction(context, fn, [], node.location, true, false, null, null, null);
 		}
 		
 		else {

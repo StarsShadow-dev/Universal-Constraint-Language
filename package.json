@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "ts/main.ts",
 	"scripts": {
-		"start": "tsc -p ./tsconfig.json && node ./main.js"
+		"start": "tsc -p ./tsconfig.json && node out/main.js test/main.ucl"
 	},
 	"author": "",
 	"dependencies": {

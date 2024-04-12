@@ -2,6 +2,8 @@
 // general
 //
 
+import utilities from "./utilities";
+
 export type SourceLocation = {
 	path: string,
 	line: number,
@@ -171,10 +173,15 @@ export type ScopeObject = genericScopeObject & {
 	type: ScopeObject[],
 }
 
-export function unwrapScopeObject(scopeObject: ScopeObject): ScopeObject {
-	if (scopeObject.kind == "alias" && scopeObject.value) {
-		return scopeObject.value;
+export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {
+	if (scopeObject) {
+		if (scopeObject.kind == "alias" && scopeObject.value) {
+			return scopeObject.value;
+		}
+		
+		return scopeObject;	
+	} else {
+		utilities.unreachable();
+		throw "";
 	}
-	
-	return scopeObject;
 }

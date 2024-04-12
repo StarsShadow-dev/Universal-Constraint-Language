@@ -1,8 +1,8 @@
 const js = @import("./js.ucl");
 
 const exportTest = fn() {
-	const a = "testing";
-	js.log(a);
+	// const a = "testing";
+	js.log("Hello, World!");
 };
 
 @export("test", exportTest);
