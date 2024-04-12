@@ -1,0 +1,10 @@
+// compOut
+// string = "Hello, World!"
+
+const test = fn(string: String) {
+	@addTopCodeGen("string = \"");
+	@addTopCodeGen(string);
+	@addTopCodeGen("\"");
+};
+
+test("Hello, World!");
