@@ -1,0 +1,14 @@
+// compOut
+// string1 = "Hello, World!"
+// string2 = "Bye, World!"
+
+const test = fn(string1: 'String, string2: 'String) {
+	@addTopCodeGen("string1 = \"");
+	@addTopCodeGen(string1);
+	@addTopCodeGen("\"\n");
+	@addTopCodeGen("string2 = \"");
+	@addTopCodeGen(string2);
+	@addTopCodeGen("\"");
+};
+
+test("Hello, World!", "Bye, World!");
