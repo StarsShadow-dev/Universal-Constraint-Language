@@ -1,0 +1,10 @@
+// compOut
+// top1top2
+
+@addTopCodeGen("top1");
+
+const test = fn() {
+	@addTopCodeGen("in function");
+};
+
+@addTopCodeGen("top2");
