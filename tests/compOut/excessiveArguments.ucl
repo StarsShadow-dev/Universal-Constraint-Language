@@ -1,0 +1,18 @@
+// compOut
+// 123456789
+
+const test = fn(a: 'String, b: 'String, c: 'String, d: 'String, e: 'String, f: 'String, g: 'String, h: 'String, i: 'String) {
+	@addTopCodeGen(a);
+	@addTopCodeGen(b);
+	@addTopCodeGen(c);
+	
+	@addTopCodeGen(d);
+	@addTopCodeGen(e);
+	@addTopCodeGen(f);
+	
+	@addTopCodeGen(g);
+	@addTopCodeGen(h);
+	@addTopCodeGen(i);
+};
+
+test("1", "2", "3", "4", "5", "6", "7", "8", "9");
