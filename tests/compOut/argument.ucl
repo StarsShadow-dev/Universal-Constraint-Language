@@ -1,7 +1,7 @@
 // compOut
 // string = "Hello, World!"
 
-const test = fn(string: comptime String) {
+const test = fn(string: 'String) {
 	@addTopCodeGen("string = \"");
 	@addTopCodeGen(string);
 	@addTopCodeGen("\"");
