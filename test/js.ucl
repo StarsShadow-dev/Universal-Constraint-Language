@@ -18,7 +18,7 @@ const indent = inline fn() {
 @onCodeGen("fn_arg", fn(name: 'String, type: 'Type, more: 'Bool) {
 	@addCodeGen(name);
 	if (more) {
-		@addCodeGen(",");
+		@addCodeGen(", ");
 	}
 });
 
@@ -32,10 +32,10 @@ const indent = inline fn() {
 	@addCodeGen("}\n");
 });
 
-@onCodeGen("call_arg", fn(thing: 'String, more: 'Bool) {
-	@addCodeGen(thing);
+@onCodeGen("call_arg", fn(text: 'String, more: 'Bool) {
+	@addCodeGen(text);
 	if (more) {
-		@addCodeGen(",");
+		@addCodeGen(", ");
 	}
 });
 
@@ -48,9 +48,13 @@ const indent = inline fn() {
 	@addCodeGen(");\n");
 });
 
-const log = fn(string: String) {
+const log = fn(string1: String, string2: String) {
 	indent();
 	@addCodeGen("console.log(");
-	string;
+	string1;
+	@addCodeGen(");\n");
+	indent();
+	@addCodeGen("console.log(");
+	string2;
 	@addCodeGen(");\n");
 };

@@ -36,7 +36,7 @@ function testFile(filePath: string) {
 	
 	setUpBuiltin(true);
 	
-	codeGen.getTop()[0] = "";
+	codeGen.clearTop();
 	
 	const text = utilities.readFile(filePath);
 
@@ -92,7 +92,7 @@ function testFile(filePath: string) {
 		
 		options: {
 			compileTime: false,
-			codeGenText: [""],
+			codeGenText: [],
 		}
 	};
 
@@ -127,7 +127,7 @@ function testFile(filePath: string) {
 		testSuccess();
 	} else if (mode == "compOut") {
 		const expectedOutput = comments.join("\n");
-		const actualOutput = codeGen.getTop()[0];
+		const actualOutput = codeGen.getTop().join("");
 		if (expectedOutput == actualOutput) {
 			testSuccess();
 		} else {

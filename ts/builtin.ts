@@ -216,7 +216,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			fc.done();
 			
 			if (context.options.codeGenText) {
-				context.options.codeGenText[0] += str;
+				context.options.codeGenText.push(str);
 			} else {
 				console.log("no context.options.codeGenText", str);
 			}
@@ -229,7 +229,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			}
 			fc.done();
 			
-			codeGen.getTop()[0] += str;
+			codeGen.getTop().push(str);
 		}
 		
 		else if (node.name == "moveCodeGen") {

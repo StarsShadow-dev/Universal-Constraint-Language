@@ -265,7 +265,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		}, {
 			location: functionToCall.originLocation,
 			msg: `function ${functionToCall.symbolName}`,
-		}, true)[0];
+		}, false, true)[0];
 		
 		context.scope = oldScope;
 		
@@ -289,14 +289,14 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		}
 		
 		if (functionToCall.forceInline) {
-			if (callDest) callDest[0] += text[0];
+			if (callDest) callDest.push(...text);
 		} else {
 			if (!compileTime) {
 				if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
 				codeGen.function(codeGen.getTop(), context, functionToCall, text);
 			}
 			
-			if (innerDest) innerDest[0] += text[0];
+			if (innerDest) innerDest.push(...text);
 		}
 		
 		return result;
@@ -306,7 +306,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 	}
 }
 
-export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, resultAtRet?: boolean): ScopeObject[] {
+export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, callArguments?: boolean, resultAtRet?: boolean): ScopeObject[] {
 	context.scope.currentLevel++;
 	
 	let scopeList: ScopeObject[] = [];
@@ -319,10 +319,10 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		if (options) {
 			const oldOptions = context.options;
 			context.options = options;
-			scopeList = _build(context, AST, resultAtRet == true);
+			scopeList = _build(context, AST, callArguments == true, resultAtRet == true);
 			context.options = oldOptions;
 		} else {
-			scopeList = _build(context, AST, resultAtRet == true);
+			scopeList = _build(context, AST, callArguments == true, resultAtRet == true);
 		}
 	} catch (error) {
 		if (error instanceof CompileError && sackMarker != null) {
@@ -341,7 +341,7 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 	return scopeList;
 }
 
-export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boolean): ScopeObject[] {
+export function _build(context: BuilderContext, AST: ASTnode[], callArguments: boolean, resultAtRet: boolean): ScopeObject[] {
 	let scopeList: ScopeObject[] = [];
 	
 	function addToScopeList(scopeObject: ScopeObject) {
@@ -445,7 +445,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
-				}, null);
+				}, null, true);
 				
 				if (functionToCall.kind == "function") {
 					const result = callFunction(context, functionToCall, callArguments, node.location, false, context.options.compileTime, context.options.codeGenText, null, argumentText);
@@ -604,7 +604,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					
 					if (condition.kind == "bool") {
 						if (condition.value) {
-							build(context, node.codeBlock, null, null, resultAtRet)[0];
+							build(context, node.codeBlock, null, null, false, resultAtRet)[0];
 						} else {
 							break;
 						}
@@ -619,7 +619,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				if (condition.kind == "bool") {
 					if (condition.value) {
-						build(context, node.codeBlock, null, null, resultAtRet)[0];
+						build(context, node.codeBlock, null, null, false, resultAtRet)[0];
 					}
 				} else {
 					utilities.unreachable();

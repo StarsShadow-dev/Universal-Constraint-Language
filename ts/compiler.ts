@@ -35,16 +35,14 @@ export function compileFile(filePath: string): ScopeObject[][] {
 		
 		options: {
 			compileTime: false,
-			codeGenText: [""],
+			codeGenText: [],
 		}
 	};
 	
 	codeGen.start(builderContext);
 	const scopeList = build(builderContext, AST, null, null);
-	console.log(`top '${filePath}':\n\n${codeGen.getTop()[0]}`);
-	// if (builderContext.options.codeGenText) {
-	// 	console.log(`codeGenText '${filePath}':`, builderContext.options.codeGenText[0]);
-	// }
+	console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`, codeGen.getTop());
+	
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	
 	return builderContext.scope.levels;

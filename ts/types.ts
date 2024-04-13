@@ -11,10 +11,10 @@ export type SourceLocation = {
 	endColumn: number,
 } | "builtin"
 
-export type CodeGenText = [string] | null
+export type CodeGenText = string[] | null
 
-export function getCGText(): [string] {
-	return [""];
+export function getCGText(): string[] {
+	return [];
 }
 
 //

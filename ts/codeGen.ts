@@ -8,11 +8,15 @@ import { ScopeObject } from "./types";
 import { getBool, getString, onCodeGen } from "./builtin";
 import utilities from "./utilities";
 
-let top: [string] = [""];
+let top: string[] = [];
 
 export default {
 	getTop() {
-		return top;	
+		return top;
+	},
+	
+	clearTop() {
+		top = [];
 	},
 	
 	start(context: BuilderContext) {
@@ -47,7 +51,7 @@ export default {
 						utilities.unreachable();
 					}
 				}
-				callFunction(context, onCodeGen["fn"], [getString(fn.symbolName), getString(argDest[0]), getString(codeBlockText[0])], "builtin", false, true, null, dest, null);
+				callFunction(context, onCodeGen["fn"], [getString(fn.symbolName), getString(argDest.join("")), getString(codeBlockText.join(""))], "builtin", false, true, null, dest, null);
 			}
 		}
 	},
@@ -55,12 +59,11 @@ export default {
 	call(dest: CodeGenText, context: BuilderContext, fn: ScopeObject, argumentText: CodeGenText) {
 		if (dest && fn.kind == "function" && dest && argumentText) {
 			if (onCodeGen["call_arg"] && onCodeGen["call"]) {
-				// const argDest = getCGText();
-				// for (let i = 0; i < callArguments.length; i++) {
-				// 	debugger;
-				// 	callFunction(context, onCodeGen["call_arg"], [unwrapScopeObject(callArguments[i]), getBool(callArguments[i+1] != undefined)], "builtin", false, true, null, argDest, null);
-				// }
-				callFunction(context, onCodeGen["call"], [getString(fn.symbolName), getString(argumentText[0])], "builtin", false, true, null, dest, null);
+				const argDest = getCGText();
+				for (let i = 0; i < argumentText.length; i++) {
+					callFunction(context, onCodeGen["call_arg"], [getString(argumentText[i]), getBool(argumentText[i+1] != undefined)], "builtin", false, true, null, argDest, null);
+				}
+				callFunction(context, onCodeGen["call"], [getString(fn.symbolName), getString(argDest.join(""))], "builtin", false, true, null, dest, null);
 			}
 		}
 	}

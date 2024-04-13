@@ -2,7 +2,7 @@ const js = @import("./js.ucl");
 
 const exportTest = fn() {
 	// const a = "testing";
-	js.log("Hello, World!");
+	js.log("Hello, World!", "Bye, World!");
 };
 
 @export("test", exportTest);
