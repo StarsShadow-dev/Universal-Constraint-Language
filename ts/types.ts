@@ -119,7 +119,7 @@ genericASTnode & {
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "return",
-	value: ASTnode[],
+	value: ASTnode | null,
 } | genericASTnode & {
 	kind: "argument",
 	name: string,

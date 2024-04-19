@@ -282,6 +282,11 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 					.indicator(functionToCall.originLocation, "function defined here");
 			}
 		} else {
+			if (functionToCall.returnType) {
+				throw new CompileError(`non void function returned void`)
+					.indicator(location, "call here")
+					.indicator(functionToCall.originLocation, "function defined here");
+			}
 			result = {
 				kind: "void",
 				originLocation: location,
@@ -630,8 +635,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], callArguments: b
 				if (!resultAtRet) {
 					throw new CompileError("unexpected return").indicator(node.location, "here");
 				}
-				const value = build(context, node.value, null, null)[0];
-				scopeList.push(value);
+				if (node.value) {
+					const value = build(context, [node.value], null, null)[0];
+					scopeList.push(value);	
+				} else {
+					
+				}
 				return scopeList;
 			}
 		

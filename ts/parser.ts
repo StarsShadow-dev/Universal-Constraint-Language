@@ -344,13 +344,22 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "ret") {
-					const value = parse(context, ParserMode.single, null);
-					
-					AST.push({
-						kind: "return",
-						location: token.location,
-						value: value,
-					});
+					const semicolon = next(context);
+					if (semicolon.type == TokenType.separator && semicolon.text == ";") {
+						AST.push({
+							kind: "return",
+							location: token.location,
+							value: null,
+						});
+					} else {
+						const value = parse(context, ParserMode.single, null)[0];
+						
+						AST.push({
+							kind: "return",
+							location: token.location,
+							value: value,
+						});
+					}
 				}
 				
 				else {
