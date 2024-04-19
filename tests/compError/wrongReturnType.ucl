@@ -1,0 +1,10 @@
+// compError
+// error: expected type builtin:String but got type builtin:Number
+// tests/compError/wrongReturnType.ucl:10 -> call here
+// tests/compError/wrongReturnType.ucl:6 -> function defined here
+
+const test = fn(): String {
+	ret 5;
+};
+
+test();
