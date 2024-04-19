@@ -1,0 +1,10 @@
+// compError
+// error: non-void function returned void
+// tests/compError/retVoidInValueFunction.ucl:10 -> call here
+// tests/compError/retVoidInValueFunction.ucl:6 -> function defined here
+
+const test = fn(): String {
+	ret;
+};
+
+test();

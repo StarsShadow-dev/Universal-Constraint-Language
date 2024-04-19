@@ -283,7 +283,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 		} else {
 			if (functionToCall.returnType) {
-				throw new CompileError(`non void function returned void`)
+				throw new CompileError(`non-void function returned void`)
 					.indicator(location, "call here")
 					.indicator(functionToCall.originLocation, "function defined here");
 			}
