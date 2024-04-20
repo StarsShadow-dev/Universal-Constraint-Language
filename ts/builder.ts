@@ -101,7 +101,7 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	}
 }
 
-function getAlias(context: BuilderContext, name: string): ScopeObject | null {
+function getAlias(context: BuilderContext, name: string): ScopeObject & { kind: "alias" } | null {
 	// builtin
 	for (let i = 0; i < builtinScopeLevel.length; i++) {
 		const scopeObject = builtinScopeLevel[i];
@@ -203,7 +203,9 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			generatingFunction: oldScope.generatingFunction,
 		}
 		
-		// context.scope.generatingFunction = functionToCall;
+		if (!compileTime) {
+			context.scope.generatingFunction = functionToCall;
+		}
 		
 		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 			const argument = functionToCall.functionArguments[index];
@@ -265,7 +267,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		}, {
 			location: functionToCall.originLocation,
 			msg: `function ${functionToCall.symbolName}`,
-		}, false, true)[0];
+		}, true)[0];
 		
 		context.scope = oldScope;
 		
@@ -311,7 +313,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 	}
 }
 
-export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, callArguments?: boolean, resultAtRet?: boolean): ScopeObject[] {
+export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, resultAtRet?: boolean): ScopeObject[] {
 	context.scope.currentLevel++;
 	
 	let scopeList: ScopeObject[] = [];
@@ -324,10 +326,10 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		if (options) {
 			const oldOptions = context.options;
 			context.options = options;
-			scopeList = _build(context, AST, callArguments == true, resultAtRet == true);
+			scopeList = _build(context, AST, resultAtRet == true);
 			context.options = oldOptions;
 		} else {
-			scopeList = _build(context, AST, callArguments == true, resultAtRet == true);
+			scopeList = _build(context, AST, resultAtRet == true);
 		}
 	} catch (error) {
 		if (error instanceof CompileError && sackMarker != null) {
@@ -346,7 +348,7 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 	return scopeList;
 }
 
-export function _build(context: BuilderContext, AST: ASTnode[], callArguments: boolean, resultAtRet: boolean): ScopeObject[] {
+export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boolean): ScopeObject[] {
 	let scopeList: ScopeObject[] = [];
 	
 	function addToScopeList(scopeObject: ScopeObject) {
@@ -376,8 +378,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], callArguments: b
 		
 		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name);
-			if (alias && alias.kind == "alias") {
-				const value = unwrapScopeObject(build(context, [node.value], null, null)[0]);
+			if (alias) {
+				const valueText = getCGText();
+				const value = unwrapScopeObject(build(context, [node.value], {
+					codeGenText: valueText,
+					compileTime: context.options.compileTime,
+				}, null)[0]);
 				
 				if (!value) {
 					throw new CompileError(`no value for alias`).indicator(node.location, "here");
@@ -391,6 +397,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], callArguments: b
 				
 				alias.value = value;
 				alias.type = type;
+				
+				if (doCodeGen(context)) {
+					codeGen.alias(context.options.codeGenText, context, alias, valueText);
+				}
 			} else {
 				utilities.unreachable();
 			}
@@ -426,7 +436,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], callArguments: b
 			
 			case "identifier": {
 				const alias = getAlias(context, node.name);
-				if (alias && alias.kind == "alias") {
+				if (alias) {
 					if (alias.value) {
 						if (doCodeGen(context)) codeGen.load(context.options.codeGenText, context, alias);
 						addToScopeList(alias);
@@ -450,7 +460,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], callArguments: b
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
-				}, null, true);
+				}, null);
 				
 				if (functionToCall.kind == "function") {
 					const result = callFunction(context, functionToCall, callArguments, node.location, false, context.options.compileTime, context.options.codeGenText, null, argumentText);
@@ -609,7 +619,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], callArguments: b
 					
 					if (condition.kind == "bool") {
 						if (condition.value) {
-							build(context, node.codeBlock, null, null, false, resultAtRet)[0];
+							build(context, node.codeBlock, null, null, resultAtRet)[0];
 						} else {
 							break;
 						}
@@ -624,7 +634,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], callArguments: b
 				
 				if (condition.kind == "bool") {
 					if (condition.value) {
-						build(context, node.codeBlock, null, null, false, resultAtRet)[0];
+						build(context, node.codeBlock, null, null, resultAtRet)[0];
 					}
 				} else {
 					utilities.unreachable();

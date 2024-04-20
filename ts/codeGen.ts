@@ -31,6 +31,14 @@ export default {
 		}
 	},
 	
+	alias(dest: CodeGenText, context: BuilderContext, alias: ScopeObject, valueText: CodeGenText) {
+		if (alias.kind == "alias" && alias.name && valueText) {
+			if (onCodeGen["alias"]) {
+				callFunction(context, onCodeGen["alias"], [getString(alias.symbolName), getString(valueText.join("")), getBool(alias.mutable)], "builtin", false, true, null, dest, null);
+			}
+		}
+	},
+	
 	load(dest: CodeGenText, context: BuilderContext, alias: ScopeObject) {
 		if (alias.kind == "alias" && alias.name) {
 			if (onCodeGen["identifier"]) {
@@ -66,5 +74,5 @@ export default {
 				callFunction(context, onCodeGen["call"], [getString(fn.symbolName), getString(argDest.join(""))], "builtin", false, true, null, dest, null);
 			}
 		}
-	}
+	},
 }
