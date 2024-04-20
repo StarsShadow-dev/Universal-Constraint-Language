@@ -116,7 +116,8 @@ genericASTnode & {
 } | genericASTnode & {
 	kind: "if",
 	condition: ASTnode[],
-	codeBlock: ASTnode[],
+	trueCodeBlock: ASTnode[],
+	falseCodeBlock: ASTnode[] | null,
 } | genericASTnode & {
 	kind: "return",
 	value: ASTnode | null,

@@ -634,7 +634,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				if (condition.kind == "bool") {
 					if (condition.value) {
-						build(context, node.codeBlock, null, null, resultAtRet)[0];
+						build(context, node.trueCodeBlock, null, null, resultAtRet)[0];
+					} else {
+						if (node.falseCodeBlock) {
+							build(context, node.falseCodeBlock, null, null, resultAtRet)[0];
+						}
 					}
 				} else {
 					utilities.unreachable();

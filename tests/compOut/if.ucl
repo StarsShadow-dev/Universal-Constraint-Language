@@ -2,9 +2,9 @@
 // in true
 
 if (true) {
-	@addTopCodeGen("in true");	
+	@addTopCodeGen("in true");
 }
 
 if (false) {
-	@addTopCodeGen("in false");	
+	@addTopCodeGen("in false");
 }

@@ -13,11 +13,11 @@ const indent = inline fn() {
 
 @onCodeGen("alias", fn(name: 'String, valueText: 'String, mutable: 'Bool) {
 	indent();
-	// if (mutable) {
-	// 	@addCodeGen("var ");
-	// } else {
+	if (mutable) {
+		@addCodeGen("var ");
+	} else {
 		@addCodeGen("const ");
-	// }
+	}
 	@addCodeGen(name);
 	@addCodeGen(" = ");
 	@addCodeGen(valueText);
