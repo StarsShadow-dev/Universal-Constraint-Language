@@ -1,6 +1,7 @@
 const js = @import("./js.ucl");
 
-const exportTest = fn() {
+const exportTest = fn(input: String) {
+	js.log("input is", input);
 	log();
 };
 

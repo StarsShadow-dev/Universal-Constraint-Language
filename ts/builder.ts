@@ -68,6 +68,8 @@ export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObj
 		actualType = getAsComptimeType(unwrapScopeObject(getAlias(context, "String")));
 	} else if (value.kind == "type") {
 		actualType = getAsComptimeType(unwrapScopeObject(getAlias(context, "Type")));
+	} else if (value.kind == "complexValue") {
+		actualType = value.type;
 	} else {
 		actualType = value;
 	}
@@ -210,8 +212,6 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 			const argument = functionToCall.functionArguments[index];
 			
-			const callArgument = unwrapScopeObject(callArguments[index]);
-			
 			const argumentType = unwrapScopeObject(argument.type);
 			
 			if (argument.kind == "argument" && argumentType.kind == "type") {
@@ -232,12 +232,14 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						value: {
 							kind: "complexValue",
 							originLocation: argument.originLocation,
-							type: argument.type,
+							type: unwrapScopeObject(argument.type),
 						},
 						symbolName: symbolName,
 						type: argumentType,
 					});
 				} else {
+					const callArgument = unwrapScopeObject(callArguments[index]);
+					
 					expectType(context, argumentType, callArgument,
 						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 							.indicator(callArgument.originLocation, "argument here")
