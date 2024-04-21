@@ -47,6 +47,14 @@ export default {
 		}
 	},
 	
+	set(dest: CodeGenText, context: BuilderContext, alias: ScopeObject, aliasText: CodeGenText, valueText: CodeGenText) {
+		if (alias.kind == "alias" && alias.name && aliasText && valueText) {
+			if (onCodeGen["set_alias"]) {
+				callFunction(context, onCodeGen["set_alias"], [getString(alias.symbolName), getString(aliasText.join("")), getString(valueText.join(""))], "builtin", false, true, null, dest, null);
+			}
+		}
+	},
+	
 	function(dest: CodeGenText, context: BuilderContext, fn: ScopeObject, codeBlockText: CodeGenText) {
 		if (fn.kind == "function" && codeBlockText) {
 			if (onCodeGen["fn_arg"] && onCodeGen["fn"]) {

@@ -5,7 +5,8 @@ const exportTest = fn() {
 };
 
 const log = fn() {
-	var a = "Hello, World!";
+	var a = "";
+	a = "Hello, World!";
 	const b = "Bye, World!";
 	js.log(a, b);
 };

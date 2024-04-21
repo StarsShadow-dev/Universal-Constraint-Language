@@ -486,14 +486,26 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			case "operator": {
 				if (node.operatorText == "=") {
-					const left = build(context, node.left, null, null)[0];
-					const right = build(context, node.right, null, null)[0];
+					const leftText = getCGText();
+					const left = build(context, node.left, {
+						compileTime: context.options.compileTime,
+						codeGenText: leftText,
+					}, null)[0];
+					const rightText = getCGText();
+					const right = build(context, node.right, {
+						compileTime: context.options.compileTime,
+						codeGenText: rightText,
+					}, null)[0];
 					
 					if (left.kind == "alias") {
 						if (!left.mutable) {
 							throw new CompileError(`the alias '${left.name}' is not mutable`)
 								.indicator(node.location, "reassignment here")
 								.indicator(left.originLocation, "alias defined here");
+						}
+						
+						if (doCodeGen(context)) {
+							codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
 						}
 						
 						left.value = right;
