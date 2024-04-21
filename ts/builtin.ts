@@ -261,22 +261,18 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "writeToStdout") {
-			const name = fc.string(true);
 			fc.done();
 			
-			// if (context.codeGenText[name]) {
-			// 	stdout.write(context.codeGenText[name]);
-				
-			// 	context.codeGenText[name] = "";	
-			// }
+			utilities.TODO();
 		}
 		
 		else if (node.name == "writeTofile") {
+			utilities.TODO();
+			
 			if (fileSystemDisabled) {
 				utilities.unreachable();
 			}
 			
-			const name = fc.string(true);
 			const outPath = fc.string(true);
 			fc.done();
 			

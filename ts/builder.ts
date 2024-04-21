@@ -512,7 +512,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						
 						left.value = right;
 					} else {
-						utilities.unreachable();
+						utilities.TODO();
 					}
 				}
 				
@@ -531,7 +531,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							}
 						}
 					} else {
-						utilities.unreachable();
+						utilities.TODO();
 					}
 				}
 				
@@ -638,16 +638,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							break;
 						}
 					} else {
-						utilities.unreachable();
-					}	
+						utilities.TODO();
+					}
 				}
 				break;
 			}
 			case "if": {
 				const condition = unwrapScopeObject(build(context, node.condition, null, null)[0]);
 				
+				// If the condition is known at compile time
 				if (condition.kind == "bool") {
-					// If the condition is known at compile time
 					if (condition.value) {
 						build(context, node.trueCodeBlock, null, null, resultAtRet);
 					} else {
@@ -655,14 +655,18 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							build(context, node.falseCodeBlock, null, null, resultAtRet);
 						}
 					}
-				} else if (condition.kind == "complexValue") {
-					// If the condition is not known at compile time, build both code blocks
+				}
+				
+				// If the condition is not known at compile time, build both code blocks
+				else if (condition.kind == "complexValue") {
 					build(context, node.trueCodeBlock, null, null, resultAtRet);
 					if (node.falseCodeBlock) {
 						build(context, node.falseCodeBlock, null, null, resultAtRet);
 					}
-				} else {
-					utilities.unreachable();
+				}
+				
+				else {
+					utilities.TODO();
 				}	
 				break;
 			}
@@ -673,8 +677,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				if (node.value) {
 					const value = build(context, [node.value], null, null)[0];
 					scopeList.push(value);	
-				} else {
-					
 				}
 				return scopeList;
 			}

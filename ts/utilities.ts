@@ -8,8 +8,14 @@ export default {
 		exit(1);
 	},
 	
+	TODO(): never {
+		debugger;
+		console.error("TODO reached");
+		exit(1);
+	},
+	
 	readFile(path: string): string {
 		const text = fs.readFileSync(path, { encoding: 'utf8' });
 		return text;
-	}
+	},
 }
