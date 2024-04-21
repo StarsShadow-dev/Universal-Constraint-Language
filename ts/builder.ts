@@ -647,12 +647,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const condition = unwrapScopeObject(build(context, node.condition, null, null)[0]);
 				
 				if (condition.kind == "bool") {
+					// If the condition is known at compile time
 					if (condition.value) {
-						build(context, node.trueCodeBlock, null, null, resultAtRet)[0];
+						build(context, node.trueCodeBlock, null, null, resultAtRet);
 					} else {
 						if (node.falseCodeBlock) {
-							build(context, node.falseCodeBlock, null, null, resultAtRet)[0];
+							build(context, node.falseCodeBlock, null, null, resultAtRet);
 						}
+					}
+				} else if (condition.kind == "complexValue") {
+					// If the condition is not known at compile time, build both code blocks
+					build(context, node.trueCodeBlock, null, null, resultAtRet);
+					if (node.falseCodeBlock) {
+						build(context, node.falseCodeBlock, null, null, resultAtRet);
 					}
 				} else {
 					utilities.unreachable();

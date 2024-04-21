@@ -159,6 +159,15 @@ class FC {
 		}
 	}
 	
+	public "type" = (): ScopeObject & { kind: "type" } => {
+		const value = this.get("type", true, true);
+		if (value.kind == "type") {
+			return value;
+		} else {
+			throw utilities.unreachable();
+		}
+	}
+	
 	public "alias" = (comptime: boolean): ScopeObject & { kind: "alias" } => {
 		const value = this.get("alias", comptime, false);
 		if (value.kind == "alias") {
@@ -208,6 +217,17 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			debugger;
 		}
 		
+		else if (node.name == "opaque") {
+			const type = fc.type();
+			fc.done();
+			
+			return {
+				kind: "complexValue",
+				originLocation: "builtin",
+				type: type,
+			};
+		}
+		
 		else if (node.name == "addCodeGen") {
 			let str = "";
 			while (fc.next()) {
@@ -230,27 +250,6 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			fc.done();
 			
 			codeGen.getTop().push(str);
-		}
-		
-		else if (node.name == "moveCodeGen") {
-			let destName = fc.string(true);
-			let srcName = fc.string(true);
-			fc.done();
-			
-			// if (context.codeGenText[destName] == undefined) {
-			// 	context.codeGenText[destName] = "";
-			// }
-			
-			// if (context.codeGenText[srcName]) {
-			// 	context.codeGenText[destName] += context.codeGenText[srcName];
-			// }
-		}
-		
-		else if (node.name == "clearCodeGen") {
-			let name = fc.string(true);
-			fc.done();
-			
-			// context.codeGenText[name] = "";
 		}
 		
 		else if (node.name == "onCodeGen") {
@@ -330,6 +329,4 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 	} else {
 		utilities.unreachable();
 	}
-	
-	return;
 }
