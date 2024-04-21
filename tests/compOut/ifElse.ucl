@@ -1,0 +1,16 @@
+// compOut
+// 1|4
+
+if (true) {
+	@addTopCodeGen("1");
+} else {
+	@addTopCodeGen("2");
+}
+
+@addTopCodeGen("|");
+
+if (false) {
+	@addTopCodeGen("3");
+} else {
+	@addTopCodeGen("4");
+}
