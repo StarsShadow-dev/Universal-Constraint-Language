@@ -1,0 +1,5 @@
+// compError
+// error: attempting a function call on something other than a function
+// tests/compError/callString.ucl:5 -> here
+
+"a string"();
