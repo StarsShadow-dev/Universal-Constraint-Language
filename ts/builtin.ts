@@ -71,6 +71,7 @@ function getStruct(properties: ScopeObject[]): ScopeObject {
 }
 
 export function setUpBuiltin(disableFileSystem: boolean) {
+	started = false;
 	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
 		builtinScopeLevel.push({

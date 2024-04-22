@@ -1,0 +1,14 @@
+// compOut
+// "use strict";
+// const symbols = {};
+// symbols["test"] = () => {
+// }
+// 
+
+const js = @import("./../../test/js.ucl");
+
+const test = fn() {
+	
+};
+
+@export("test", test);
