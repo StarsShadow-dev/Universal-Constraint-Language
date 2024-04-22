@@ -9,3 +9,5 @@ const exportTest = fn(input: Bool) {
 };
 
 @export("test", exportTest);
+
+@writeToStdout();

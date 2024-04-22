@@ -263,7 +263,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		else if (node.name == "writeToStdout") {
 			fc.done();
 			
-			utilities.TODO();
+			console.log(codeGen.getTop().join(""));
 		}
 		
 		else if (node.name == "writeTofile") {
