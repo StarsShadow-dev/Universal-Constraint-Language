@@ -1,5 +1,11 @@
+var indentation = 1;
+
 const indent = inline fn() {
-	@addCodeGen("\t");
+	var i: 'Number = 0;
+	while (i < indentation) {
+		@addCodeGen("\t");
+		i = i + 1;
+	}
 };
 
 @onCodeGen("start", fn() {
@@ -36,6 +42,19 @@ const indent = inline fn() {
 	@addCodeGen(name);
 });
 
+@onCodeGen("if", fn(conditionText: 'String, trueText: 'String, falseText: 'String) {
+	indent();
+	@addCodeGen("if (");
+	@addCodeGen(conditionText);
+	@addCodeGen(") {\n");
+	@addCodeGen(trueText);
+	indent();
+	@addCodeGen("} else {\n");
+	@addCodeGen(falseText);
+	indent();
+	@addCodeGen("}\n");
+});
+
 @onCodeGen("fn_arg", fn(name: 'String, type: 'Type, more: 'Bool) {
 	@addCodeGen(name);
 	if (more) {
@@ -69,13 +88,9 @@ const indent = inline fn() {
 	@addCodeGen(");\n");
 });
 
-const log = fn(string1: String, string2: String) {
+const log = fn(string: String) {
 	indent();
 	@addCodeGen("console.log(");
-	string1;
-	@addCodeGen(");\n");
-	indent();
-	@addCodeGen("console.log(");
-	string2;
+	string;
 	@addCodeGen(");\n");
 };

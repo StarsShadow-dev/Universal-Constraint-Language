@@ -1,21 +1,11 @@
-// const js = @import("./js.ucl");
+const js = @import("./js.ucl");
 
-// const exportTest = fn(input: String) {
-// 	js.log("input is", input);
-// 	log();
-// };
+const exportTest = fn(input: Bool) {
+	if (input) {
+		js.log("input in true");
+	} else {
+		js.log("input in false");
+	}
+};
 
-// const log = fn() {
-// 	var a = "";
-// 	a = "Hello, World!";
-// 	const b = "Bye, World!";
-// 	js.log(a, b);
-// };
-
-// @export("test", exportTest);
-
-if (@opaque(Bool)) {
-	@addTopCodeGen("1");
-} else {
-	@addTopCodeGen("2");
-}
+@export("test", exportTest);

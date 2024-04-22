@@ -55,6 +55,14 @@ export default {
 		}
 	},
 	
+	if(dest: CodeGenText, context: BuilderContext, conditionText: CodeGenText, trueText: CodeGenText, falseText: CodeGenText) {
+		if (conditionText && trueText && falseText) {
+			if (onCodeGen["if"]) {
+				callFunction(context, onCodeGen["if"], [getString(conditionText.join("")), getString(trueText.join("")), getString(falseText.join(""))], "builtin", false, true, null, dest, null);
+			}
+		}
+	},
+	
 	function(dest: CodeGenText, context: BuilderContext, fn: ScopeObject, codeBlockText: CodeGenText) {
 		if (fn.kind == "function" && codeBlockText) {
 			if (onCodeGen["fn_arg"] && onCodeGen["fn"]) {

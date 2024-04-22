@@ -127,21 +127,21 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 }
 
 function parseType(context: ParserContext): ASTnode & { kind: "typeUse" } | null {
-	let returnType: ASTnode & { kind: "typeUse" } | null = null;
+	let type: ASTnode & { kind: "typeUse" } | null = null;
 	
 	const colon = next(context);
 	if (colon.type == TokenType.separator && colon.text == ":") {
 		forward(context);
 		
-		const node = parse(context, ParserMode.single, null)[0];
-		returnType = {
+		const node = parse(context, ParserMode.singleNoContinue, null)[0];
+		type = {
 			kind: "typeUse",
 			location: node.location,
 			value: node,
 		}
 	}
 	
-	return returnType;
+	return type;
 }
 
 function parseFunctionArguments(context: ParserContext): ASTnode[] {
@@ -250,11 +250,15 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						location: token.location,
 						value: token.text == "true",
 					});
-				} else if (token.text == "const" || token.text == "var") {
+				}
+				
+				else if (token.text == "const" || token.text == "var") {
 					const name = forward(context);
 					if (name.type != TokenType.word) {
 						throw new CompileError("expected name").indicator(name.location, "here");
 					}
+					
+					const type = parseType(context);
 					
 					const equals = forward(context);
 					if (equals.type != TokenType.operator || equals.text != "=") {
@@ -272,6 +276,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						location: token.location,
 						mutable: token.text == "var",
 						name: name.text,
+						type: type,
 						value: value,
 					});
 				}
@@ -419,7 +424,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenType.singleQuote: {
-				const node = parse(context, ParserMode.single, null)[0];
+				const node = parse(context, ParserMode.singleNoContinue, null)[0];
 				AST.push({
 					kind: "comptime",
 					location: token.location,

@@ -98,6 +98,10 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 				.replace("$actualTypeName", actualType.name);
 			throw compileError;
 		}
+	} else if (expected.kind == "function") {
+		utilities.TODO();
+	} else if (expected.kind == "struct") {
+		utilities.TODO();
 	} else {
 		utilities.unreachable();
 	}
@@ -279,7 +283,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 						.indicator(location, "call here")
 						.indicator(functionToCall.originLocation, "function defined here")
-				);	
+				);
 			} else {
 				throw new CompileError(`void function returned a value`)
 					.indicator(location, "call here")
@@ -381,6 +385,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name);
 			if (alias) {
+				const typeText = getCGText();
+				let type = {} as ScopeObject;
+				
+				if (node.type) {
+					type = unwrapScopeObject(build(context, [node.type.value], {
+						codeGenText: typeText,
+						compileTime: context.options.compileTime,
+					}, null)[0]);
+				}
+				
 				const valueText = getCGText();
 				const value = unwrapScopeObject(build(context, [node.value], {
 					codeGenText: valueText,
@@ -391,17 +405,26 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					throw new CompileError(`no value for alias`).indicator(node.location, "here");
 				}
 				
+				if (node.type) {
+					expectType(context, type, value,
+						new CompileError(`definition expected type $expectedTypeName but got type $actualTypeName`)
+							.indicator(node.location, "definition here")
+					);
+				} else {
+					type = getTypeOf(context, value);
+				}
+				
 				if (node.value.kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
 					value.symbolName += `:${value.originLocation.path}:${alias.name}`;
 				}
-				
-				const type = getTypeOf(context, value);
 				
 				alias.value = value;
 				alias.type = type;
 				
 				if (doCodeGen(context)) {
-					codeGen.alias(context.options.codeGenText, context, alias, valueText);
+					if (!(type.kind == "type" && type.comptime)) {
+						codeGen.alias(context.options.codeGenText, context, alias, valueText);
+					}
 				}
 			} else {
 				utilities.unreachable();
@@ -499,7 +522,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						codeGenText: rightText,
 					}, null)[0];
 					
-					if (left.kind == "alias") {
+					if (left.kind == "alias" && left.type) {
 						if (!left.mutable) {
 							throw new CompileError(`the alias '${left.name}' is not mutable`)
 								.indicator(node.location, "reassignment here")
@@ -507,7 +530,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 						
 						if (doCodeGen(context)) {
-							codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
+							if (!(left.type.kind == "type" && left.type.comptime)) {
+								codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
+							}
 						}
 						
 						left.value = right;
@@ -536,8 +561,14 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				else {
-					const left = unwrapScopeObject(build(context, node.left, null, null)[0]);
-					const right = unwrapScopeObject(build(context, node.right, null, null)[0]);
+					const left = unwrapScopeObject(build(context, node.left, {
+						compileTime: false,
+						codeGenText: null,
+					}, null)[0]);
+					const right = unwrapScopeObject(build(context, node.right, {
+						compileTime: false,
+						codeGenText: null,
+					}, null)[0]);
 					
 					if (left.kind == "number" && right.kind == "number") {
 						if (node.operatorText == "+") {
@@ -545,6 +576,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								kind: "number",
 								originLocation: node.location,
 								value: left.value + right.value,
+							});
+						} else if (node.operatorText == "-") {
+							addToScopeList({
+								kind: "number",
+								originLocation: node.location,
+								value: left.value - right.value,
 							});
 						} else if (node.operatorText == "<") {
 							addToScopeList({
@@ -558,6 +595,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								originLocation: node.location,
 								value: left.value > right.value,
 							});
+						} else {
+							utilities.unreachable();
 						}
 					}
 				}
@@ -644,7 +683,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "if": {
-				const condition = unwrapScopeObject(build(context, node.condition, null, null)[0]);
+				const conditionText = getCGText();
+				const condition = unwrapScopeObject(build(context, node.condition, {
+					codeGenText: conditionText,
+					compileTime: context.options.compileTime,
+				}, null)[0]);
 				
 				// If the condition is known at compile time
 				if (condition.kind == "bool") {
@@ -659,10 +702,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				// If the condition is not known at compile time, build both code blocks
 				else if (condition.kind == "complexValue") {
-					build(context, node.trueCodeBlock, null, null, resultAtRet);
+					const trueText = getCGText();
+					const falseText = getCGText();
+					build(context, node.trueCodeBlock, {
+						codeGenText: trueText,
+						compileTime: context.options.compileTime,
+					}, null, resultAtRet);
 					if (node.falseCodeBlock) {
-						build(context, node.falseCodeBlock, null, null, resultAtRet);
+						build(context, node.falseCodeBlock, {
+							codeGenText: falseText,
+							compileTime: context.options.compileTime,
+						}, null, resultAtRet);
 					}
+					if (doCodeGen(context)) codeGen.if(context.options.codeGenText, context, conditionText, trueText, falseText);
 				}
 				
 				else {

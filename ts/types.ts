@@ -97,6 +97,7 @@ genericASTnode & {
 	kind: "definition",
 	mutable: boolean,
 	name: string,
+	type: ASTnode & { kind: "typeUse" } | null,
 	value: ASTnode,
 } | genericASTnode & {
 	kind: "function",
