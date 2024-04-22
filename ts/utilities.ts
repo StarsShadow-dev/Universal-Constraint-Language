@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { exit } from "process";
+import { CompileError } from "./report";
 
 export default {
 	unreachable(): never {
@@ -15,7 +16,11 @@ export default {
 	},
 	
 	readFile(path: string): string {
-		const text = fs.readFileSync(path, { encoding: 'utf8' });
-		return text;
+		try {
+			const text = fs.readFileSync(path, { encoding: 'utf8' });
+			return text;
+		} catch (error) {
+			throw new CompileError(`could not read file at path '${path}'`);
+		}
 	},
 }

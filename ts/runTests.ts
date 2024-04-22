@@ -147,6 +147,7 @@ function testDir(dirPath: string) {
 testDir("./tests/compSucceed");
 testDir("./tests/compError");
 testDir("./tests/compOut");
+testDir("./tests/js");
 
 console.log(`total ${total}`);
 console.log(`succeeded ${succeeded}/${total}`);

@@ -1,0 +1,3 @@
+// compSucceed
+
+const js = @import("./../../test/js.ucl");
