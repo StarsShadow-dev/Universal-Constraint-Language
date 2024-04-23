@@ -418,6 +418,16 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				throw new CompileError("unexpected separator").indicator(token.location, "here");
 				break;
 			}
+			case TokenType.operator: {
+				const left = AST.pop();
+				if (left != undefined) {
+					context.i--;
+					AST.push(parseOperators(context, left, 0));
+				} else {
+					utilities.unreachable();
+				}
+				break;
+			}
 			
 			case TokenType.builtinIndicator: {
 				const name = forward(context);
@@ -462,12 +472,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenType.operator) {
-			const left = AST.pop();
-			if (left != undefined) {
-				AST.push(parseOperators(context, left, 0));
-			} else {
-				utilities.unreachable();
-			}
+			continue;
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "(") {

@@ -11,8 +11,10 @@
 
 const StructTest = struct {
 	const a = 5;
-	const b = "from StructTest";
+	var b = "from StructTest";
 };
+@addTopCodeGen(StructTest.b);
+StructTest.b = "new string";
 @addTopCodeGen(StructTest.b);
 
 @writeToStdout();

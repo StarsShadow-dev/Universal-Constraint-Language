@@ -1,11 +1,7 @@
-var indentation = 1;
+var test = "1";
 
 const indent = inline fn() {
-	var i: 'Number = 0;
-	while (i < indentation) {
-		@addCodeGen("\t");
-		i = i + 1;
-	}
+	@addCodeGen("\t");
 };
 
 @onCodeGen("start", fn() {
