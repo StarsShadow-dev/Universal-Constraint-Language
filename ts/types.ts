@@ -98,7 +98,7 @@ genericASTnode & {
 	mutable: boolean,
 	name: string,
 	type: ASTnode & { kind: "typeUse" } | null,
-	value: ASTnode,
+	value: ASTnode | null,
 } | genericASTnode & {
 	kind: "function",
 	forceInline: boolean,
@@ -107,6 +107,7 @@ genericASTnode & {
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
+	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "codeGenerate",
 	codeBlock: ASTnode[],
@@ -190,7 +191,6 @@ export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject 
 		
 		return scopeObject;	
 	} else {
-		utilities.unreachable();
-		throw "";
+		throw utilities.unreachable();
 	}
 }

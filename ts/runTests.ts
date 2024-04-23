@@ -99,7 +99,7 @@ function testFile(filePath: string) {
 	let scopeList: ScopeObject[] = [];
 
 	try {
-		scopeList = build(builderContext, AST, null, null);
+		scopeList = build(builderContext, AST, null, null, false);
 	} catch (error) {
 		if (error instanceof CompileError) {
 			if (mode == "compSucceed") {

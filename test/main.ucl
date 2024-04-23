@@ -1,13 +1,18 @@
-const js = @import("./js.ucl");
+// const js = @import("./js.ucl");
 
-const exportTest = fn(input: Bool) {
-	if (input) {
-		js.log("input in true");
-	} else {
-		js.log("input in false");
-	}
+// const exportTest = fn(input: Bool) {
+// 	if (input) {
+// 		js.log("input in true");
+// 	} else {
+// 		js.log("input in false");
+// 	}
+// };
+// @export("test", exportTest);
+
+const StructTest = struct {
+	const a = 5;
+	const b = "from StructTest";
 };
-
-@export("test", exportTest);
+@addTopCodeGen(StructTest.b);
 
 @writeToStdout();

@@ -66,8 +66,7 @@ function getOperatorPrecedence(operatorText: string): number {
 	}
 	
 	else {
-		utilities.unreachable();
-		return -1;
+		throw utilities.unreachable();
 	}
 }
 
@@ -252,7 +251,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
-				else if (token.text == "const" || token.text == "var") {
+				else if (token.text == "const" || token.text == "var" || token.text == "property") {
 					const name = forward(context);
 					if (name.type != TokenType.word) {
 						throw new CompileError("expected name").indicator(name.location, "here");
@@ -265,16 +264,18 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected equals").indicator(equals.location, "here");
 					}
 					
-					const value = parse(context, ParserMode.single, null)[0];
-					
-					if (!value) {
-						throw new CompileError("empty definition").indicator(name.location, "here");
+					let value: ASTnode | null = null;
+					if (token.text != "property") {
+						value = parse(context, ParserMode.single, null)[0];
+						if (!value) {
+							throw new CompileError("empty definition").indicator(name.location, "here");
+						}
 					}
 					
 					AST.push({
 						kind: "definition",
 						location: token.location,
-						mutable: token.text == "var",
+						mutable: token.text != "const",
 						name: name.text,
 						type: type,
 						value: value,
@@ -358,6 +359,23 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						const fnToken = forward(context);
 						parseFunction(context, AST, fnToken.location, true);
 					}
+				}
+				
+				else if (token.text == "struct") {
+					const openingBracket = forward(context);
+					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+					}
+					
+					const codeBlock = parse(context, ParserMode.normal, "}");
+					
+					AST.push({
+						kind: "struct",
+						location: token.location,
+						codeBlock: codeBlock,
+					});
+					
+					needsSemicolon = false;
 				}
 				
 				else if (token.text == "fn") {

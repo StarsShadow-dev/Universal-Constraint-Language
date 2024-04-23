@@ -40,7 +40,7 @@ export function compileFile(filePath: string): ScopeObject[][] {
 	};
 	
 	codeGen.start(builderContext);
-	const scopeList = build(builderContext, AST, null, null);
+	const scopeList = build(builderContext, AST, null, null, false);
 	// console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`);
 	
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
