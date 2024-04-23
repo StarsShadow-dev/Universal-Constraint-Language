@@ -1,0 +1,10 @@
+// compError
+// error: the alias 'a' is not mutable
+// tests/compError/modifyConst_struct.ucl:10 -> reassignment here
+// tests/compError/modifyConst_struct.ucl:7 -> alias defined here
+
+const test = struct {
+	const a = 1;
+};
+
+test.a = 2;
