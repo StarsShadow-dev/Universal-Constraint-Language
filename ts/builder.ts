@@ -531,7 +531,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						codeGenText: rightText,
 					}, null, false)[0];
 					
-					if (left.kind == "alias" && left.type) {
+					if (left.kind == "alias") {
 						if (!left.mutable) {
 							throw new CompileError(`the alias '${left.name}' is not mutable`)
 								.indicator(node.location, "reassignment here")
@@ -539,14 +539,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 						
 						if (doCodeGen(context)) {
-							if (!(left.type.kind == "type" && left.type.comptime)) {
-								codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
+							if (left.type) {
+								if (!(left.type.kind == "type" && left.type.comptime)) {
+									codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
+								}
+							} else {
+								utilities.unreachable();
 							}
 						}
 						
 						left.value = right;
 					} else {
-						utilities.TODO();
+						throw new CompileError(`attempted to assign to something other than an alias`)
+							.indicator(node.location, "reassignment here");
 					}
 				}
 				
