@@ -1,0 +1,10 @@
+// compOut
+// from StructTest
+
+const StructTest = struct {
+	const a = true;
+	const b = "from StructTest";
+};
+if (StructTest.a) {
+	@addTopCodeGen(StructTest.b);
+}
