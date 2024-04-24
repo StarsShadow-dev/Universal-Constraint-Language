@@ -96,6 +96,7 @@ genericASTnode & {
 genericASTnode & {
 	kind: "definition",
 	mutable: boolean,
+	isAproperty: boolean,
 	name: string,
 	type: ASTnode & { kind: "typeUse" } | null,
 	value: ASTnode | null,
@@ -157,6 +158,7 @@ export type ScopeObject = genericScopeObject & {
 } | genericScopeObject & {
 	kind: "alias",
 	mutable: boolean,
+	isAproperty: boolean,
 	name: string,
 	value: ScopeObject | null,
 	symbolName: string,

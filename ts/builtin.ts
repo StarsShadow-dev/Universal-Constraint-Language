@@ -34,6 +34,7 @@ function addType(name: string) {
 		kind: "alias",
 		originLocation: "builtin",
 		mutable: false,
+		isAproperty: false,
 		name: name,
 		value: {
 			kind: "type",
@@ -78,6 +79,7 @@ export function setUpBuiltin(disableFileSystem: boolean) {
 			kind: "alias",
 			originLocation: "builtin",
 			mutable: false,
+			isAproperty: false,
 			name: "Type",
 			value: typeType,
 			symbolName: "",

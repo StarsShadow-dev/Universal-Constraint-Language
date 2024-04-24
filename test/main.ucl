@@ -9,12 +9,22 @@
 // };
 // @export("test", exportTest);
 
-const StructTest = struct {
-	const a = 5;
-	var b = "from StructTest";
+const Vec2 = struct {
+	property x: Number;
+	property y: Number;
 };
-@addTopCodeGen(StructTest.b);
-StructTest.b = "new string";
-@addTopCodeGen(StructTest.b);
+
+const getVec2 = fn(xIn: Number, yIn: Number): Vec2 {
+	ret struct {
+		var x = xIn;
+		var y = yIn;
+	};
+};
+
+const exportTest = fn(input: Bool) {
+	var vec2 = getVec2(3, 4);
+	@compileDebug();
+};
+@export("test", exportTest);
 
 @writeToStdout();

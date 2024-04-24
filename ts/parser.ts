@@ -259,13 +259,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					
 					const type = parseType(context);
 					
-					const equals = forward(context);
-					if (equals.type != TokenType.operator || equals.text != "=") {
-						throw new CompileError("expected equals").indicator(equals.location, "here");
-					}
-					
 					let value: ASTnode | null = null;
-					if (token.text != "property") {
+					
+					const equals = next(context);
+					if (equals.type == TokenType.operator || equals.text == "=") {
+						forward(context);
+						
 						value = parse(context, ParserMode.single, null)[0];
 						if (!value) {
 							throw new CompileError("empty definition").indicator(name.location, "here");
@@ -276,6 +275,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						kind: "definition",
 						location: token.location,
 						mutable: token.text != "const",
+						isAproperty: token.text == "property",
 						name: name.text,
 						type: type,
 						value: value,

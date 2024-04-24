@@ -82,26 +82,49 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	
 	const actualType = getTypeOf(context, actual);
 	
-	if (expectedType.kind == "type" && actualType.kind == "type") {
+	if (expectedType.kind == "type") {
 		if (expectedType == unwrapScopeObject(getAlias(context, "Any"))) {
 			return;
 		}
 		
-		if (expectedType.comptime && !actualType.comptime) {
-			compileError.msg = `expected type ${getTypeDescription(expectedType)} that is a compile time type, but got type ${getTypeDescription(actualType)} that is not a compile time type`;
-			throw compileError;
-		}
-		
-		if (expectedType.name != actualType.name) {
-			compileError.msg = compileError.msg
-				.replace("$expectedTypeName", expectedType.name)
-				.replace("$actualTypeName", actualType.name);
-			throw compileError;
+		if (actualType.kind == "type") {
+			if (expectedType.comptime && !actualType.comptime) {
+				compileError.msg = `expected type ${getTypeDescription(expectedType)} that is a compile time type, but got type ${getTypeDescription(actualType)} that is not a compile time type`;
+				throw compileError;
+			}
+			
+			if (expectedType.name != actualType.name) {
+				compileError.msg = compileError.msg
+					.replace("$expectedTypeName", expectedType.name)
+					.replace("$actualTypeName", actualType.name);
+				throw compileError;
+			}
+		} else {
+			utilities.TODO();
 		}
 	} else if (expected.kind == "function") {
 		utilities.TODO();
 	} else if (expected.kind == "struct") {
-		utilities.TODO();
+		if (actual.kind == "struct") {
+			for (let e = 0; e < expected.properties.length; e++) {
+				const expectedProperty = expected.properties[e];
+				if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
+					let foundActualProperty = false;
+					for (let a = 0; a < actual.properties.length; a++) {
+						const actualProperty = actual.properties[a];
+						if (actualProperty.kind == "alias" && actualProperty.name == expectedProperty.name) {
+							foundActualProperty = true;
+						}
+					}
+					if (!foundActualProperty) {
+						throw new CompileError(`property '${expectedProperty.name}' does not exist on struct`)
+							.indicator(expectedProperty.originLocation, "property defined here");
+					}
+				}
+			}
+		} else {
+			utilities.TODO();
+		}
 	} else {
 		utilities.unreachable();
 	}
@@ -232,6 +255,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						kind: "alias",
 						originLocation: argument.originLocation,
 						mutable: false,
+						isAproperty: false,
 						name: argument.name,
 						value: {
 							kind: "complexValue",
@@ -254,6 +278,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						kind: "alias",
 						originLocation: argument.originLocation,
 						mutable: false,
+						isAproperty: false,
 						name: argument.name,
 						value: callArgument,
 						symbolName: symbolName,
@@ -380,6 +405,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				kind: "alias",
 				originLocation: node.location,
 				mutable: node.mutable,
+				isAproperty: node.isAproperty,
 				name: node.name,
 				value: null,
 				symbolName: node.name,
@@ -391,7 +417,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 	for (let index = 0; index < AST.length; index++) {
 		const node = AST[index];
 		
-		if (node.kind == "definition" && node.value) {
+		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name);
 			if (alias) {
 				const typeText = getCGText();
@@ -404,37 +430,40 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}, null, false)[0]);
 				}
 				
-				const valueText = getCGText();
-				const value = unwrapScopeObject(build(context, [node.value], {
-					codeGenText: valueText,
-					compileTime: context.options.compileTime,
-				}, null, false)[0]);
-				
-				if (!value) {
-					throw new CompileError(`no value for alias`).indicator(node.location, "here");
-				}
-				
-				if (node.type) {
-					expectType(context, type, value,
-						new CompileError(`definition expected type $expectedTypeName but got type $actualTypeName`)
-							.indicator(node.location, "definition here")
-					);
-				} else {
-					type = getTypeOf(context, value);
-				}
-				
-				if (node.value.kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
-					value.symbolName += `:${value.originLocation.path}:${alias.name}`;
-				}
-				
-				alias.value = value;
-				alias.type = type;
-				
-				if (doCodeGen(context)) {
-					if (!(type.kind == "type" && type.comptime)) {
-						codeGen.alias(context.options.codeGenText, context, alias, valueText);
+				if (node.value) {
+					const valueText = getCGText();
+					const value = unwrapScopeObject(build(context, [node.value], {
+						codeGenText: valueText,
+						compileTime: context.options.compileTime,
+					}, null, false)[0]);
+					
+					if (!value) {
+						throw new CompileError(`no value for alias`).indicator(node.location, "here");
+					}
+					
+					if (node.type) {
+						expectType(context, type, value,
+							new CompileError(`definition expected type $expectedTypeName but got type $actualTypeName`)
+								.indicator(node.location, "definition here")
+						);
+					} else {
+						type = getTypeOf(context, value);
+					}
+					
+					if (node.value.kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
+						value.symbolName += `:${value.originLocation.path}:${alias.name}`;
+					}
+					
+					alias.value = value;
+					
+					if (doCodeGen(context)) {
+						if (!(type.kind == "type" && type.comptime)) {
+							codeGen.alias(context.options.codeGenText, context, alias, valueText);
+						}
 					}
 				}
+				
+				alias.type = type;
 			} else {
 				utilities.unreachable();
 			}
