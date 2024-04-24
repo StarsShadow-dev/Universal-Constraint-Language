@@ -20,10 +20,11 @@ const Vec3 = struct {
 	property z: Number;
 };
 
-const getVec2 = fn(xIn: Number, yIn: Number): Vec3 {
+const getVec2 = fn(xIn: Number, yIn: Number): Vec2 {
 	ret struct: Vec2 {
 		var x = xIn;
 		var y = yIn;
+		var z = 0;
 	};
 };
 

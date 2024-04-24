@@ -721,6 +721,25 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								}
 							}
 						}
+						for (let a = 0; a < properties.length; a++) {
+							const actualProperty = properties[a];
+							if (actualProperty.kind == "alias") {
+								let propertySupposedToExist = false;
+								for (let e = 0; e < conformType.properties.length; e++) {
+									const expectedProperty = conformType.properties[e];
+									if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
+										if (actualProperty.name == expectedProperty.name) {
+											propertySupposedToExist = true;
+											break;
+										}
+									}
+								}
+								if (!propertySupposedToExist) {
+									throw new CompileError(`property '${actualProperty.name}' should not exist on struct`)
+										.indicator(actualProperty.originLocation, "property defined here");
+								}
+							}
+						}
 					} else {
 						throw new CompileError(`a struct can only conform to another struct`)
 							.indicator(node.location, "struct defined here");
