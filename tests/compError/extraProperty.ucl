@@ -1,0 +1,15 @@
+// compError
+// error: property 'extraProperty' should not exist on struct
+// tests/compError/extraProperty.ucl:14 -> property defined here
+// tests/compError/extraProperty.ucl:6 -> conform struct defined here
+
+const Vec2 = struct {
+	property x: Number;
+	property y: Number;
+};
+
+var vec2 = struct: Vec2 {
+	var x = 0;
+	var y = 0;
+	var extraProperty = 0;
+};
