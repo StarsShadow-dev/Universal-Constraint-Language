@@ -722,7 +722,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							}
 						}
 					} else {
-						
+						throw new CompileError(`a struct can only conform to another struct`)
+							.indicator(node.location, "struct defined here");
 					}
 				}
 				
