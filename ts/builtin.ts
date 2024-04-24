@@ -11,7 +11,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { BuilderContext, callFunction, getTypeDescription } from "./builder";
+import { BuilderContext, callFunction, getNextSymbolName, getTypeDescription } from "./builder";
 import codeGen from "./codeGen";
 
 let started = false;
@@ -67,6 +67,8 @@ function getStruct(properties: ScopeObject[]): ScopeObject {
 	return {
 		kind: "struct",
 		originLocation: "builtin",
+		name: `${getNextSymbolName()}`,
+		conformType: null,
 		properties: properties,
 	};
 }

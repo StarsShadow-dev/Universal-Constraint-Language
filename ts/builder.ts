@@ -18,6 +18,9 @@ function doCodeGen(context: BuilderContext): boolean {
 }
 
 let nextSymbolName = 0;
+export function getNextSymbolName() {
+	return nextSymbolName++;
+}
 
 export type ScopeInformation = {
 	levels: ScopeObject[][],
@@ -102,25 +105,15 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 		} else {
 			utilities.TODO();
 		}
-	} else if (expected.kind == "function") {
+	} else if (expectedType.kind == "function") {
 		utilities.TODO();
-	} else if (expected.kind == "struct") {
-		if (actual.kind == "struct") {
-			for (let e = 0; e < expected.properties.length; e++) {
-				const expectedProperty = expected.properties[e];
-				if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
-					let foundActualProperty = false;
-					for (let a = 0; a < actual.properties.length; a++) {
-						const actualProperty = actual.properties[a];
-						if (actualProperty.kind == "alias" && actualProperty.name == expectedProperty.name) {
-							foundActualProperty = true;
-						}
-					}
-					if (!foundActualProperty) {
-						throw new CompileError(`property '${expectedProperty.name}' does not exist on struct`)
-							.indicator(expectedProperty.originLocation, "property defined here");
-					}
-				}
+	} else if (expectedType.kind == "struct") {
+		if (actualType.kind == "struct" && expectedType.name && actualType.conformType) {
+			if (expectedType.name != actualType.conformType.name) {
+				compileError.msg = compileError.msg
+					.replace("$expectedTypeName", expectedType.name)
+					.replace("$actualTypeName", actualType.conformType.name);
+				throw compileError;
 			}
 		} else {
 			utilities.TODO();
@@ -450,8 +443,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						type = getTypeOf(context, value);
 					}
 					
-					if (node.value.kind == "function" && value.kind == "function" && value.originLocation != "builtin") {
-						value.symbolName += `:${value.originLocation.path}:${alias.name}`;
+					if (value.originLocation != "builtin") {
+						if (node.value.kind == "function" && value.kind == "function") {
+							value.symbolName += `:${value.originLocation.path}:${alias.name}`;
+						} else if (node.value.kind == "struct" && value.kind == "struct") {
+							value.name += `:${value.originLocation.path}:${alias.name}`;
+						}
 					}
 					
 					alias.value = value;
@@ -690,20 +687,50 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					kind: "function",
 					forceInline: node.forceInline,
 					originLocation: node.location,
-					symbolName: `${nextSymbolName}`,
+					symbolName: `${getNextSymbolName()}`,
 					functionArguments: functionArguments,
 					returnType: returnType,
 					AST: node.codeBlock,
 					visible: visible,
 				});
-				nextSymbolName++;
 				break;
 			}
 			case "struct": {
 				const properties = build(context, node.codeBlock, null, null, false, true);
+				
+				let conformType: (ScopeObject & { kind: "struct" }) | null = null;
+				
+				if (node.conformType) {
+					const _conformType = unwrapScopeObject(build(context, [node.conformType.value], null, null, false)[0]);
+					
+					if (_conformType.kind == "struct") {
+						conformType = _conformType;
+						for (let e = 0; e < conformType.properties.length; e++) {
+							const expectedProperty = conformType.properties[e];
+							if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
+								let foundActualProperty = false;
+								for (let a = 0; a < properties.length; a++) {
+									const actualProperty = properties[a];
+									if (actualProperty.kind == "alias" && actualProperty.name == expectedProperty.name) {
+										foundActualProperty = true;
+									}
+								}
+								if (!foundActualProperty) {
+									throw new CompileError(`property '${expectedProperty.name}' does not exist on struct`)
+										.indicator(expectedProperty.originLocation, "property defined here");
+								}
+							}
+						}
+					} else {
+						
+					}
+				}
+				
 				addToScopeList({
 					kind: "struct",
 					originLocation: node.location,
+					name: `${getNextSymbolName()}`,
+					conformType: conformType,
 					properties: properties,
 				});
 				break;

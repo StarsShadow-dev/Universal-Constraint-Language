@@ -362,6 +362,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "struct") {
+					const conformType = parseType(context);
+					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
@@ -372,6 +374,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					AST.push({
 						kind: "struct",
 						location: token.location,
+						conformType: conformType,
 						codeBlock: codeBlock,
 					});
 					

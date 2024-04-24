@@ -108,6 +108,7 @@ genericASTnode & {
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
+	conformType: ASTnode & { kind: "typeUse" } | null,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "codeGenerate",
@@ -173,6 +174,8 @@ export type ScopeObject = genericScopeObject & {
 	visible: ScopeObject[],
 } | genericScopeObject & {
 	kind: "struct",
+	name: string,
+	conformType: (ScopeObject & { kind: "struct" }) | null,
 	properties: ScopeObject[],
 } | genericScopeObject & {
 	kind: "type",

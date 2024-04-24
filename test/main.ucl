@@ -14,8 +14,14 @@ const Vec2 = struct {
 	property y: Number;
 };
 
-const getVec2 = fn(xIn: Number, yIn: Number): Vec2 {
-	ret struct {
+const Vec3 = struct {
+	property x: Number;
+	property y: Number;
+	property z: Number;
+};
+
+const getVec2 = fn(xIn: Number, yIn: Number): Vec3 {
+	ret struct: Vec2 {
 		var x = xIn;
 		var y = yIn;
 	};
