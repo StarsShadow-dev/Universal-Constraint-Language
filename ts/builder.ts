@@ -717,8 +717,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								}
 								if (!foundActualProperty) {
 									throw new CompileError(`property '${expectedProperty.name}' does not exist on struct`)
-										.indicator(expectedProperty.originLocation, "property defined here")
-										.indicator(conformType.originLocation, "conform struct defined here");
+										.indicator(node.location, "struct defined here")
+										.indicator(expectedProperty.originLocation, "missing property defined here");
 								}
 							}
 						}

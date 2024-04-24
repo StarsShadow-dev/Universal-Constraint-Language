@@ -1,0 +1,13 @@
+// compError
+// error: property 'missingProperty' does not exist on struct
+// tests/compError/missingProperty.ucl:11 -> struct defined here
+// tests/compError/missingProperty.ucl:8 -> missing property defined here
+
+const Test = struct {
+	property a: Number;
+	property missingProperty: Number;
+};
+
+var test = struct: Test {
+	var a = 100;
+};
