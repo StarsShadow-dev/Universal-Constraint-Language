@@ -1,0 +1,14 @@
+// compOut
+// testing
+
+const Test = struct {
+	property string: String;
+	
+	const new = fn(): Test {
+		ret struct: Test {
+			var string = "testing";
+		};
+	};
+};
+
+@addTopCodeGen(Test.new().string);

@@ -474,10 +474,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			return AST;
 		}
 		
-		if (context.tokens[context.i] && next(context).type == TokenType.operator) {
-			continue;
-		}
-		
 		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "(") {
 			const left = AST.pop();
 			if (left != undefined) {
@@ -493,6 +489,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			} else {
 				utilities.unreachable();
 			}
+		}
+		
+		if (context.tokens[context.i] && next(context).type == TokenType.operator) {
+			continue;
 		}
 		
 		if (mode == ParserMode.single) {
