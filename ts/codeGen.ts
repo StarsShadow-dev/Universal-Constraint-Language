@@ -8,20 +8,10 @@ import { ScopeObject } from "./types";
 import { getBool, getString, onCodeGen } from "./builtin";
 import utilities from "./utilities";
 
-let top: string[] = [];
-
 export default {
-	getTop() {
-		return top;
-	},
-	
-	clearTop() {
-		top = [];
-	},
-	
 	start(context: BuilderContext) {
 		if (onCodeGen["start"]) {
-			callFunction(context, onCodeGen["start"], [], "builtin", false, true, null, top, null);
+			callFunction(context, onCodeGen["start"], [], "builtin", false, true, null, context.topCodeGenText, null);
 		}
 	},
 	

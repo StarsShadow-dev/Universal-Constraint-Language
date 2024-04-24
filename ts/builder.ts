@@ -35,9 +35,11 @@ export type ScopeInformation = {
 export type BuilderOptions = {
 	compileTime: boolean,
 	codeGenText: CodeGenText,
+	disableValueEvaluation: boolean,
 }
 
 export type BuilderContext = {
+	topCodeGenText: string[],
 	filePath: string,
 	scope: ScopeInformation,
 	options: BuilderOptions,
@@ -123,7 +125,7 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	}
 }
 
-function getAlias(context: BuilderContext, name: string): ScopeObject & { kind: "alias" } | null {
+function getAlias(context: BuilderContext, name: string, getProperties?: boolean): ScopeObject & { kind: "alias" } | null {
 	// builtin
 	for (let i = 0; i < builtinScopeLevel.length; i++) {
 		const scopeObject = builtinScopeLevel[i];
@@ -141,6 +143,7 @@ function getAlias(context: BuilderContext, name: string): ScopeObject & { kind: 
 		for (let i = 0; i < context.scope.levels[level].length; i++) {
 			const scopeObject = context.scope.levels[level][i];
 			if (scopeObject.kind == "alias") {
+				if (!getProperties && scopeObject.isAproperty) continue;
 				if (scopeObject.name == name) {
 					return scopeObject;
 				}
@@ -174,6 +177,7 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	for (let level = context.scope.currentLevel; level >= 0; level--) {
 		for (let i = 0; i < context.scope.levels[level].length; i++) {
 			const scopeObject = context.scope.levels[level][i];
+			if (scopeObject.kind == "alias" && scopeObject.isAproperty) continue;
 			list.push(scopeObject);
 		}
 	}
@@ -182,6 +186,7 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	if (context.scope.function) {
 		for (let i = 0; i < context.scope.function.visible.length; i++) {
 			const scopeObject = context.scope.function.visible[i];
+			if (scopeObject.kind == "alias" && scopeObject.isAproperty) continue;
 			list.push(scopeObject);
 		}
 	}
@@ -288,6 +293,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		let result = build(context, functionToCall.AST, {
 			compileTime: compileTime,
 			codeGenText: text,
+			disableValueEvaluation: context.options.disableValueEvaluation,
 		}, {
 			location: functionToCall.originLocation,
 			msg: `function ${functionToCall.symbolName}`,
@@ -324,7 +330,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		} else {
 			if (!compileTime) {
 				if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
-				codeGen.function(codeGen.getTop(), context, functionToCall, text);
+				codeGen.function(context.topCodeGenText, context, functionToCall, text);
 			}
 			
 			if (innerDest) innerDest.push(...text);
@@ -394,13 +400,21 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
+			let value: ScopeObject | null = null;
+			if (node.value && !context.options.disableValueEvaluation) {
+				value = unwrapScopeObject(build(context, [node.value], {
+					codeGenText: null,
+					compileTime: context.options.compileTime,
+					disableValueEvaluation: true,
+				}, null, false)[0]);
+			}
 			addAlias(context, context.scope.currentLevel, {
 				kind: "alias",
 				originLocation: node.location,
 				mutable: node.mutable,
 				isAproperty: node.isAproperty,
 				name: node.name,
-				value: null,
+				value: value,
 				symbolName: node.name,
 				type: null,
 			});
@@ -411,7 +425,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[index];
 		
 		if (node.kind == "definition") {
-			const alias = getAlias(context, node.name);
+			const alias = getAlias(context, node.name, true);
 			if (alias) {
 				const typeText = getCGText();
 				let type = {} as ScopeObject;
@@ -420,14 +434,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					type = unwrapScopeObject(build(context, [node.type.value], {
 						codeGenText: typeText,
 						compileTime: context.options.compileTime,
+						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0]);
 				}
 				
-				if (node.value) {
+				if (node.value && !context.options.disableValueEvaluation) {
 					const valueText = getCGText();
 					const value = unwrapScopeObject(build(context, [node.value], {
 						codeGenText: valueText,
 						compileTime: context.options.compileTime,
+						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0]);
 					
 					if (!value) {
@@ -515,11 +531,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const functionToCall = unwrapScopeObject(build(context, node.left, {
 					compileTime: context.options.compileTime,
 					codeGenText: leftText,
+					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false)[0]);
 				const argumentText = getCGText();
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
+					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false);
 				
 				if (functionToCall.kind == "function") {
@@ -537,6 +555,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
+					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false);
 				const result = builtinCall(context, node, callArguments);
 				if (result) {
@@ -550,11 +569,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const left = build(context, node.left, {
 						compileTime: context.options.compileTime,
 						codeGenText: leftText,
+						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0];
 					const rightText = getCGText();
 					const right = build(context, node.right, {
 						compileTime: context.options.compileTime,
 						codeGenText: rightText,
+						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0];
 					
 					if (left.kind == "alias") {
@@ -587,8 +608,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					if (left.kind == "struct" && node.right[0].kind == "identifier") {
 						for (let i = 0; i < left.properties.length; i++) {
 							const alias = left.properties[i];
-							if (alias.kind == "alias" && alias.value) {
-								if (alias.name == node.right[0].name) {
+							if (alias.kind == "alias") {
+								if (alias.isAproperty) continue;
+								if (alias.value && alias.name == node.right[0].name) {
 									addToScopeList(alias);
 								}
 							} else {
@@ -604,10 +626,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const left = unwrapScopeObject(build(context, node.left, {
 						compileTime: false,
 						codeGenText: null,
+						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0]);
 					const right = unwrapScopeObject(build(context, node.right, {
 						compileTime: false,
 						codeGenText: null,
+						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0]);
 					
 					if (left.kind == "number" && right.kind == "number") {
@@ -668,6 +692,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						const argumentType = build(context, [argument.type.value], {
 							codeGenText: null,
 							compileTime: true,
+							disableValueEvaluation: context.options.disableValueEvaluation,
 						}, null, false)[0];
 						
 						functionArguments.push({
@@ -761,6 +786,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				build(context, node.codeBlock, {
 					codeGenText: context.options.codeGenText,
 					compileTime: false,
+					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false);
 				break;
 			}
@@ -785,6 +811,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const condition = unwrapScopeObject(build(context, node.condition, {
 					codeGenText: conditionText,
 					compileTime: context.options.compileTime,
+					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false)[0]);
 				
 				// If the condition is known at compile time
@@ -805,11 +832,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					build(context, node.trueCodeBlock, {
 						codeGenText: trueText,
 						compileTime: context.options.compileTime,
+						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, resultAtRet);
 					if (node.falseCodeBlock) {
 						build(context, node.falseCodeBlock, {
 							codeGenText: falseText,
 							compileTime: context.options.compileTime,
+							disableValueEvaluation: context.options.disableValueEvaluation,
 						}, null, resultAtRet);
 					}
 					if (doCodeGen(context)) codeGen.if(context.options.codeGenText, context, conditionText, trueText, falseText);

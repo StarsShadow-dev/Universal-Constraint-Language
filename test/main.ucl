@@ -12,24 +12,17 @@
 const Vec2 = struct {
 	property x: Number;
 	property y: Number;
-};
-
-const Vec3 = struct {
-	property x: Number;
-	property y: Number;
-	property z: Number;
-};
-
-const getVec2 = fn(xIn: Number, yIn: Number): Vec2 {
-	ret struct: Vec2 {
-		var x = xIn;
-		var y = yIn;
-		var z = 0;
+	
+	const new = fn(xIn: Number, yIn: Number): Vec2 {
+		ret struct: Vec2 {
+			var x = xIn;
+			var y = yIn;
+		};
 	};
 };
 
 const exportTest = fn(input: Bool) {
-	var vec2 = getVec2(3, 4);
+	var vec2: Vec2 = Vec2.new(3, 4);
 	@compileDebug();
 };
 @export("test", exportTest);

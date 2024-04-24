@@ -254,7 +254,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			}
 			fc.done();
 			
-			codeGen.getTop().push(str);
+			context.topCodeGenText.push(str);
 		}
 		
 		else if (node.name == "onCodeGen") {
@@ -268,7 +268,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		else if (node.name == "writeToStdout") {
 			fc.done();
 			
-			console.log(codeGen.getTop().join(""));
+			console.log(context.topCodeGenText.join(""));
 		}
 		
 		else if (node.name == "writeTofile") {

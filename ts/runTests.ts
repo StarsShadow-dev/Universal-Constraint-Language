@@ -36,8 +36,6 @@ function testFile(filePath: string) {
 	
 	setUpBuiltin(true);
 	
-	codeGen.clearTop();
-	
 	const text = utilities.readFile(filePath);
 
 	const tokens = lex(filePath, text);
@@ -81,6 +79,8 @@ function testFile(filePath: string) {
 	}
 
 	const builderContext: BuilderContext = {
+		topCodeGenText: [""],
+		
 		filePath: filePath,
 		
 		scope: {
@@ -93,6 +93,7 @@ function testFile(filePath: string) {
 		options: {
 			compileTime: false,
 			codeGenText: [],
+			disableValueEvaluation: false,
 		}
 	};
 
@@ -127,7 +128,7 @@ function testFile(filePath: string) {
 		testSuccess();
 	} else if (mode == "compOut") {
 		const expectedOutput = comments.join("\n");
-		const actualOutput = codeGen.getTop().join("");
+		const actualOutput = builderContext.topCodeGenText.join("");
 		if (expectedOutput == actualOutput) {
 			testSuccess();
 		} else {

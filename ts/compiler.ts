@@ -1,4 +1,4 @@
-import { ASTnode, ScopeObject } from "./types";
+import { ASTnode, ScopeObject, getCGText } from "./types";
 import { lex } from "./lexer";
 import {
 	ParserMode,
@@ -24,6 +24,8 @@ export function compileFile(filePath: string): ScopeObject[][] {
 	// console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
 	
 	const builderContext: BuilderContext = {
+		topCodeGenText: getCGText(),
+		
 		filePath: filePath,
 		
 		scope: {
@@ -36,6 +38,7 @@ export function compileFile(filePath: string): ScopeObject[][] {
 		options: {
 			compileTime: false,
 			codeGenText: [],
+			disableValueEvaluation: false,
 		}
 	};
 	
