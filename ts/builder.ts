@@ -717,7 +717,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								}
 								if (!foundActualProperty) {
 									throw new CompileError(`property '${expectedProperty.name}' does not exist on struct`)
-										.indicator(expectedProperty.originLocation, "property defined here");
+										.indicator(expectedProperty.originLocation, "property defined here")
+										.indicator(conformType.originLocation, "conform struct defined here");
 								}
 							}
 						}
@@ -736,7 +737,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								}
 								if (!propertySupposedToExist) {
 									throw new CompileError(`property '${actualProperty.name}' should not exist on struct`)
-										.indicator(actualProperty.originLocation, "property defined here");
+										.indicator(actualProperty.originLocation, "property defined here")
+										.indicator(conformType.originLocation, "conform struct defined here");
 								}
 							}
 						}
