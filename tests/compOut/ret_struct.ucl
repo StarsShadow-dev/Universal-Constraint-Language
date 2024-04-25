@@ -1,0 +1,24 @@
+// compOut
+// test
+// in b
+
+const function = fn(): Type {
+	const String2 = struct {
+		property a: Number;
+		property b: Number;
+		
+		const new = fn(aIn: String): String2 {
+			ret struct: String2 {
+				var a = aIn;
+				var b = "in b";
+			};
+		};
+	};
+	ret String2;
+};
+
+var string2: function() = function().new("test");
+
+@addTopCodeGen(string2.a);
+@addTopCodeGen("\n");
+@addTopCodeGen(string2.b);
