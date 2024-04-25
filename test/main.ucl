@@ -9,20 +9,23 @@
 // };
 // @export("test", exportTest);
 
-const Vec2 = struct {
-	property x: Number;
-	property y: Number;
-	
-	const new = fn(xIn: Number, yIn: Number): Vec2 {
-		ret struct: Vec2 {
-			var x = xIn;
-			var y = yIn;
+const vecFn = fn(): Type {
+	const Vec2 = struct {
+		property x: Number;
+		property y: Number;
+		
+		const new = fn(xIn: Number, yIn: Number): Vec2 {
+			ret struct: Vec2 {
+				var x = xIn;
+				var y = yIn;
+			};
 		};
 	};
+	ret Vec2;
 };
 
 const exportTest = fn(input: Bool) {
-	var vec2: Vec2 = Vec2.new(3, 4);
+	var vector: vecFn() = vecFn().new(3, 4);
 	@compileDebug();
 };
 @export("test", exportTest);

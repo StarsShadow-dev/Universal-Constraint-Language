@@ -17,6 +17,7 @@ export enum ParserMode {
 	normal,
 	single,
 	singleNoContinue,
+	singleNoOperatorContinue,
 	comma,
 }
 
@@ -132,7 +133,7 @@ function parseType(context: ParserContext): ASTnode & { kind: "typeUse" } | null
 	if (colon.type == TokenType.separator && colon.text == ":") {
 		forward(context);
 		
-		const node = parse(context, ParserMode.singleNoContinue, null)[0];
+		const node = parse(context, ParserMode.singleNoOperatorContinue, null)[0];
 		type = {
 			kind: "typeUse",
 			location: node.location,
@@ -455,7 +456,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenType.singleQuote: {
-				const node = parse(context, ParserMode.singleNoContinue, null)[0];
+				const node = parse(context, ParserMode.singleNoOperatorContinue, null)[0];
 				AST.push({
 					kind: "comptime",
 					location: token.location,
@@ -489,6 +490,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			} else {
 				utilities.unreachable();
 			}
+		}
+		
+		if (mode == ParserMode.singleNoOperatorContinue) {
+			return AST;
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenType.operator) {

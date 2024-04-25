@@ -92,6 +92,12 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 			return;
 		}
 		
+		if (expectedType == unwrapScopeObject(getAlias(context, "Type"))) {
+			if (actualType.kind == "struct") {
+				return;
+			}
+		}
+		
 		if (actualType.kind == "type") {
 			if (expectedType.comptime && !actualType.comptime) {
 				compileError.msg = `expected type ${getTypeDescription(expectedType)} that is a compile time type, but got type ${getTypeDescription(actualType)} that is not a compile time type`;
@@ -303,7 +309,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		
 		if (result) {
 			if (functionToCall.returnType) {
-				expectType(context, unwrapScopeObject(functionToCall.returnType[0]), result,
+				expectType(context, unwrapScopeObject(functionToCall.returnType), unwrapScopeObject(result),
 					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 						.indicator(location, "call here")
 						.indicator(functionToCall.originLocation, "function defined here")
@@ -312,6 +318,13 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				throw new CompileError(`void function returned a value`)
 					.indicator(location, "call here")
 					.indicator(functionToCall.originLocation, "function defined here");
+			}
+			
+			if (result.originLocation != "builtin") {
+				const unwrappedResult = unwrapScopeObject(result);
+				if (unwrappedResult.kind == "struct") {
+					unwrappedResult.name = `${functionToCall.symbolName}()`;
+				}
 			}
 		} else {
 			if (functionToCall.returnType) {
@@ -401,7 +414,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		
 		if (node.kind == "definition") {
 			let value: ScopeObject | null = null;
-			if (node.value && !context.options.disableValueEvaluation) {
+			if (node.value && node.value.kind == "struct" && !context.options.disableValueEvaluation) {
 				value = unwrapScopeObject(build(context, [node.value], {
 					codeGenText: null,
 					compileTime: context.options.compileTime,
@@ -680,7 +693,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "function": {
 				let returnType = null;
 				if (node.returnType) {
-					returnType = build(context, [node.returnType.value], null, null, false);
+					returnType = (build(context, [node.returnType.value], null, null, false)[0]);
 				}
 				
 				let functionArguments: (ScopeObject & { kind: "argument" })[] = [];

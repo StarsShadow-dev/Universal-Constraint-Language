@@ -169,7 +169,7 @@ export type ScopeObject = genericScopeObject & {
 	forceInline: boolean,
 	symbolName: string,
 	functionArguments: (ScopeObject & { kind: "argument" })[],
-	returnType: ScopeObject[] | null,
+	returnType: ScopeObject | null,
 	AST: ASTnode[],
 	visible: ScopeObject[],
 } | genericScopeObject & {
