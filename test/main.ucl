@@ -29,25 +29,33 @@
 // };
 // @export("test", exportTest);
 
-const function = fn(aIn: String): Any {
-	const String2 = struct {
-		property a: String;
-		property b: String;
+// const function = fn(aIn: String): Any {
+// 	const String2 = struct {
+// 		property a: String;
+// 		property b: String;
 		
-		const new = fn(bIn: String): String2 {
-			ret struct: String2 {
-				var a = aIn;
-				var b = bIn;
-			};
-		};
-	};
-	ret String2;
+// 		const new = fn(bIn: String): String2 {
+// 			ret struct: String2 {
+// 				var a = aIn;
+// 				var b = bIn;
+// 			};
+// 		};
+// 	};
+// 	ret String2;
+// };
+
+// var string2: function("error") = function("a").new("b");
+
+// @addTopCodeGen(string2.a);
+// @addTopCodeGen("\n");
+// @addTopCodeGen(string2.b);
+
+// @writeToStdout();
+
+const Test = struct {
+	property a: Number;
 };
 
-var string2: function("a") = function("a").new("b");
-
-@addTopCodeGen(string2.a);
-@addTopCodeGen("\n");
-@addTopCodeGen(string2.b);
-
-@writeToStdout();
+var test = struct: Test {
+	var a = "test error";
+};

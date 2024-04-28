@@ -786,6 +786,18 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 									const actualProperty = properties[a];
 									if (actualProperty.kind == "alias" && actualProperty.name == expectedProperty.name) {
 										foundActualProperty = true;
+										if (context.options.disableValueEvaluation) {
+											continue;
+										}
+										if (!expectedProperty.type) {
+											throw utilities.unreachable();
+										}
+										expectType(context, expectedProperty.type, unwrapScopeObject(actualProperty),
+											new CompileError(`struct property '${expectedProperty.name}' expected type $expectedTypeName but got type $actualTypeName`)
+												.indicator(actualProperty.originLocation, "here")
+												.indicator(conformStruct.originLocation, "conform struct defined here")
+												.indicator(expectedProperty.originLocation, "property originally defined here")
+										);
 									}
 								}
 								if (!foundActualProperty) {
