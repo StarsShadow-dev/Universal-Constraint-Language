@@ -13,17 +13,21 @@ import { setUpBuiltin } from "./builtin";
 import path from "path";
 import codeGen from "./codeGen";
 
+const c_green = "\x1B[32m";
+const c_red = "\x1B[31m"
+const c_reset = "\x1B[0m";
+
 let total = 0;
 let succeeded = 0;
 let failed = 0;
 
 function testSuccess() {
-	console.log("\n\t\x1B[32mtest success!\x1B[0m\n");
+	console.log(`\n\t${c_green}test success!${c_reset}\n`);
 	succeeded++;
 }
 
 function testFailure(msg: string) {
-	console.log(`\n\t\x1B[31mtest failure:\n${msg}\x1B[0m\n`);
+	console.log(`\n\t${c_red}test failure:\n${msg}${c_reset}\n`);
 	failed++;
 	
 	process.exitCode = 1;
@@ -151,5 +155,5 @@ testDir("./tests/compOut");
 testDir("./tests/js");
 
 console.log(`total ${total}`);
-console.log(`succeeded ${succeeded}/${total}`);
-console.log(`failed ${failed}/${total}`);
+console.log(`succeeded ${c_green}${succeeded}${c_reset}`);
+console.log(`failed ${c_red}${failed}${c_reset}`);
