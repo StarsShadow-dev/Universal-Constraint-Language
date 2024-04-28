@@ -155,7 +155,7 @@ export type ScopeObject = genericScopeObject & {
 	kind: "void",
 } | genericScopeObject & {
 	kind: "complexValue",
-	type: ScopeObject,
+	type: (ScopeObject & { kind: "typeUse" }),
 } | genericScopeObject & {
 	kind: "alias",
 	mutable: boolean,
@@ -163,28 +163,27 @@ export type ScopeObject = genericScopeObject & {
 	name: string,
 	value: ScopeObject | null,
 	symbolName: string,
-	type: ScopeObject | null,
+	type: (ScopeObject & { kind: "typeUse" }) | null,
 } | genericScopeObject & {
 	kind: "function",
 	forceInline: boolean,
 	symbolName: string,
 	functionArguments: (ScopeObject & { kind: "argument" })[],
-	returnType: ScopeObject | null,
+	returnType: (ScopeObject & { kind: "typeUse" }) | null,
 	AST: ASTnode[],
 	visible: ScopeObject[],
 } | genericScopeObject & {
-	kind: "struct",
-	name: string,
-	conformType: (ScopeObject & { kind: "struct" }) | null,
-	properties: ScopeObject[],
-} | genericScopeObject & {
-	kind: "type",
-	name: string,
-	// must be compile time
-	comptime: boolean,
-} | genericScopeObject & {
 	kind: "argument",
 	name: string,
+	type: (ScopeObject & { kind: "typeUse" }),
+} | genericScopeObject & {
+	kind: "struct",
+	name: string,
+	conformStruct: (ScopeObject & { kind: "struct" }) | null,
+	properties: ScopeObject[],
+} | genericScopeObject & {
+	kind: "typeUse",
+	comptime: boolean,
 	type: ScopeObject,
 }
 
@@ -199,3 +198,20 @@ export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject 
 		throw utilities.unreachable();
 	}
 }
+
+export function getTypeName(typeUse: ScopeObject & { kind: "typeUse" }): string {
+	if (typeUse.type.kind == "struct") {
+		return typeUse.type.name;
+	} else {
+		throw utilities.unreachable();
+	}
+}
+
+// export function structToType(struct: ScopeObject & { kind: "struct" }): ScopeObject & { kind: "type" } {
+// 	return {
+// 		kind: "type",
+// 		originLocation: struct.originLocation,
+// 		name: struct.name,
+// 		comptime: false,
+// 	};
+// }

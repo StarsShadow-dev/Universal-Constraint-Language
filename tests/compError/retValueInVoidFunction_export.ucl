@@ -1,6 +1,6 @@
 // compError
 // error: void function returned a value
-// tests/compError/retValueInVoidFunction_export.ucl:10 -> call here
+// tests/compError/retValueInVoidFunction_export.ucl:10 -> function called here
 // tests/compError/retValueInVoidFunction_export.ucl:6 -> function defined here
 
 const test = fn() {

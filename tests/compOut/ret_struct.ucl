@@ -2,10 +2,10 @@
 // test
 // in b
 
-const function = fn(): Type {
+const function = fn(): Any {
 	const String2 = struct {
-		property a: Number;
-		property b: Number;
+		property a: String;
+		property b: String;
 		
 		const new = fn(aIn: String): String2 {
 			ret struct: String2 {

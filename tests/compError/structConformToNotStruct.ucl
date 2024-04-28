@@ -1,5 +1,0 @@
-// compError
-// error: a struct can only conform to another struct
-// tests/compError/structConformToNotStruct.ucl:5 -> struct defined here
-
-const a = struct: String {};

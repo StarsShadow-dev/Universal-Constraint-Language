@@ -22,11 +22,17 @@ export let builtinScopeLevel: ScopeObject[] = [];
 
 export let onCodeGen: any = {};
 
-const typeType: ScopeObject & { kind: "type" }  = {
-	kind: "type",
+const typeType: ScopeObject & { kind: "typeUse" } = {
+	kind: "typeUse",
 	originLocation: "builtin",
-	name: "builtin:Type",
 	comptime: true,
+	type: {
+		kind: "struct",
+		originLocation: "builtin",
+		name: "builtin:Type",
+		conformStruct: null,
+		properties: [],
+	},
 };
 
 function addType(name: string) {
@@ -37,10 +43,16 @@ function addType(name: string) {
 		isAproperty: false,
 		name: name,
 		value: {
-			kind: "type",
+			kind: "typeUse",
 			originLocation: "builtin",
-			name: "builtin:" + name,
 			comptime: false,
+			type: {
+				kind: "struct",
+				originLocation: "builtin",
+				name: "builtin:" + name,
+				conformStruct: null,
+				properties: [],
+			},
 		},
 		symbolName: "",
 		type: typeType,
@@ -68,7 +80,7 @@ function getStruct(properties: ScopeObject[]): ScopeObject {
 		kind: "struct",
 		originLocation: "builtin",
 		name: `${getNextSymbolName()}`,
-		conformType: null,
+		conformStruct: null,
 		properties: properties,
 	};
 }
@@ -126,8 +138,8 @@ class FC {
 		this.i++;
 		
 		if (comptime && scopeObject.kind == "alias") {
-			if (scopeObject.type) {
-				if (scopeObject.type.kind == "type" && !scopeObject.type.comptime) {
+			if (scopeObject.type && scopeObject.type.kind == "typeUse") {
+				if (!scopeObject.type.comptime) {
 					throw new CompileError("builtin argument error")
 						.indicator(node.location, `expected a comptime ${name}, but it is not comptime.`);
 				}
@@ -164,9 +176,9 @@ class FC {
 		}
 	}
 	
-	public "type" = (): ScopeObject & { kind: "type" } => {
+	public "type" = (): ScopeObject & { kind: "typeUse" } => {
 		const value = this.get("type", true, true);
-		if (value.kind == "type") {
+		if (value.kind == "typeUse") {
 			return value;
 		} else {
 			throw utilities.unreachable();
@@ -308,7 +320,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		
 		else if (node.name == "export") {
 			const name = fc.string(true);
-			const fnAlias = fc.alias(true);
+			const fnAlias = fc.alias(false);
 			const fn = unwrapScopeObject(fnAlias);
 			fc.done();
 			
