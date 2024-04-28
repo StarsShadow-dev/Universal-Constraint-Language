@@ -1,0 +1,13 @@
+// compOut
+// a string in a struct in a struct
+
+const test = struct {
+	const a = true;
+	const b = struct {
+		const c = "a string in a struct in a struct";
+	};
+};
+
+if (test.a) {
+	@addTopCodeGen(test.b.c);
+}
