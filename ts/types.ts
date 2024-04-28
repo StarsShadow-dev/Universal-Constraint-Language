@@ -206,12 +206,3 @@ export function getTypeName(typeUse: ScopeObject & { kind: "typeUse" }): string 
 		throw utilities.unreachable();
 	}
 }
-
-// export function structToType(struct: ScopeObject & { kind: "struct" }): ScopeObject & { kind: "type" } {
-// 	return {
-// 		kind: "type",
-// 		originLocation: struct.originLocation,
-// 		name: struct.name,
-// 		comptime: false,
-// 	};
-// }

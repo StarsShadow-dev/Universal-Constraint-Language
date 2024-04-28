@@ -1,0 +1,9 @@
+// compError
+// error: unexpected separator
+// tests/compError/emptyIfCondition.ucl:7 -> here
+
+// TODO: error msg
+
+if () {
+	
+}

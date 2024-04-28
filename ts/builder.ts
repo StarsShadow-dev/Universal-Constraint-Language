@@ -861,11 +861,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			case "if": {
 				const conditionText = getCGText();
-				const condition = unwrapScopeObject(build(context, node.condition, {
+				const _condition = build(context, node.condition, {
 					codeGenText: conditionText,
 					compileTime: context.options.compileTime,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false)[0]);
+				}, null, false)[0];
+				if (!_condition) {
+					throw new CompileError("if statement is missing a condition")
+						.indicator(node.location, "here");
+				}
+				const condition = unwrapScopeObject(_condition);
 				
 				// If the condition is known at compile time
 				if (condition.kind == "bool") {

@@ -44,7 +44,7 @@ const function = fn(aIn: String): Any {
 	ret String2;
 };
 
-var string2: function("error") = function("a").new("b");
+var string2: function("a") = function("a").new("b");
 
 @addTopCodeGen(string2.a);
 @addTopCodeGen("\n");
