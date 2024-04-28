@@ -1,24 +1,33 @@
 // compOut
-// test
-// in b
+// a
+// b
+// c
+// d
 
-const function = fn(): Any {
+const function = fn(aIn: String): Any {
 	const String2 = struct {
 		property a: String;
 		property b: String;
 		
-		const new = fn(aIn: String): String2 {
+		const new = fn(bIn: String): String2 {
 			ret struct: String2 {
 				var a = aIn;
-				var b = "in b";
+				var b = bIn;
 			};
 		};
 	};
 	ret String2;
 };
 
-var string2: function() = function().new("test");
+var string2: function("a") = function("a").new("b");
 
 @addTopCodeGen(string2.a);
 @addTopCodeGen("\n");
 @addTopCodeGen(string2.b);
+@addTopCodeGen("\n");
+
+var string2_inferred = function("c").new("d");
+
+@addTopCodeGen(string2_inferred.a);
+@addTopCodeGen("\n");
+@addTopCodeGen(string2_inferred.b);
