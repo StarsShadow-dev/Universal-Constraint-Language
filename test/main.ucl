@@ -51,11 +51,3 @@
 // @addTopCodeGen(string2.b);
 
 // @writeToStdout();
-
-const Test = struct {
-	property a: Number;
-};
-
-var test = struct: Test {
-	var a = "test error";
-};
