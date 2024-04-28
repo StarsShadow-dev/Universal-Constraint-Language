@@ -1,0 +1,9 @@
+// compOut
+// test
+
+const constTest = fn() {
+	const a = "test";
+	@addTopCodeGen(a);
+};
+
+constTest();
