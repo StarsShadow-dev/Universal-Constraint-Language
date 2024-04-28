@@ -108,7 +108,7 @@ genericASTnode & {
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
-	conformType: ASTnode & { kind: "typeUse" } | null,
+	templateType: ASTnode & { kind: "typeUse" } | null,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "codeGenerate",
@@ -179,7 +179,7 @@ export type ScopeObject = genericScopeObject & {
 } | genericScopeObject & {
 	kind: "struct",
 	name: string,
-	conformStruct: (ScopeObject & { kind: "struct" }) | null,
+	templateStruct: (ScopeObject & { kind: "struct" }) | null,
 	properties: ScopeObject[],
 } | genericScopeObject & {
 	kind: "typeUse",

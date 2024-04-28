@@ -73,8 +73,8 @@ export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObj
 		return getAsComptimeType(unwrapScopeObject(getAlias(context, "String")));
 	} else if (value.kind == "typeUse") {
 		if (value.type.kind == "struct") {
-			if (value.type.conformStruct) {
-				return getTypeOf(context, value.type.conformStruct);
+			if (value.type.templateStruct) {
+				return getTypeOf(context, value.type.templateStruct);
 			} else {
 				return value;
 			}
@@ -311,7 +311,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			const unwrappedResult = unwrapScopeObject(result);
 			
 			if (result.originLocation != "builtin") {
-				if (unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct" && !unwrappedResult.type.conformStruct) {
+				if (unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct" && !unwrappedResult.type.templateStruct) {
 					let nameArgumentsText = "";
 					for (let i = 0; i < callArguments.length; i++) {
 						const arg = callArguments[i];
@@ -771,15 +771,15 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "struct": {
 				const properties = build(context, node.codeBlock, null, null, false, true);
 				
-				let conformStruct: (ScopeObject & { kind: "struct" }) | null = null;
+				let templateStruct: (ScopeObject & { kind: "struct" }) | null = null;
 				
-				if (node.conformType) {
-					const conformType = unwrapScopeObject(build(context, [node.conformType.value], null, null, false)[0]);
+				if (node.templateType) {
+					const templateType = unwrapScopeObject(build(context, [node.templateType.value], null, null, false)[0]);
 					
-					if (conformType.kind == "typeUse" && conformType.type.kind == "struct") {
-						conformStruct = conformType.type;
-						for (let e = 0; e < conformStruct.properties.length; e++) {
-							const expectedProperty = conformStruct.properties[e];
+					if (templateType.kind == "typeUse" && templateType.type.kind == "struct") {
+						templateStruct = templateType.type;
+						for (let e = 0; e < templateStruct.properties.length; e++) {
+							const expectedProperty = templateStruct.properties[e];
 							if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
 								let foundActualProperty = false;
 								for (let a = 0; a < properties.length; a++) {
@@ -795,7 +795,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 										expectType(context, expectedProperty.type, unwrapScopeObject(actualProperty),
 											new CompileError(`struct property '${expectedProperty.name}' expected type $expectedTypeName but got type $actualTypeName`)
 												.indicator(actualProperty.originLocation, "here")
-												.indicator(conformStruct.originLocation, "conform struct defined here")
+												.indicator(templateStruct.originLocation, "template struct defined here")
 												.indicator(expectedProperty.originLocation, "property originally defined here")
 										);
 									}
@@ -811,8 +811,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							const actualProperty = properties[a];
 							if (actualProperty.kind == "alias") {
 								let propertySupposedToExist = false;
-								for (let e = 0; e < conformStruct.properties.length; e++) {
-									const expectedProperty = conformStruct.properties[e];
+								for (let e = 0; e < templateStruct.properties.length; e++) {
+									const expectedProperty = templateStruct.properties[e];
 									if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
 										if (actualProperty.name == expectedProperty.name) {
 											propertySupposedToExist = true;
@@ -823,12 +823,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								if (!propertySupposedToExist) {
 									throw new CompileError(`property '${actualProperty.name}' should not exist on struct`)
 										.indicator(actualProperty.originLocation, "property defined here")
-										.indicator(conformStruct.originLocation, "conform struct defined here");
+										.indicator(templateStruct.originLocation, "template struct defined here");
 								}
 							}
 						}
 					} else {
-						throw new CompileError(`a struct can only conform to another struct`)
+						throw new CompileError(`a struct can only use another struct as a template`)
 							.indicator(node.location, "struct defined here");
 					}
 				}
@@ -841,7 +841,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						kind: "struct",
 						originLocation: node.location,
 						name: `${getNextSymbolName()}`,
-						conformStruct: conformStruct,
+						templateStruct: templateStruct,
 						properties: properties,
 					},
 				});

@@ -1,7 +1,7 @@
 // compError
 // error: property 'extraProperty' should not exist on struct
 // tests/compError/extraProperty.ucl:14 -> property defined here
-// tests/compError/extraProperty.ucl:6 -> conform struct defined here
+// tests/compError/extraProperty.ucl:6 -> template struct defined here
 
 const Vec2 = struct {
 	property x: Number;

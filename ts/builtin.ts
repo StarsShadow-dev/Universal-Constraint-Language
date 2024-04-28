@@ -30,7 +30,7 @@ const typeType: ScopeObject & { kind: "typeUse" } = {
 		kind: "struct",
 		originLocation: "builtin",
 		name: "builtin:Type",
-		conformStruct: null,
+		templateStruct: null,
 		properties: [],
 	},
 };
@@ -50,7 +50,7 @@ function addType(name: string) {
 				kind: "struct",
 				originLocation: "builtin",
 				name: "builtin:" + name,
-				conformStruct: null,
+				templateStruct: null,
 				properties: [],
 			},
 		},
@@ -80,7 +80,7 @@ function getStruct(properties: ScopeObject[]): ScopeObject {
 		kind: "struct",
 		originLocation: "builtin",
 		name: `${getNextSymbolName()}`,
-		conformStruct: null,
+		templateStruct: null,
 		properties: properties,
 	};
 }
