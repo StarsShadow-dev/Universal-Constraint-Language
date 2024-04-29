@@ -1,0 +1,7 @@
+// compError
+// error: unexpected return
+// tests/compError/retInStruct.ucl:6 -> here
+
+const test = struct {
+	ret;
+};
