@@ -77,11 +77,16 @@ export function getString(value: string): ScopeObject {
 
 function getStruct(properties: ScopeObject[]): ScopeObject {
 	return {
-		kind: "struct",
+		kind: "typeUse",
 		originLocation: "builtin",
-		name: `${getNextSymbolName()}`,
-		templateStruct: null,
-		properties: properties,
+		comptime: true,
+		type: {
+			kind: "struct",
+			originLocation: "builtin",
+			name: `${getNextSymbolName()}`,
+			templateStruct: null,
+			properties: properties,
+		},
 	};
 }
 

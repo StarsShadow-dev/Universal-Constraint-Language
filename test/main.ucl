@@ -1,13 +1,15 @@
-// const js = @import("./js.ucl");
+const js = @import("./js.ucl");
 
-// const exportTest = fn(input: Bool) {
-// 	if (input) {
-// 		js.log("input in true");
-// 	} else {
-// 		js.log("input in false");
-// 	}
-// };
-// @export("test", exportTest);
+const exportTest = fn(input: Bool) {
+	if (input) {
+		js.log("input in true");
+	} else {
+		js.log("input in false");
+	}
+};
+@export("test", exportTest);
+
+@writeToStdout();
 
 // const vecFn = fn(): Type {
 // 	const Vec2 = struct {
@@ -44,10 +46,8 @@
 // 	ret String2;
 // };
 
-// var string2: function("error") = function("a").new("b");
+// var string2: function("a") = function("a").new("b");
 
 // @addTopCodeGen(string2.a);
 // @addTopCodeGen("\n");
 // @addTopCodeGen(string2.b);
-
-// @writeToStdout();

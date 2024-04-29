@@ -51,7 +51,7 @@ const indent = inline fn() {
 	@addCodeGen("}\n");
 });
 
-@onCodeGen("fn_arg", fn(name: 'String, type: 'Type, more: 'Bool) {
+@onCodeGen("fn_arg", fn(name: 'String, type: 'Any, more: 'Bool) {
 	@addCodeGen(name);
 	if (more) {
 		@addCodeGen(", ");

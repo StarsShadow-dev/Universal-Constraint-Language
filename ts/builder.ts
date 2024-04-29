@@ -107,7 +107,7 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	let actualType = getTypeOf(context, actual);
 	
 	if (expectedType.kind == "typeUse" && actualType.kind == "typeUse") {
-		if (expectedType == unwrapScopeObject(getAlias(context, "Any"))) {
+		if (getTypeName(expectedType) == "builtin:Any") {
 			return;
 		}
 		
