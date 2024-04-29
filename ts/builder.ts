@@ -60,8 +60,8 @@ function getAsComptimeType(type: ScopeObject, location?: SourceLocation): ScopeO
 	}
 }
 
-export function getTypeDescription(type: ScopeObject & { kind: "typeUse" }) {
-	return `${getTypeName(type)}`;
+export function getTypeText(type: ScopeObject & { kind: "typeUse" }) {
+	return `'${getTypeName(type)}'`;
 }
 
 export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObject & { kind: "typeUse" } {
@@ -116,7 +116,7 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 		}
 		
 		if (expectedType.comptime && !actualType.comptime) {
-			compileError.msg = `expected type ${getTypeDescription(expectedType)} that is a compile time type, but got type ${getTypeDescription(actualType)} that is not a compile time type`;
+			compileError.msg = `expected type ${getTypeText(expectedType)} that is a compile time type, but got type ${getTypeText(actualType)} that is not a compile time type`;
 			throw compileError;
 		}
 		
@@ -230,7 +230,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		
 		if (functionToCall.returnType && getTypeName(functionToCall.returnType) == "builtin:Any") {
 			if (!functionToCall.returnType.comptime) {
-				throw new CompileError(`a function cannot return ${getTypeDescription(functionToCall.returnType)} that is not comptime`)
+				throw new CompileError(`a function cannot return ${getTypeText(functionToCall.returnType)} that is not comptime`)
 					.indicator(functionToCall.originLocation, "function defined here");
 			}
 		}

@@ -11,7 +11,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { BuilderContext, callFunction, getNextSymbolName, getTypeDescription } from "./builder";
+import { BuilderContext, callFunction, getNextSymbolName, getTypeText } from "./builder";
 import codeGen from "./codeGen";
 
 let started = false;
