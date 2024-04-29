@@ -1,13 +1,13 @@
-const js = @import("./js.ucl");
-const import = @import("./import.ucl");
+// const js = @import("./js.ucl");
+// const import = @import("./import.ucl");
 
-const test = fn() {
+// const test = fn() {
 	
-};
+// };
 
-@export("test", import.exportTest);
+// @export("test", import.exportTest);
 
-@writeToStdout();
+// @writeToStdout();
 
 // const vecFn = fn(): Type {
 // 	const Vec2 = struct {
@@ -49,3 +49,5 @@ const test = fn() {
 // @addTopCodeGen(string2.a);
 // @addTopCodeGen("\n");
 // @addTopCodeGen(string2.b);
+
+@assert(false);

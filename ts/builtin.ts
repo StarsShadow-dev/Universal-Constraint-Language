@@ -171,6 +171,15 @@ class FC {
 		}
 	}
 	
+	public "bool" = (comptime: boolean): boolean => {
+		const value = this.get("bool", comptime);
+		if (value.kind == "bool") {
+			return value.value;
+		} else {
+			throw utilities.unreachable();
+		}
+	}
+	
 	public "string" = (comptime: boolean): string => {
 		const value = this.get("string", comptime);
 		if (value.kind == "string") {
@@ -245,6 +254,15 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		
 		else if (node.name == "compileDebug") {
 			debugger;
+		}
+		
+		else if (node.name == "assert") {
+			const bool = fc.bool(false);
+			
+			if (!bool) {
+				throw new CompileError(`assert failed`)
+					.indicator(node.location, "here");
+			}
 		}
 		
 		else if (node.name == "opaque") {
