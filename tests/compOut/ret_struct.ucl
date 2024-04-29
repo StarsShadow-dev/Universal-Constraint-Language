@@ -4,7 +4,7 @@
 // c
 // d
 
-const function = fn(aIn: String): Any {
+const function = fn(aIn: String): 'Any {
 	const String2 = struct {
 		property a: String;
 		property b: String;

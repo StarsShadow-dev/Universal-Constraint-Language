@@ -172,7 +172,7 @@ export type ScopeObject = genericScopeObject & {
 	returnType: (ScopeObject & { kind: "typeUse" }) | null,
 	AST: ASTnode[],
 	visible: ScopeObject[],
-	wasGenerated: boolean,
+	toBeGenerated: boolean,
 } | genericScopeObject & {
 	kind: "argument",
 	name: string,

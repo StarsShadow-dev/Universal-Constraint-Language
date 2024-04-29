@@ -1,51 +1,10 @@
 const js = @import("./js.ucl");
-const import = @import("./import.ucl");
 
-const test = fn() {
-	// import.exportTest();
+const exportTest = fn() {
+	js.log("testing");
+	exportTest();
 };
 
-@export("test", import.exportTest);
+@export("test", exportTest);
 
 @writeToStdout();
-
-// const vecFn = fn(): Type {
-// 	const Vec2 = struct {
-// 		property x: Number;
-// 		property y: Number;
-		
-// 		const new = fn(xIn: Number, yIn: Number): Vec2 {
-// 			ret struct: Vec2 {
-// 				var x = xIn;
-// 				var y = yIn;
-// 			};
-// 		};
-// 	};
-// 	ret Vec2;
-// };
-
-// const exportTest = fn(input: Bool) {
-	
-// };
-// @export("test", exportTest);
-
-// const function = fn(aIn: String): Any {
-// 	const String2 = struct {
-// 		property a: String;
-// 		property b: String;
-		
-// 		const new = fn(bIn: String): String2 {
-// 			ret struct: String2 {
-// 				var a = aIn;
-// 				var b = bIn;
-// 			};
-// 		};
-// 	};
-// 	ret String2;
-// };
-
-// var string2: function("a") = function("a").new("b");
-
-// @addTopCodeGen(string2.a);
-// @addTopCodeGen("\n");
-// @addTopCodeGen(string2.b);

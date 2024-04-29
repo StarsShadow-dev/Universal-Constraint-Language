@@ -228,136 +228,179 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}	
 		}
 		
-		const oldScope = context.scope;
-		context.scope = {
-			currentLevel: -1,
-			levels: [[]],
-			function: functionToCall,
-			generatingFunction: oldScope.generatingFunction,
+		if (functionToCall.returnType && getTypeName(functionToCall.returnType) == "builtin:Any") {
+			if (!functionToCall.returnType.comptime) {
+				throw new CompileError(`a function cannot return ${getTypeDescription(functionToCall.returnType)} that is not comptime`)
+					.indicator(functionToCall.originLocation, "function defined here");
+			}
 		}
 		
-		if (!compileTime) {
-			context.scope.generatingFunction = functionToCall;
-		}
-		
-		for (let index = 0; index < functionToCall.functionArguments.length; index++) {
-			const argument = functionToCall.functionArguments[index];
-			
-			const argumentType = unwrapScopeObject(argument.type);
-			
-			if (argument.kind == "argument" && argumentType.kind == "typeUse") {
-				let symbolName = argument.name;
-				// {
-				// 	const temp = callArguments[index];
-				// 	if (temp.kind == "alias") {
-				// 		symbolName = temp.symbolName;
-				// 	}
-				// }
-				
-				if (fillComplex) {
-					addAlias(context, context.scope.currentLevel + 1, {
-						kind: "alias",
-						originLocation: argument.originLocation,
-						mutable: false,
-						isAproperty: false,
-						name: argument.name,
-						value: {
-							kind: "complexValue",
-							originLocation: argument.originLocation,
-							type: argumentType,
-						},
-						symbolName: symbolName,
-						type: argumentType,
-					});
+		let toBeGeneratedHere: boolean;
+		if (compileTime) {
+			toBeGeneratedHere = true;
+		} else {
+			if (functionToCall.returnType && functionToCall.returnType.comptime) {
+				toBeGeneratedHere = true;
+			} else {
+				if (functionToCall.toBeGenerated) {
+					toBeGeneratedHere = true;
+					functionToCall.toBeGenerated = false;
 				} else {
-					const callArgument = unwrapScopeObject(callArguments[index]);
-					
-					expectType(context, argumentType, callArgument,
-						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-							.indicator(callArgument.originLocation, "argument here")
-							.indicator(argument.originLocation, "argument defined here")
-					);
-					
-					addAlias(context, context.scope.currentLevel + 1, {
-						kind: "alias",
-						originLocation: argument.originLocation,
-						mutable: false,
-						isAproperty: false,
-						name: argument.name,
-						value: callArgument,
-						symbolName: symbolName,
-						type: argumentType,
-					});	
+					toBeGeneratedHere = false;
 				}
-			} else {
-				utilities.unreachable();
 			}
 		}
 		
-		const text = getCGText();
+		let result: ScopeObject;
 		
-		let result = build(context, functionToCall.AST, {
-			compileTime: compileTime,
-			codeGenText: text,
-			disableValueEvaluation: context.options.disableValueEvaluation,
-		}, {
-			location: functionToCall.originLocation,
-			msg: `function ${functionToCall.symbolName}`,
-		}, true)[0];
-		
-		context.scope = oldScope;
-		
-		if (result) {
-			const unwrappedResult = unwrapScopeObject(result);
-			
-			if (result.originLocation != "builtin") {
-				if (unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct" && !unwrappedResult.type.templateStruct) {
-					let nameArgumentsText = "";
-					for (let i = 0; i < callArguments.length; i++) {
-						const arg = callArguments[i];
-						if (arg.kind == "string") {
-							nameArgumentsText += `"${arg.value}"`;
-						}
-					}
-					unwrappedResult.type.name = `${functionToCall.symbolName}(${nameArgumentsText})`;
-				}
+		if (toBeGeneratedHere) {
+			const oldScope = context.scope;
+			context.scope = {
+				currentLevel: -1,
+				levels: [[]],
+				function: functionToCall,
+				generatingFunction: oldScope.generatingFunction,
 			}
 			
-			if (functionToCall.returnType) {
-				expectType(context, unwrapScopeObject(functionToCall.returnType), unwrappedResult,
-					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-						.indicator(location, "call here")
-						.indicator(functionToCall.originLocation, "function defined here")
-				);
-			} else {
-				throw new CompileError(`void function returned a value`)
-					.indicator(location, "function called here")
-					.indicator(functionToCall.originLocation, "function defined here");
-			}
-		} else {
-			if (functionToCall.returnType) {
-				throw new CompileError(`non-void function returned void`)
-					.indicator(location, "call here")
-					.indicator(functionToCall.originLocation, "function defined here");
-			}
-			result = {
-				kind: "void",
-				originLocation: location,
-			}
-		}
-		
-		if (functionToCall.forceInline) {
-			if (callDest) callDest.push(...text);
-		} else {
 			if (!compileTime) {
-				if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
-				if (!functionToCall.wasGenerated) {
-					codeGen.function(context.topCodeGenText, context, functionToCall, text);
-					functionToCall.wasGenerated = true;
+				context.scope.generatingFunction = functionToCall;
+			}
+			
+			for (let index = 0; index < functionToCall.functionArguments.length; index++) {
+				const argument = functionToCall.functionArguments[index];
+				
+				const argumentType = unwrapScopeObject(argument.type);
+				
+				if (argument.kind == "argument" && argumentType.kind == "typeUse") {
+					let symbolName = argument.name;
+					// {
+					// 	const temp = callArguments[index];
+					// 	if (temp.kind == "alias") {
+					// 		symbolName = temp.symbolName;
+					// 	}
+					// }
+					
+					if (fillComplex) {
+						addAlias(context, context.scope.currentLevel + 1, {
+							kind: "alias",
+							originLocation: argument.originLocation,
+							mutable: false,
+							isAproperty: false,
+							name: argument.name,
+							value: {
+								kind: "complexValue",
+								originLocation: argument.originLocation,
+								type: argumentType,
+							},
+							symbolName: symbolName,
+							type: argumentType,
+						});
+					} else {
+						const callArgument = unwrapScopeObject(callArguments[index]);
+						
+						expectType(context, argumentType, callArgument,
+							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+								.indicator(callArgument.originLocation, "argument here")
+								.indicator(argument.originLocation, "argument defined here")
+						);
+						
+						addAlias(context, context.scope.currentLevel + 1, {
+							kind: "alias",
+							originLocation: argument.originLocation,
+							mutable: false,
+							isAproperty: false,
+							name: argument.name,
+							value: callArgument,
+							symbolName: symbolName,
+							type: argumentType,
+						});	
+					}
+				} else {
+					utilities.unreachable();
 				}
 			}
 			
-			if (innerDest) innerDest.push(...text);
+			const text = getCGText();
+			
+			result = build(context, functionToCall.AST, {
+				compileTime: compileTime,
+				codeGenText: text,
+				disableValueEvaluation: context.options.disableValueEvaluation,
+			}, {
+				location: functionToCall.originLocation,
+				msg: `function ${functionToCall.symbolName}`,
+			}, true)[0];
+			
+			context.scope = oldScope;
+			
+			if (result) {
+				const unwrappedResult = unwrapScopeObject(result);
+				
+				if (result.originLocation != "builtin") {
+					if (
+						unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct" &&
+						!unwrappedResult.type.templateStruct
+					) {
+						let nameArgumentsText = "";
+						for (let i = 0; i < callArguments.length; i++) {
+							const arg = callArguments[i];
+							if (arg.kind == "string") {
+								nameArgumentsText += `"${arg.value}"`;
+							}
+						}
+						unwrappedResult.type.name = `${functionToCall.symbolName}(${nameArgumentsText})`;
+					}
+				}
+				
+				if (functionToCall.returnType) {
+					expectType(context, unwrapScopeObject(functionToCall.returnType), unwrappedResult,
+						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+							.indicator(location, "call here")
+							.indicator(functionToCall.originLocation, "function defined here")
+					);
+				} else {
+					throw new CompileError(`void function returned a value`)
+						.indicator(location, "function called here")
+						.indicator(functionToCall.originLocation, "function defined here");
+				}
+			} else {
+				if (functionToCall.returnType) {
+					throw new CompileError(`non-void function returned void`)
+						.indicator(location, "call here")
+						.indicator(functionToCall.originLocation, "function defined here");
+				}
+				result = {
+					kind: "void",
+					originLocation: location,
+				}
+			}
+			
+			if (functionToCall.forceInline) {
+				if (callDest) callDest.push(...text);
+			} else {
+				if (!compileTime) {
+					codeGen.function(context.topCodeGenText, context, functionToCall, text);
+				}
+				
+				if (innerDest) innerDest.push(...text);
+			}
+		} else {
+			if (functionToCall.returnType) {
+				result = {
+					kind: "complexValue",
+					originLocation: location,
+					type: functionToCall.returnType,
+				};
+			} else {
+				result = {
+					kind: "void",
+					originLocation: location,
+				}
+			}
+		}
+		
+		if (!functionToCall.forceInline && !compileTime) {
+			if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
 		}
 		
 		return result;
@@ -652,10 +695,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				else if (node.operatorText == ".") {
 					const left = unwrapScopeObject(build(context, node.left, null, null, false)[0]);
 					
-					if (left.kind == "typeUse" && left.type.kind == "struct" && node.right[0].kind == "identifier") {
+					let typeUse: ScopeObject;
+					if (left.kind == "typeUse") {
+						typeUse = left;
+					} else if (left.kind == "complexValue") {
+						typeUse = left.type;
+					} else {
+						throw utilities.unreachable();
+					}
+					
+					if (typeUse.kind == "typeUse" && typeUse.type.kind == "struct" && node.right[0].kind == "identifier") {
 						let addedAlias = false;
-						for (let i = 0; i < left.type.properties.length; i++) {
-							const alias = left.type.properties[i];
+						for (let i = 0; i < typeUse.type.properties.length; i++) {
+							const alias = typeUse.type.properties[i];
 							if (alias.kind == "alias") {
 								if (alias.isAproperty) continue;
 								if (alias.value && alias.name == node.right[0].name) {
@@ -779,7 +831,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					returnType: returnType,
 					AST: node.codeBlock,
 					visible: visible,
-					wasGenerated: false,
+					toBeGenerated: true,
 				});
 				break;
 			}

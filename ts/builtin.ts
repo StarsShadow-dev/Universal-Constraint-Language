@@ -253,6 +253,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "compileDebug") {
+			console.log(callArguments);
 			debugger;
 		}
 		
