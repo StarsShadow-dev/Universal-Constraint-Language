@@ -1,15 +1,9 @@
 const js = @import("./js.ucl");
+const import = @import("./import.ucl");
 
-const exportTest = fn(input: Bool) {
-	if (input) {
-		js.log("input in true");
-	} else {
-		js.log("input in false");
-	}
-};
-@export("test", exportTest);
+@export("test", import.exportTest);
 
-@writeTofile("./out/main.js");
+@writeToStdout();
 
 // const vecFn = fn(): Type {
 // 	const Vec2 = struct {

@@ -1,0 +1,14 @@
+const js = @import("./js.ucl");
+
+const logNumber = fn(n1: Number, n2: Number) {
+	js.indent();
+	@addCodeGen("console.log(");
+	n1;
+	@addCodeGen(", ");
+	n2;
+	@addCodeGen(");\n");
+};
+
+const exportTest = fn(input: Number) {
+	logNumber(30, 100);
+};

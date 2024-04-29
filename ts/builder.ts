@@ -567,11 +567,15 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			case "call": {
 				const leftText = getCGText();
-				const functionToCall = unwrapScopeObject(build(context, node.left, {
+				const functionToCall_ = build(context, node.left, {
 					compileTime: context.options.compileTime,
 					codeGenText: leftText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false)[0]);
+				}, null, false)[0]
+				if (!functionToCall_) {
+					utilities.TODO();
+				}
+				const functionToCall = unwrapScopeObject(functionToCall_);
 				const argumentText = getCGText();
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
@@ -645,16 +649,22 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const left = unwrapScopeObject(build(context, node.left, null, null, false)[0]);
 					
 					if (left.kind == "typeUse" && left.type.kind == "struct" && node.right[0].kind == "identifier") {
+						let addedAlias = false;
 						for (let i = 0; i < left.type.properties.length; i++) {
 							const alias = left.type.properties[i];
 							if (alias.kind == "alias") {
 								if (alias.isAproperty) continue;
 								if (alias.value && alias.name == node.right[0].name) {
 									addToScopeList(alias);
+									addedAlias = true;
 								}
 							} else {
 								utilities.unreachable();
 							}
+						}
+						if (!addedAlias) {
+							throw new CompileError(`no member named '${node.right[0].name}'`)
+								.indicator(node.right[0].location, "here");
 						}
 					} else {
 						utilities.TODO();
