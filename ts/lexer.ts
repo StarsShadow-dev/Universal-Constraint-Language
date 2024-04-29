@@ -28,8 +28,8 @@ function twoCharacterOperator(text: string, i: number): boolean {
 	return text[i] == '=' && text[i+1] == '=' ||
 	text[i] == '!' && text[i+1] == '=' ||
 	text[i] == '&' && text[i+1] == '&' ||
-	text[i] == '|' && text[i+1] == '|' ||
-	text[i] == 'a' && text[i+1] == 's';
+	text[i] == '|' && text[i+1] == '|';
+	// text[i] == 'a' && text[i+1] == 's';
 }
 
 function separator(text: string, i: number): boolean {
@@ -146,9 +146,19 @@ export function lex(filePath: string, text: string): Token[] {
 			});
 		}
 		
-		// else if (twoCharacterOperator(text, i)) {
-			
-		// }
+		else if (twoCharacterOperator(text, i)) {
+			i++;
+			tokens.push({
+				type: TokenType.operator,
+				text: text[i-1] + text[i],
+				location: {
+					path: filePath,
+					line: line,
+					startColumn: startColumn,
+					endColumn: startColumn + 1,
+				},
+			});
+		}
 		
 		else if (oneCharacterOperator(text, i)) {
 			tokens.push({
