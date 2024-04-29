@@ -11,6 +11,6 @@ const logNumber = fn(n1: Number, n2: Number) {
 };
 
 const exportTest = fn() {
-	logNumber(30, 100);
+	logNumber(30, -100);
 	main.test();
 };

@@ -118,6 +118,34 @@ export function lex(filePath: string, text: string): Token[] {
 			});
 		}
 		
+		else if (text[i] == "-" || base10Number(text, i)) {
+			let str = "";
+			if (text[i] == "-") {
+				str += "-";
+				i++;
+			}
+			for (; i < text.length; i++) {
+				if (base10Number(text, i)) {
+					str += text[i];	
+				} else {
+					break;
+				}
+			}
+			
+			i--;
+			
+			tokens.push({
+				type: TokenType.number,
+				text: str,
+				location: {
+					path: filePath,
+					line: line,
+					startColumn: startColumn,
+					endColumn: startColumn + str.length - 1,
+				},
+			});
+		}
+		
 		// else if (twoCharacterOperator(text, i)) {
 			
 		// }
@@ -157,30 +185,6 @@ export function lex(filePath: string, text: string): Token[] {
 					line: line,
 					startColumn: startColumn,
 					endColumn: startColumn,
-				},
-			});
-		}
-		
-		else if (base10Number(text, i)) {
-			let str = "";
-			for (; i < text.length; i++) {
-				if (base10Number(text, i)) {
-					str += text[i];	
-				} else {
-					break;
-				}
-			}
-			
-			i--;
-			
-			tokens.push({
-				type: TokenType.number,
-				text: str,
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn + str.length - 1,
 				},
 			});
 		}
