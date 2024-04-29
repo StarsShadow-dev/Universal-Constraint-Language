@@ -8,7 +8,14 @@ import { BuilderContext, build } from "./builder";
 import utilities from "./utilities";
 import codeGen from "./codeGen";
 
+// filePath -> context
+const compiledFiles: any = {};
+
 export function compileFile(filePath: string): ScopeObject[][] {
+	if (compiledFiles[filePath]) {
+		return compiledFiles[filePath].scope.levels;
+	}
+	
 	const text = utilities.readFile(filePath);
 	// console.log("text:", text);
 	
@@ -41,6 +48,7 @@ export function compileFile(filePath: string): ScopeObject[][] {
 			disableValueEvaluation: false,
 		}
 	};
+	compiledFiles[filePath] = builderContext;
 	
 	codeGen.start(builderContext);
 	const scopeList = build(builderContext, AST, null, null, false);

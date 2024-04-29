@@ -1,6 +1,10 @@
 const js = @import("./js.ucl");
 const import = @import("./import.ucl");
 
+const test = fn() {
+	
+};
+
 @export("test", import.exportTest);
 
 @writeToStdout();

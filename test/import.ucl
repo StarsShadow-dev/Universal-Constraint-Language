@@ -1,4 +1,5 @@
 const js = @import("./js.ucl");
+const main = @import("./main.ucl");
 
 const logNumber = fn(n1: Number, n2: Number) {
 	js.indent();
@@ -11,4 +12,5 @@ const logNumber = fn(n1: Number, n2: Number) {
 
 const exportTest = fn(input: Number) {
 	logNumber(30, 100);
+	main.test();
 };
