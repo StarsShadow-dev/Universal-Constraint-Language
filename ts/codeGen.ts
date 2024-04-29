@@ -5,7 +5,7 @@ import {
 } from "./types";
 import { BuilderContext, callFunction } from "./builder";
 import { ScopeObject } from "./types";
-import { getBool, getString, onCodeGen } from "./builtin";
+import { getBool, getNumber, getString, onCodeGen } from "./builtin";
 import utilities from "./utilities";
 
 export default {
@@ -15,9 +15,15 @@ export default {
 		}
 	},
 	
-	string(dest: CodeGenText, context: BuilderContext, text: string) {
+	number(dest: CodeGenText, context: BuilderContext, value: number) {
+		if (onCodeGen["number"]) {
+			callFunction(context, onCodeGen["number"], [getNumber(value), getString(`${value}`)], "builtin", false, true, null, dest, null);
+		}
+	},
+	
+	string(dest: CodeGenText, context: BuilderContext, value: string) {
 		if (onCodeGen["string"]) {
-			callFunction(context, onCodeGen["string"], [getString(text)], "builtin", false, true, null, dest, null);
+			callFunction(context, onCodeGen["string"], [getString(value)], "builtin", false, true, null, dest, null);
 		}
 	},
 	

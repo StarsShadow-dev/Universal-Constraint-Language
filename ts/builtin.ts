@@ -67,6 +67,14 @@ export function getBool(value: boolean): ScopeObject {
 	};
 }
 
+export function getNumber(value: number): ScopeObject {
+	return {
+		kind: "number",
+		originLocation: "builtin",
+		value: value,
+	};
+}
+
 export function getString(value: string): ScopeObject {
 	return {
 		kind: "string",

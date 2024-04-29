@@ -9,6 +9,10 @@ const indent = inline fn() {
 	@addTopCodeGen("const symbols = {};\n");
 });
 
+@onCodeGen("number", fn(number: 'Number, numberText: 'String) {
+	@addCodeGen(numberText);
+});
+
 @onCodeGen("string", fn(text: 'String) {
 	@addCodeGen("\"", text, "\"");
 });

@@ -537,6 +537,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					originLocation: node.location,
 					value: node.value,
 				});
+				if (doCodeGen(context)) codeGen.number(context.options.codeGenText, context, node.value);
 				break;
 			}
 			case "string": {
