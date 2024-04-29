@@ -214,9 +214,11 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
-export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[], location: SourceLocation, fillComplex: boolean, compileTime: boolean, callDest: CodeGenText, innerDest: CodeGenText, argumentText: CodeGenText | null): ScopeObject {
+export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[] | null, location: SourceLocation, comptime: boolean, callDest: CodeGenText, innerDest: CodeGenText, argumentText: CodeGenText | null): ScopeObject {
+	if (!callArguments && comptime) utilities.unreachable();
+	
 	if (functionToCall.kind == "function") {
-		if (!fillComplex) {
+		if (callArguments) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
 				throw new CompileError(`too many arguments passed to function '${functionToCall.symbolName}'`)
 					.indicator(location, "function call here");
@@ -225,7 +227,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			if (callArguments.length < functionToCall.functionArguments.length) {
 				throw new CompileError(`not enough arguments passed to function '${functionToCall.symbolName}'`)
 					.indicator(location, "function call here");
-			}	
+			}
 		}
 		
 		if (functionToCall.returnType && getTypeName(functionToCall.returnType) == "builtin:Any") {
@@ -235,8 +237,14 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 		}
 		
+		if (!comptime) {
+			if (functionToCall.returnType && functionToCall.returnType.comptime) {
+				comptime = true;
+			}
+		}
+		
 		let toBeGeneratedHere: boolean;
-		if (compileTime) {
+		if (comptime) {
 			toBeGeneratedHere = true;
 		} else {
 			if (functionToCall.returnType && functionToCall.returnType.comptime) {
@@ -262,7 +270,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				generatingFunction: oldScope.generatingFunction,
 			}
 			
-			if (!compileTime) {
+			if (!comptime) {
 				context.scope.generatingFunction = functionToCall;
 			}
 			
@@ -273,29 +281,8 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				
 				if (argument.kind == "argument" && argumentType.kind == "typeUse") {
 					let symbolName = argument.name;
-					// {
-					// 	const temp = callArguments[index];
-					// 	if (temp.kind == "alias") {
-					// 		symbolName = temp.symbolName;
-					// 	}
-					// }
 					
-					if (fillComplex) {
-						addAlias(context, context.scope.currentLevel + 1, {
-							kind: "alias",
-							originLocation: argument.originLocation,
-							mutable: false,
-							isAproperty: false,
-							name: argument.name,
-							value: {
-								kind: "complexValue",
-								originLocation: argument.originLocation,
-								type: argumentType,
-							},
-							symbolName: symbolName,
-							type: argumentType,
-						});
-					} else {
+					if (callArguments) {
 						const callArgument = unwrapScopeObject(callArguments[index]);
 						
 						expectType(context, argumentType, callArgument,
@@ -313,7 +300,22 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 							value: callArgument,
 							symbolName: symbolName,
 							type: argumentType,
-						});	
+						});
+					} else {
+						addAlias(context, context.scope.currentLevel + 1, {
+							kind: "alias",
+							originLocation: argument.originLocation,
+							mutable: false,
+							isAproperty: false,
+							name: argument.name,
+							value: {
+								kind: "complexValue",
+								originLocation: argument.originLocation,
+								type: argumentType,
+							},
+							symbolName: symbolName,
+							type: argumentType,
+						});
 					}
 				} else {
 					utilities.unreachable();
@@ -323,7 +325,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			const text = getCGText();
 			
 			result = build(context, functionToCall.AST, {
-				compileTime: compileTime,
+				compileTime: comptime,
 				codeGenText: text,
 				disableValueEvaluation: context.options.disableValueEvaluation,
 			}, {
@@ -336,7 +338,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			if (result) {
 				const unwrappedResult = unwrapScopeObject(result);
 				
-				if (result.originLocation != "builtin") {
+				if (result.originLocation != "builtin" && callArguments) {
 					if (
 						unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct" &&
 						!unwrappedResult.type.templateStruct
@@ -353,11 +355,19 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				}
 				
 				if (functionToCall.returnType) {
-					expectType(context, unwrapScopeObject(functionToCall.returnType), unwrappedResult,
-						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-							.indicator(location, "call here")
-							.indicator(functionToCall.originLocation, "function defined here")
-					);
+					if (comptime) {
+						expectType(context, unwrapScopeObject(functionToCall.returnType), unwrappedResult,
+							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+								.indicator(location, "call here")
+								.indicator(functionToCall.originLocation, "function defined here")
+						);
+					} else {
+						result = {
+							kind: "complexValue",
+							originLocation: location,
+							type: functionToCall.returnType,
+						};
+					}
 				} else {
 					throw new CompileError(`void function returned a value`)
 						.indicator(location, "function called here")
@@ -369,16 +379,26 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						.indicator(location, "call here")
 						.indicator(functionToCall.originLocation, "function defined here");
 				}
-				result = {
-					kind: "void",
-					originLocation: location,
+				if (comptime) {
+					result = {
+						kind: "void",
+						originLocation: location,
+					}
+				} else {
+					if (functionToCall.returnType) {
+						result = {
+							kind: "complexValue",
+							originLocation: location,
+							type: functionToCall.returnType,
+						};
+					}
 				}
 			}
 			
 			if (functionToCall.forceInline) {
 				if (callDest) callDest.push(...text);
 			} else {
-				if (!compileTime) {
+				if (!comptime) {
 					codeGen.function(context.topCodeGenText, context, functionToCall, text);
 				}
 				
@@ -399,7 +419,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 		}
 		
-		if (!functionToCall.forceInline && !compileTime) {
+		if (!functionToCall.forceInline && !comptime) {
 			if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
 		}
 		
@@ -631,7 +651,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}, null, false);
 				
 				if (functionToCall.kind == "function") {
-					const result = callFunction(context, functionToCall, callArguments, node.location, false, context.options.compileTime, context.options.codeGenText, null, argumentText);
+					const result = callFunction(context, functionToCall, callArguments, node.location, context.options.compileTime, context.options.codeGenText, null, argumentText);
 					
 					addToScopeList(result);
 				} else {

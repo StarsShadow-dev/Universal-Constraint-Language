@@ -95,7 +95,7 @@ function testFile(filePath: string) {
 		},
 		
 		options: {
-			compileTime: false,
+			compileTime: true,
 			codeGenText: [],
 			disableValueEvaluation: false,
 		},

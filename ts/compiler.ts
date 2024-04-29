@@ -43,7 +43,7 @@ export function compileFile(filePath: string): ScopeObject[][] {
 		},
 		
 		options: {
-			compileTime: false,
+			compileTime: true,
 			codeGenText: [],
 			disableValueEvaluation: false,
 		},

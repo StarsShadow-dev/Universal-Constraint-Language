@@ -7,6 +7,10 @@
 
 // @export("test", exportTest);
 
-// @writeToStdout();
+const getBool = fn(): Bool {
+	ret 1 == 2;
+};
 
-@assert(1 == 2);
+@assert(getBool());
+
+// @writeToStdout();

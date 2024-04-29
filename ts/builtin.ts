@@ -357,7 +357,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 				started = true;
 			}
 			
-			callFunction(context, fn, [], node.location, true, false, null, null, null);
+			callFunction(context, fn, [], node.location, false, null, null, null);
 		}
 		
 		else {
