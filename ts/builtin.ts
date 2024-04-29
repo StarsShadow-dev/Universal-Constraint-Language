@@ -337,9 +337,9 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const filePath = fc.string(true);
 			fc.done();
 			
-			const scopeLevels = compileFile(path.join(path.dirname(context.filePath), filePath));
+			const newContext = compileFile(path.join(path.dirname(context.filePath), filePath));
 			
-			return getStruct(context, scopeLevels[0]);
+			return getStruct(context, newContext.scope.levels[0]);
 		}
 		
 		else if (node.name == "export") {

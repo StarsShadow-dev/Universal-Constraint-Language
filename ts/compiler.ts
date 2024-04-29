@@ -11,7 +11,7 @@ import codeGen from "./codeGen";
 // filePath -> context
 const compiledFiles: any = {};
 
-export function compileFile(filePath: string): ScopeObject[][] {
+export function compileFile(filePath: string): BuilderContext {
 	if (compiledFiles[filePath]) {
 		return compiledFiles[filePath].scope.levels;
 	}
@@ -57,5 +57,5 @@ export function compileFile(filePath: string): ScopeObject[][] {
 	
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	
-	return builderContext.scope.levels;
+	return builderContext;
 }
