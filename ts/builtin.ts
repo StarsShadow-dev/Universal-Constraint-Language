@@ -83,7 +83,7 @@ export function getString(value: string): ScopeObject {
 	};
 }
 
-function getStruct(properties: ScopeObject[]): ScopeObject {
+function getStruct(context: BuilderContext, properties: ScopeObject[]): ScopeObject {
 	return {
 		kind: "typeUse",
 		originLocation: "builtin",
@@ -91,7 +91,7 @@ function getStruct(properties: ScopeObject[]): ScopeObject {
 		type: {
 			kind: "struct",
 			originLocation: "builtin",
-			name: `${getNextSymbolName()}`,
+			name: `${getNextSymbolName(context)}`,
 			templateStruct: null,
 			properties: properties,
 		},
@@ -339,7 +339,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			
 			const scopeLevels = compileFile(path.join(path.dirname(context.filePath), filePath));
 			
-			return getStruct(scopeLevels[0]);
+			return getStruct(context, scopeLevels[0]);
 		}
 		
 		else if (node.name == "export") {

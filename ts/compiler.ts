@@ -46,7 +46,8 @@ export function compileFile(filePath: string): ScopeObject[][] {
 			compileTime: false,
 			codeGenText: [],
 			disableValueEvaluation: false,
-		}
+		},
+		nextSymbolName: 0,
 	};
 	compiledFiles[filePath] = builderContext;
 	

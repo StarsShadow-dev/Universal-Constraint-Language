@@ -1,0 +1,10 @@
+// compError
+// error: not enough arguments passed to function '0:tests/compError/notEnoughArguments.ucl:three'
+// tests/compError/notEnoughArguments.ucl:10 -> function call here
+
+const three = fn(arg1: String, arg2: Number, arg3: String): Bool {
+	ret false;
+};
+
+// incorrect types
+three(true, "string!");

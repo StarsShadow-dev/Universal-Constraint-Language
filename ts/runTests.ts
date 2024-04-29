@@ -98,7 +98,8 @@ function testFile(filePath: string) {
 			compileTime: false,
 			codeGenText: [],
 			disableValueEvaluation: false,
-		}
+		},
+		nextSymbolName: 0,
 	};
 
 	let scopeList: ScopeObject[] = [];

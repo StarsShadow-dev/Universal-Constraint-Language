@@ -18,9 +18,8 @@ function doCodeGen(context: BuilderContext): boolean {
 	return !context.options.compileTime;
 }
 
-let nextSymbolName = 0;
-export function getNextSymbolName() {
-	return nextSymbolName++;
+export function getNextSymbolName(context: BuilderContext) {
+	return context.nextSymbolName++;
 }
 
 export type ScopeInformation = {
@@ -44,6 +43,7 @@ export type BuilderContext = {
 	filePath: string,
 	scope: ScopeInformation,
 	options: BuilderOptions,
+	nextSymbolName: number,
 }
 
 function getAsComptimeType(type: ScopeObject, location?: SourceLocation): ScopeObject & { kind: "typeUse" } {
@@ -838,7 +838,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					kind: "function",
 					forceInline: node.forceInline,
 					originLocation: node.location,
-					symbolName: `${getNextSymbolName()}`,
+					symbolName: `${getNextSymbolName(context)}`,
 					functionArguments: functionArguments,
 					returnType: returnType,
 					AST: node.codeBlock,
@@ -919,7 +919,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					type: {
 						kind: "struct",
 						originLocation: node.location,
-						name: `${getNextSymbolName()}`,
+						name: `${getNextSymbolName(context)}`,
 						templateStruct: templateStruct,
 						properties: properties,
 					},

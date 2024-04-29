@@ -1,5 +1,5 @@
 // compError
-// error: too many arguments passed to function '10:tests/compError/tooManyArguments.ucl:two'
+// error: too many arguments passed to function '0:tests/compError/tooManyArguments.ucl:two'
 // tests/compError/tooManyArguments.ucl:10 -> function call here
 
 const two = fn(arg1: Number, arg2: String): Bool {
