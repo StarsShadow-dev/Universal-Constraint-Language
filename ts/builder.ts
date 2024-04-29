@@ -351,7 +351,10 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		} else {
 			if (!compileTime) {
 				if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
-				codeGen.function(context.topCodeGenText, context, functionToCall, text);
+				if (!functionToCall.wasGenerated) {
+					codeGen.function(context.topCodeGenText, context, functionToCall, text);
+					functionToCall.wasGenerated = true;
+				}
 			}
 			
 			if (innerDest) innerDest.push(...text);
@@ -776,6 +779,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					returnType: returnType,
 					AST: node.codeBlock,
 					visible: visible,
+					wasGenerated: false,
 				});
 				break;
 			}
