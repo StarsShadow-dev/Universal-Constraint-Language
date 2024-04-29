@@ -9,7 +9,7 @@ const exportTest = fn(input: Bool) {
 };
 @export("test", exportTest);
 
-@writeToStdout();
+@writeTofile("./out/main.js");
 
 // const vecFn = fn(): Type {
 // 	const Vec2 = struct {

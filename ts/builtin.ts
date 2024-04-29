@@ -289,8 +289,6 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "writeTofile") {
-			utilities.TODO();
-			
 			if (fileSystemDisabled) {
 				utilities.unreachable();
 			}
@@ -298,20 +296,14 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const outPath = fc.string(true);
 			fc.done();
 			
-			// if (typeof context.codeGenText[name] == "string") {
-			// 	const newPath = path.join(path.dirname(context.filePath), outPath);
-			// 	const dir = path.dirname(newPath);
-				
-			// 	console.log(`writing to '${outPath}':\n${context.codeGenText[name]}`);
-				
-			// 	if (!fs.existsSync(dir)) {
-			// 		fs.mkdirSync(dir, { recursive: true });
-			// 	}
-				
-			// 	fs.writeFileSync(newPath, context.codeGenText[name]);
-			// } else {
-			// 	throw new CompileError(`unable to write '${name}' to file '${outPath}' because '${name}' does not exist`).indicator(node.location, "here");
-			// }
+			const newPath = path.join(path.dirname(context.filePath), outPath);
+			const dir = path.dirname(newPath);
+			
+			if (!fs.existsSync(dir)) {
+				fs.mkdirSync(dir, { recursive: true });
+			}
+			
+			fs.writeFileSync(newPath, context.topCodeGenText.join(""));
 		}
 		
 		else if (node.name == "import") {
