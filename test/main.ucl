@@ -1,10 +1,10 @@
-// const js = @import("./js.ucl");
+const js = @import("./js.ucl");
 
-// const exportTest = fn() {
-// 	js.log("testing");
-// 	exportTest();
-// };
+const exportTest = fn(n: Number) {
+	js.log("testing");
+	exportTest(n);
+};
 
-// @export("test", exportTest);
+@export("test", exportTest);
 
-// @writeToStdout();
+@writeToStdout();
