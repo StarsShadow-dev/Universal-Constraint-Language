@@ -1,0 +1,29 @@
+// compOut
+// "use strict";
+// const symbols = {};
+// symbols["13:test/js.ucl:log"] = (string) => {
+// 	console.log(string);
+// }
+// symbols["test"] = (arg) => {
+// 	symbols["13:test/js.ucl:log"]("1 true");
+// 	symbols["13:test/js.ucl:log"]("2 false");
+// }
+// 
+
+const js = @import("./../../test/js.ucl");
+
+const test = fn(arg: String) {
+	if (true) {
+		js.log("1 true");
+	} else {
+		js.log("1 false");
+	}
+	
+	if (false) {
+		js.log("2 true");
+	} else {
+		js.log("2 false");
+	}
+};
+
+@export("test", test);
