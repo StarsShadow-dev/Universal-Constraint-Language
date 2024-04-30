@@ -770,6 +770,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						} else {
 							utilities.TODO();
 						}
+					} else if (node.operatorText == "!=") {
+						if (left.kind == "number" && right.kind == "number") {
+							addToScopeList({
+								kind: "bool",
+								originLocation: node.location,
+								value: left.value != right.value,
+							});
+						} else {
+							utilities.TODO();
+						}
 					}
 					
 					else if (left.kind == "number" && right.kind == "number") {
