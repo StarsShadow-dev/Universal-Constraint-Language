@@ -118,7 +118,7 @@ export function lex(filePath: string, text: string): Token[] {
 			});
 		}
 		
-		else if (text[i] == "-" || base10Number(text, i)) {
+		else if ((text[i] == "-" && base10Number(text, i + 1)) || base10Number(text, i)) {
 			let str = "";
 			if (text[i] == "-") {
 				str += "-";

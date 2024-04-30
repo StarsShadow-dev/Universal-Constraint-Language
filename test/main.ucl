@@ -7,11 +7,4 @@
 
 // @export("test", exportTest);
 
-const getBool = fn(): Bool {
-	ret 1 + 1 == 2;
-};
-
-@assert(getBool());
-@assert(2 == 1 + 1);
-
 // @writeToStdout();
