@@ -1,16 +1,17 @@
-const js = @import("./js.ucl");
+// const js = @import("./js.ucl");
 
-const exportTest = fn() {
-	js.log("testing");
-	exportTest();
-};
+// const exportTest = fn() {
+// 	js.log("testing");
+// 	exportTest();
+// };
 
-@export("test", exportTest);
+// @export("test", exportTest);
 
 const getBool = fn(): Bool {
-	ret 1 == 1;
+	ret 1 + 1 == 2;
 };
 
 @assert(getBool());
+@assert(2 == 1 + 1);
 
-@writeToStdout();
+// @writeToStdout();

@@ -13,7 +13,7 @@ const compiledFiles: any = {};
 
 export function compileFile(filePath: string): BuilderContext {
 	if (compiledFiles[filePath]) {
-		return compiledFiles[filePath].scope.levels;
+		return compiledFiles[filePath];
 	}
 	
 	const text = utilities.readFile(filePath);
