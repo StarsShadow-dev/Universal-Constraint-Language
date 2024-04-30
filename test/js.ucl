@@ -9,8 +9,16 @@ const indent = inline fn() {
 	@addTopCodeGen("const symbols = {};\n");
 });
 
-@onCodeGen("number", fn(number: 'Number, numberText: 'String) {
-	@addCodeGen(numberText);
+@onCodeGen("bool", fn(value: 'Bool) {
+	if (value) {
+		@addCodeGen("true");
+	} else {
+		@addCodeGen("false");
+	}
+});
+
+@onCodeGen("number", fn(number: 'Number, valueText: 'String) {
+	@addCodeGen(valueText);
 });
 
 @onCodeGen("string", fn(text: 'String) {

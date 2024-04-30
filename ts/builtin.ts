@@ -11,7 +11,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { BuilderContext, callFunction, getNextSymbolName, getTypeText } from "./builder";
+import { BuilderContext, callFunction, getNextSymbolName, getTypeOf, getTypeText } from "./builder";
 import codeGen from "./codeGen";
 
 let started = false;
@@ -237,7 +237,7 @@ class FC {
 	}
 }
 
-export function builtinCall(context: BuilderContext, node: ASTnode, callArguments: ScopeObject[]): ScopeObject | undefined {
+export function builtinCall(context: BuilderContext, node: ASTnode, callArguments: ScopeObject[], argumentText: string[]): ScopeObject | undefined {
 	if (node.kind == "builtinCall") {
 		const fc = new FC(node, callArguments, node.callArguments);
 		
@@ -267,13 +267,17 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "opaque") {
-			const type = fc.type();
+			const value = fc.forward();
 			fc.done();
+			
+			if (context.options.codeGenText) {
+				context.options.codeGenText.push(argumentText.join(""));
+			}
 			
 			return {
 				kind: "complexValue",
 				originLocation: "builtin",
-				type: type,
+				type: getTypeOf(context, value),
 			};
 		}
 		

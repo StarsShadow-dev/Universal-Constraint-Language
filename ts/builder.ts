@@ -595,6 +595,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					originLocation: node.location,
 					value: node.value,
 				});
+				if (doCodeGen(context)) codeGen.bool(context.options.codeGenText, context, node.value);
 				break;
 			}
 			case "number": {
@@ -661,13 +662,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "builtinCall": {
-				const argumentText = getCGText();
+				const argumentText: string[] = [];
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false);
-				const result = builtinCall(context, node, callArguments);
+				const result = builtinCall(context, node, callArguments, argumentText);
 				if (result) {
 					addToScopeList(result);
 				}

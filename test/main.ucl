@@ -1,8 +1,10 @@
 const js = @import("./js.ucl");
 
 const exportTest = fn(n: Number) {
-	js.log("testing");
-	exportTest(n);
+	if (@opaque(true)) {
+		js.log("testing");
+		exportTest(n);
+	}
 };
 
 @export("test", exportTest);

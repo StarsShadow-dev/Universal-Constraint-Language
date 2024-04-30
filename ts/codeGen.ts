@@ -15,6 +15,12 @@ export default {
 		}
 	},
 	
+	bool(dest: CodeGenText, context: BuilderContext, value: boolean) {
+		if (onCodeGen["bool"]) {
+			callFunction(context, onCodeGen["bool"], [getBool(value)], "builtin", true, null, dest, null);
+		}
+	},
+	
 	number(dest: CodeGenText, context: BuilderContext, value: number) {
 		if (onCodeGen["number"]) {
 			callFunction(context, onCodeGen["number"], [getNumber(value), getString(`${value}`)], "builtin", true, null, dest, null);
