@@ -25,6 +25,10 @@ const indent = inline fn() {
 	@addCodeGen("\"", text, "\"");
 });
 
+@onCodeGen("operator", fn(operatorText: 'String, leftText: 'String, rightText: 'String) {
+	@addCodeGen("(", leftText, " ", operatorText, " ", rightText, ")");
+});
+
 @onCodeGen("alias", fn(name: 'String, valueText: 'String, mutable: 'Bool) {
 	indent();
 	if (mutable) {

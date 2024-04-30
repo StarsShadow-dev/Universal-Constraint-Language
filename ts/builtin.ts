@@ -11,7 +11,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { BuilderContext, callFunction, getNextSymbolName, getTypeOf, getTypeText } from "./builder";
+import { BuilderContext, callFunction, getAlias, getAsComptimeType, getNextSymbolName, getTypeOf, getTypeText } from "./builder";
 import codeGen from "./codeGen";
 
 let started = false;
@@ -80,6 +80,14 @@ export function getString(value: string): ScopeObject {
 		kind: "string",
 		originLocation: "builtin",
 		value: value,
+	};
+}
+
+export function getComplexValue(context: BuilderContext, name: string): ScopeObject & { kind: "complexValue" } {
+	return {
+		kind: "complexValue",
+		originLocation: "builtin",
+		type: getAsComptimeType(unwrapScopeObject(getAlias(context, name))),
 	};
 }
 

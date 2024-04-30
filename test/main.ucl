@@ -1,13 +1,12 @@
 const js = @import("./js.ucl");
-const import = @import("./import.ucl");
+// const import = @import("./import.ucl");
 
-const exportTest = fn() {
-	if (@opaque(true)) {
+const test = fn() {
+	if (@opaque(1) + 1 == 2) {
 		js.log("testing");
-		import.test();
 	}
 };
 
-@export("test", exportTest);
+@export("test", test);
 
 @writeToStdout();

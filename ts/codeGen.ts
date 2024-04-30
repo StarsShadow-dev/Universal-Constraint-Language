@@ -33,6 +33,12 @@ export default {
 		}
 	},
 	
+	operator(dest: CodeGenText, context: BuilderContext, operatorText: string, leftText: string[], rightText: string[]) {
+		if (onCodeGen["operator"]) {
+			callFunction(context, onCodeGen["operator"], [getString(operatorText), getString(leftText.join("")), getString(rightText.join(""))], "builtin", true, null, dest, null);
+		}
+	},
+	
 	alias(dest: CodeGenText, context: BuilderContext, alias: ScopeObject, valueText: CodeGenText) {
 		if (alias.kind == "alias" && alias.name && valueText) {
 			if (onCodeGen["alias"]) {

@@ -11,7 +11,7 @@ import {
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, getIndicator, CompileError } from "./report";
-import { builtinScopeLevel, builtinCall, onCodeGen, getString } from "./builtin";
+import { builtinScopeLevel, builtinCall, onCodeGen, getString, getComplexValue } from "./builtin";
 import codeGen from "./codeGen";
 
 function doCodeGen(context: BuilderContext): boolean {
@@ -19,7 +19,7 @@ function doCodeGen(context: BuilderContext): boolean {
 }
 
 export function getNextSymbolName(context: BuilderContext) {
-	return context.nextSymbolName++;
+	return `${context.nextSymbolName++}:${context.filePath}`;
 }
 
 export type ScopeInformation = {
@@ -46,7 +46,7 @@ export type BuilderContext = {
 	nextSymbolName: number,
 }
 
-function getAsComptimeType(type: ScopeObject, location?: SourceLocation): ScopeObject & { kind: "typeUse" } {
+export function getAsComptimeType(type: ScopeObject, location?: SourceLocation): ScopeObject & { kind: "typeUse" } {
 	if (type.kind == "typeUse") {
 		if (!location) location = "builtin";
 		return {
@@ -131,7 +131,7 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 	}
 }
 
-function getAlias(context: BuilderContext, name: string, getProperties?: boolean): ScopeObject & { kind: "alias" } | null {
+export function getAlias(context: BuilderContext, name: string, getProperties?: boolean): ScopeObject & { kind: "alias" } | null {
 	// builtin
 	for (let i = 0; i < builtinScopeLevel.length; i++) {
 		const scopeObject = builtinScopeLevel[i];
@@ -548,9 +548,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					
 					if (value.originLocation != "builtin") {
 						if (node.value.kind == "function" && value.kind == "function") {
-							value.symbolName += `:${value.originLocation.path}:${alias.name}`;
+							value.symbolName = `${value.originLocation.path}:${alias.name}`;
 						} else if (node.value.kind == "struct" && value.kind == "typeUse" && value.type.kind == "struct") {
-							value.type.name += `:${value.originLocation.path}:${alias.name}`;
+							value.type.name = `${value.originLocation.path}:${alias.name}`;
 						}
 					}
 					
@@ -749,18 +749,37 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				else {
+					const leftText = getCGText();
 					const left = unwrapScopeObject(build(context, node.left, {
 						compileTime: false,
-						codeGenText: null,
+						codeGenText: leftText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0]);
+					const rightText = getCGText();
 					const right = unwrapScopeObject(build(context, node.right, {
 						compileTime: false,
-						codeGenText: null,
+						codeGenText: rightText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false)[0]);
 					
-					if (node.operatorText == "==") {
+					if (left.kind == "complexValue" || right.kind == "complexValue") {
+						if (node.operatorText == "+") {
+							addToScopeList(getComplexValue(context, "Number"));
+						} else if (node.operatorText == "-") {
+							addToScopeList(getComplexValue(context, "Number"));
+						} else if (node.operatorText == "==") {
+							addToScopeList(getComplexValue(context, "Bool"));
+						} else if (node.operatorText == "<") {
+							addToScopeList(getComplexValue(context, "Bool"));
+						} else if (node.operatorText == ">") {
+							addToScopeList(getComplexValue(context, "Bool"));
+						} else {
+							utilities.unreachable();
+						}
+						if (doCodeGen(context)) codeGen.operator(context.options.codeGenText, context, node.operatorText, leftText, rightText);
+					}
+					
+					else if (node.operatorText == "==") {
 						if (left.kind == "number" && right.kind == "number") {
 							addToScopeList({
 								kind: "bool",
@@ -810,6 +829,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						} else {
 							utilities.unreachable();
 						}
+					} else {
+						utilities.unreachable();
 					}
 				}
 				
