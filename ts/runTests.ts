@@ -12,6 +12,7 @@ import { CompileError } from "./report";
 import { setUpBuiltin } from "./builtin";
 import path from "path";
 import codeGen from "./codeGen";
+import { resetCompiledFiles } from "./compiler";
 
 const c_green = "\x1B[32m";
 const c_red = "\x1B[31m"
@@ -38,6 +39,7 @@ function testFile(filePath: string) {
 	
 	console.log(`running test: '${filePath}'`);
 	
+	resetCompiledFiles();
 	setUpBuiltin(true);
 	
 	const text = utilities.readFile(filePath);

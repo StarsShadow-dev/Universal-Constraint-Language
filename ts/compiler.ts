@@ -9,7 +9,11 @@ import utilities from "./utilities";
 import codeGen from "./codeGen";
 
 // filePath -> context
-const compiledFiles: any = {};
+let compiledFiles: any = {};
+
+export function resetCompiledFiles() {
+	compiledFiles = {};
+}
 
 export function compileFile(filePath: string): BuilderContext {
 	if (compiledFiles[filePath]) {

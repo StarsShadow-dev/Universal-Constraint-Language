@@ -10,10 +10,6 @@ const logNumber = fn(n1: Number, n2: Number) {
 	@addCodeGen(");\n");
 };
 
-const exportTest = fn() {
-	logNumber(30, -100);
-	logNumber(30, -100);
-	logNumber(30, -100);
-	logNumber(30, -100);
-	main.test();
+const test = fn() {
+	main.exportTest();
 };
