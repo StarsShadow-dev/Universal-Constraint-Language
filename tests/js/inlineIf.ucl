@@ -19,7 +19,10 @@ const test = fn(arg: String) {
 		js.log("1 false");
 	}
 	
-	if (false) {
+	var bool: 'Bool = true;
+	bool = false;
+	
+	if (bool) {
 		js.log("2 true");
 	} else {
 		js.log("2 false");
