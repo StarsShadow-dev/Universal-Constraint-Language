@@ -3,7 +3,8 @@ import {
 	getCGText,
 	unwrapScopeObject,
 } from "./types";
-import { BuilderContext, callFunction } from "./builder";
+import { callFunction } from "./builder";
+import { BuilderContext } from "./compiler";
 import { ScopeObject } from "./types";
 import { getBool, getNumber, getString, onCodeGen } from "./builtin";
 import utilities from "./utilities";

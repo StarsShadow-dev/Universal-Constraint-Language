@@ -1,7 +1,7 @@
 // tsc -p ./tsconfig.json && node out/main.js test/main.ucl
 
 import { setUpBuiltin } from "./builtin";
-import { compileFile } from "./compiler";
+import { compile } from "./compiler";
 import { CompileError } from "./report";
 
 setUpBuiltin(false);
@@ -9,7 +9,7 @@ setUpBuiltin(false);
 const filePath = process.argv[2];
 
 try {
-	compileFile(filePath);
+	compile(filePath);
 } catch (error) {
 	if (error instanceof CompileError) {
 		console.log("uncaught compiler error");

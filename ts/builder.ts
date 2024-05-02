@@ -11,39 +11,16 @@ import {
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, getIndicator, CompileError } from "./report";
-import { builtinScopeLevel, builtinCall, onCodeGen, getString, getComplexValue } from "./builtin";
+import { builtinScopeLevel, builtinCall, getComplexValue } from "./builtin";
 import codeGen from "./codeGen";
+import { BuilderContext, BuilderOptions } from "./compiler";
 
 function doCodeGen(context: BuilderContext): boolean {
 	return !context.options.compileTime;
 }
 
 export function getNextSymbolName(context: BuilderContext) {
-	return `${context.nextSymbolName++}:${context.filePath}`;
-}
-
-export type ScopeInformation = {
-	levels: ScopeObject[][],
-	currentLevel: number,
-	
-	function: ScopeObject & { kind: "function" } | null,
-	
-	// the function that is being generated
-	generatingFunction: ScopeObject & { kind: "function" } | null,
-}
-
-export type BuilderOptions = {
-	compileTime: boolean,
-	codeGenText: CodeGenText,
-	disableValueEvaluation: boolean,
-}
-
-export type BuilderContext = {
-	topCodeGenText: string[],
-	filePath: string,
-	scope: ScopeInformation,
-	options: BuilderOptions,
-	nextSymbolName: number,
+	return `${context.nextSymbolName++}:${context.file.path}`;
 }
 
 export function getAsComptimeType(type: ScopeObject, location?: SourceLocation): ScopeObject & { kind: "typeUse" } {
@@ -145,9 +122,9 @@ export function getAlias(context: BuilderContext, name: string, getProperties?: 
 	}
 	
 	// scopeLevels
-	for (let level = context.scope.currentLevel; level >= 0; level--) {
-		for (let i = 0; i < context.scope.levels[level].length; i++) {
-			const scopeObject = context.scope.levels[level][i];
+	for (let level = context.file.scope.currentLevel; level >= 0; level--) {
+		for (let i = 0; i < context.file.scope.levels[level].length; i++) {
+			const scopeObject = context.file.scope.levels[level][i];
 			if (scopeObject.kind == "alias") {
 				if (!getProperties && scopeObject.isAproperty) continue;
 				if (scopeObject.name == name) {
@@ -160,9 +137,9 @@ export function getAlias(context: BuilderContext, name: string, getProperties?: 
 	}
 	
 	// visible
-	if (context.scope.function) {
-		for (let i = 0; i < context.scope.function.visible.length; i++) {
-			const scopeObject = context.scope.function.visible[i];
+	if (context.file.scope.function) {
+		for (let i = 0; i < context.file.scope.function.visible.length; i++) {
+			const scopeObject = context.file.scope.function.visible[i];
 			if (scopeObject.kind == "alias") {
 				if (scopeObject.name == name) {
 					return scopeObject;
@@ -180,18 +157,18 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	let list: ScopeObject[] = [];
 	
 	// scopeLevels
-	for (let level = context.scope.currentLevel; level >= 0; level--) {
-		for (let i = 0; i < context.scope.levels[level].length; i++) {
-			const scopeObject = context.scope.levels[level][i];
+	for (let level = context.file.scope.currentLevel; level >= 0; level--) {
+		for (let i = 0; i < context.file.scope.levels[level].length; i++) {
+			const scopeObject = context.file.scope.levels[level][i];
 			if (scopeObject.kind == "alias" && scopeObject.isAproperty) continue;
 			list.push(scopeObject);
 		}
 	}
 	
 	// visible
-	if (context.scope.function) {
-		for (let i = 0; i < context.scope.function.visible.length; i++) {
-			const scopeObject = context.scope.function.visible[i];
+	if (context.file.scope.function) {
+		for (let i = 0; i < context.file.scope.function.visible.length; i++) {
+			const scopeObject = context.file.scope.function.visible[i];
 			if (scopeObject.kind == "alias" && scopeObject.isAproperty) continue;
 			list.push(scopeObject);
 		}
@@ -208,7 +185,7 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 				.indicator(oldAlias.originLocation, "alias originally defined here")
 				.indicator(alias.originLocation, "alias redefined here");
 		}
-		context.scope.levels[level].push(alias);
+		context.file.scope.levels[level].push(alias);
 	} else {
 		utilities.unreachable();
 	}
@@ -262,8 +239,8 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		let result: ScopeObject;
 		
 		if (toBeGeneratedHere) {
-			const oldScope = context.scope;
-			context.scope = {
+			const oldScope = context.file.scope;
+			context.file.scope = {
 				currentLevel: -1,
 				levels: [[]],
 				function: functionToCall,
@@ -271,7 +248,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 			
 			if (!comptime) {
-				context.scope.generatingFunction = functionToCall;
+				context.file.scope.generatingFunction = functionToCall;
 			}
 			
 			for (let index = 0; index < functionToCall.functionArguments.length; index++) {
@@ -291,7 +268,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 								.indicator(argument.originLocation, "argument defined here")
 						);
 						
-						addAlias(context, context.scope.currentLevel + 1, {
+						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
 							mutable: false,
@@ -302,7 +279,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 							type: argumentType,
 						});
 					} else {
-						addAlias(context, context.scope.currentLevel + 1, {
+						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
 							mutable: false,
@@ -333,7 +310,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				msg: `function ${functionToCall.symbolName}`,
 			}, true)[0];
 			
-			context.scope = oldScope;
+			context.file.scope = oldScope;
 			
 			if (result) {
 				const unwrappedResult = unwrapScopeObject(result);
@@ -431,12 +408,12 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 }
 
 export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, resultAtRet: boolean, getLevel?: boolean): ScopeObject[] {
-	context.scope.currentLevel++;
+	context.file.scope.currentLevel++;
 	
 	let scopeList: ScopeObject[] = [];
 	
-	if (context.scope.levels[context.scope.currentLevel] == undefined) {
-		context.scope.levels[context.scope.currentLevel] = [];	
+	if (context.file.scope.levels[context.file.scope.currentLevel] == undefined) {
+		context.file.scope.levels[context.file.scope.currentLevel] = [];	
 	}
 	
 	try {
@@ -452,20 +429,20 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		if (error instanceof CompileError && sackMarker != null) {
 			stdout.write(`stack trace ${getIndicator(sackMarker, true)}`);
 		}
-		context.scope.levels[context.scope.currentLevel] = [];
-		context.scope.currentLevel--;
+		context.file.scope.levels[context.file.scope.currentLevel] = [];
+		context.file.scope.currentLevel--;
 		throw error;
 	}
 	
 	let level: ScopeObject[] = [];
 	if (getLevel == true) {
-		level = context.scope.levels[context.scope.currentLevel];
+		level = context.file.scope.levels[context.file.scope.currentLevel];
 	}
 	
-	if (context.scope.currentLevel != 0) {
-		context.scope.levels[context.scope.currentLevel] = [];
+	if (context.file.scope.currentLevel != 0) {
+		context.file.scope.levels[context.file.scope.currentLevel] = [];
 	}
-	context.scope.currentLevel--;
+	context.file.scope.currentLevel--;
 	
 	if (getLevel == true) {
 		return level;
@@ -495,7 +472,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					disableValueEvaluation: true,
 				}, null, false)[0]);
 			}
-			addAlias(context, context.scope.currentLevel, {
+			addAlias(context, context.file.scope.currentLevel, {
 				kind: "alias",
 				originLocation: node.location,
 				mutable: node.mutable,

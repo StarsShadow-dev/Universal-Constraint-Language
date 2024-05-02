@@ -6,15 +6,12 @@ import { compileFile } from "./compiler";
 import {
 	ASTnode,
 	ScopeObject,
-	getCGText,
 	unwrapScopeObject,
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { BuilderContext, callFunction, getAlias, getAsComptimeType, getNextSymbolName, getTypeOf, getTypeText } from "./builder";
-import codeGen from "./codeGen";
-
-let started = false;
+import { callFunction, getAlias, getAsComptimeType, getNextSymbolName, getTypeOf } from "./builder";
+import { BuilderContext } from "./compiler";
 
 let fileSystemDisabled = false;
 
@@ -107,7 +104,6 @@ function getStruct(context: BuilderContext, properties: ScopeObject[]): ScopeObj
 }
 
 export function setUpBuiltin(disableFileSystem: boolean) {
-	started = false;
 	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
 		builtinScopeLevel.push({
@@ -335,7 +331,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const outPath = fc.string(true);
 			fc.done();
 			
-			const newPath = path.join(path.dirname(context.filePath), outPath);
+			const newPath = path.join(path.dirname(context.file.path), outPath);
 			const dir = path.dirname(newPath);
 			
 			if (!fs.existsSync(dir)) {
@@ -349,7 +345,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const filePath = fc.string(true);
 			fc.done();
 			
-			const newContext = compileFile(path.join(path.dirname(context.filePath), filePath));
+			const newContext = compileFile(context, path.join(path.dirname(context.file.path), filePath));
 			
 			return getStruct(context, newContext.scope.levels[0]);
 		}
@@ -362,11 +358,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			
 			if (fn.kind == "function") {
 				fn.symbolName = name;
-			}
-			
-			if (!started) {
-				codeGen.start(context);
-				started = true;
+				context.toExport.push(fn);
 			}
 			
 			callFunction(context, fn, null, node.location, false, null, null, null);

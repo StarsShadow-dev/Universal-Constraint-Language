@@ -1,65 +1,112 @@
-import { ASTnode, ScopeObject, getCGText } from "./types";
+import { ASTnode, CodeGenText, ScopeObject, getCGText } from "./types";
 import { lex } from "./lexer";
 import {
 	ParserMode,
 	parse,
 } from './parser';
-import { BuilderContext, build } from "./builder";
+import { build, callFunction } from "./builder";
 import utilities from "./utilities";
 import codeGen from "./codeGen";
 
-// filePath -> context
-let compiledFiles: any = {};
+export type ScopeInformation = {
+	levels: ScopeObject[][];
+	currentLevel: number;
 
-export function resetCompiledFiles() {
-	compiledFiles = {};
+	function: (ScopeObject & { kind: "function"; }) | null;
+
+	// the function that is being generated
+	generatingFunction: (ScopeObject & { kind: "function"; }) | null;
+};
+
+export type BuilderOptions = {
+	compileTime: boolean;
+	codeGenText: CodeGenText;
+	disableValueEvaluation: boolean;
+};
+
+export type FileContext = {
+	path: string;
+	scope: ScopeInformation;
 }
 
-export function compileFile(filePath: string): BuilderContext {
-	if (compiledFiles[filePath]) {
-		return compiledFiles[filePath];
-	}
+export type BuilderContext = {
+	topCodeGenText: string[];
+	options: BuilderOptions;
+	nextSymbolName: number;
+	toExport: ScopeObject[];
 	
-	const text = utilities.readFile(filePath);
-	// console.log("text:", text);
-	
-	const tokens = lex(filePath, text);
-	// console.log("tokens:", tokens);
-	
-	let AST: ASTnode[] = [];
-	
-	AST = parse({
-		tokens: tokens,
-		i: 0,
-	}, ParserMode.normal, null);
-	// console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
-	
-	const builderContext: BuilderContext = {
+	file: FileContext,
+};
+
+// file is null!
+export function newBuilderContext(): BuilderContext {
+	return {
 		topCodeGenText: getCGText(),
-		
-		filePath: filePath,
-		
-		scope: {
-			levels: [],
-			currentLevel: -1,
-			function: null,
-			generatingFunction: null,
-		},
-		
 		options: {
 			compileTime: true,
 			codeGenText: [],
 			disableValueEvaluation: false,
 		},
 		nextSymbolName: 0,
+		toExport: [],
+		
+		file: null as any,
 	};
-	compiledFiles[filePath] = builderContext;
+}
+
+// filePath -> FileContext
+let compiledFiles: any = {};
+
+export function resetCompiledFiles() {
+	compiledFiles = {};
+}
+
+export function compile(filePath: string): BuilderContext {
+	const context = newBuilderContext();
+	compileFile(newBuilderContext(), filePath);
+	return context;
+}
+
+export function compileFile(context: BuilderContext, filePath: string): FileContext {
+	// if the file has already been compiled, there is no point compiling it again
+	// (this also lets two files import each other)
+	if (compiledFiles[filePath]) {
+		return compiledFiles[filePath];
+	}
 	
-	codeGen.start(builderContext);
-	const scopeList = build(builderContext, AST, null, null, false);
+	const oldFile = context.file;
+	const newFile = {
+		path: filePath,
+		scope: {
+			levels: [],
+			currentLevel: -1,
+			function: null,
+			generatingFunction: null,
+		},
+	};
+	context.file = newFile;
+	compiledFiles[filePath] = newFile;
+	
+	// get tokens
+	const text = utilities.readFile(filePath);
+	// console.log("text:", text);
+	const tokens = lex(filePath, text);
+	// console.log("tokens:", tokens);
+	
+	// get AST
+	let AST: ASTnode[] = [];
+	AST = parse({
+		tokens: tokens,
+		i: 0,
+	}, ParserMode.normal, null);
+	// console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
+	
+	// build
+	const scopeList = build(context, AST, null, null, false);
 	// console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`);
-	
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
+	codeGen.start(context);
 	
-	return builderContext;
+	context.file = oldFile;
+	return newFile;
 }
