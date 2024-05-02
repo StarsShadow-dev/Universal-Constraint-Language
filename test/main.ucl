@@ -1,12 +1,26 @@
-const js = @import("./js.ucl");
+// const js = @import("./js.ucl");
 // const import = @import("./import.ucl");
 
-const test = fn() {
-	if (@opaque(1) + 1 == 2) {
-		js.log("testing");
+// const test = fn() {
+// 	if (@opaque(1) + 1 == 2) {
+// 		js.log("testing");
+// 	}
+// };
+
+// @export("test", test);
+
+const a = struct {
+	var bool = true;
+	var test: 'String;
+	
+	if (bool) {
+		test = "true";
+	}
+	else {
+		test = "false";
 	}
 };
 
-@export("test", test);
+@addTopCodeGen(a.test);
 
 @writeToStdout();

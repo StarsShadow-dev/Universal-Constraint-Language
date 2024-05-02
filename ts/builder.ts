@@ -588,6 +588,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			continue;
 		}
 		
+		if (context.options.disableValueEvaluation) {
+			if (node.kind == "if" || node.kind == "builtinCall") {
+				continue;
+			}
+		}
+		
 		switch (node.kind) {
 			case "bool": {
 				addToScopeList({
@@ -620,14 +626,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "identifier": {
 				const alias = getAlias(context, node.name);
 				if (alias) {
-					if (alias.value) {
-						if (doCodeGen(context)) codeGen.load(context.options.codeGenText, context, alias);
-						addToScopeList(alias);
-					} else {
-						throw new CompileError(`alias '${node.name}' used before its definition`)
-							.indicator(node.location, "identifier here")
-							.indicator(alias.originLocation, "alias defined here");
-					}
+					if (doCodeGen(context)) codeGen.load(context.options.codeGenText, context, alias);
+					addToScopeList(alias);
 				} else {
 					throw new CompileError(`alias '${node.name}' does not exist`).indicator(node.location, "here");
 				}

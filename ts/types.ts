@@ -2,6 +2,7 @@
 // general
 //
 
+import { CompileError } from "./report";
 import utilities from "./utilities";
 
 export type SourceLocation = {
@@ -190,8 +191,13 @@ export type ScopeObject = genericScopeObject & {
 
 export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {
 	if (scopeObject) {
-		if (scopeObject.kind == "alias" && scopeObject.value) {
-			return scopeObject.value;
+		if (scopeObject.kind == "alias") {
+			if (scopeObject.value) {
+				return scopeObject.value;
+			} else {
+				throw new CompileError(`alias '${scopeObject.name}' used before its definition`)
+					.indicator(scopeObject.originLocation, "alias defined here");
+			}
 		}
 		
 		return scopeObject;	
