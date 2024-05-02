@@ -1,0 +1,16 @@
+// compOut
+// false
+
+const a = struct {
+	var bool = false;
+	var test: 'String;
+	
+	if (bool) {
+		test = "true";
+	}
+	else {
+		test = "false";
+	}
+};
+
+@addTopCodeGen(a.test);
