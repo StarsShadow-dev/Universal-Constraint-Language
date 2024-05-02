@@ -1,4 +1,4 @@
-import { ASTnode, CodeGenText, ScopeObject, getCGText } from "./types";
+import { ASTnode, CodeGenText, ScopeObject, Token, getCGText } from "./types";
 import { lex } from "./lexer";
 import {
 	ParserMode,
@@ -33,7 +33,7 @@ export type BuilderContext = {
 	topCodeGenText: string[];
 	options: BuilderOptions;
 	nextSymbolName: number;
-	toExport: ScopeObject[];
+	exports: ScopeObject[];
 	
 	file: FileContext,
 };
@@ -48,7 +48,7 @@ export function newBuilderContext(): BuilderContext {
 			disableValueEvaluation: false,
 		},
 		nextSymbolName: 0,
-		toExport: [],
+		exports: [],
 		
 		file: null as any,
 	};
@@ -61,13 +61,24 @@ export function resetCompiledFiles() {
 	compiledFiles = {};
 }
 
-export function compile(filePath: string): BuilderContext {
+export function compile(startFilePath: string, onTokens: null | ((tokens: Token[]) => void)): BuilderContext {
 	const context = newBuilderContext();
-	compileFile(newBuilderContext(), filePath);
+	
+	context.file = compileFile(context, startFilePath, onTokens);
+	
+	codeGen.start(context);
+	
+	for (let i = 0; i < context.exports.length; i++) {
+		const toExport = context.exports[i];
+		if (toExport.kind == "function") {
+			callFunction(context, toExport, null, "builtin", false, null, null, null);
+		}
+	}
+	
 	return context;
 }
 
-export function compileFile(context: BuilderContext, filePath: string): FileContext {
+export function compileFile(context: BuilderContext, filePath: string, onTokens: null | ((tokens: Token[]) => void)): FileContext {
 	// if the file has already been compiled, there is no point compiling it again
 	// (this also lets two files import each other)
 	if (compiledFiles[filePath]) {
@@ -92,6 +103,9 @@ export function compileFile(context: BuilderContext, filePath: string): FileCont
 	// console.log("text:", text);
 	const tokens = lex(filePath, text);
 	// console.log("tokens:", tokens);
+	if (onTokens) {
+		onTokens(tokens);
+	}
 	
 	// get AST
 	let AST: ASTnode[] = [];
@@ -105,7 +119,6 @@ export function compileFile(context: BuilderContext, filePath: string): FileCont
 	const scopeList = build(context, AST, null, null, false);
 	// console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`);
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
-	codeGen.start(context);
 	
 	context.file = oldFile;
 	return newFile;

@@ -9,7 +9,8 @@ setUpBuiltin(false);
 const filePath = process.argv[2];
 
 try {
-	compile(filePath);
+	const context = compile(filePath, null);
+	console.log(context.topCodeGenText.join(""));
 } catch (error) {
 	if (error instanceof CompileError) {
 		console.log("uncaught compiler error");

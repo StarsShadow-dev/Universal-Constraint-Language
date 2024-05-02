@@ -28,5 +28,3 @@ const main = fn() {
 @export("a.test", a.test);
 @export("b.test", b.test);
 @export("main", main);
-
-@writeToStdout();

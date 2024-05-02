@@ -1,19 +1,11 @@
 import * as fs from "fs";
 
-import { ScopeObject, TokenType } from "./types";
-import { lex } from "./lexer";
-import {
-	ParserMode,
-	parse,
-} from './parser';
-import { build } from "./builder";
-import { BuilderContext } from "./compiler";
+import { TokenType } from "./types";
 import utilities from "./utilities";
 import { CompileError } from "./report";
 import { setUpBuiltin } from "./builtin";
 import path from "path";
-import codeGen from "./codeGen";
-import { resetCompiledFiles } from "./compiler";
+import { compile, resetCompiledFiles } from "./compiler";
 
 const c_green = "\x1B[32m";
 const c_red = "\x1B[31m"
@@ -36,6 +28,8 @@ function testFailure(msg: string) {
 }
 
 function testFile(filePath: string) {
+	filePath = path.normalize(filePath);
+	
 	total++;
 	
 	console.log(`running test: '${filePath}'`);
@@ -43,108 +37,56 @@ function testFile(filePath: string) {
 	resetCompiledFiles();
 	setUpBuiltin(true);
 	
+	let comments: any;
+	let mode: any;
 	
-	
-	// const text = utilities.readFile(filePath);
-
-	// const tokens = lex(filePath, text);
-	// // console.log("tokens: ", tokens);
-	
-	// if (!tokens[0] || tokens[0].type != TokenType.comment) {
-	// 	throw `unable to test file '${filePath}'`;
-	// }
-	
-	// let comments = tokens[0].text.split("\n");
-	// let mode = comments.shift();
-	// if (mode != "compError" && mode != "compSucceed" && mode != "compOut") {
-	// 	throw `unknown mode "${mode}"`;
-	// }
-	
-	// let AST;
-	
-	// try {
-	// 	AST = parse({
-	// 		tokens: tokens,
-	// 		i: 0,
-	// 	}, ParserMode.normal, null);
-	// } catch (error) {
-	// 	if (error instanceof CompileError) {
-	// 		if (mode == "compSucceed") {
-	// 			testFailure(`compilation failed, output = ${error.getText(false)}`);
-	// 		} else {
-	// 			const expectedOutput = comments.join("\n");
-	// 			const actualOutput = error.getText(false);
-	// 			if (expectedOutput == actualOutput) {
-	// 				testSuccess();
-	// 			} else {
-	// 				testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
-	// 			}
-	// 		}
+	try {
+		const context = compile(filePath, (tokens) => {
+			if (!tokens[0] || tokens[0].type != TokenType.comment) {
+				console.log(`unable to test file '${filePath}'`);
+				utilities.unreachable();
+			}
 			
-	// 		return;
-	// 	} else {
-	// 		throw error;
-	// 	}
-	// }
-
-	// const builderContext: BuilderContext = {
-	// 	topCodeGenText: [""],
+			comments = tokens[0].text.split("\n");
+			mode = comments.shift();
+			if (mode != "compError" && mode != "compSucceed" && mode != "compOut") {
+				throw `unknown mode "${mode}"`;
+			}
+		});
 		
-	// 	filePath: filePath,
-		
-	// 	scope: {
-	// 		levels: [],
-	// 		currentLevel: -1,
-	// 		function: null,
-	// 		generatingFunction: null,
-	// 	},
-		
-	// 	options: {
-	// 		compileTime: true,
-	// 		codeGenText: [],
-	// 		disableValueEvaluation: false,
-	// 	},
-	// 	nextSymbolName: 0,
-	// };
-
-	// let scopeList: ScopeObject[] = [];
-
-	// try {
-	// 	scopeList = build(builderContext, AST, null, null, false);
-	// } catch (error) {
-	// 	if (error instanceof CompileError) {
-	// 		if (mode == "compSucceed") {
-	// 			testFailure(`compilation failed, output = ${error.getText(false)}`);
-	// 		} else {
-	// 			const expectedOutput = comments.join("\n");
-	// 			const actualOutput = error.getText(false);
-	// 			if (expectedOutput == actualOutput) {
-	// 				testSuccess();
-	// 			} else {
-	// 				testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
-	// 			}
-	// 		}
+		if (mode == "compError") {
+			const expectedOutput = comments.join("\n");
+			testFailure(`expected error output = ${expectedOutput}\nactual output = success`);
+		} else if (mode == "compSucceed") {
+			testSuccess();
+		} else if (mode == "compOut") {
+			const expectedOutput = comments.join("\n");
+			const actualOutput = context.topCodeGenText.join("");
+			if (expectedOutput == actualOutput) {
+				testSuccess();
+			} else {
+				testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+			}
+		}
+	} catch (error) {
+		if (error instanceof CompileError) {
+			if (mode == "compSucceed") {
+				testFailure(`compilation failed, output = ${error.getText(false)}`);
+			} else {
+				const expectedOutput = comments.join("\n");
+				const actualOutput = error.getText(false);
+				if (expectedOutput == actualOutput) {
+					testSuccess();
+				} else {
+					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+				}
+			}
 			
-	// 		return;
-	// 	} else {
-	// 		throw error;
-	// 	}
-	// }
-	
-	// if (mode == "compError") {
-	// 	const expectedOutput = comments.join("\n");
-	// 	testFailure(`expected error output = ${expectedOutput}\nactual output = success`);
-	// } else if (mode == "compSucceed") {
-	// 	testSuccess();
-	// } else if (mode == "compOut") {
-	// 	const expectedOutput = comments.join("\n");
-	// 	const actualOutput = builderContext.topCodeGenText.join("");
-	// 	if (expectedOutput == actualOutput) {
-	// 		testSuccess();
-	// 	} else {
-	// 		testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
-	// 	}
-	// }
+			return;
+		} else {
+			throw error;
+		}
+	}
 }
 
 function testDir(dirPath: string) {

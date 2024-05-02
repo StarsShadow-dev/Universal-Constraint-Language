@@ -317,12 +317,6 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			onCodeGen[name] = fn;
 		}
 		
-		else if (node.name == "writeToStdout") {
-			fc.done();
-			
-			console.log(context.topCodeGenText.join(""));
-		}
-		
 		else if (node.name == "writeTofile") {
 			if (fileSystemDisabled) {
 				utilities.unreachable();
@@ -345,7 +339,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const filePath = fc.string(true);
 			fc.done();
 			
-			const newContext = compileFile(context, path.join(path.dirname(context.file.path), filePath));
+			const newContext = compileFile(context, path.join(path.dirname(context.file.path), filePath), null);
 			
 			return getStruct(context, newContext.scope.levels[0]);
 		}
@@ -358,10 +352,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			
 			if (fn.kind == "function") {
 				fn.symbolName = name;
-				context.toExport.push(fn);
+				context.exports.push(fn);
 			}
-			
-			callFunction(context, fn, null, node.location, false, null, null, null);
 		}
 		
 		else {
