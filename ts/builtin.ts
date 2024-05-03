@@ -10,7 +10,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { callFunction, getAlias, getAsComptimeType, getNextSymbolName, getTypeOf } from "./builder";
+import { getAlias, getAsComptimeType, getNextSymbolName, getTypeOf } from "./builder";
 import { BuilderContext } from "./compiler";
 import codeGen from "./codeGen";
 

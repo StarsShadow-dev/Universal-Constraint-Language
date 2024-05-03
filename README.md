@@ -2,8 +2,6 @@
 
 **Right now, everything is being rewritten in type script.**
 
-<!-- **Right now the compiler is very unstable. (I keep adding and removing features)** -->
-
 I am working on this programming language for personal use,
 but the source code is public on github because someone might find this interesting.
 

@@ -1,5 +1,1 @@
-{
-	// this is to override the compilerPath for the LLCL_VScode extension
-	// it makes the extension use the latest build
-	// "conf.llcl_vscode.compilerPath": "/DerivedData/LLCL/Build/Products/Debug/LLCL"
-}
+{}

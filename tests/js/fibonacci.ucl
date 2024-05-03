@@ -1,0 +1,28 @@
+// compOut
+// "use strict";
+// const symbols = {};
+// symbols["fibonacci"] = (n) => {
+// 	if ((n < 1)) {
+// 		return n;
+// 	} else {
+// 	}
+// 	if ((n == 1)) {
+// 		return n;
+// 	} else {
+// 	}
+// 	return (symbols["fibonacci"]((n - 1)) + symbols["fibonacci"]((n - 2)));
+// }
+// 
+
+const js = @import("./../../test/js.ucl");
+
+const fibonacci = fn(n: Number): Number {
+	if (n < 1) {
+		ret n;
+	}
+	if (n == 1) {
+		ret n;
+	}
+	ret fibonacci(n - 1) + fibonacci(n - 2);
+};
+@export("fibonacci", fibonacci);

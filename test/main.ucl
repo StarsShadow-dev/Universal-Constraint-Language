@@ -1,25 +1,6 @@
 const js = @import("./js.ucl");
 // const import = @import("./import.ucl");
 
-const test = fn() {
-	if (@opaque(1) + 1 == 2) {
-		js.log("testing");
-	}
-};
-
-@export("test", test);
-
-const fibonacci = fn(n: Number): Number {
-	if (n < 1) {
-		ret n;
-	}
-	if (n == 1) {
-		ret n;
-	}
-	ret fibonacci(n - 1) + fibonacci(n - 2);
-};
-@export("fibonacci", fibonacci);
-
 const main = fn() {
 	if (true) {
 		js.log("testing");
