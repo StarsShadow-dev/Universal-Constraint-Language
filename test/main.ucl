@@ -2,7 +2,7 @@ const js = @import("./js.ucl");
 // const import = @import("./import.ucl");
 
 const main = fn() {
-	if (true && true) {
+	if ("abc" == "abc") {
 		js.log("testing");
 	}
 };
