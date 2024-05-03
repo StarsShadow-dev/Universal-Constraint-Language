@@ -1,12 +1,12 @@
 // compOut
 // "use strict";
 // const symbols = {};
-// symbols["test/js.ucl:log"] = (string) => {
+// symbols["test/js.ucl:103,13:log"] = (string) => {
 // 	console.log(string);
 // }
 // symbols["test"] = (arg) => {
-// 	symbols["test/js.ucl:log"]("1 true");
-// 	symbols["test/js.ucl:log"]("2 false");
+// 	symbols["test/js.ucl:103,13:log"]("1 true");
+// 	symbols["test/js.ucl:103,13:log"]("2 false");
 // }
 // 
 

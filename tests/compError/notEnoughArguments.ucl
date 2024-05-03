@@ -1,5 +1,5 @@
 // compError
-// error: not enough arguments passed to function 'tests/compError/notEnoughArguments.ucl:three'
+// error: not enough arguments passed to function 'tests/compError/notEnoughArguments.ucl:5,15:three'
 // tests/compError/notEnoughArguments.ucl:10 -> function call here
 
 const three = fn(arg1: String, arg2: Number, arg3: String): Bool {
