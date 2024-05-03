@@ -524,10 +524,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					
 					if (value.originLocation != "builtin") {
+						const symbolName = `${value.originLocation.path}:${value.originLocation.line},${value.originLocation.startColumn}:${alias.name}`;
 						if (node.value.kind == "function" && value.kind == "function") {
-							value.symbolName = `${value.originLocation.path}:${alias.name}`;
+							value.symbolName = symbolName;
 						} else if (node.value.kind == "struct" && value.kind == "typeUse" && value.type.kind == "struct") {
-							value.type.name = `${value.originLocation.path}:${alias.name}`;
+							value.type.name = symbolName;
 						}
 					}
 					

@@ -25,6 +25,6 @@ const main = fn() {
 	a.test();
 };
 
-@export("a.test", a.test);
-@export("b.test", b.test);
+// @export("a.test", a.test);
+// @export("b.test", b.test);
 @export("main", main);
