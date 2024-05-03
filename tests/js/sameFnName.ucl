@@ -1,13 +1,13 @@
 // compOut
 // "use strict";
 // const symbols = {};
-// symbols["tests/js/sameName.ucl:17,15:test"] = () => {
+// symbols["tests/js/sameFnName.ucl:17,15:test"] = () => {
 // }
-// symbols["tests/js/sameName.ucl:21,15:test"] = () => {
+// symbols["tests/js/sameFnName.ucl:21,15:test"] = () => {
 // }
 // symbols["main"] = () => {
-// 	symbols["tests/js/sameName.ucl:17,15:test"]();
-// 	symbols["tests/js/sameName.ucl:21,15:test"]();
+// 	symbols["tests/js/sameFnName.ucl:17,15:test"]();
+// 	symbols["tests/js/sameFnName.ucl:21,15:test"]();
 // }
 // 
 
