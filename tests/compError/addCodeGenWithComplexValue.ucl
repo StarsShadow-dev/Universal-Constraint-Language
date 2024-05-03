@@ -1,0 +1,3 @@
+// testSkip
+
+@addCodeGen(@opaque("string"));

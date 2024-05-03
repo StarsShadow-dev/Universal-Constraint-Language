@@ -12,8 +12,14 @@ const c_red = "\x1B[31m"
 const c_reset = "\x1B[0m";
 
 let total = 0;
+let skipped = 0;
 let succeeded = 0;
 let failed = 0;
+
+function testSkip() {
+	console.log(`\n\ttest skipped\n`);
+	skipped++;
+}
 
 function testSuccess() {
 	console.log(`\n\t${c_green}test success!${c_reset}\n`);
@@ -49,6 +55,9 @@ function testFile(filePath: string) {
 			
 			comments = tokens[0].text.split("\n");
 			mode = comments.shift();
+			if (mode == "testSkip") {
+				throw `__testSkip__`;
+			}
 			if (mode != "compError" && mode != "compSucceed" && mode != "compOut") {
 				throw `unknown mode "${mode}"`;
 			}
@@ -69,6 +78,10 @@ function testFile(filePath: string) {
 			}
 		}
 	} catch (error) {
+		if (error == "__testSkip__") {
+			testSkip();
+			return;
+		}
 		if (error instanceof CompileError) {
 			if (mode == "compSucceed") {
 				testFailure(`compilation failed, output = ${error.getText(false)}`);
@@ -102,6 +115,7 @@ testDir("./tests/compError");
 testDir("./tests/compOut");
 testDir("./tests/js");
 
-console.log(`total ${total}`);
-console.log(`succeeded ${c_green}${succeeded}${c_reset}`);
-console.log(`failed ${c_red}${failed}${c_reset}`);
+console.log(`total: ${total}`);
+console.log(`skipped: ${skipped}`);
+console.log(`succeeded: ${c_green}${succeeded}${c_reset}`);
+console.log(`failed: ${c_red}${failed}${c_reset}`);
