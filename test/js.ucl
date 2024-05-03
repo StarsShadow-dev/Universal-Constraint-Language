@@ -59,9 +59,11 @@ var test = "1";
 	@addCodeGen("if (", conditionText, ") {\n");
 	@addCodeGen(trueText);
 	@addCodeGenTest();
-	@addCodeGen("} else {\n");
-	@addCodeGen(falseText);
-	@addCodeGenTest();
+	if (falseText != "") {
+		@addCodeGen("} else {\n");
+		@addCodeGen(falseText);
+		@addCodeGenTest();
+	}
 	@addCodeGen("}\n");
 });
 

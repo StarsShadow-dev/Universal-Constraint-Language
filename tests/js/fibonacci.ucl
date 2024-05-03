@@ -4,7 +4,6 @@
 // symbols["fibonacci"] = (n) => {
 // 	if (((n < 1) || (n == 1))) {
 // 		return n;
-// 	} else {
 // 	}
 // 	return (symbols["fibonacci"]((n - 1)) + symbols["fibonacci"]((n - 2)));
 // }
