@@ -1,19 +1,16 @@
 // compOut
 // "use strict";
 // const symbols = {};
-// symbols["test/js.ucl:103,13:log"] = (string) => {
-// 	console.log(string);
-// }
 // symbols["testing"] = (arg) => {
 // 	if (true) {
-// 	symbols["test/js.ucl:103,13:log"]("1 true");
+// 	console.log("1 true");
 // 	} else {
-// 	symbols["test/js.ucl:103,13:log"]("1 false");
+// 	console.log("1 false");
 // 	}
 // 	if (false) {
-// 	symbols["test/js.ucl:103,13:log"]("2 true");
+// 	console.log("2 true");
 // 	} else {
-// 	symbols["test/js.ucl:103,13:log"]("2 false");
+// 	console.log("2 false");
 // 	}
 // }
 // 

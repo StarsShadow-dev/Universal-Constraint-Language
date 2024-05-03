@@ -375,7 +375,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			if (functionToCall.forceInline) {
 				if (callDest) callDest.push(...text);
 			} else {
-				if (!comptime) {
+				if (!comptime && !functionToCall.external) {
 					codeGen.function(context.topCodeGenText, context, functionToCall, text);
 				}
 				
@@ -867,6 +867,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				addToScopeList({
 					kind: "function",
 					forceInline: node.forceInline,
+					external: false,
 					originLocation: node.location,
 					symbolName: `${getNextSymbolName(context)}`,
 					functionArguments: functionArguments,

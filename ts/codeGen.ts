@@ -96,7 +96,7 @@ export default {
 				for (let i = 0; i < argumentText.length; i++) {
 					callFunction(context, onCodeGen["call_arg"], [getString(argumentText[i]), getBool(argumentText[i+1] != undefined)], "builtin", true, null, argDest, null);
 				}
-				callFunction(context, onCodeGen["call"], [getString(fn.symbolName), getString(argDest.join(""))], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["call"], [getString(fn.symbolName), getBool(fn.external), getString(argDest.join(""))], "builtin", true, null, dest, null);
 			}
 		}
 	},

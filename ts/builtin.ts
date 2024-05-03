@@ -355,6 +355,16 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 				context.exports.push(fn);
 			}
 		}
+		else if (node.name == "extern") {
+			const name = fc.string(true);
+			const fn = fc.function(true);
+			fc.done();
+			
+			fn.symbolName = name;
+			fn.external = true;
+			
+			return fn;
+		}
 		
 		else {
 			throw new CompileError(`no builtin named ${node.name}`).indicator(node.location, "here");

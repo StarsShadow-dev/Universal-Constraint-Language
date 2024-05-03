@@ -9,22 +9,10 @@ const js = @import("./js.ucl");
 
 // @export("test", test);
 
-const a = struct {
-	const test = fn() {
-		b.test();
-	};
-};
-
-const b = struct {
-	const test = fn() {
-		a.test();
-	};
-};
+const aFunction = @extern("externalStuff.aFunction", fn(a: Number, b: String) {});
 
 const main = fn() {
-	a.test();
+	aFunction(1, "testing");
 };
 
-// @export("a.test", a.test);
-// @export("b.test", b.test);
 @export("main", main);

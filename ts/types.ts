@@ -168,6 +168,7 @@ export type ScopeObject = genericScopeObject & {
 } | genericScopeObject & {
 	kind: "function",
 	forceInline: boolean,
+	external: boolean,
 	symbolName: string,
 	functionArguments: (ScopeObject & { kind: "argument" })[],
 	returnType: (ScopeObject & { kind: "typeUse" }) | null,
