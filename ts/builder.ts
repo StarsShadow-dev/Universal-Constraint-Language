@@ -769,6 +769,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							addToScopeList(getComplexValue(context, "Bool"));
 						} else if (node.operatorText == ">") {
 							addToScopeList(getComplexValue(context, "Bool"));
+						} else if (node.operatorText == "&&") {
+							addToScopeList(getComplexValue(context, "Bool"));
+						} else if (node.operatorText == "||") {
+							addToScopeList(getComplexValue(context, "Bool"));
 						} else {
 							utilities.unreachable();
 						}
@@ -794,6 +798,24 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							});
 						} else {
 							utilities.TODO();
+						}
+					}
+					
+					else if (left.kind == "bool" && right.kind == "bool") {
+						if (node.operatorText == "&&") {
+							addToScopeList({
+								kind: "bool",
+								originLocation: node.location,
+								value: left.value && right.value,
+							});
+						} else if (node.operatorText == "||") {
+							addToScopeList({
+								kind: "bool",
+								originLocation: node.location,
+								value: left.value || right.value,
+							});
+						} else {
+							utilities.unreachable();
 						}
 					}
 					
