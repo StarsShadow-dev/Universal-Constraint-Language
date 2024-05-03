@@ -18,11 +18,11 @@ const fibonacci = fn(n: Number): Number {
 	}
 	ret fibonacci(n - 1) + fibonacci(n - 2);
 };
-
 @export("fibonacci", fibonacci);
 
-// const main = fn() {
-// 	js.log("testing");
-// };
-
-// @export("main", main);
+const main = fn() {
+	if (true) {
+		js.log("testing");
+	}
+};
+@export("main", main);

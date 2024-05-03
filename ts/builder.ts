@@ -240,13 +240,13 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		
 		if (toBeGeneratedHere) {
 			const oldScope = context.file.scope;
+			const oldGeneratingFunction = oldScope.generatingFunction;
 			context.file.scope = {
 				currentLevel: -1,
 				levels: [[]],
 				function: functionToCall,
-				generatingFunction: oldScope.generatingFunction,
+				generatingFunction: oldGeneratingFunction,
 			}
-			
 			if (!comptime) {
 				context.file.scope.generatingFunction = functionToCall;
 			}
@@ -308,9 +308,10 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}, {
 				location: functionToCall.originLocation,
 				msg: `function ${functionToCall.symbolName}`,
-			}, true)[0];
+			}, true, true, false)[0];
 			
 			context.file.scope = oldScope;
+			context.file.scope.generatingFunction = oldGeneratingFunction;
 			
 			if (result) {
 				const unwrappedResult = unwrapScopeObject(result);
@@ -397,7 +398,11 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 		}
 		
 		if (!functionToCall.forceInline && !comptime) {
-			if (callDest) codeGen.call(callDest, context, functionToCall, argumentText);
+			if (callDest) {
+				codeGen.startExpression(callDest, context);
+				codeGen.call(callDest, context, functionToCall, argumentText);
+				codeGen.endExpression(callDest, context);
+			}
 		}
 		
 		return result;
@@ -407,13 +412,21 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 	}
 }
 
-export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, resultAtRet: boolean, getLevel?: boolean): ScopeObject[] {
+export function build(context: BuilderContext, AST: ASTnode[], options: BuilderOptions | null, sackMarker: Indicator | null, resultAtRet: boolean, addIndentation: boolean, getLevel: boolean): ScopeObject[] {
 	context.file.scope.currentLevel++;
 	
 	let scopeList: ScopeObject[] = [];
 	
 	if (context.file.scope.levels[context.file.scope.currentLevel] == undefined) {
 		context.file.scope.levels[context.file.scope.currentLevel] = [];	
+	}
+	
+	const oldInIndentation = context.inIndentation;
+	if (addIndentation && context.file.scope.generatingFunction) {
+		context.inIndentation = true;
+		context.file.scope.generatingFunction.indentation++;
+	} else {
+		context.inIndentation = false;
 	}
 	
 	try {
@@ -432,6 +445,11 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		context.file.scope.levels[context.file.scope.currentLevel] = [];
 		context.file.scope.currentLevel--;
 		throw error;
+	}
+	
+	context.inIndentation = oldInIndentation;
+	if (addIndentation && context.file.scope.generatingFunction) {
+		context.file.scope.generatingFunction.indentation--;
 	}
 	
 	let level: ScopeObject[] = [];
@@ -470,7 +488,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					codeGenText: null,
 					compileTime: context.options.compileTime,
 					disableValueEvaluation: true,
-				}, null, false)[0]);
+				}, null, false, false, false)[0]);
 			}
 			addAlias(context, context.file.scope.currentLevel, {
 				kind: "alias",
@@ -499,7 +517,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						codeGenText: typeText,
 						compileTime: context.options.compileTime,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false)[0]);
+					}, null, false, false, false)[0]);
 				}
 				
 				if (node.value && !context.options.disableValueEvaluation) {
@@ -508,7 +526,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						codeGenText: valueText,
 						compileTime: context.options.compileTime,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false)[0]);
+					}, null, false, false, false)[0]);
 					
 					if (!value) {
 						throw new CompileError(`no value for alias`).indicator(node.location, "here");
@@ -617,7 +635,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					compileTime: context.options.compileTime,
 					codeGenText: leftText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false)[0]
+				}, null, false, false, false)[0]
 				if (!functionToCall_) {
 					utilities.TODO();
 				}
@@ -627,7 +645,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false);
+				}, null, false, false, false);
 				
 				if (functionToCall.kind == "function") {
 					const result = callFunction(context, functionToCall, callArguments, node.location, context.options.compileTime, context.options.codeGenText, null, argumentText);
@@ -645,7 +663,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false);
+				}, null, false, false, false);
 				const result = builtinCall(context, node, callArguments, argumentText);
 				if (result) {
 					addToScopeList(result);
@@ -659,13 +677,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						compileTime: context.options.compileTime,
 						codeGenText: leftText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false)[0];
+					}, null, false, false, false)[0];
 					const rightText = getCGText();
 					const right = build(context, node.right, {
 						compileTime: context.options.compileTime,
 						codeGenText: rightText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false)[0];
+					}, null, false, false, false)[0];
 					
 					if (left.kind == "alias") {
 						if (!left.mutable) {
@@ -692,7 +710,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				else if (node.operatorText == ".") {
-					const left = unwrapScopeObject(build(context, node.left, null, null, false)[0]);
+					const left = unwrapScopeObject(build(context, node.left, null, null, false, false, false)[0]);
 					
 					let typeUse: ScopeObject;
 					if (left.kind == "typeUse") {
@@ -732,13 +750,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						compileTime: false,
 						codeGenText: leftText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false)[0]);
+					}, null, false, false, false)[0]);
 					const rightText = getCGText();
 					const right = unwrapScopeObject(build(context, node.right, {
 						compileTime: false,
 						codeGenText: rightText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false)[0]);
+					}, null, false, false, false)[0]);
 					
 					if (left.kind == "complexValue" || right.kind == "complexValue") {
 						if (node.operatorText == "+") {
@@ -815,7 +833,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "comptime": {
-				const value = unwrapScopeObject(build(context, [node.value], null, null, false)[0]);
+				const value = unwrapScopeObject(build(context, [node.value], null, null, false, false, false)[0]);
 				if (value.kind == "typeUse") {
 					addToScopeList(getAsComptimeType(value, node.location));
 				} else {
@@ -827,7 +845,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "function": {
 				let returnType = null;
 				if (node.returnType) {
-					const _returnType = unwrapScopeObject(build(context, [node.returnType.value], null, null, false)[0]);
+					const _returnType = unwrapScopeObject(build(context, [node.returnType.value], null, null, false, false, false)[0]);
 					if (_returnType.kind == "typeUse") {
 						returnType = _returnType;
 					} else {
@@ -845,7 +863,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							codeGenText: null,
 							compileTime: true,
 							disableValueEvaluation: context.options.disableValueEvaluation,
-						}, null, false)[0]);
+						}, null, false, false, false)[0]);
 						
 						if (argumentType.kind == "typeUse") {
 							functionArguments.push({
@@ -868,23 +886,24 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					kind: "function",
 					forceInline: node.forceInline,
 					external: false,
+					toBeGenerated: true,
+					indentation: 0,
 					originLocation: node.location,
 					symbolName: `${getNextSymbolName(context)}`,
 					functionArguments: functionArguments,
 					returnType: returnType,
 					AST: node.codeBlock,
 					visible: visible,
-					toBeGenerated: true,
 				});
 				break;
 			}
 			case "struct": {
-				const properties = build(context, node.codeBlock, null, null, false, true);
+				const properties = build(context, node.codeBlock, null, null, false, true, true);
 				
 				let templateStruct: (ScopeObject & { kind: "struct" }) | null = null;
 				
 				if (node.templateType) {
-					const templateType = unwrapScopeObject(build(context, [node.templateType.value], null, null, false)[0]);
+					const templateType = unwrapScopeObject(build(context, [node.templateType.value], null, null, false, false, false)[0]);
 					
 					if (templateType.kind == "typeUse" && templateType.type.kind == "struct") {
 						templateStruct = templateType.type;
@@ -958,20 +977,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "codeGenerate": {
-				build(context, node.codeBlock, {
-					codeGenText: context.options.codeGenText,
-					compileTime: false,
-					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false);
+				utilities.unreachable();
 				break;
 			}
 			case "while": {
 				while (true) {
-					const condition = build(context, node.condition, null, null, false)[0];
+					const condition = build(context, node.condition, null, null, false, false, false)[0];
 					
 					if (condition.kind == "bool") {
 						if (condition.value) {
-							build(context, node.codeBlock, null, null, resultAtRet)[0];
+							build(context, node.codeBlock, null, null, resultAtRet, true, false)[0];
 						} else {
 							break;
 						}
@@ -987,7 +1002,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					codeGenText: conditionText,
 					compileTime: context.options.compileTime,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false)[0];
+				}, null, false, false, false)[0];
 				if (!_condition) {
 					throw new CompileError("if statement is missing a condition")
 						.indicator(node.location, "here");
@@ -996,12 +1011,18 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				// If the condition is known at compile time
 				if (condition.kind == "bool") {
+					if (context.file.scope.generatingFunction) {
+						context.file.scope.generatingFunction.indentation--;
+					}
 					if (condition.value) {
-						build(context, node.trueCodeBlock, null, null, resultAtRet);
+						build(context, node.trueCodeBlock, null, null, resultAtRet, true, false);
 					} else {
 						if (node.falseCodeBlock) {
-							build(context, node.falseCodeBlock, null, null, resultAtRet);
+							build(context, node.falseCodeBlock, null, null, resultAtRet, true, false);
 						}
+					}
+					if (context.file.scope.generatingFunction) {
+						context.file.scope.generatingFunction.indentation++;
 					}
 				}
 				
@@ -1013,13 +1034,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						codeGenText: trueText,
 						compileTime: context.options.compileTime,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, resultAtRet);
+					}, null, resultAtRet, true, false);
 					if (node.falseCodeBlock) {
 						build(context, node.falseCodeBlock, {
 							codeGenText: falseText,
 							compileTime: context.options.compileTime,
 							disableValueEvaluation: context.options.disableValueEvaluation,
-						}, null, resultAtRet);
+						}, null, resultAtRet, true, false);
 					}
 					if (doCodeGen(context)) codeGen.if(context.options.codeGenText, context, conditionText, trueText, falseText);
 				}
@@ -1039,12 +1060,20 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						codeGenText: valueText,
 						compileTime: context.options.compileTime,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false)[0];
+					}, null, false, false, false)[0];
 					scopeList.push(value);
 					
-					if (doCodeGen(context)) codeGen.return(context.options.codeGenText, context, valueText);
+					if (doCodeGen(context)) {
+						codeGen.startExpression(context.options.codeGenText, context);
+						codeGen.return(context.options.codeGenText, context, valueText);
+						codeGen.endExpression(context.options.codeGenText, context);
+					}
 				} else {
-					if (doCodeGen(context)) codeGen.return(context.options.codeGenText, context, []);
+					if (doCodeGen(context)) {
+						codeGen.startExpression(context.options.codeGenText, context);
+						codeGen.return(context.options.codeGenText, context, []);
+						codeGen.endExpression(context.options.codeGenText, context);
+					}
 				}
 				return scopeList;
 			}

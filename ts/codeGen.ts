@@ -10,6 +10,20 @@ import { getBool, getNumber, getString, onCodeGen } from "./builtin";
 import utilities from "./utilities";
 
 export default {
+	startExpression(dest: CodeGenText, context: BuilderContext) {
+		if (context.inIndentation && onCodeGen["startExpression"] && context.file.scope.generatingFunction) {
+			callFunction(context, onCodeGen["startExpression"], [
+				getNumber(context.file.scope.generatingFunction.indentation)
+			], "builtin", true, null, dest, null);
+		}
+	},
+	
+	endExpression(dest: CodeGenText, context: BuilderContext) {
+		if (context.inIndentation && onCodeGen["endExpression"] && context.file.scope.generatingFunction) {
+			callFunction(context, onCodeGen["endExpression"], [], "builtin", true, null, dest, null);
+		}
+	},
+	
 	start(context: BuilderContext) {
 		if (onCodeGen["start"]) {
 			callFunction(context, onCodeGen["start"], [], "builtin", true, null, context.topCodeGenText, null);
@@ -18,32 +32,47 @@ export default {
 	
 	bool(dest: CodeGenText, context: BuilderContext, value: boolean) {
 		if (onCodeGen["bool"]) {
-			callFunction(context, onCodeGen["bool"], [getBool(value)], "builtin", true, null, dest, null);
+			callFunction(context, onCodeGen["bool"], [
+				getBool(value)
+			], "builtin", true, null, dest, null);
 		}
 	},
 	
 	number(dest: CodeGenText, context: BuilderContext, value: number) {
 		if (onCodeGen["number"]) {
-			callFunction(context, onCodeGen["number"], [getNumber(value), getString(`${value}`)], "builtin", true, null, dest, null);
+			callFunction(context, onCodeGen["number"], [
+				getNumber(value),
+				getString(`${value}`)
+			], "builtin", true, null, dest, null);
 		}
 	},
 	
 	string(dest: CodeGenText, context: BuilderContext, value: string) {
 		if (onCodeGen["string"]) {
-			callFunction(context, onCodeGen["string"], [getString(value)], "builtin", true, null, dest, null);
+			callFunction(context, onCodeGen["string"], [
+				getString(value)
+			], "builtin", true, null, dest, null);
 		}
 	},
 	
 	operator(dest: CodeGenText, context: BuilderContext, operatorText: string, leftText: string[], rightText: string[]) {
 		if (onCodeGen["operator"]) {
-			callFunction(context, onCodeGen["operator"], [getString(operatorText), getString(leftText.join("")), getString(rightText.join(""))], "builtin", true, null, dest, null);
+			callFunction(context, onCodeGen["operator"], [
+				getString(operatorText),
+				getString(leftText.join("")),
+				getString(rightText.join(""))
+			], "builtin", true, null, dest, null);
 		}
 	},
 	
 	alias(dest: CodeGenText, context: BuilderContext, alias: ScopeObject, valueText: CodeGenText) {
 		if (alias.kind == "alias" && alias.name && valueText) {
 			if (onCodeGen["alias"]) {
-				callFunction(context, onCodeGen["alias"], [getString(alias.symbolName), getString(valueText.join("")), getBool(alias.mutable)], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["alias"], [
+					getString(alias.symbolName),
+					getString(valueText.join("")),
+					getBool(alias.mutable)
+				], "builtin", true, null, dest, null);
 			}
 		}
 	},
@@ -51,7 +80,9 @@ export default {
 	load(dest: CodeGenText, context: BuilderContext, alias: ScopeObject) {
 		if (alias.kind == "alias" && alias.name) {
 			if (onCodeGen["identifier"]) {
-				callFunction(context, onCodeGen["identifier"], [getString(alias.symbolName)], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["identifier"], [
+					getString(alias.symbolName)
+				], "builtin", true, null, dest, null);
 			}
 		}
 	},
@@ -59,7 +90,11 @@ export default {
 	set(dest: CodeGenText, context: BuilderContext, alias: ScopeObject, aliasText: CodeGenText, valueText: CodeGenText) {
 		if (alias.kind == "alias" && alias.name && aliasText && valueText) {
 			if (onCodeGen["set_alias"]) {
-				callFunction(context, onCodeGen["set_alias"], [getString(alias.symbolName), getString(aliasText.join("")), getString(valueText.join(""))], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["set_alias"], [
+					getString(alias.symbolName),
+					getString(aliasText.join("")),
+					getString(valueText.join(""))
+				], "builtin", true, null, dest, null);
 			}
 		}
 	},
@@ -67,7 +102,11 @@ export default {
 	if(dest: CodeGenText, context: BuilderContext, conditionText: CodeGenText, trueText: CodeGenText, falseText: CodeGenText) {
 		if (conditionText && trueText && falseText) {
 			if (onCodeGen["if"]) {
-				callFunction(context, onCodeGen["if"], [getString(conditionText.join("")), getString(trueText.join("")), getString(falseText.join(""))], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["if"], [
+					getString(conditionText.join("")),
+					getString(trueText.join("")),
+					getString(falseText.join(""))
+				], "builtin", true, null, dest, null);
 			}
 		}
 	},
@@ -90,21 +129,30 @@ export default {
 	},
 	
 	return(dest: CodeGenText, context: BuilderContext, valueText: CodeGenText) {
-		if (valueText) {
+		if (valueText && context.file.scope.generatingFunction) {
 			if (onCodeGen["return"]) {
-				callFunction(context, onCodeGen["return"], [getString(valueText.join(""))], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["return"], [
+					getString(valueText.join(""))
+				], "builtin", true, null, dest, null);
 			}
 		}
 	},
 	
 	call(dest: CodeGenText, context: BuilderContext, fn: ScopeObject, argumentText: CodeGenText) {
-		if (dest && fn.kind == "function" && dest && argumentText) {
+		if (dest && fn.kind == "function" && dest && argumentText && context.file.scope.generatingFunction) {
 			if (onCodeGen["call_arg"] && onCodeGen["call"]) {
 				const argDest = getCGText();
 				for (let i = 0; i < argumentText.length; i++) {
-					callFunction(context, onCodeGen["call_arg"], [getString(argumentText[i]), getBool(argumentText[i+1] != undefined)], "builtin", true, null, argDest, null);
+					callFunction(context, onCodeGen["call_arg"], [
+						getString(argumentText[i]),
+						getBool(argumentText[i+1] != undefined)
+					], "builtin", true, null, argDest, null);
 				}
-				callFunction(context, onCodeGen["call"], [getString(fn.symbolName), getBool(fn.external), getString(argDest.join(""))], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["call"], [
+					getString(fn.symbolName),
+					getBool(fn.external),
+					getString(argDest.join(""))
+				], "builtin", true, null, dest, null);
 			}
 		}
 	},

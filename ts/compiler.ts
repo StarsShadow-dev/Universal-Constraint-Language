@@ -34,6 +34,7 @@ export type BuilderContext = {
 	options: BuilderOptions;
 	nextSymbolName: number;
 	exports: ScopeObject[];
+	inIndentation: boolean,
 	
 	file: FileContext,
 };
@@ -49,6 +50,7 @@ export function newBuilderContext(): BuilderContext {
 		},
 		nextSymbolName: 0,
 		exports: [],
+		inIndentation: true,
 		
 		file: null as any,
 	};
@@ -116,7 +118,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	// console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
 	
 	// build
-	const scopeList = build(context, AST, null, null, false);
+	const scopeList = build(context, AST, null, null, false, false, false);
 	// console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`);
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	

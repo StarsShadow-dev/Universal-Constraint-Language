@@ -1,8 +1,16 @@
 var test = "1";
 
-const indent = inline fn() {
-	@addCodeGen("\t");
-};
+@onCodeGen("startExpression", fn(indentation: Number) {
+	var i = 0;
+	while (i < indentation) {
+		@addCodeGen("\t");
+		i = i + 1;
+	}
+});
+
+@onCodeGen("endExpression", fn() {
+	@addCodeGen(";\n");
+});
 
 @onCodeGen("start", fn() {
 	@addTopCodeGen("\"use strict\";\n");
@@ -30,24 +38,16 @@ const indent = inline fn() {
 });
 
 @onCodeGen("alias", fn(name: 'String, valueText: 'String, mutable: 'Bool) {
-	indent();
 	if (mutable) {
 		@addCodeGen("var ");
 	} else {
 		@addCodeGen("const ");
 	}
-	@addCodeGen(name);
-	@addCodeGen(" = ");
-	@addCodeGen(valueText);
-	@addCodeGen(";\n");
+	@addCodeGen(name, " = ", valueText);
 });
 
 @onCodeGen("set_alias", fn(name: 'String, aliasText: 'String, valueText: 'String) {
-	indent();
-	@addCodeGen(aliasText);
-	@addCodeGen(" = ");
-	@addCodeGen(valueText);
-	@addCodeGen(";\n");
+	@addCodeGen(aliasText, " = ", valueText);
 });
 
 @onCodeGen("identifier", fn(name: 'String) {
@@ -55,15 +55,13 @@ const indent = inline fn() {
 });
 
 @onCodeGen("if", fn(conditionText: 'String, trueText: 'String, falseText: 'String) {
-	indent();
-	@addCodeGen("if (");
-	@addCodeGen(conditionText);
-	@addCodeGen(") {\n");
+	@addCodeGenTest();
+	@addCodeGen("if (", conditionText, ") {\n");
 	@addCodeGen(trueText);
-	indent();
+	@addCodeGenTest();
 	@addCodeGen("} else {\n");
 	@addCodeGen(falseText);
-	indent();
+	@addCodeGenTest();
 	@addCodeGen("}\n");
 });
 
@@ -86,10 +84,7 @@ const indent = inline fn() {
 });
 
 @onCodeGen("return", fn(valueText: 'String) {
-	indent();
-	@addCodeGen("return ");
-	@addCodeGen(valueText);
-	@addCodeGen(";\n");
+	@addCodeGen("return ", valueText);
 });
 
 @onCodeGen("call_arg", fn(text: 'String, more: 'Bool) {

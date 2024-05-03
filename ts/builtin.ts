@@ -12,6 +12,7 @@ import { CompileError } from "./report";
 import utilities from "./utilities";
 import { callFunction, getAlias, getAsComptimeType, getNextSymbolName, getTypeOf } from "./builder";
 import { BuilderContext } from "./compiler";
+import codeGen from "./codeGen";
 
 let fileSystemDisabled = false;
 
@@ -307,6 +308,16 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			fc.done();
 			
 			context.topCodeGenText.push(str);
+		}
+		
+		else if (node.name == "addCodeGenTest") {
+			fc.done();
+			
+			if (context.file.scope.generatingFunction) {
+				context.file.scope.generatingFunction.indentation--;
+				codeGen.startExpression(context.options.codeGenText, context);
+				context.file.scope.generatingFunction.indentation++;
+			}
 		}
 		
 		else if (node.name == "onCodeGen") {
