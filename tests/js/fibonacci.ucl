@@ -2,11 +2,7 @@
 // "use strict";
 // const symbols = {};
 // symbols["fibonacci"] = (n) => {
-// 	if ((n < 1)) {
-// 		return n;
-// 	} else {
-// 	}
-// 	if ((n == 1)) {
+// 	if (((n < 1) || (n == 1))) {
 // 		return n;
 // 	} else {
 // 	}
@@ -17,10 +13,7 @@
 const js = @import("./../../test/js.ucl");
 
 const fibonacci = fn(n: Number): Number {
-	if (n < 1) {
-		ret n;
-	}
-	if (n == 1) {
+	if (n < 1 || n == 1) {
 		ret n;
 	}
 	ret fibonacci(n - 1) + fibonacci(n - 2);
