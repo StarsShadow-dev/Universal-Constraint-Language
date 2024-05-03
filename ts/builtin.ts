@@ -29,7 +29,7 @@ const typeType: ScopeObject & { kind: "typeUse" } = {
 		originLocation: "builtin",
 		name: "builtin:Type",
 		templateStruct: null,
-		properties: [],
+		members: [],
 	},
 };
 
@@ -49,7 +49,7 @@ function addType(name: string) {
 				originLocation: "builtin",
 				name: "builtin:" + name,
 				templateStruct: null,
-				properties: [],
+				members: [],
 			},
 		},
 		symbolName: "",
@@ -99,7 +99,7 @@ function getStruct(context: BuilderContext, properties: ScopeObject[]): ScopeObj
 			originLocation: "builtin",
 			name: `${getNextSymbolName(context)}`,
 			templateStruct: null,
-			properties: properties,
+			members: properties,
 		},
 	};
 }

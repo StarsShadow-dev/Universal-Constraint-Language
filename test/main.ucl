@@ -1,9 +1,32 @@
-const js = @import("./js.ucl");
+// const js = @import("./js.ucl");
 // const import = @import("./import.ucl");
 
-const main = fn() {
-	if ("abc" == "abc") {
-		js.log("testing");
-	}
+// const main = fn() {
+// 	if ("abc" == "abc") {
+// 		js.log("testing");
+// 	}
+// };
+// @export("main", main);
+
+const Vec2 = struct {
+	property x: Number;
+	property y: Number;
+	
+	const new = fn(x_in: Number, y_in: Number): Vec2 {
+		ret struct: Vec2 {
+			var x = x_in;
+			var y = y_in;
+		};
+	};
+	
+	const add = fn(v1: Vec2, v2: Vec2): Vec2 {
+		ret Vec2.new(v1.x + v2.x, v1.y + v2.y);
+	};
 };
-@export("main", main);
+
+var a = Vec2.new(1, 2);
+var b = Vec2.new(3, 4);
+// var c = Vec2.add(a, b);
+var c = a.add(b);
+
+@compileDebug(c);

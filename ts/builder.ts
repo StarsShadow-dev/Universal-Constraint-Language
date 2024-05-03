@@ -556,7 +556,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							value.kind == "typeUse" && value.type.kind == "struct"
 						) {
 							alias.value.type.name = value.type.name;
-							alias.value.type.properties = value.type.properties;
+							alias.value.type.members = value.type.members;
 						} else {
 							utilities.TODO();
 						}
@@ -635,11 +635,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					compileTime: context.options.compileTime,
 					codeGenText: leftText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false, false, false)[0]
-				if (!functionToCall_) {
+				}, null, false, false, false)
+				if (!functionToCall_[0]) {
 					utilities.TODO();
 				}
-				const functionToCall = unwrapScopeObject(functionToCall_);
+				const functionToCall = unwrapScopeObject(functionToCall_[0]);
 				const argumentText = getCGText();
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
@@ -648,6 +648,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}, null, false, false, false);
 				
 				if (functionToCall.kind == "function") {
+					for (let i = 1; i < functionToCall_.length; i++) {
+						callArguments.push(functionToCall_[i]);
+					}
 					const result = callFunction(context, functionToCall, callArguments, node.location, context.options.compileTime, context.options.codeGenText, null, argumentText);
 					
 					addToScopeList(result);
@@ -723,16 +726,33 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					
 					if (typeUse.kind == "typeUse" && typeUse.type.kind == "struct" && node.right[0].kind == "identifier") {
 						let addedAlias = false;
-						for (let i = 0; i < typeUse.type.properties.length; i++) {
-							const alias = typeUse.type.properties[i];
+						for (let i = 0; i < typeUse.type.members.length; i++) {
+							const alias = typeUse.type.members[i];
 							if (alias.kind == "alias") {
 								if (alias.isAproperty) continue;
 								if (alias.value && alias.name == node.right[0].name) {
 									addToScopeList(alias);
 									addedAlias = true;
+									break;
 								}
 							} else {
 								utilities.unreachable();
+							}
+						}
+						if (typeUse.type.templateStruct) {
+							for (let i = 0; i < typeUse.type.templateStruct.members.length; i++) {
+								const alias = typeUse.type.templateStruct.members[i];
+								if (alias.kind == "alias") {
+									if (alias.isAproperty) continue;
+									if (alias.value && alias.name == node.right[0].name) {
+										addToScopeList(alias);
+										addToScopeList(typeUse);
+										addedAlias = true;
+										break;
+									}
+								} else {
+									utilities.unreachable();
+								}
 							}
 						}
 						if (!addedAlias) {
@@ -941,8 +961,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					
 					if (templateType.kind == "typeUse" && templateType.type.kind == "struct") {
 						templateStruct = templateType.type;
-						for (let e = 0; e < templateStruct.properties.length; e++) {
-							const expectedProperty = templateStruct.properties[e];
+						for (let e = 0; e < templateStruct.members.length; e++) {
+							const expectedProperty = templateStruct.members[e];
 							if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
 								let foundActualProperty = false;
 								for (let a = 0; a < properties.length; a++) {
@@ -974,8 +994,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							const actualProperty = properties[a];
 							if (actualProperty.kind == "alias") {
 								let propertySupposedToExist = false;
-								for (let e = 0; e < templateStruct.properties.length; e++) {
-									const expectedProperty = templateStruct.properties[e];
+								for (let e = 0; e < templateStruct.members.length; e++) {
+									const expectedProperty = templateStruct.members[e];
 									if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
 										if (actualProperty.name == expectedProperty.name) {
 											propertySupposedToExist = true;
@@ -1005,7 +1025,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						originLocation: node.location,
 						name: `${getNextSymbolName(context)}`,
 						templateStruct: templateStruct,
-						properties: properties,
+						members: properties,
 					},
 				});
 				break;

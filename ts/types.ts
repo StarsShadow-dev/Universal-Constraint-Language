@@ -184,7 +184,7 @@ export type ScopeObject = genericScopeObject & {
 	kind: "struct",
 	name: string,
 	templateStruct: (ScopeObject & { kind: "struct" }) | null,
-	properties: ScopeObject[],
+	members: ScopeObject[],
 } | genericScopeObject & {
 	kind: "typeUse",
 	comptime: boolean,

@@ -25,8 +25,8 @@ var test = "1";
 	}
 });
 
-@onCodeGen("number", fn(number: 'Number, valueText: 'String) {
-	@addCodeGen(valueText);
+@onCodeGen("number", fn(number: 'Number, base10Text: 'String) {
+	@addCodeGen(base10Text);
 });
 
 @onCodeGen("string", fn(text: 'String) {
