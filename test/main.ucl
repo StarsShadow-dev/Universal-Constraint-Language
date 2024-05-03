@@ -9,10 +9,20 @@ const js = @import("./js.ucl");
 
 // @export("test", test);
 
-const aFunction = @extern("externalStuff.aFunction", fn(a: Number, b: String) {});
-
-const main = fn() {
-	js.log("testing");
+const fibonacci = fn(n: Number): Number {
+	if (n < 1) {
+		ret n;
+	}
+	if (n == 1) {
+		ret n;
+	}
+	ret fibonacci(n - 1) + fibonacci(n - 2);
 };
 
-@export("main", main);
+@export("fibonacci", fibonacci);
+
+// const main = fn() {
+// 	js.log("testing");
+// };
+
+// @export("main", main);

@@ -105,7 +105,13 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 		if (nextPrecedence > lastPrecedence) {
 			let right: ASTnode;
 			context.i++;
-			right = parseOperators(context, parse(context, ParserMode.singleNoContinue, null)[0], nextPrecedence);
+			let mode;
+			if (nextOperator.text == ".") {
+				mode = ParserMode.singleNoContinue;
+			} else {
+				mode = ParserMode.singleNoOperatorContinue;
+			}
+			right = parseOperators(context, parse(context, mode, null)[0], nextPrecedence);
 			
 			return {
 				kind: "operator",

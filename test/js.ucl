@@ -85,6 +85,13 @@ const indent = inline fn() {
 	@addCodeGen("}\n");
 });
 
+@onCodeGen("return", fn(valueText: 'String) {
+	indent();
+	@addCodeGen("return ");
+	@addCodeGen(valueText);
+	@addCodeGen(";\n");
+});
+
 @onCodeGen("call_arg", fn(text: 'String, more: 'Bool) {
 	@addCodeGen(text);
 	if (more) {
@@ -93,17 +100,12 @@ const indent = inline fn() {
 });
 
 @onCodeGen("call", fn(name: 'String, external: 'Bool, argumentText: 'String) {
-	indent();
 	if (external) {
 		@addCodeGen(name);
 	} else {
-		@addCodeGen("symbols[\"");
-		@addCodeGen(name);
-		@addCodeGen("\"]");
+		@addCodeGen("symbols[\"", name, "\"]");
 	}
-	@addCodeGen("(");
-	@addCodeGen(argumentText);
-	@addCodeGen(");\n");
+	@addCodeGen("(", argumentText, ")");
 });
 
 const log = @extern("console.log", fn(text: String) {});

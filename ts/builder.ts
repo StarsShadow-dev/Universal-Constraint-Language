@@ -1034,8 +1034,17 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					throw new CompileError("unexpected return").indicator(node.location, "here");
 				}
 				if (node.value) {
-					const value = build(context, [node.value], null, null, false)[0];
-					scopeList.push(value);	
+					const valueText: CodeGenText = [];
+					const value = build(context, [node.value], {
+						codeGenText: valueText,
+						compileTime: context.options.compileTime,
+						disableValueEvaluation: context.options.disableValueEvaluation,
+					}, null, false)[0];
+					scopeList.push(value);
+					
+					if (doCodeGen(context)) codeGen.return(context.options.codeGenText, context, valueText);
+				} else {
+					if (doCodeGen(context)) codeGen.return(context.options.codeGenText, context, []);
 				}
 				return scopeList;
 			}

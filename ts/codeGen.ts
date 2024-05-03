@@ -89,6 +89,14 @@ export default {
 		}
 	},
 	
+	return(dest: CodeGenText, context: BuilderContext, valueText: CodeGenText) {
+		if (valueText) {
+			if (onCodeGen["return"]) {
+				callFunction(context, onCodeGen["return"], [getString(valueText.join(""))], "builtin", true, null, dest, null);
+			}
+		}
+	},
+	
 	call(dest: CodeGenText, context: BuilderContext, fn: ScopeObject, argumentText: CodeGenText) {
 		if (dest && fn.kind == "function" && dest && argumentText) {
 			if (onCodeGen["call_arg"] && onCodeGen["call"]) {
