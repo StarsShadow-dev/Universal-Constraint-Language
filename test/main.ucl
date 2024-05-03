@@ -12,7 +12,7 @@ const js = @import("./js.ucl");
 const aFunction = @extern("externalStuff.aFunction", fn(a: Number, b: String) {});
 
 const main = fn() {
-	aFunction(1, "testing");
+	js.log("testing");
 };
 
 @export("main", main);

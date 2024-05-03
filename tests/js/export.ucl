@@ -1,14 +1,11 @@
 // compOut
 // "use strict";
 // const symbols = {};
-// symbols["test"] = (arg) => {
+// symbols["main"] = (arg) => {
 // }
 // 
 
 const js = @import("./../../test/js.ucl");
 
-const test = fn(arg: String) {
-	
-};
-
-@export("test", test);
+const main = fn(arg: String) {};
+@export("main", main);
