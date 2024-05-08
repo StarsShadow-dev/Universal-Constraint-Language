@@ -90,6 +90,7 @@ export type ASTnode = genericASTnode & {
 	forceInline: boolean,
 	functionArguments: ASTnode[],
 	returnType: ASTnode & { kind: "typeUse" } | null,
+	comptimeReturn: boolean,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
@@ -103,6 +104,10 @@ export type ASTnode = genericASTnode & {
 	condition: ASTnode[],
 	trueCodeBlock: ASTnode[],
 	falseCodeBlock: ASTnode[] | null,
+} | genericASTnode & {
+	kind: "codeBlock",
+	comptime: boolean,
+	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "return",
 	value: ASTnode | null,
@@ -123,7 +128,6 @@ export type ASTnode = genericASTnode & {
 	kind: "typeUse",
 	value: ASTnode,
 }
-
 //
 // scope
 //
@@ -164,6 +168,7 @@ export type ScopeObject = GenericScopeObject & {
 	symbolName: string,
 	functionArguments: (ScopeObject & { kind: "argument" })[],
 	returnType: (ScopeObject & { kind: "typeUse" }) | null,
+	comptimeReturn: boolean,
 	AST: ASTnode[],
 	visible: ScopeObject[],
 } | GenericScopeObject & {

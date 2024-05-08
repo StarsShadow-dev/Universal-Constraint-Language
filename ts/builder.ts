@@ -41,15 +41,10 @@ export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObj
 	} else if (value.kind == "string") {
 		return forceAsType(unwrapScopeObject(getAlias(context, "String")));
 	} else if (value.kind == "typeUse") {
-		if (value.type.kind == "structInstance") {
-			return {
-				kind: "typeUse",
-				originLocation: value.originLocation,
-				type: value.type.templateStruct,
-			};
-		} else {
-			return forceAsType(unwrapScopeObject(getAlias(context, "Type")));
+		if (value.type.kind == "struct") {
+			return value;
 		}
+		return forceAsType(unwrapScopeObject(getAlias(context, "Type")));
 	} else if (value.kind == "complexValue") {
 		return value.type;
 	} else if (value.kind == "function") {
@@ -63,6 +58,12 @@ export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObj
 			kind: "typeUse",
 			originLocation: value.originLocation,
 			type: value,
+		};
+	} else if (value.kind == "structInstance") {
+		return {
+			kind: "typeUse",
+			originLocation: value.templateStruct.originLocation,
+			type: value.templateStruct,
 		};
 	} else {
 		throw utilities.unreachable();
@@ -176,7 +177,16 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	}
 }
 
-export function callFunction(context: BuilderContext, functionToCall: ScopeObject, callArguments: ScopeObject[] | null, location: SourceLocation, comptime: boolean, callDest: CodeGenText, innerDest: CodeGenText, argumentText: CodeGenText | null): ScopeObject {
+export function callFunction(
+	context: BuilderContext,
+	functionToCall: ScopeObject,
+	callArguments: ScopeObject[] | null,
+	location: SourceLocation,
+	comptime: boolean,
+	callDest: CodeGenText,
+	innerDest: CodeGenText,
+	argumentText: CodeGenText | null
+): ScopeObject {
 	if (!callArguments && comptime) utilities.unreachable();
 	
 	if (functionToCall.kind == "function") {
@@ -647,6 +657,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					codeGenText: argumentText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false, false, false);
+				
 				const result = builtinCall(context, node, callArguments, argumentText);
 				if (result) {
 					addToScopeList(result);
@@ -694,42 +705,39 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false, false, false)[0]);
 					
-					let typeUse: ScopeObject;
-					if (left.kind == "typeUse") {
-						typeUse = left;
-					} else if (left.kind == "complexValue") {
-						typeUse = left.type;
-					} else {
-						throw utilities.unreachable();
-					}
-					
-					if (typeUse.kind != "typeUse" || node.right[0].kind != "identifier") {
+					if (node.right[0].kind != "identifier") {
 						throw utilities.TODO();
 					}
 					
 					let addedAlias = false;
 					
-					if (typeUse.type.kind == "struct") {
+					if (left.kind == "typeUse") {
+						const typeUse = left;
+						if (typeUse.type.kind != "struct") {
+							throw utilities.unreachable();
+						}
+						
 						for (let i = 0; i < typeUse.type.members.length; i++) {
 							const alias = typeUse.type.members[i];
 							if (alias.kind == "alias") {
 								if (alias.name == node.right[0].name) {
-									if (left.kind == "complexValue") {
-										if (alias.isAfield && alias.type) {
-											addToScopeList({
-												kind: "complexValue",
-												originLocation: alias.originLocation,
-												type: alias.type,
-											});
-											addedAlias = true;
-											break;
-										}
-									} else {
-										if (!alias.isAfield && alias.value) {
-											addToScopeList(alias);
-											addedAlias = true;
-											break;
-										}
+									// if (left.kind == "complexValue") {
+									// 	if (alias.isAfield && alias.type) {
+									// 		addToScopeList({
+									// 			kind: "complexValue",
+									// 			originLocation: alias.originLocation,
+									// 			type: alias.type,
+									// 		});
+									// 		addedAlias = true;
+									// 		break;
+									// 	}
+									// } else {
+										
+									// }
+									if (!alias.isAfield && alias.value) {
+										addToScopeList(alias);
+										addedAlias = true;
+										break;
 									}
 								}
 							} else {
@@ -737,42 +745,48 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							}
 						}
 					}
-					else if (typeUse.type.kind == "structInstance") {
-						for (let i = 0; i < typeUse.type.fields.length; i++) {
-							const alias = typeUse.type.fields[i];
-							if (alias.kind == "alias") {
+					else if (left.kind == "structInstance" || left.kind == "complexValue") {
+						if (left.kind == "structInstance") {
+							for (let i = 0; i < left.fields.length; i++) {
+								const alias = left.fields[i];
 								if (alias.name == node.right[0].name) {
-									if (left.kind == "complexValue") {
-										if (alias.isAfield && alias.type) {
-											addToScopeList({
-												kind: "complexValue",
-												originLocation: alias.originLocation,
-												type: alias.type,
-											});
-											addedAlias = true;
-											break;
-										}
-									} else {
-										if (!alias.isAfield && alias.value) {
-											addToScopeList(alias);
-											addedAlias = true;
-											break;
-										}
+									// if (left.kind == "complexValue") {
+									// 	if (alias.isAfield && alias.type) {
+									// 		addToScopeList({
+									// 			kind: "complexValue",
+									// 			originLocation: alias.originLocation,
+									// 			type: alias.type,
+									// 		});
+									// 		addedAlias = true;
+									// 		break;
+									// 	}
+									// } else {
+										
+									// }
+									if (!alias.isAfield && alias.value) {
+										addToScopeList(alias);
+										addedAlias = true;
+										break;
 									}
 								}
-							} else {
-								utilities.unreachable();
 							}
 						}
-						if (!addedAlias && typeUse.type.templateStruct) {
-							for (let i = 0; i < typeUse.type.templateStruct.members.length; i++) {
-								const alias = typeUse.type.templateStruct.members[i];
+						
+						
+						const typeUse = getTypeOf(context, left);
+						if (typeUse.type.kind != "struct") {
+							throw utilities.unreachable();
+						}
+						
+						if (!addedAlias) {
+							for (let i = 0; i < typeUse.type.members.length; i++) {
+								const alias = typeUse.type.members[i];
 								if (alias.kind == "alias") {
 									if (alias.isAfield) continue;
 									if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
 										debugger;
 										addToScopeList(alias);
-										addToScopeList(typeUse);
+										addToScopeList(left);
 										addedAlias = true;
 										if (doCodeGen(context) && context.options.codeGenText) {
 											context.options.codeGenText.push(leftText.join(""));
@@ -972,6 +986,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					symbolName: `${getNextSymbolName(context)}`,
 					functionArguments: functionArguments,
 					returnType: returnType,
+					comptimeReturn: node.comptimeReturn,
 					AST: node.codeBlock,
 					visible: visible,
 				});
@@ -1073,6 +1088,17 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}	
 				break;
 			}
+			case "codeBlock": {
+				const text = getCGText();
+				build(context, node.codeBlock, {
+					codeGenText: text,
+					compileTime: context.options.compileTime || node.comptime,
+					disableValueEvaluation: context.options.disableValueEvaluation,
+				}, null, resultAtRet, true, false);
+				
+				
+				break;
+			}
 			case "return": {
 				if (!resultAtRet) {
 					throw new CompileError("unexpected return").indicator(node.location, "here");
@@ -1171,11 +1197,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					fields: fields,
 				};
 				
-				addToScopeList({
-					kind: "typeUse",
-					originLocation: node.location,
-					type: struct,
-				});
+				addToScopeList(struct);
 				
 				break;
 			}

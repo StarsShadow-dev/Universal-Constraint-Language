@@ -203,6 +203,15 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 	
 	const functionArguments = parseFunctionArguments(context);
 	
+	let comptimeReturn = false;
+	if (
+		next(context).type == TokenType.word &&
+		next(context).text == "comptime"
+	) {
+		comptimeReturn = true;
+		forward(context);
+	}
+	
 	const returnType = parseType(context);
 	
 	const openingBracket = forward(context);
@@ -218,6 +227,7 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 		forceInline: forceInline,
 		functionArguments: functionArguments,
 		returnType: returnType,
+		comptimeReturn: comptimeReturn,
 		codeBlock: codeBlock,
 	});
 }
@@ -255,11 +265,31 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			case TokenType.word: {
 				let comptimeFlag = false;
 				if (
-					token.text == "comptime" &&
-					context.tokens[context.i] && next(context).type == TokenType.word
+					token.text == "comptime"
 				) {
-					comptimeFlag = true;
-					token = forward(context);
+					if (context.tokens[context.i] && next(context).type == TokenType.word) {
+						comptimeFlag = true;
+						token = forward(context);
+					} else {
+						if (
+							context.tokens[context.i] &&
+							next(context).type == TokenType.separator &&
+							next(context).text == "{"
+						) {
+							forward(context);
+							const codeBlock = parse(context, ParserMode.normal, "}");
+							
+							AST.push({
+								kind: "codeBlock",
+								location: token.location,
+								comptime: true,
+								codeBlock: codeBlock,
+							});
+							
+							needsSemicolon = false;
+							break;
+						}
+					}
 				}
 				
 				if (token.text == "true" || token.text == "false") {

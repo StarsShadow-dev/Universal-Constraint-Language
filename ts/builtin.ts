@@ -153,16 +153,20 @@ class FC {
 		
 		if (unwrap) scopeObject = unwrapScopeObject(scopeObject);
 		
-		if (comptime && scopeObject.kind == "complexValue") {
-			throw new CompileError(`builtin expected comptime '${name}' but got not comptime '${name}'`)
-				.indicator(node.location, `here`);
-		}
-		
-		if (scopeObject.kind == name) {
-			return scopeObject;
+		if (scopeObject.kind == "complexValue") {
+			if (comptime) {
+				throw new CompileError(`builtin expected comptime '${name}' but got not comptime '${name}'`)
+					.indicator(node.location, `here`);
+			}
+			
+			throw utilities.TODO();
 		} else {
-			throw new CompileError("builtin argument error")
-				.indicator(node.location, `expected ${name}`);
+			if (scopeObject.kind == name) {
+				return scopeObject;
+			} else {
+				throw new CompileError("builtin argument error")
+					.indicator(node.location, `expected ${name}`);
+			}
 		}
 	}
 	
