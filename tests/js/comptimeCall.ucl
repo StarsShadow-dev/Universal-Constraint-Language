@@ -1,0 +1,20 @@
+// compOut
+// "use strict";
+// const symbols = {};
+// symbols["main"] = () => {
+// }
+// 
+
+const js = @import("./../../test/js.ucl");
+
+const test = fn() {
+	
+};
+
+const main = fn() {
+	comptime {
+		test();
+	}
+};
+
+@export("main", main);
