@@ -13,6 +13,7 @@ try {
 	const context = compile(filePath, null);
 	console.log(context.topCodeGenText.join(""));
 	logger.printFileAccessLogs();
+	logger.printTimes();
 } catch (error) {
 	if (error instanceof CompileError) {
 		console.log("uncaught compiler error");

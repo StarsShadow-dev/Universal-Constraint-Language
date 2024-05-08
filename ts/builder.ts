@@ -1231,8 +1231,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				value = unwrapScopeObject(value);
 				
-				
-				
 				const alias: ScopeObject = {
 					kind: "alias",
 					originLocation: node.location,

@@ -7,6 +7,7 @@ import {
 import { build, callFunction } from "./builder";
 import utilities from "./utilities";
 import codeGen from "./codeGen";
+import logger from "./logger";
 
 export type ScopeInformation = {
 	levels: ScopeObject[][];
@@ -104,22 +105,33 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	// get tokens
 	const text = utilities.readFile(filePath);
 	// console.log("text:", text);
+	
+	const lexStart = Date.now();
 	const tokens = lex(filePath, text);
+	logger.addTime("lexing", Date.now() - lexStart);
+	
 	// console.log("tokens:", tokens);
+	
 	if (onTokens) {
 		onTokens(tokens);
 	}
 	
 	// get AST
+	const parseStart = Date.now();
 	let AST: ASTnode[] = [];
 	AST = parse({
 		tokens: tokens,
 		i: 0,
 	}, ParserMode.normal, null);
+	logger.addTime("parsing", Date.now() - parseStart);
+	
 	// console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
 	
 	// build
+	const buildStart = Date.now();
 	const scopeList = build(context, AST, null, null, false, false, false);
+	logger.addTime("building", Date.now() - buildStart);
+	
 	// console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`);
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	

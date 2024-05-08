@@ -1,5 +1,3 @@
-import { formatWithOptions } from "util";
-
 type ReadFile = {
 	path: string,
 	byteSize: number,
@@ -8,12 +6,21 @@ type ReadFile = {
 let readFiles: ReadFile[] = [];
 let totalReadFileByteSize = 0;
 
+const times: any = {};
+
 export default {
 	readFile(data: ReadFile) {
 		// console.log("readFile", data);
 		readFiles.push(data);
 		totalReadFileByteSize += data.byteSize;
 	},
+	
+	addTime(name: string, time: number) {
+		if (!times[name]) times[name] = 0;
+		times[name] += time;
+	},
+	
+	//#region printing
 	
 	printFileAccessLogs() {
 		console.log("fileAccessLogs:");
@@ -22,4 +29,13 @@ export default {
 		}
 		console.log(`totalReadFileByteSize: ${totalReadFileByteSize}`);
 	},
+	
+	printTimes() {
+		console.log("times:");
+		for (const key in times) {
+			console.log(`\t${key}: ${times[key]}ms`);
+		}
+	},
+	
+	//#endregion printing
 }
