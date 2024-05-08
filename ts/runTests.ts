@@ -6,6 +6,7 @@ import { CompileError } from "./report";
 import { setUpBuiltin } from "./builtin";
 import path from "path";
 import { compile, resetCompiledFiles } from "./compiler";
+import logger from "./logger";
 
 const c_green = "\x1B[32m";
 const c_red = "\x1B[31m"
