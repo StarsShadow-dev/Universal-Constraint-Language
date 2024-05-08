@@ -2,9 +2,9 @@
 // a string in a struct in a struct
 
 const test = struct {
-	const a: 'Bool = true;
+	const a: Bool = true;
 	const b = struct {
-		const c: 'String = "a string in a struct in a struct";
+		const c: String = "a string in a struct in a struct";
 	};
 };
 

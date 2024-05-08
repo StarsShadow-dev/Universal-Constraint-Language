@@ -244,6 +244,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
+							forceComptime: argument.comptime,
 							mutable: false,
 							isAfield: false,
 							name: argument.name,
@@ -255,6 +256,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
+							forceComptime: argument.comptime,
 							mutable: false,
 							isAfield: false,
 							name: argument.name,
@@ -469,6 +471,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			addAlias(context, context.file.scope.currentLevel, {
 				kind: "alias",
 				originLocation: node.location,
+				forceComptime: node.comptime,
 				mutable: node.mutable,
 				isAfield: node.isAfield,
 				name: node.name,
@@ -540,7 +543,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						alias.value = value;
 					}
 					
-					if (doCodeGen(context)) {
+					if (!node.comptime && doCodeGen(context)) {
 						codeGen.alias(context.options.codeGenText, context, alias, valueText);
 					}
 				}
@@ -674,7 +677,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								.indicator(left.originLocation, "alias defined here");
 						}
 						
-						if (doCodeGen(context)) {
+						if (!left.forceComptime && doCodeGen(context)) {
 							codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
 						}
 						
@@ -1176,6 +1179,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const alias: ScopeObject = {
 					kind: "alias",
 					originLocation: node.location,
+					forceComptime: false,
 					mutable: false,
 					isAfield: false, // TODO
 					name: node.name,

@@ -1,0 +1,5 @@
+// compError
+// error: builtin expected comptime 'string' but got not comptime 'string'
+// tests/compError/addCodeGen_complexValue.ucl:5 -> here
+
+@addCodeGen(@opaque("string"));

@@ -35,6 +35,7 @@ function addType(name: string) {
 	builtinScopeLevel.push({
 		kind: "alias",
 		originLocation: "builtin",
+		forceComptime: false,
 		mutable: false,
 		isAfield: false,
 		name: name,
@@ -104,6 +105,7 @@ export function setUpBuiltin(disableFileSystem: boolean) {
 		builtinScopeLevel.push({
 			kind: "alias",
 			originLocation: "builtin",
+			forceComptime: false,
 			mutable: false,
 			isAfield: false,
 			name: "Type",
@@ -149,15 +151,12 @@ class FC {
 		
 		this.i++;
 		
-		if (comptime && scopeObject.kind == "alias") {
-			if (scopeObject.type && scopeObject.type.kind == "typeUse") {
-				
-			} else {
-				utilities.unreachable();
-			}
-		}
-		
 		if (unwrap) scopeObject = unwrapScopeObject(scopeObject);
+		
+		if (comptime && scopeObject.kind == "complexValue") {
+			throw new CompileError(`builtin expected comptime '${name}' but got not comptime '${name}'`)
+				.indicator(node.location, `here`);
+		}
 		
 		if (scopeObject.kind == name) {
 			return scopeObject;

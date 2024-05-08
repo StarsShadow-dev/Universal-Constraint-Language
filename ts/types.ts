@@ -148,6 +148,7 @@ export type ScopeObject = GenericScopeObject & {
 	type: (ScopeObject & { kind: "typeUse" }),
 } | GenericScopeObject & {
 	kind: "alias",
+	forceComptime: boolean,
 	mutable: boolean,
 	isAfield: boolean,
 	name: string,

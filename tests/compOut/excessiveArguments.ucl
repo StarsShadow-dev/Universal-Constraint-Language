@@ -1,7 +1,7 @@
 // compOut
 // 123456789
 
-const test = fn(a: 'String, b: 'String, c: 'String, d: 'String, e: 'String, f: 'String, g: 'String, h: 'String, i: 'String) {
+const test = fn(a: String, b: String, c: String, d: String, e: String, f: String, g: String, h: String, i: String) {
 	@addTopCodeGen(a);
 	@addTopCodeGen(b);
 	@addTopCodeGen(c);

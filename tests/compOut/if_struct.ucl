@@ -3,7 +3,7 @@
 
 const a = struct {
 	var bool = false;
-	var test: 'String;
+	var test: String;
 	
 	if (bool) {
 		test = "true";

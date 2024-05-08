@@ -16,7 +16,7 @@ const test = fn(arg: String) {
 		js.log("1 false");
 	}
 	
-	var bool: 'Bool = true;
+	comptime var bool: Bool = true;
 	bool = false;
 	
 	if (bool) {
