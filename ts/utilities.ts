@@ -2,6 +2,7 @@ import * as fs from "fs";
 import { exit } from "process";
 import { CompileError } from "./report";
 import logger from "./logger";
+import path from "path";
 
 const utilities = {
 	unreachable(): never {
@@ -20,16 +21,24 @@ const utilities = {
 		return new Blob([str]).size;
 	},
 	
-	readFile(path: string): string {
+	readFile(filePath: string): string {
 		try {
-			const text = fs.readFileSync(path, { encoding: 'utf8' });
+			const text = fs.readFileSync(filePath, { encoding: 'utf8' });
 			logger.readFile({
-				path: path,
+				path: filePath,
 				byteSize: utilities.byteSize(text),
 			});
 			return text;
 		} catch (error) {
-			throw new CompileError(`could not read file at path '${path}'`);
+			throw new CompileError(`could not read file at path '${filePath}'`);
+		}
+	},
+	
+	writeFile(filePath: string, text: string) {
+		try {
+			fs.writeFileSync(path.normalize(filePath), text, { encoding: 'utf8' });
+		} catch (error) {
+			throw new CompileError(`could not write file at path '${filePath}'`);
 		}
 	},
 }

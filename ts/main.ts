@@ -2,18 +2,41 @@
 
 import { setUpBuiltin } from "./builtin";
 import { compile } from "./compiler";
-import logger from "./logger";
 import { CompileError } from "./report";
+import logger from "./logger";
+import utilities from "./utilities";
 
-setUpBuiltin(false);
+type CompilerOptions = {
+	outputPath?: string,
+}
 
-const filePath = process.argv[2];
+const options: CompilerOptions = {};
+
+let i = 2;
+
+function next(): string {
+	return process.argv[i++];
+}
+
+const filePath = next();
+
+while (i < process.argv.length) {
+	const arg = next();
+	console.log(`arg: ${arg}`);
+	if (arg == "-o") {
+		options.outputPath = next();
+	}
+}
 
 try {
+	setUpBuiltin(false);
 	const context = compile(filePath, null);
-	console.log(context.topCodeGenText.join(""));
+	// console.log(context.topCodeGenText.join(""));
 	// logger.printFileAccessLogs();
 	// logger.printTimes();
+	if (options.outputPath) {
+		utilities.writeFile(options.outputPath, context.topCodeGenText.join(""));
+	}
 } catch (error) {
 	if (error instanceof CompileError) {
 		console.log("uncaught compiler error");
