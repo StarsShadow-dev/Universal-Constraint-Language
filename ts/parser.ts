@@ -153,6 +153,15 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 	}
 	
 	while (context.i < context.tokens.length) {
+		let comptime = false;
+		if (
+			next(context).type == TokenType.word &&
+			next(context).text == "comptime"
+		) {
+			comptime = true;
+			forward(context);
+		}
+		
 		const name = forward(context);
 		if (name.type != TokenType.word) {
 			throw new CompileError("expected name in function arguments").indicator(name.location, "here");
@@ -164,6 +173,7 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 			AST.push({
 				kind: "argument",
 				location: name.location,
+				comptime: comptime,
 				name: name.text,
 				type: type,
 			});	

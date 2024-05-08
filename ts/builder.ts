@@ -230,6 +230,11 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 					if (callArguments) {
 						const callArgument = unwrapScopeObject(callArguments[index]);
 						
+						if (argument.comptime && callArgument.kind == "complexValue") {
+							throw new CompileError(`comptime argument '${argument.name}' is not comptime`)
+								.indicator(location, "function call here");
+						}
+						
 						expectType(context, argumentType, getTypeOf(context, callArgument),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(callArgument.originLocation, "argument here")
@@ -942,6 +947,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							functionArguments.push({
 								kind: "argument",
 								originLocation: argument.location,
+								comptime: argument.comptime,
 								name: argument.name,
 								type: argumentType,
 							});	
@@ -1125,7 +1131,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								if (!field.type || !member.type) {
 									throw utilities.unreachable();
 								}
-								debugger;
 								expectType(context, member.type, field.type,
 									new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 										.indicator(field.originLocation, "field defined here")

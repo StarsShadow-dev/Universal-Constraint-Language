@@ -17,7 +17,7 @@ var test = "1";
 	@addTopCodeGen("const symbols = {};\n");
 });
 
-@onCodeGen("bool", fn(value: 'Bool) {
+@onCodeGen("bool", fn(value: Bool) {
 	if (value) {
 		@addCodeGen("true");
 	} else {
@@ -25,19 +25,19 @@ var test = "1";
 	}
 });
 
-@onCodeGen("number", fn(number: 'Number, base10Text: 'String) {
+@onCodeGen("number", fn(number: Number, base10Text: String) {
 	@addCodeGen(base10Text);
 });
 
-@onCodeGen("string", fn(text: 'String) {
+@onCodeGen("string", fn(text: String) {
 	@addCodeGen("\"", text, "\"");
 });
 
-@onCodeGen("operator", fn(operatorText: 'String, leftText: 'String, rightText: 'String) {
+@onCodeGen("operator", fn(operatorText: String, leftText: String, rightText: String) {
 	@addCodeGen("(", leftText, " ", operatorText, " ", rightText, ")");
 });
 
-@onCodeGen("alias", fn(name: 'String, valueText: 'String, mutable: 'Bool) {
+@onCodeGen("alias", fn(name: String, valueText: String, mutable: Bool) {
 	@addCodeGen_startExpression();
 	if (mutable) {
 		@addCodeGen("var ");
@@ -48,21 +48,21 @@ var test = "1";
 	@addCodeGen_endExpression();
 });
 
-@onCodeGen("set_alias", fn(name: 'String, aliasText: 'String, valueText: 'String) {
+@onCodeGen("set_alias", fn(name: String, aliasText: String, valueText: String) {
 	@addCodeGen_startExpression();
 	@addCodeGen(aliasText, " = ", valueText);
 	@addCodeGen_endExpression();
 });
 
-@onCodeGen("identifier", fn(name: 'String) {
+@onCodeGen("identifier", fn(name: String) {
 	@addCodeGen(name);
 });
 
-@onCodeGen("memberAccess", fn(leftText: 'String, name: 'String) {
+@onCodeGen("memberAccess", fn(leftText: String, name: String) {
 	@addCodeGen(leftText, ".", name);
 });
 
-@onCodeGen("struct", fn(codeBlockText: 'String) {
+@onCodeGen("struct", fn(codeBlockText: String) {
 	@addCodeGen("(() => {\n");
 	@addCodeGen_startExpression();
 	@addCodeGen("\tvar __uclstruct__ = {}");
@@ -75,7 +75,7 @@ var test = "1";
 	@addCodeGen("})()");
 });
 
-@onCodeGen("if", fn(conditionText: 'String, trueText: 'String, falseText: 'String) {
+@onCodeGen("if", fn(conditionText: String, trueText: String, falseText: String) {
 	@addCodeGen_startExpression();
 	@addCodeGen("if (", conditionText, ") {\n");
 	@addCodeGen(trueText);
@@ -88,14 +88,14 @@ var test = "1";
 	@addCodeGen("}\n");
 });
 
-@onCodeGen("fn_arg", fn(name: 'String, type: 'Any, more: 'Bool) {
+@onCodeGen("fn_arg", fn(name: String, type: Any, more: Bool) {
 	@addCodeGen(name);
 	if (more) {
 		@addCodeGen(", ");
 	}
 });
 
-@onCodeGen("fn", fn(name: 'String, argumentText: 'String, codeBlockText: 'String) {
+@onCodeGen("fn", fn(name: String, argumentText: String, codeBlockText: String) {
 	@addCodeGen("symbols[\"");
 	@addCodeGen(name);
 	@addCodeGen("\"]");
@@ -106,18 +106,18 @@ var test = "1";
 	@addCodeGen("}\n");
 });
 
-@onCodeGen("return", fn(valueText: 'String) {
+@onCodeGen("return", fn(valueText: String) {
 	@addCodeGen("return ", valueText);
 });
 
-@onCodeGen("call_arg", fn(text: 'String, more: 'Bool) {
+@onCodeGen("call_arg", fn(text: String, more: Bool) {
 	@addCodeGen(text);
 	if (more) {
 		@addCodeGen(", ");
 	}
 });
 
-@onCodeGen("call", fn(name: 'String, external: 'Bool, argumentText: 'String) {
+@onCodeGen("call", fn(name: String, external: Bool, argumentText: String) {
 	if (external) {
 		@addCodeGen(name, "(", argumentText, ")");
 	} else {

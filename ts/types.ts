@@ -108,6 +108,7 @@ export type ASTnode = genericASTnode & {
 	value: ASTnode | null,
 } | genericASTnode & {
 	kind: "argument",
+	comptime: boolean,
 	name: string,
 	type: ASTnode & { kind: "typeUse" },
 } | genericASTnode & {
@@ -166,6 +167,7 @@ export type ScopeObject = GenericScopeObject & {
 	visible: ScopeObject[],
 } | GenericScopeObject & {
 	kind: "argument",
+	comptime: boolean,
 	name: string,
 	type: (ScopeObject & { kind: "typeUse" }),
 } | GenericScopeObject & {
