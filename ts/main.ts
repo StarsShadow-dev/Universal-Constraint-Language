@@ -2,6 +2,7 @@
 
 import { setUpBuiltin } from "./builtin";
 import { compile } from "./compiler";
+import logger from "./logger";
 import { CompileError } from "./report";
 
 setUpBuiltin(false);
@@ -11,6 +12,7 @@ const filePath = process.argv[2];
 try {
 	const context = compile(filePath, null);
 	console.log(context.topCodeGenText.join(""));
+	logger.printFileAccessLogs();
 } catch (error) {
 	if (error instanceof CompileError) {
 		console.log("uncaught compiler error");
