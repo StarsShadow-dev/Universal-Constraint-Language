@@ -1,0 +1,51 @@
+// compOut
+// "use strict";
+// const symbols = {};
+// symbols["tests/js/Vec2.ucl:32,14:new"] = (x, y) => {
+// 	return (() => {
+// 		var __uclstruct__ = {};
+// 		__uclstruct__["x"] = x;
+// 		__uclstruct__["y"] = y;
+// 		return __uclstruct__;
+// 	})();
+// }
+// symbols["tests/js/Vec2.ucl:39,14:add"] = (v1, v2) => {
+// 	return symbols["tests/js/Vec2.ucl:32,14:new"]((v1["x"] + v2["x"]), (v1["y"] + v2["y"]));
+// }
+// symbols["main"] = () => {
+// 	var a = (() => {
+// 		var __uclstruct__ = {};
+// 		__uclstruct__["x"] = 1;
+// 		__uclstruct__["y"] = 2;
+// 		return __uclstruct__;
+// 	})();
+// 	return symbols["tests/js/Vec2.ucl:39,14:add"](a, symbols["tests/js/Vec2.ucl:32,14:new"](1, 2));
+// }
+// 
+
+const js = @import("./../../test/js.ucl");
+
+const Vec2 = struct {
+	field x: Number;
+	field y: Number;
+	
+	const new = fn(x: Number, y: Number): Vec2 {
+		ret Vec2 {
+			.x = x;
+			.y = y;
+		};
+	};
+	
+	const add = fn(v1: Vec2, v2: Vec2): Vec2 {
+		ret Vec2.new(v1.x + v2.x, v1.y + v2.y);
+	};
+};
+
+const main = fn(): Vec2 {
+	var a = Vec2 {
+		.x = @opaque(1);
+		.y = @opaque(2);
+	};
+	ret a.add(Vec2.new(@opaque(1), @opaque(2)));
+};
+@export("main", main);
