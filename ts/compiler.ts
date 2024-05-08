@@ -70,6 +70,8 @@ export function compile(startFilePath: string, onTokens: null | ((tokens: Token[
 	
 	context.file = compileFile(context, startFilePath, onTokens);
 	
+	const exportStart = Date.now();
+	
 	codeGen.start(context);
 	
 	for (let i = 0; i < context.exports.length; i++) {
@@ -78,6 +80,8 @@ export function compile(startFilePath: string, onTokens: null | ((tokens: Token[
 			callFunction(context, toExport, null, "builtin", false, null, null, null);
 		}
 	}
+	
+	logger.addTime("exporting", Date.now() - exportStart);
 	
 	return context;
 }

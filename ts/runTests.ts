@@ -121,4 +121,4 @@ console.log(`skipped: ${skipped}`);
 console.log(`succeeded: ${c_green}${succeeded}${c_reset}`);
 console.log(`failed: ${c_red}${failed}${c_reset}`);
 
-logger.printTimes();
+// logger.printTimes();
