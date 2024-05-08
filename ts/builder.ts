@@ -668,8 +668,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false, false, false)[0]);
 					
-					const rightType = getTypeOf(context, right);
-					
 					if (left.kind == "alias") {
 						if (!left.mutable) {
 							throw new CompileError(`the alias '${left.name}' is not mutable`)
@@ -1124,8 +1122,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false, true, true) as (ScopeObject & { kind: "alias" })[];
 				
+				let fieldNames: string[] = [];
+				
+				// loop over all the fields and make sure that they are supposed to exist
 				for (let a = 0; a < fields.length; a++) {
 					const field = fields[a];
+					fieldNames.push(field.name);
 					let fieldShouldExist = false;
 					for (let e = 0; e < templateStruct.members.length; e++) {
 						const member = templateStruct.members[e];
@@ -1147,6 +1149,18 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					if (!fieldShouldExist) {
 						throw new CompileError(`field '${field.name}' should not exist`)
 							.indicator(field.originLocation, "field here");
+					}
+				}
+				
+				// loop over all of the templates fields, to make sure that there are not any missing fields
+				for (let e = 0; e < templateStruct.members.length; e++) {
+					const member = templateStruct.members[e];
+					if (member.isAfield) {
+						if (!fieldNames.includes(member.name)) {
+							throw new CompileError(`struct instance is missing field '${member.name}'`)
+								.indicator(node.location, "struct instance here")
+								.indicator(member.originLocation, "field originally defined here");
+						}
 					}
 				}
 				
