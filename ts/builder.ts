@@ -746,6 +746,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 					}
 					else if (left.kind == "structInstance" || left.kind == "complexValue") {
+						const typeUse = getTypeOf(context, left);
+						if (typeUse.type.kind != "struct") {
+							throw utilities.unreachable();
+						}
+						
 						if (left.kind == "structInstance") {
 							for (let i = 0; i < left.fields.length; i++) {
 								const alias = left.fields[i];
@@ -770,12 +775,21 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 									}
 								}
 							}
-						}
-						
-						
-						const typeUse = getTypeOf(context, left);
-						if (typeUse.type.kind != "struct") {
-							throw utilities.unreachable();
+						} else if (left.kind == "complexValue") {
+							for (let i = 0; i < typeUse.type.members.length; i++) {
+								const alias = typeUse.type.members[i];
+								if (alias.name == node.right[0].name) {
+									if (alias.isAfield && alias.type) {
+										addToScopeList({
+											kind: "complexValue",
+											originLocation: alias.originLocation,
+											type: alias.type,
+										});
+										addedAlias = true;
+										break;
+									}
+								}
+							}
 						}
 						
 						if (!addedAlias) {
@@ -799,7 +813,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							}
 						} else {
 							if (doCodeGen(context)) {
-								codeGen.memberAccess(context.options.codeGenText, context, leftText, node.right[0].name);
+								codeGen.memberAccess(context.options.codeGenText, context, leftText.join(""), node.right[0].name);
 							}
 						}
 					} else {
@@ -1199,11 +1213,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				addToScopeList(struct);
 				
+				if (doCodeGen(context)) {
+					codeGen.struct(context.options.codeGenText, context, struct, fieldText);
+				}
+				
 				break;
 			}
 			case "setInstanceField": {
+				const valueText = getCGText();
 				let value = build(context, [node.value], {
-					codeGenText: null,
+					codeGenText: valueText,
 					compileTime: context.options.compileTime,
 					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false, false, false)[0];
@@ -1211,6 +1230,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					throw new CompileError(`no value for field`).indicator(node.location, "here");
 				}
 				value = unwrapScopeObject(value);
+				
+				
 				
 				const alias: ScopeObject = {
 					kind: "alias",
@@ -1220,10 +1241,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					isAfield: false, // TODO
 					name: node.name,
 					value: value,
-					symbolName: `TODO: setInstanceField symbolName`,
+					symbolName: `TODO: setInstanceField symbolName?`,
 					type: getTypeOf(context, value),
 				};
 				context.file.scope.levels[context.file.scope.currentLevel].push(alias);
+				
+				if (doCodeGen(context)) {
+					const accessText = getCGText();
+					codeGen.memberAccess(accessText, context, "__uclstruct__", node.name);
+					codeGen.set(context.options.codeGenText, context, alias, accessText, valueText);
+				}
 				
 				break;
 			}

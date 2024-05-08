@@ -99,11 +99,11 @@ export default {
 		}
 	},
 	
-	memberAccess(dest: CodeGenText, context: BuilderContext, leftText: CodeGenText, name: string) {
+	memberAccess(dest: CodeGenText, context: BuilderContext, leftText: string, name: string) {
 		if (leftText) {
 			if (onCodeGen["memberAccess"]) {
 				callFunction(context, onCodeGen["memberAccess"], [
-					getString(leftText.join("")),
+					getString(leftText),
 					getString(name),
 				], "builtin", true, null, dest, null);
 			}
@@ -111,7 +111,7 @@ export default {
 	},
 	
 	struct(dest: CodeGenText, context: BuilderContext, struct: ScopeObject, codeBlockText: CodeGenText) {
-		if (struct.kind == "struct" && codeBlockText) {
+		if ((struct.kind == "struct" || struct.kind == "structInstance") && codeBlockText) {
 			if (onCodeGen["struct"]) {
 				callFunction(context, onCodeGen["struct"], [
 					getString(codeBlockText.join("")),

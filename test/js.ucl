@@ -59,7 +59,7 @@ var test = "1";
 });
 
 @onCodeGen("memberAccess", fn(leftText: String, name: String) {
-	@addCodeGen(leftText, ".", name);
+	@addCodeGen(leftText, "[\"", name, "\"]");
 });
 
 @onCodeGen("struct", fn(codeBlockText: String) {

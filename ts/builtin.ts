@@ -161,12 +161,12 @@ class FC {
 			
 			throw utilities.TODO();
 		} else {
-			if (scopeObject.kind == name) {
-				return scopeObject;
-			} else {
+			if (scopeObject.kind != name) {
 				throw new CompileError("builtin argument error")
 					.indicator(node.location, `expected ${name}`);
 			}
+			
+			return scopeObject;
 		}
 	}
 	
