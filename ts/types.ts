@@ -78,13 +78,10 @@ export type ASTnode = genericASTnode & {
 	left: ASTnode[],
 	right: ASTnode[],
 } | genericASTnode & {
-	kind: "comptime",
-	value: ASTnode,
-} | genericASTnode & {
 	kind: "definition",
 	comptime: boolean,
 	mutable: boolean,
-	isAproperty: boolean,
+	isAfield: boolean,
 	name: string,
 	type: ASTnode & { kind: "typeUse" } | null,
 	value: ASTnode | null,
@@ -151,7 +148,7 @@ export type ScopeObject = GenericScopeObject & {
 } | GenericScopeObject & {
 	kind: "alias",
 	mutable: boolean,
-	isAproperty: boolean,
+	isAfield: boolean,
 	name: string,
 	value: ScopeObject | null,
 	symbolName: string,
@@ -174,11 +171,11 @@ export type ScopeObject = GenericScopeObject & {
 } | GenericScopeObject & {
 	kind: "struct",
 	name: string,
-	members: ScopeObject[],
+	members: (ScopeObject & { kind: "alias" })[],
 } | GenericScopeObject & {
 	kind: "structInstance",
 	templateStruct: (ScopeObject & { kind: "struct" }),
-	fields: ScopeObject[],
+	fields: (ScopeObject & { kind: "alias" })[],
 } | GenericScopeObject & {
 	kind: "typeUse",
 	type: ScopeObject,

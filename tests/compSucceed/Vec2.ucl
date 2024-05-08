@@ -1,13 +1,13 @@
 // compSucceed
 
 const Vec2 = struct {
-	property x: Number;
-	property y: Number;
+	field x: Number;
+	field y: Number;
 	
-	const new = fn(x_in: Number, y_in: Number): Vec2 {
-		ret struct: Vec2 {
-			x = x_in;
-			y = y_in;
+	const new = fn(x: Number, y: Number): Vec2 {
+		ret Vec2 {
+			.x = x;
+			.y = y;
 		};
 	};
 	

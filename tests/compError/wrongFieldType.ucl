@@ -1,0 +1,12 @@
+// compError
+// error: expected type builtin:Number but got type builtin:String
+// tests/compError/wrongFieldType.ucl:11 -> field defined here
+// tests/compError/wrongFieldType.ucl:7 -> field originally defined here
+
+const Test = struct {
+	field a: Number;
+};
+
+var test = Test {
+	.a = "test error";
+};

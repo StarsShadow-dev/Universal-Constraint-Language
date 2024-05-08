@@ -1,9 +1,0 @@
-// compError
-// error: a function cannot return 'builtin:Any' that is not comptime
-// tests/compError/retAnyNotComptime.ucl:5 -> function defined here
-
-const test = fn(): Any {
-	ret "a string";
-};
-
-test();

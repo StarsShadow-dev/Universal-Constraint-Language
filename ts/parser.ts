@@ -260,7 +260,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
-				else if (token.text == "const" || token.text == "var" || token.text == "property") {
+				else if (token.text == "const" || token.text == "var" || token.text == "field") {
 					const name = forward(context);
 					if (name.type != TokenType.word) {
 						throw new CompileError("expected name").indicator(name.location, "here");
@@ -285,7 +285,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						location: token.location,
 						comptime: comptimeFlag,
 						mutable: token.text != "const",
-						isAproperty: token.text == "property",
+						isAfield: token.text == "field",
 						name: name.text,
 						type: type,
 						value: value,
@@ -468,12 +468,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenType.singleQuote: {
-				const node = parse(context, ParserMode.singleNoOperatorContinue, null)[0];
-				AST.push({
-					kind: "comptime",
-					location: token.location,
-					value: node,
-				});
+				utilities.unreachable();
 				break;
 			}
 		
@@ -504,11 +499,15 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
+		if (mode == ParserMode.singleNoOperatorContinue) {
+			return AST;
+		}
+		
 		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "{") {
 			const left = AST.pop();
 			if (left) {
 				forward(context);
-				const codeBlock = parse(context, ParserMode.comma, "}");
+				const codeBlock = parse(context, ParserMode.normal, "}");
 				
 				AST.push({
 					kind: "structInstance",
@@ -523,10 +522,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			} else {
 				utilities.unreachable();
 			}
-		}
-		
-		if (mode == ParserMode.singleNoOperatorContinue) {
-			return AST;
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenType.operator) {

@@ -36,7 +36,7 @@ function addType(name: string) {
 		kind: "alias",
 		originLocation: "builtin",
 		mutable: false,
-		isAproperty: false,
+		isAfield: false,
 		name: name,
 		value: {
 			kind: "typeUse",
@@ -85,7 +85,7 @@ export function getComplexValue(context: BuilderContext, name: string): ScopeObj
 	};
 }
 
-function getStruct(context: BuilderContext, properties: ScopeObject[]): ScopeObject {
+function getStruct(context: BuilderContext, members: (ScopeObject & { kind: "alias" })[]): ScopeObject {
 	return {
 		kind: "typeUse",
 		originLocation: "builtin",
@@ -93,7 +93,7 @@ function getStruct(context: BuilderContext, properties: ScopeObject[]): ScopeObj
 			kind: "struct",
 			originLocation: "builtin",
 			name: `${getNextSymbolName(context)}`,
-			members: properties,
+			members: members,
 		},
 	};
 }
@@ -105,7 +105,7 @@ export function setUpBuiltin(disableFileSystem: boolean) {
 			kind: "alias",
 			originLocation: "builtin",
 			mutable: false,
-			isAproperty: false,
+			isAfield: false,
 			name: "Type",
 			value: typeType,
 			symbolName: "",
@@ -355,7 +355,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			
 			const newContext = compileFile(context, path.join(path.dirname(context.file.path), filePath), null);
 			
-			return getStruct(context, newContext.scope.levels[0]);
+			return getStruct(context, newContext.scope.levels[0] as (ScopeObject & { kind: "alias" })[]);
 		}
 		
 		else if (node.name == "export") {

@@ -69,28 +69,25 @@ export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObj
 	}
 }
 
-function expectType(context: BuilderContext, expected: ScopeObject, actual: ScopeObject, compileError: CompileError) {
-	let expectedType: ScopeObject = expected;
+function expectType(
+	context: BuilderContext,
+	expectedType: ScopeObject & { kind: "typeUse" },
+	actualType: ScopeObject & { kind: "typeUse" },
+	compileError: CompileError
+) {
+	if (getTypeName(expectedType) == "builtin:Any") {
+		return;
+	}
 	
-	let actualType = getTypeOf(context, actual);
+	if (expectedType == unwrapScopeObject(getAlias(context, "Type"))) {
+		utilities.TODO();
+	}
 	
-	if (expectedType.kind == "typeUse" && actualType.kind == "typeUse") {
-		if (getTypeName(expectedType) == "builtin:Any") {
-			return;
-		}
-		
-		if (expectedType == unwrapScopeObject(getAlias(context, "Type"))) {
-			utilities.TODO();
-		}
-		
-		if (getTypeName(expectedType) != getTypeName(actualType)) {
-			compileError.msg = compileError.msg
-				.replace("$expectedTypeName", getTypeName(expectedType))
-				.replace("$actualTypeName", getTypeName(actualType));
-			throw compileError;
-		}
-	} else {
-		utilities.unreachable();
+	if (getTypeName(expectedType) != getTypeName(actualType)) {
+		compileError.msg = compileError.msg
+			.replace("$expectedTypeName", getTypeName(expectedType))
+			.replace("$actualTypeName", getTypeName(actualType));
+		throw compileError;
 	}
 }
 
@@ -112,7 +109,7 @@ export function getAlias(context: BuilderContext, name: string, getProperties?: 
 		for (let i = 0; i < context.file.scope.levels[level].length; i++) {
 			const scopeObject = context.file.scope.levels[level][i];
 			if (scopeObject.kind == "alias") {
-				if (!getProperties && scopeObject.isAproperty) continue;
+				if (!getProperties && scopeObject.isAfield) continue;
 				if (scopeObject.name == name) {
 					return scopeObject;
 				}
@@ -146,7 +143,7 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	for (let level = context.file.scope.currentLevel; level >= 0; level--) {
 		for (let i = 0; i < context.file.scope.levels[level].length; i++) {
 			const scopeObject = context.file.scope.levels[level][i];
-			if (scopeObject.kind == "alias" && scopeObject.isAproperty) continue;
+			if (scopeObject.kind == "alias" && scopeObject.isAfield) continue;
 			list.push(scopeObject);
 		}
 	}
@@ -155,7 +152,7 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	if (context.file.scope.function) {
 		for (let i = 0; i < context.file.scope.function.visible.length; i++) {
 			const scopeObject = context.file.scope.function.visible[i];
-			if (scopeObject.kind == "alias" && scopeObject.isAproperty) continue;
+			if (scopeObject.kind == "alias" && scopeObject.isAfield) continue;
 			list.push(scopeObject);
 		}
 	}
@@ -165,7 +162,7 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 
 function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	if (alias.kind == "alias") {
-		if (!alias.isAproperty) {
+		if (!alias.isAfield) {
 			const oldAlias = getAlias(context, alias.name);
 			if (oldAlias) {
 				throw new CompileError(`alias '${alias.name}' already exists`)
@@ -233,7 +230,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 					if (callArguments) {
 						const callArgument = unwrapScopeObject(callArguments[index]);
 						
-						expectType(context, argumentType, callArgument,
+						expectType(context, argumentType, getTypeOf(context, callArgument),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(callArgument.originLocation, "argument here")
 								.indicator(argument.originLocation, "argument defined here")
@@ -243,7 +240,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 							kind: "alias",
 							originLocation: argument.originLocation,
 							mutable: false,
-							isAproperty: false,
+							isAfield: false,
 							name: argument.name,
 							value: callArgument,
 							symbolName: symbolName,
@@ -254,7 +251,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 							kind: "alias",
 							originLocation: argument.originLocation,
 							mutable: false,
-							isAproperty: false,
+							isAfield: false,
 							name: argument.name,
 							value: {
 								kind: "complexValue",
@@ -305,7 +302,10 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				if (functionToCall.returnType) {
 					if (comptime) {
 						const returnType = unwrapScopeObject(functionToCall.returnType);
-						expectType(context, returnType, unwrappedResult,
+						if (returnType.kind != "typeUse") {
+							throw utilities.unreachable();
+						}
+						expectType(context, returnType, getTypeOf(context, unwrappedResult),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(location, "call here")
 								.indicator(functionToCall.originLocation, "function defined here")
@@ -465,7 +465,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				kind: "alias",
 				originLocation: node.location,
 				mutable: node.mutable,
-				isAproperty: node.isAproperty,
+				isAfield: node.isAfield,
 				name: node.name,
 				value: value,
 				symbolName: node.name,
@@ -481,14 +481,14 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			const alias = getAlias(context, node.name, true);
 			if (alias) {
 				const typeText = getCGText();
-				let type = undefined as any as ScopeObject;
+				let type = undefined as any as ScopeObject & { kind: "typeUse" };
 				
 				if (node.type) {
 					type = unwrapScopeObject(build(context, [node.type.value], {
 						codeGenText: typeText,
 						compileTime: context.options.compileTime,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0]);
+					}, null, false, false, false)[0]) as ScopeObject & { kind: "typeUse" };
 				}
 				
 				if (node.value && !context.options.disableValueEvaluation) {
@@ -504,7 +504,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					
 					if (node.type) {
-						expectType(context, type, value,
+						expectType(context, type, getTypeOf(context, value),
 							new CompileError(`definition expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(node.location, "definition here")
 						);
@@ -697,14 +697,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						throw utilities.unreachable();
 					}
 					
-					if (typeUse.kind == "typeUse" && typeUse.type.kind == "structInstance" && node.right[0].kind == "identifier") {
-						let addedAlias = false;
-						for (let i = 0; i < typeUse.type.fields.length; i++) {
-							const alias = typeUse.type.fields[i];
+					if (typeUse.kind != "typeUse" || node.right[0].kind != "identifier") {
+						throw utilities.TODO();
+					}
+					
+					let addedAlias = false;
+					
+					if (typeUse.type.kind == "struct") {
+						for (let i = 0; i < typeUse.type.members.length; i++) {
+							const alias = typeUse.type.members[i];
 							if (alias.kind == "alias") {
 								if (alias.name == node.right[0].name) {
 									if (left.kind == "complexValue") {
-										if (alias.isAproperty && alias.type) {
+										if (alias.isAfield && alias.type) {
 											addToScopeList({
 												kind: "complexValue",
 												originLocation: alias.originLocation,
@@ -714,7 +719,35 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 											break;
 										}
 									} else {
-										if (!alias.isAproperty && alias.value) {
+										if (!alias.isAfield && alias.value) {
+											addToScopeList(alias);
+											addedAlias = true;
+											break;
+										}
+									}
+								}
+							} else {
+								utilities.unreachable();
+							}
+						}
+					}
+					else if (typeUse.type.kind == "structInstance") {
+						for (let i = 0; i < typeUse.type.fields.length; i++) {
+							const alias = typeUse.type.fields[i];
+							if (alias.kind == "alias") {
+								if (alias.name == node.right[0].name) {
+									if (left.kind == "complexValue") {
+										if (alias.isAfield && alias.type) {
+											addToScopeList({
+												kind: "complexValue",
+												originLocation: alias.originLocation,
+												type: alias.type,
+											});
+											addedAlias = true;
+											break;
+										}
+									} else {
+										if (!alias.isAfield && alias.value) {
 											addToScopeList(alias);
 											addedAlias = true;
 											break;
@@ -729,7 +762,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							for (let i = 0; i < typeUse.type.templateStruct.members.length; i++) {
 								const alias = typeUse.type.templateStruct.members[i];
 								if (alias.kind == "alias") {
-									if (alias.isAproperty) continue;
+									if (alias.isAfield) continue;
 									if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
 										debugger;
 										addToScopeList(alias);
@@ -749,12 +782,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								codeGen.memberAccess(context.options.codeGenText, context, leftText, node.right[0].name);
 							}
 						}
-						if (!addedAlias) {
-							throw new CompileError(`no member named '${node.right[0].name}'`)
-								.indicator(node.right[0].location, "here");
-						}
 					} else {
 						utilities.TODO();
+					}
+					
+					if (!addedAlias) {
+						throw new CompileError(`no member named '${node.right[0].name}'`)
+							.indicator(node.right[0].location, "here");
 					}
 				}
 				
@@ -880,11 +914,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				break;
 			}
-			case "comptime": {
-				const value = unwrapScopeObject(build(context, [node.value], null, null, false, false, false)[0]);
-				debugger;
-				break;
-			}
 			
 			case "function": {
 				let returnType = null;
@@ -947,16 +976,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					codeGenText: codeBlockText,
 					compileTime: context.options.compileTime,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false, true, true);
-				
-				for (let a = 0; a < members.length; a++) {
-					const actualProperty = members[a];
-					if (actualProperty.kind == "alias") {
-						if (actualProperty.type && !actualProperty.isAproperty) {
-							
-						}
-					}
-				}
+				}, null, false, true, true) as (ScopeObject & { kind: "alias" })[];
 				
 				const struct: ScopeObject = {
 					kind: "struct",
@@ -1087,28 +1107,40 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				const templateStruct = templateType.type;
-				// for (let e = 0; e < templateStruct.members.length; e++) {
-				// 	const expectedProperty = templateStruct.members[e];
-				// 	if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
-				// 		addAlias(context, context.file.scope.currentLevel + 1, {
-				// 			kind: "alias",
-				// 			originLocation: node.location,
-				// 			mutable: true,
-				// 			isAproperty: false,
-				// 			name: expectedProperty.name,
-				// 			value: null,
-				// 			symbolName: `__uclstruct__["${expectedProperty.name}"]`,
-				// 			type: expectedProperty.type,
-				// 		});
-				// 	}
-				// }
 				
 				const fieldText = getCGText();
 				const fields = build(context, node.codeBlock, {
 					codeGenText: fieldText,
 					compileTime: context.options.compileTime,
 					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false, true, true);
+				}, null, false, true, true) as (ScopeObject & { kind: "alias" })[];
+				
+				for (let a = 0; a < fields.length; a++) {
+					const field = fields[a];
+					let fieldShouldExist = false;
+					for (let e = 0; e < templateStruct.members.length; e++) {
+						const member = templateStruct.members[e];
+						if (member.isAfield) {
+							if (field.name == member.name) {
+								if (!field.type || !member.type) {
+									throw utilities.unreachable();
+								}
+								debugger;
+								expectType(context, member.type, field.type,
+									new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+										.indicator(field.originLocation, "field defined here")
+										.indicator(member.originLocation, "field originally defined here")
+								);
+								fieldShouldExist = true;
+								break;
+							}
+						}
+					}
+					if (!fieldShouldExist) {
+						throw new CompileError(`field '${field.name}' should not exist`)
+							.indicator(field.originLocation, "field here");
+					}
+				}
 				
 				const struct: ScopeObject = {
 					kind: "structInstance",
@@ -1122,8 +1154,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					originLocation: node.location,
 					type: struct,
 				});
-				
-				console.log("fields", fields);
 				
 				break;
 			}
@@ -1142,7 +1172,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					kind: "alias",
 					originLocation: node.location,
 					mutable: false,
-					isAproperty: false, // TODO
+					isAfield: false, // TODO
 					name: node.name,
 					value: value,
 					symbolName: `TODO: setInstanceField symbolName`,
