@@ -1,5 +1,3 @@
-import { stdout } from "process";
-
 import {
 	SourceLocation,
 	ASTnode,
@@ -10,7 +8,7 @@ import {
 	getTypeName,
 } from "./types";
 import utilities from "./utilities";
-import { Indicator, getIndicator, CompileError } from "./report";
+import { Indicator, CompileError } from "./report";
 import { builtinScopeLevel, builtinCall, getComplexValue } from "./builtin";
 import codeGen from "./codeGen";
 import { BuilderContext, BuilderOptions } from "./compiler";
@@ -23,54 +21,47 @@ export function getNextSymbolName(context: BuilderContext) {
 	return `${context.nextSymbolName++}:${context.file.path}`;
 }
 
-export function getAsComptimeType(type: ScopeObject, location?: SourceLocation): ScopeObject & { kind: "typeUse" } {
+export function getTypeText(type: ScopeObject & { kind: "typeUse" }) {
+	return `'${getTypeName(type)}'`;
+}
+
+export function forceAsType(type: ScopeObject): ScopeObject & { kind: "typeUse" } {
 	if (type.kind == "typeUse") {
-		if (!location) location = "builtin";
-		return {
-			kind: "typeUse",
-			originLocation: location,
-			comptime: true,
-			type: type.type,
-		}	
+		return type;
 	} else {
 		throw utilities.unreachable();
 	}
 }
 
-export function getTypeText(type: ScopeObject & { kind: "typeUse" }) {
-	return `'${getTypeName(type)}'`;
-}
-
 export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObject & { kind: "typeUse" } {
 	if (value.kind == "bool") {
-		return getAsComptimeType(unwrapScopeObject(getAlias(context, "Bool")));
+		return forceAsType(unwrapScopeObject(getAlias(context, "Bool")));
 	} else if (value.kind == "number") {
-		return getAsComptimeType(unwrapScopeObject(getAlias(context, "Number")));
+		return forceAsType(unwrapScopeObject(getAlias(context, "Number")));
 	} else if (value.kind == "string") {
-		return getAsComptimeType(unwrapScopeObject(getAlias(context, "String")));
+		return forceAsType(unwrapScopeObject(getAlias(context, "String")));
 	} else if (value.kind == "typeUse") {
-		if (value.type.kind == "struct") {
-			if (value.type.templateStruct) {
-				return getTypeOf(context, value.type.templateStruct);
-			} else {
-				return value;
-			}
+		if (value.type.kind == "structInstance") {
+			return {
+				kind: "typeUse",
+				originLocation: value.originLocation,
+				type: value.type.templateStruct,
+			};
+		} else {
+			return forceAsType(unwrapScopeObject(getAlias(context, "Type")));
 		}
-		return getAsComptimeType(unwrapScopeObject(getAlias(context, "Type")));
 	} else if (value.kind == "complexValue") {
 		return value.type;
 	} else if (value.kind == "function") {
 		return {
 			kind: "typeUse",
 			originLocation: value.originLocation,
-			comptime: false,
 			type: value,
 		};
 	} else if (value.kind == "struct") {
 		return {
 			kind: "typeUse",
 			originLocation: value.originLocation,
-			comptime: false,
 			type: value,
 		};
 	} else {
@@ -90,11 +81,6 @@ function expectType(context: BuilderContext, expected: ScopeObject, actual: Scop
 		
 		if (expectedType == unwrapScopeObject(getAlias(context, "Type"))) {
 			utilities.TODO();
-		}
-		
-		if (expectedType.comptime && !actualType.comptime) {
-			compileError.msg = `expected type ${getTypeText(expectedType)} that is a compile time type, but got type ${getTypeText(actualType)} that is not a compile time type`;
-			throw compileError;
 		}
 		
 		if (getTypeName(expectedType) != getTypeName(actualType)) {
@@ -179,11 +165,13 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 
 function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
 	if (alias.kind == "alias") {
-		const oldAlias = getAlias(context, alias.name)
-		if (oldAlias) {
-			throw new CompileError(`alias '${alias.name}' already exists`)
-				.indicator(oldAlias.originLocation, "alias originally defined here")
-				.indicator(alias.originLocation, "alias redefined here");
+		if (!alias.isAproperty) {
+			const oldAlias = getAlias(context, alias.name);
+			if (oldAlias) {
+				throw new CompileError(`alias '${alias.name}' already exists`)
+					.indicator(oldAlias.originLocation, "alias originally defined here")
+					.indicator(alias.originLocation, "alias redefined here");
+			}
 		}
 		context.file.scope.levels[level].push(alias);
 	} else {
@@ -207,32 +195,15 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 			}
 		}
 		
-		if (functionToCall.returnType && getTypeName(functionToCall.returnType) == "builtin:Any") {
-			if (!functionToCall.returnType.comptime) {
-				throw new CompileError(`a function cannot return ${getTypeText(functionToCall.returnType)} that is not comptime`)
-					.indicator(functionToCall.originLocation, "function defined here");
-			}
-		}
-		
-		if (!comptime) {
-			if (functionToCall.returnType && functionToCall.returnType.comptime) {
-				comptime = true;
-			}
-		}
-		
 		let toBeGeneratedHere: boolean;
 		if (comptime) {
 			toBeGeneratedHere = true;
 		} else {
-			if (functionToCall.returnType && functionToCall.returnType.comptime) {
+			if (functionToCall.toBeGenerated) {
 				toBeGeneratedHere = true;
+				functionToCall.toBeGenerated = false;
 			} else {
-				if (functionToCall.toBeGenerated) {
-					toBeGeneratedHere = true;
-					functionToCall.toBeGenerated = false;
-				} else {
-					toBeGeneratedHere = false;
-				}
+				toBeGeneratedHere = false;
 			}
 		}
 		
@@ -318,8 +289,7 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				
 				if (result.originLocation != "builtin" && callArguments) {
 					if (
-						unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct" &&
-						!unwrappedResult.type.templateStruct
+						unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct"
 					) {
 						let nameArgumentsText = "";
 						for (let i = 0; i < callArguments.length; i++) {
@@ -334,7 +304,8 @@ export function callFunction(context: BuilderContext, functionToCall: ScopeObjec
 				
 				if (functionToCall.returnType) {
 					if (comptime) {
-						expectType(context, unwrapScopeObject(functionToCall.returnType), unwrappedResult,
+						const returnType = unwrapScopeObject(functionToCall.returnType);
+						expectType(context, returnType, unwrappedResult,
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(location, "call here")
 								.indicator(functionToCall.originLocation, "function defined here")
@@ -440,7 +411,7 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		}
 	} catch (error) {
 		if (error instanceof CompileError && sackMarker != null) {
-			stdout.write(`stack trace ${getIndicator(sackMarker, true)}`);
+			// stdout.write(`stack trace ${getIndicator(sackMarker, true)}`);
 		}
 		context.file.scope.levels[context.file.scope.currentLevel] = [];
 		context.file.scope.currentLevel--;
@@ -565,9 +536,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					
 					if (doCodeGen(context)) {
-						if (!(type.kind == "typeUse" && type.comptime)) {
-							codeGen.alias(context.options.codeGenText, context, alias, valueText);
-						}
+						codeGen.alias(context.options.codeGenText, context, alias, valueText);
 					}
 				}
 				
@@ -641,6 +610,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				const functionToCall = unwrapScopeObject(functionToCall_[0]);
 				const argumentText = getCGText();
+				if (functionToCall_.length > 1) {
+					argumentText.push(leftText.join(""));
+				}
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
@@ -682,11 +654,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false, false, false)[0];
 					const rightText = getCGText();
-					const right = build(context, node.right, {
+					const right = unwrapScopeObject(build(context, node.right, {
 						compileTime: context.options.compileTime,
 						codeGenText: rightText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0];
+					}, null, false, false, false)[0]);
+					
+					const rightType = getTypeOf(context, right);
 					
 					if (left.kind == "alias") {
 						if (!left.mutable) {
@@ -696,13 +670,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 						
 						if (doCodeGen(context)) {
-							if (left.type) {
-								if (!(left.type.kind == "typeUse" && left.type.comptime)) {
-									codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
-								}
-							} else {
-								utilities.unreachable();
-							}
+							codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
 						}
 						
 						left.value = right;
@@ -713,7 +681,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				else if (node.operatorText == ".") {
-					const left = unwrapScopeObject(build(context, node.left, null, null, false, false, false)[0]);
+					const leftText = getCGText();
+					const left = unwrapScopeObject(build(context, node.left, {
+						compileTime: context.options.compileTime,
+						codeGenText: leftText,
+						disableValueEvaluation: context.options.disableValueEvaluation,
+					}, null, false, false, false)[0]);
 					
 					let typeUse: ScopeObject;
 					if (left.kind == "typeUse") {
@@ -724,35 +697,56 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						throw utilities.unreachable();
 					}
 					
-					if (typeUse.kind == "typeUse" && typeUse.type.kind == "struct" && node.right[0].kind == "identifier") {
+					if (typeUse.kind == "typeUse" && typeUse.type.kind == "structInstance" && node.right[0].kind == "identifier") {
 						let addedAlias = false;
-						for (let i = 0; i < typeUse.type.members.length; i++) {
-							const alias = typeUse.type.members[i];
+						for (let i = 0; i < typeUse.type.fields.length; i++) {
+							const alias = typeUse.type.fields[i];
 							if (alias.kind == "alias") {
-								if (alias.isAproperty) continue;
-								if (alias.value && alias.name == node.right[0].name) {
-									addToScopeList(alias);
-									addedAlias = true;
-									break;
+								if (alias.name == node.right[0].name) {
+									if (left.kind == "complexValue") {
+										if (alias.isAproperty && alias.type) {
+											addToScopeList({
+												kind: "complexValue",
+												originLocation: alias.originLocation,
+												type: alias.type,
+											});
+											addedAlias = true;
+											break;
+										}
+									} else {
+										if (!alias.isAproperty && alias.value) {
+											addToScopeList(alias);
+											addedAlias = true;
+											break;
+										}
+									}
 								}
 							} else {
 								utilities.unreachable();
 							}
 						}
-						if (typeUse.type.templateStruct) {
+						if (!addedAlias && typeUse.type.templateStruct) {
 							for (let i = 0; i < typeUse.type.templateStruct.members.length; i++) {
 								const alias = typeUse.type.templateStruct.members[i];
 								if (alias.kind == "alias") {
 									if (alias.isAproperty) continue;
-									if (alias.value && alias.name == node.right[0].name) {
+									if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
+										debugger;
 										addToScopeList(alias);
 										addToScopeList(typeUse);
 										addedAlias = true;
+										if (doCodeGen(context) && context.options.codeGenText) {
+											context.options.codeGenText.push(leftText.join(""));
+										}
 										break;
 									}
 								} else {
 									utilities.unreachable();
 								}
+							}
+						} else {
+							if (doCodeGen(context)) {
+								codeGen.memberAccess(context.options.codeGenText, context, leftText, node.right[0].name);
 							}
 						}
 						if (!addedAlias) {
@@ -888,11 +882,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			case "comptime": {
 				const value = unwrapScopeObject(build(context, [node.value], null, null, false, false, false)[0]);
-				if (value.kind == "typeUse") {
-					addToScopeList(getAsComptimeType(value, node.location));
-				} else {
-					utilities.unreachable();
-				}
+				debugger;
 				break;
 			}
 			
@@ -952,86 +942,38 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "struct": {
-				const properties = build(context, node.codeBlock, null, null, false, true, true);
+				const codeBlockText = getCGText();
+				const members = build(context, node.codeBlock, {
+					codeGenText: codeBlockText,
+					compileTime: context.options.compileTime,
+					disableValueEvaluation: context.options.disableValueEvaluation,
+				}, null, false, true, true);
 				
-				let templateStruct: (ScopeObject & { kind: "struct" }) | null = null;
-				
-				if (node.templateType) {
-					const templateType = unwrapScopeObject(build(context, [node.templateType.value], null, null, false, false, false)[0]);
-					
-					if (templateType.kind == "typeUse" && templateType.type.kind == "struct") {
-						templateStruct = templateType.type;
-						for (let e = 0; e < templateStruct.members.length; e++) {
-							const expectedProperty = templateStruct.members[e];
-							if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
-								let foundActualProperty = false;
-								for (let a = 0; a < properties.length; a++) {
-									const actualProperty = properties[a];
-									if (actualProperty.kind == "alias" && actualProperty.name == expectedProperty.name) {
-										foundActualProperty = true;
-										if (context.options.disableValueEvaluation) {
-											continue;
-										}
-										if (!expectedProperty.type) {
-											throw utilities.unreachable();
-										}
-										expectType(context, expectedProperty.type, unwrapScopeObject(actualProperty),
-											new CompileError(`struct property '${expectedProperty.name}' expected type $expectedTypeName but got type $actualTypeName`)
-												.indicator(actualProperty.originLocation, "here")
-												.indicator(templateStruct.originLocation, "template struct defined here")
-												.indicator(expectedProperty.originLocation, "property originally defined here")
-										);
-									}
-								}
-								if (!foundActualProperty) {
-									throw new CompileError(`property '${expectedProperty.name}' does not exist on struct`)
-										.indicator(node.location, "struct defined here")
-										.indicator(expectedProperty.originLocation, "missing property defined here");
-								}
-							}
+				for (let a = 0; a < members.length; a++) {
+					const actualProperty = members[a];
+					if (actualProperty.kind == "alias") {
+						if (actualProperty.type && !actualProperty.isAproperty) {
+							
 						}
-						for (let a = 0; a < properties.length; a++) {
-							const actualProperty = properties[a];
-							if (actualProperty.kind == "alias") {
-								let propertySupposedToExist = false;
-								for (let e = 0; e < templateStruct.members.length; e++) {
-									const expectedProperty = templateStruct.members[e];
-									if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
-										if (actualProperty.name == expectedProperty.name) {
-											propertySupposedToExist = true;
-											break;
-										}
-									}
-								}
-								if (!propertySupposedToExist) {
-									throw new CompileError(`property '${actualProperty.name}' should not exist on struct`)
-										.indicator(actualProperty.originLocation, "property defined here")
-										.indicator(templateStruct.originLocation, "template struct defined here");
-								}
-							}
-						}
-					} else {
-						throw new CompileError(`a struct can only use another struct as a template`)
-							.indicator(node.location, "struct defined here");
 					}
 				}
+				
+				const struct: ScopeObject = {
+					kind: "struct",
+					originLocation: node.location,
+					name: `${getNextSymbolName(context)}`,
+					members: members,
+				};
 				
 				addToScopeList({
 					kind: "typeUse",
 					originLocation: node.location,
-					comptime: false,
-					type: {
-						kind: "struct",
-						originLocation: node.location,
-						name: `${getNextSymbolName(context)}`,
-						templateStruct: templateStruct,
-						members: properties,
-					},
+					type: struct,
 				});
-				break;
-			}
-			case "codeGenerate": {
-				utilities.unreachable();
+				
+				if (!context.options.disableValueEvaluation && doCodeGen(context)) {
+					codeGen.struct(context.options.codeGenText, context, struct, codeBlockText);
+				}
 				break;
 			}
 			case "while": {
@@ -1130,6 +1072,85 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 				}
 				return scopeList;
+			}
+			
+			case "structInstance": {
+				const templateType = unwrapScopeObject(build(context, [node.templateStruct.value], {
+					codeGenText: [],
+					compileTime: context.options.compileTime,
+					disableValueEvaluation: context.options.disableValueEvaluation,
+				}, null, false, false, false)[0]);
+				
+				if (templateType.kind != "typeUse" || templateType.type.kind != "struct") {
+					throw new CompileError(`a struct instance can only use another struct as a template`)
+						.indicator(node.location, "here");
+				}
+				
+				const templateStruct = templateType.type;
+				// for (let e = 0; e < templateStruct.members.length; e++) {
+				// 	const expectedProperty = templateStruct.members[e];
+				// 	if (expectedProperty.kind == "alias" && expectedProperty.isAproperty) {
+				// 		addAlias(context, context.file.scope.currentLevel + 1, {
+				// 			kind: "alias",
+				// 			originLocation: node.location,
+				// 			mutable: true,
+				// 			isAproperty: false,
+				// 			name: expectedProperty.name,
+				// 			value: null,
+				// 			symbolName: `__uclstruct__["${expectedProperty.name}"]`,
+				// 			type: expectedProperty.type,
+				// 		});
+				// 	}
+				// }
+				
+				const fieldText = getCGText();
+				const fields = build(context, node.codeBlock, {
+					codeGenText: fieldText,
+					compileTime: context.options.compileTime,
+					disableValueEvaluation: context.options.disableValueEvaluation,
+				}, null, false, true, true);
+				
+				const struct: ScopeObject = {
+					kind: "structInstance",
+					originLocation: node.location,
+					templateStruct: templateStruct,
+					fields: fields,
+				};
+				
+				addToScopeList({
+					kind: "typeUse",
+					originLocation: node.location,
+					type: struct,
+				});
+				
+				console.log("fields", fields);
+				
+				break;
+			}
+			case "setInstanceField": {
+				let value = build(context, [node.value], {
+					codeGenText: null,
+					compileTime: context.options.compileTime,
+					disableValueEvaluation: context.options.disableValueEvaluation,
+				}, null, false, false, false)[0];
+				if (!value) {
+					throw new CompileError(`no value for field`).indicator(node.location, "here");
+				}
+				value = unwrapScopeObject(value);
+				
+				const alias: ScopeObject = {
+					kind: "alias",
+					originLocation: node.location,
+					mutable: false,
+					isAproperty: false, // TODO
+					name: node.name,
+					value: value,
+					symbolName: `TODO: setInstanceField symbolName`,
+					type: getTypeOf(context, value),
+				};
+				context.file.scope.levels[context.file.scope.currentLevel].push(alias);
+				
+				break;
 			}
 		
 			default: {

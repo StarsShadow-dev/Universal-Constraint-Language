@@ -6,8 +6,8 @@ const Vec2 = struct {
 	
 	const new = fn(x_in: Number, y_in: Number): Vec2 {
 		ret struct: Vec2 {
-			var x = x_in;
-			var y = y_in;
+			x = x_in;
+			y = y_in;
 		};
 	};
 	

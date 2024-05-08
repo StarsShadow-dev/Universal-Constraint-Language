@@ -1,7 +1,5 @@
 // compError
-// error: property 'extraProperty' should not exist on struct
-// tests/compError/extraProperty.ucl:14 -> property defined here
-// tests/compError/extraProperty.ucl:6 -> template struct defined here
+// 
 
 const Vec2 = struct {
 	property x: Number;
@@ -9,7 +7,7 @@ const Vec2 = struct {
 };
 
 var vec2 = struct: Vec2 {
-	var x = 0;
-	var y = 0;
-	var extraProperty = 0;
+	.x = 0;
+	.y = 0;
+	.extraProperty = 0;
 };

@@ -52,13 +52,7 @@ type genericASTnode = {
 	location: SourceLocation,
 }
 
-export type ASTnode = 
-
-//
-// literals
-//
-
-genericASTnode & {
+export type ASTnode = genericASTnode & {
 	kind: "bool",
 	value: boolean,
 } | genericASTnode & {
@@ -67,9 +61,7 @@ genericASTnode & {
 } | genericASTnode & {
 	kind: "string",
 	value: string,
-} |
-
-genericASTnode & {
+} | genericASTnode & {
 	kind: "identifier",
 	name: string,
 } | genericASTnode & {
@@ -88,14 +80,9 @@ genericASTnode & {
 } | genericASTnode & {
 	kind: "comptime",
 	value: ASTnode,
-} |
-
-//
-// structured things (what are these called?)
-//
-
-genericASTnode & {
+} | genericASTnode & {
 	kind: "definition",
+	comptime: boolean,
 	mutable: boolean,
 	isAproperty: boolean,
 	name: string,
@@ -109,10 +96,6 @@ genericASTnode & {
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
-	templateType: ASTnode & { kind: "typeUse" } | null,
-	codeBlock: ASTnode[],
-} | genericASTnode & {
-	kind: "codeGenerate",
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "while",
@@ -131,6 +114,14 @@ genericASTnode & {
 	name: string,
 	type: ASTnode & { kind: "typeUse" },
 } | genericASTnode & {
+	kind: "structInstance",
+	templateStruct: ASTnode & { kind: "typeUse" },
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "setInstanceField",
+	name: string,
+	value: ASTnode,
+} | genericASTnode & {
 	kind: "typeUse",
 	value: ASTnode,
 }
@@ -139,25 +130,25 @@ genericASTnode & {
 // scope
 //
 
-type genericScopeObject = {
+type GenericScopeObject = {
 	originLocation: SourceLocation,
 }
 
-export type ScopeObject = genericScopeObject & {
+export type ScopeObject = GenericScopeObject & {
 	kind: "bool",
 	value: boolean,
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "number",
 	value: number,
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "string",
 	value: string,
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "void",
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "complexValue",
 	type: (ScopeObject & { kind: "typeUse" }),
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "alias",
 	mutable: boolean,
 	isAproperty: boolean,
@@ -165,7 +156,7 @@ export type ScopeObject = genericScopeObject & {
 	value: ScopeObject | null,
 	symbolName: string,
 	type: (ScopeObject & { kind: "typeUse" }) | null,
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "function",
 	forceInline: boolean,
 	external: boolean,
@@ -176,18 +167,20 @@ export type ScopeObject = genericScopeObject & {
 	returnType: (ScopeObject & { kind: "typeUse" }) | null,
 	AST: ASTnode[],
 	visible: ScopeObject[],
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "argument",
 	name: string,
 	type: (ScopeObject & { kind: "typeUse" }),
-} | genericScopeObject & {
+} | GenericScopeObject & {
 	kind: "struct",
 	name: string,
-	templateStruct: (ScopeObject & { kind: "struct" }) | null,
 	members: ScopeObject[],
-} | genericScopeObject & {
+} | GenericScopeObject & {
+	kind: "structInstance",
+	templateStruct: (ScopeObject & { kind: "struct" }),
+	fields: ScopeObject[],
+} | GenericScopeObject & {
 	kind: "typeUse",
-	comptime: boolean,
 	type: ScopeObject,
 }
 

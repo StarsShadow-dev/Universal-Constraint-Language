@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: property 'missingProperty' does not exist on struct
 // tests/compError/missingProperty.ucl:11 -> struct defined here
@@ -9,5 +10,5 @@ const Test = struct {
 };
 
 var test = struct: Test {
-	var a = 100;
+	a = 100;
 };

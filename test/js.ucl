@@ -38,31 +38,52 @@ var test = "1";
 });
 
 @onCodeGen("alias", fn(name: 'String, valueText: 'String, mutable: 'Bool) {
+	@addCodeGen_startExpression();
 	if (mutable) {
 		@addCodeGen("var ");
 	} else {
 		@addCodeGen("const ");
 	}
 	@addCodeGen(name, " = ", valueText);
+	@addCodeGen_endExpression();
 });
 
 @onCodeGen("set_alias", fn(name: 'String, aliasText: 'String, valueText: 'String) {
+	@addCodeGen_startExpression();
 	@addCodeGen(aliasText, " = ", valueText);
+	@addCodeGen_endExpression();
 });
 
 @onCodeGen("identifier", fn(name: 'String) {
 	@addCodeGen(name);
 });
 
+@onCodeGen("memberAccess", fn(leftText: 'String, name: 'String) {
+	@addCodeGen(leftText, ".", name);
+});
+
+@onCodeGen("struct", fn(codeBlockText: 'String) {
+	@addCodeGen("(() => {\n");
+	@addCodeGen_startExpression();
+	@addCodeGen("\tvar __uclstruct__ = {}");
+	@addCodeGen_endExpression();
+	@addCodeGen(codeBlockText);
+	@addCodeGen_startExpression();
+	@addCodeGen("\treturn __uclstruct__");
+	@addCodeGen_endExpression();
+	@addCodeGen_startExpression();
+	@addCodeGen("})()");
+});
+
 @onCodeGen("if", fn(conditionText: 'String, trueText: 'String, falseText: 'String) {
-	@addCodeGenTest();
+	@addCodeGen_startExpression();
 	@addCodeGen("if (", conditionText, ") {\n");
 	@addCodeGen(trueText);
-	@addCodeGenTest();
+	@addCodeGen_startExpression();
 	if (falseText != "") {
 		@addCodeGen("} else {\n");
 		@addCodeGen(falseText);
-		@addCodeGenTest();
+		@addCodeGen_startExpression();
 	}
 	@addCodeGen("}\n");
 });
@@ -98,11 +119,10 @@ var test = "1";
 
 @onCodeGen("call", fn(name: 'String, external: 'Bool, argumentText: 'String) {
 	if (external) {
-		@addCodeGen(name);
+		@addCodeGen(name, "(", argumentText, ")");
 	} else {
-		@addCodeGen("symbols[\"", name, "\"]");
+		@addCodeGen("symbols[\"", name, "\"]", "(", argumentText, ")");
 	}
-	@addCodeGen("(", argumentText, ")");
 });
 
 const log = @extern("console.log", fn(text: String) {});

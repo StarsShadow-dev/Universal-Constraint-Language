@@ -1,9 +1,80 @@
 // const js = @import("./js.ucl");
-// const import = @import("./import.ucl");
 
-// const main = fn() {
-// 	if ("abc" == "abc") {
-// 		js.log("testing");
-// 	}
+// const Vec2 = struct {
+// 	property x: Number;
+// 	property y: Number;
+	
+// 	const new = fn(x_in: Number, y_in: Number): Vec2 {
+// 		ret struct: Vec2 {
+// 			x = x_in;
+// 			y = y_in;
+// 		};
+// 	};
+	
+// 	const add = fn(v1: Vec2, v2: Vec2): Vec2 {
+// 		ret Vec2.new(v1.x + v2.x, v1.y + v2.y);
+// 	};
+// };
+
+// const main = fn(): Vec2 {
+// 	var a = struct: Vec2 {
+// 		x = @opaque(1);
+// 		y = @opaque(2);
+// 	};
+// 	ret a.add(Vec2.new(@opaque(1), @opaque(2)));
 // };
 // @export("main", main);
+
+//////////////////////////////
+
+// const function = fn(aIn: String): 'Any {
+// 	const String2 = struct {
+// 		property a: String;
+// 		property b: String;
+		
+// 		const new = fn(bIn: String): String2 {
+// 			@compileDebug();
+// 			ret struct: String2 {
+// 				a = aIn;
+// 				b = bIn;
+// 			};
+// 		};
+// 	};
+// 	ret String2;
+// };
+
+// var string2: 'function("a") = function("a").new(@opaque("b"));
+
+// @addTopCodeGen(string2.a);
+// @addTopCodeGen("\n");
+// @addTopCodeGen(string2.b);
+
+//////////////////////////////
+
+// const Vec2 = struct {
+// 	property x: Number;
+// 	property y: Number;
+	
+// 	const new = fn(x_in: Number, y_in: Number): Vec2 {
+// 		ret struct: Vec2 {
+// 			x = x_in;
+// 			y = y_in;
+// 		};
+// 	};
+// };
+
+// comptime var a: Vec2 = Vec2.new(1, 2);
+// @compileDebug(a);
+
+const Vec2 = struct {
+	property x: Number;
+	property y: Number;
+};
+
+var x = 1;
+var y = 2;
+
+var vec2 = Vec2 {
+	.x = x,
+	.y = y
+};

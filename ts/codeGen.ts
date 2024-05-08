@@ -99,6 +99,27 @@ export default {
 		}
 	},
 	
+	memberAccess(dest: CodeGenText, context: BuilderContext, leftText: CodeGenText, name: string) {
+		if (leftText) {
+			if (onCodeGen["memberAccess"]) {
+				callFunction(context, onCodeGen["memberAccess"], [
+					getString(leftText.join("")),
+					getString(name),
+				], "builtin", true, null, dest, null);
+			}
+		}
+	},
+	
+	struct(dest: CodeGenText, context: BuilderContext, struct: ScopeObject, codeBlockText: CodeGenText) {
+		if (struct.kind == "struct" && codeBlockText) {
+			if (onCodeGen["struct"]) {
+				callFunction(context, onCodeGen["struct"], [
+					getString(codeBlockText.join("")),
+				], "builtin", true, null, dest, null);
+			}
+		}
+	},
+	
 	if(dest: CodeGenText, context: BuilderContext, conditionText: CodeGenText, trueText: CodeGenText, falseText: CodeGenText) {
 		if (conditionText && trueText && falseText) {
 			if (onCodeGen["if"]) {

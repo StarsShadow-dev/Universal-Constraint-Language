@@ -17,17 +17,17 @@ let succeeded = 0;
 let failed = 0;
 
 function testSkip() {
-	console.log(`\n\ttest skipped\n`);
+	console.log(`\n\t\x1B[34mTest skipped.${c_reset}\n`);
 	skipped++;
 }
 
 function testSuccess() {
-	console.log(`\n\t${c_green}test success!${c_reset}\n`);
+	console.log(`\n\t${c_green}Test success!${c_reset}\n`);
 	succeeded++;
 }
 
 function testFailure(msg: string) {
-	console.log(`\n\t${c_red}test failure:\n${msg}${c_reset}\n`);
+	console.log(`\n\t${c_red}Test failure:\n${msg}${c_reset}\n`);
 	failed++;
 	
 	process.exitCode = 1;

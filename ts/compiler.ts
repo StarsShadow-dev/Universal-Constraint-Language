@@ -22,6 +22,7 @@ export type BuilderOptions = {
 	compileTime: boolean;
 	codeGenText: CodeGenText;
 	disableValueEvaluation: boolean;
+	// getStruct: boolean,
 };
 
 export type FileContext = {

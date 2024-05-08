@@ -216,8 +216,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 	let AST: ASTnode[] = [];
 	
 	while (context.i < context.tokens.length) {
-		const token = forward(context);
-		
+		let token = forward(context);
 		let needsSemicolon = true;
 		
 		switch (token.type) {
@@ -244,6 +243,15 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenType.word: {
+				let comptimeFlag = false;
+				if (
+					token.text == "comptime" &&
+					context.tokens[context.i] && next(context).type == TokenType.word
+				) {
+					comptimeFlag = true;
+					token = forward(context);
+				}
+				
 				if (token.text == "true" || token.text == "false") {
 					AST.push({
 						kind: "bool",
@@ -275,29 +283,13 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					AST.push({
 						kind: "definition",
 						location: token.location,
+						comptime: comptimeFlag,
 						mutable: token.text != "const",
 						isAproperty: token.text == "property",
 						name: name.text,
 						type: type,
 						value: value,
 					});
-				}
-				
-				else if (token.text == "codeGenerate") {
-					const openingBracket = forward(context);
-					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
-						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
-					}
-					
-					const codeBlock = parse(context, ParserMode.normal, "}");
-					
-					AST.push({
-						kind: "codeGenerate",
-						location: token.location,
-						codeBlock: codeBlock,
-					});
-					
-					needsSemicolon = false;
 				}
 				
 				else if (token.text == "while" || token.text == "if") {
@@ -363,8 +355,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "struct") {
-					const templateType = parseType(context);
-					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
@@ -375,7 +365,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					AST.push({
 						kind: "struct",
 						location: token.location,
-						templateType: templateType,
 						codeBlock: codeBlock,
 					});
 					
@@ -423,12 +412,35 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				break;
 			}
 			case TokenType.operator: {
-				const left = AST.pop();
-				if (left != undefined) {
-					context.i--;
-					AST.push(parseOperators(context, left, 0));
+				const left = AST[AST.length-1];
+				if (left == undefined || left.kind == "setInstanceField") {
+					const name = forward(context);
+					if (name.type != TokenType.word) {
+						throw new CompileError("expected name").indicator(name.location, "here");
+					}
+					
+					const equals = next(context);
+					if (equals.type != TokenType.operator || equals.text != "=") {
+						throw new CompileError("empty field definition").indicator(token.location, "here");
+					}
+					
+					forward(context);
+						
+					const value = parse(context, ParserMode.single, null)[0];
+					if (!value) {
+						throw new CompileError("empty field definition").indicator(token.location, "here");
+					}
+					
+					AST.push({
+						kind: "setInstanceField",
+						location: name.location,
+						name: name.text,
+						value: value,
+					});
 				} else {
-					utilities.unreachable();
+					context.i--;
+					AST.pop();
+					AST.push(parseOperators(context, left, 0));
 				}
 				break;
 			}
@@ -486,6 +498,27 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					location: next(context).location,
 					left: [left],
 					callArguments: callArguments,
+				});
+			} else {
+				utilities.unreachable();
+			}
+		}
+		
+		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "{") {
+			const left = AST.pop();
+			if (left) {
+				forward(context);
+				const codeBlock = parse(context, ParserMode.comma, "}");
+				
+				AST.push({
+					kind: "structInstance",
+					location: next(context).location,
+					templateStruct: {
+						kind: "typeUse",
+						location: left.location,
+						value: left,
+					},
+					codeBlock: codeBlock,
 				});
 			} else {
 				utilities.unreachable();

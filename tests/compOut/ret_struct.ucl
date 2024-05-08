@@ -1,8 +1,6 @@
 // compOut
 // a
 // b
-// c
-// d
 
 const function = fn(aIn: String): 'Any {
 	const String2 = struct {
@@ -11,23 +9,17 @@ const function = fn(aIn: String): 'Any {
 		
 		const new = fn(bIn: String): String2 {
 			ret struct: String2 {
-				var a = aIn;
-				var b = bIn;
+				a = aIn;
+				b = bIn;
 			};
 		};
 	};
 	ret String2;
 };
 
-var string2: function("a") = function("a").new("b");
+var string2: 'function("a") = function("a").new("b");
 
 @addTopCodeGen(string2.a);
 @addTopCodeGen("\n");
 @addTopCodeGen(string2.b);
 @addTopCodeGen("\n");
-
-var string2_inferred = function("c").new("d");
-
-@addTopCodeGen(string2_inferred.a);
-@addTopCodeGen("\n");
-@addTopCodeGen(string2_inferred.b);

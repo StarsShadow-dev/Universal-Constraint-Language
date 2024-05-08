@@ -10,7 +10,7 @@ import {
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { getAlias, getAsComptimeType, getNextSymbolName, getTypeOf } from "./builder";
+import { forceAsType, getAlias, getNextSymbolName, getTypeOf } from "./builder";
 import { BuilderContext } from "./compiler";
 import codeGen from "./codeGen";
 
@@ -23,12 +23,10 @@ export let onCodeGen: any = {};
 const typeType: ScopeObject & { kind: "typeUse" } = {
 	kind: "typeUse",
 	originLocation: "builtin",
-	comptime: true,
 	type: {
 		kind: "struct",
 		originLocation: "builtin",
 		name: "builtin:Type",
-		templateStruct: null,
 		members: [],
 	},
 };
@@ -43,12 +41,10 @@ function addType(name: string) {
 		value: {
 			kind: "typeUse",
 			originLocation: "builtin",
-			comptime: false,
 			type: {
 				kind: "struct",
 				originLocation: "builtin",
 				name: "builtin:" + name,
-				templateStruct: null,
 				members: [],
 			},
 		},
@@ -85,7 +81,7 @@ export function getComplexValue(context: BuilderContext, name: string): ScopeObj
 	return {
 		kind: "complexValue",
 		originLocation: "builtin",
-		type: getAsComptimeType(unwrapScopeObject(getAlias(context, name))),
+		type: forceAsType(unwrapScopeObject(getAlias(context, name))),
 	};
 }
 
@@ -93,12 +89,10 @@ function getStruct(context: BuilderContext, properties: ScopeObject[]): ScopeObj
 	return {
 		kind: "typeUse",
 		originLocation: "builtin",
-		comptime: true,
 		type: {
 			kind: "struct",
 			originLocation: "builtin",
 			name: `${getNextSymbolName(context)}`,
-			templateStruct: null,
 			members: properties,
 		},
 	};
@@ -157,10 +151,7 @@ class FC {
 		
 		if (comptime && scopeObject.kind == "alias") {
 			if (scopeObject.type && scopeObject.type.kind == "typeUse") {
-				if (!scopeObject.type.comptime) {
-					throw new CompileError("builtin argument error")
-						.indicator(node.location, `expected a comptime ${name}, but it is not comptime.`);
-				}
+				
 			} else {
 				utilities.unreachable();
 			}
@@ -258,7 +249,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "compileDebug") {
-			console.log(callArguments);
+			console.log("compileDebug", callArguments);
 			debugger;
 		}
 		
@@ -282,7 +273,11 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			return {
 				kind: "complexValue",
 				originLocation: "builtin",
-				type: getTypeOf(context, value),
+				type: {
+					kind: "typeUse",
+					originLocation: "builtin",
+					type: getTypeOf(context, value).type,
+				},
 			};
 		}
 		
@@ -310,13 +305,21 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			context.topCodeGenText.push(str);
 		}
 		
-		else if (node.name == "addCodeGenTest") {
+		else if (node.name == "addCodeGen_startExpression") {
 			fc.done();
 			
 			if (context.file.scope.generatingFunction) {
 				context.file.scope.generatingFunction.indentation--;
 				codeGen.startExpression(context.options.codeGenText, context);
 				context.file.scope.generatingFunction.indentation++;
+			}
+		}
+		
+		else if (node.name == "addCodeGen_endExpression") {
+			fc.done();
+			
+			if (context.file.scope.generatingFunction) {
+				codeGen.endExpression(context.options.codeGenText, context);
 			}
 		}
 		
