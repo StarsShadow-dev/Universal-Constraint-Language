@@ -371,6 +371,32 @@ export function callFunction(
 				if (innerDest) innerDest.push(...text);
 			}
 		} else {
+			if (callArguments) {
+				for (let index = 0; index < functionToCall.functionArguments.length; index++) {
+					const argument = functionToCall.functionArguments[index];
+					
+					const argumentType = unwrapScopeObject(argument.type);
+					
+					if (argument.kind == "argument" && argumentType.kind == "typeUse") {
+					
+						const callArgument = unwrapScopeObject(callArguments[index]);
+						
+						if (argument.comptime && callArgument.kind == "complexValue") {
+							throw new CompileError(`comptime argument '${argument.name}' is not comptime`)
+								.indicator(location, "function call here");
+						}
+						
+						expectType(context, argumentType, getTypeOf(context, callArgument),
+							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+								.indicator(callArgument.originLocation, "argument here")
+								.indicator(argument.originLocation, "argument defined here")
+						);
+					} else {
+						utilities.unreachable();
+					}
+				}
+			}
+			
 			if (functionToCall.returnType) {
 				result = {
 					kind: "complexValue",

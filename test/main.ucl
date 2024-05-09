@@ -23,9 +23,7 @@ const main = fn(): Vec2 {
 	// };
 	// ret a.add(Vec2.new(@opaque(1), @opaque(2)));
 	var dictionary = js.Dictionary(Vec2).new();
-	dictionary.set("a", Vec2.new(1, 1));
-	dictionary.set("b", Vec2.new(22, 22));
-	dictionary.set("c", Vec2.new(333, 333));
+	dictionary.set("a", 2);
 	ret dictionary.get("c");
 };
 @export("main", main);
