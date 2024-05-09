@@ -1,1 +1,3 @@
-{}
+{
+	"conf.ucl_vscode.compilerPath": "./out/main.js",
+}
