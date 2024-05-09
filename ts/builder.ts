@@ -80,10 +80,6 @@ function expectType(
 		return;
 	}
 	
-	if (expectedType == unwrapScopeObject(getAlias(context, "Type"))) {
-		utilities.TODO();
-	}
-	
 	if (getTypeName(expectedType) != getTypeName(actualType)) {
 		compileError.msg = compileError.msg
 			.replace("$expectedTypeName", getTypeName(expectedType))
@@ -200,6 +196,10 @@ export function callFunction(
 				throw new CompileError(`not enough arguments passed to function '${functionToCall.symbolName}'`)
 					.indicator(location, "function call here");
 			}
+		}
+		
+		if (functionToCall.returnType && functionToCall.comptimeReturn) {
+			comptime = true;
 		}
 		
 		let toBeGeneratedHere: boolean;
@@ -639,7 +639,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				if (functionToCall.kind == "function") {
 					for (let i = 1; i < functionToCall_.length; i++) {
-						callArguments.push(functionToCall_[i]);
+						callArguments.unshift(functionToCall_[i]);
 					}
 					const result = callFunction(context, functionToCall, callArguments, node.location, context.options.compileTime, context.options.codeGenText, null, argumentText);
 					

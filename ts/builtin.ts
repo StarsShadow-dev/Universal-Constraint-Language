@@ -284,6 +284,10 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			};
 		}
 		
+		else if (node.name == "getCodeGen") {
+			return getString(argumentText.join(""));
+		}
+		
 		else if (node.name == "addCodeGen") {
 			let str = "";
 			while (fc.next()) {

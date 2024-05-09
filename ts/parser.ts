@@ -18,6 +18,7 @@ export enum ParserMode {
 	single,
 	singleNoContinue,
 	singleNoOperatorContinue,
+	singleNoEqualsOperatorContinue,
 	comma,
 }
 
@@ -133,7 +134,7 @@ function parseType(context: ParserContext): ASTnode & { kind: "typeUse" } | null
 	if (colon.type == TokenType.separator && colon.text == ":") {
 		forward(context);
 		
-		const node = parse(context, ParserMode.singleNoOperatorContinue, null)[0];
+		const node = parse(context, ParserMode.singleNoEqualsOperatorContinue, null)[0];
 		type = {
 			kind: "typeUse",
 			location: node.location,
@@ -543,6 +544,17 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			return AST;
 		}
 		
+		if (context.tokens[context.i] && next(context).type == TokenType.operator) {
+			if (mode == ParserMode.singleNoEqualsOperatorContinue && next(context).text == "=") {
+				return AST;
+			}
+			continue;
+		}
+		
+		if (mode == ParserMode.singleNoEqualsOperatorContinue) {
+			return AST;
+		}
+		
 		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "{") {
 			const left = AST.pop();
 			if (left) {
@@ -562,10 +574,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			} else {
 				utilities.unreachable();
 			}
-		}
-		
-		if (context.tokens[context.i] && next(context).type == TokenType.operator) {
-			continue;
 		}
 		
 		if (mode == ParserMode.single) {

@@ -126,3 +126,18 @@ var test = "1";
 });
 
 const log = @extern("console.log", fn(text: String) {});
+
+const Dictionary = fn(comptime type: Any) comptime: Any {
+	const Self = struct {
+		const new = fn(): Self {
+			ret Self {};
+		};
+		const get = fn(self: Self, name: String) {
+			
+		};
+		const set = fn(self: Self, name: String, value: type) {
+			@addCodeGen("\t", @getCodeGen(self), "[", @getCodeGen(name), "] = ", @getCodeGen(value), ";\n");
+		};
+	};
+	ret Self;
+};

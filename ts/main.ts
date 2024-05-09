@@ -46,5 +46,5 @@ try {
 	}
 }
 
-logger.printFileAccessLogs();
-logger.printTimes();
+// logger.printFileAccessLogs();
+// logger.printTimes();

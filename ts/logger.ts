@@ -23,7 +23,7 @@ export default {
 	},
 	
 	writeFile(data: WriteFile) {
-		console.log("writeFile", data);
+		// console.log("writeFile", data);
 		writeFiles.push(data);
 		totalWriteFileByteSize += data.byteSize;
 	},
