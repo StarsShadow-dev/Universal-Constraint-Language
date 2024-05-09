@@ -285,7 +285,6 @@ export function callFunction(
 			}
 			
 			const text = getCGText();
-			
 			result = build(context, functionToCall.AST, {
 				compileTime: comptime,
 				codeGenText: text,
@@ -362,13 +361,13 @@ export function callFunction(
 			}
 			
 			if (functionToCall.forceInline) {
-				if (callDest) callDest.push(...text);
+				if (callDest) callDest.push(text.join(""));
 			} else {
 				if (!comptime && !functionToCall.external) {
 					codeGen.function(context.topCodeGenText, context, functionToCall, text);
 				}
 				
-				if (innerDest) innerDest.push(...text);
+				if (innerDest) innerDest.push(text.join(""));
 			}
 		} else {
 			if (callArguments) {

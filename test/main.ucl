@@ -17,14 +17,12 @@ const Vec2 = struct {
 };
 
 const main = fn(): Vec2 {
-	// var a = Vec2 {
-	// 	.x = @opaque(1);
-	// 	.y = @opaque(2);
-	// };
-	// ret a.add(Vec2.new(@opaque(1), @opaque(2)));
 	var dictionary = js.Dictionary(Vec2).new();
-	dictionary.set("a", 2);
-	ret dictionary.get("c");
+	dictionary.set("a", Vec2 {
+		.x = @opaque(1);
+		.y = @opaque(2);
+	});
+	ret dictionary.get("a");
 };
 @export("main", main);
 
