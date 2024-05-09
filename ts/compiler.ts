@@ -14,6 +14,7 @@ export type ScopeInformation = {
 	currentLevel: number;
 
 	function: (ScopeObject & { kind: "function"; }) | null;
+	functionArgumentNameText: string,
 
 	// the function that is being generated
 	generatingFunction: (ScopeObject & { kind: "function"; }) | null;
@@ -100,6 +101,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 			levels: [],
 			currentLevel: -1,
 			function: null,
+			functionArgumentNameText: "",
 			generatingFunction: null,
 		},
 	};

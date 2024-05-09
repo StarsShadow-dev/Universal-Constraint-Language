@@ -70,6 +70,30 @@ export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObj
 	}
 }
 
+export function getNameText(scopeObject: ScopeObject): string | null {
+	const object = unwrapScopeObject(scopeObject);
+	
+	if (object.kind == "bool") {
+		return `${object.value}`;
+	} else if (object.kind == "number") {
+		return `${object.value}`;
+	} else if (object.kind == "string") {
+		return `"${object.value}"`;
+	} else if (object.kind == "typeUse") {
+		if (object.type.kind == "struct") {
+			return `${object.type.name}`;
+		} else {
+			throw utilities.TODO();
+		}
+	} else if (object.kind == "complexValue") {
+		return null;
+	} else if (object.kind == "structInstance") {
+		return "TODO: getNameText structInstance";
+	} else {
+		throw utilities.TODO();
+	}
+}
+
 function expectType(
 	context: BuilderContext,
 	expectedType: ScopeObject & { kind: "typeUse" },
@@ -217,12 +241,26 @@ export function callFunction(
 		let result: ScopeObject;
 		
 		if (toBeGeneratedHere) {
+			let argumentNameText = "";
+			if (callArguments) {
+				let nameTextList = [];
+				for (let i = 0; i < callArguments.length; i++) {
+					const arg = callArguments[i];
+					const text = getNameText(arg);
+					if (text) {
+						nameTextList.push(text);
+					}
+				}
+				argumentNameText = nameTextList.join(", ");
+			}
+			
 			const oldScope = context.file.scope;
 			const oldGeneratingFunction = oldScope.generatingFunction;
 			context.file.scope = {
 				currentLevel: -1,
 				levels: [[]],
 				function: functionToCall,
+				functionArgumentNameText: argumentNameText,
 				generatingFunction: oldGeneratingFunction,
 			}
 			if (!comptime) {
@@ -304,14 +342,7 @@ export function callFunction(
 					if (
 						unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct"
 					) {
-						let nameArgumentsText = "";
-						for (let i = 0; i < callArguments.length; i++) {
-							const arg = callArguments[i];
-							if (arg.kind == "string") {
-								nameArgumentsText += `"${arg.value}"`;
-							}
-						}
-						unwrappedResult.type.name = `${functionToCall.symbolName}(${nameArgumentsText})`;
+						unwrappedResult.type.name = `${functionToCall.symbolName}(${argumentNameText})`;
 					}
 				}
 				
@@ -556,7 +587,18 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					
 					if (value.originLocation != "builtin") {
-						const symbolName = `${value.originLocation.path}:${value.originLocation.line},${value.originLocation.startColumn}:${alias.name}`;
+						const path = value.originLocation.path;
+						const line = value.originLocation.line;
+						const startColumn = value.originLocation.startColumn;
+						
+						let symbolName: string;
+						if (context.file.scope.function) {
+							const functionSymbolName = context.file.scope.function.symbolName;
+							const functionArgumentNameText = context.file.scope.functionArgumentNameText;
+							symbolName = `${functionSymbolName}(${functionArgumentNameText}).${path}:${line},${startColumn}:${alias.name}`;
+						} else {
+							symbolName = `${path}:${line},${startColumn}:${alias.name}`;
+						}
 						if (node.value.kind == "function" && value.kind == "function") {
 							value.symbolName = symbolName;
 						} else if (node.value.kind == "struct" && value.kind == "typeUse" && value.type.kind == "struct") {

@@ -16,15 +16,24 @@ const Vec2 = struct {
 	};
 };
 
-const main = fn(): Vec2 {
+const Dictionary_Vec2 = fn(): Vec2 {
 	var dictionary = js.Dictionary(Vec2).new();
 	dictionary.set("a", Vec2 {
 		.x = @opaque(1);
 		.y = @opaque(2);
 	});
+	dictionary.set("b", Vec2.new(22, 22));
+	dictionary.set("b", Vec2.new(333, 333));
+	ret dictionary.get("b");
+};
+@export("Dictionary_Vec2", Dictionary_Vec2);
+const Dictionary_Number = fn(): Vec2 {
+	var dictionary = js.Dictionary(Number).new();
+	dictionary.set("a", 1);
+	dictionary.set("b", 2);
 	ret dictionary.get("a");
 };
-@export("main", main);
+@export("Dictionary_Number", Dictionary_Number);
 
 //////////////////////////////
 
