@@ -31,21 +31,27 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 		let i = 0;
 		let line = 1;
 		
-		function writeLine() {
+		function writeLine(): number {
+			let size = 0
+			let lineText = "";
 			if (indicator.location != "builtin") {
-				errorText += line.toString().padStart(lineNumberPadding, "0");
-				errorText += " |";
+				lineText += line.toString().padStart(lineNumberPadding, "0");
+				lineText += " |";
+				size = lineText.length;
 				for (; i < text.length; i++) {
 					if (text[i] == "\n") line++;
 					
 					if (line != indicator.location.line) continue;
 					
-					errorText += text[i];
+					lineText += text[i];
 				}
-				errorText += "\n";
+				lineText += "\n";
 			} else {
 				utilities.unreachable();
 			}
+			errorText += lineText;
+			
+			return size;
 		}
 		
 		for (; i < text.length; i++) {
@@ -53,8 +59,14 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 			
 			if (line == indicator.location.line) {
 				if (text[i] == "\n") i++;
-				writeLine();
-				errorText += `${indicator.msg}\n`;
+				const size = writeLine();
+				for (let index = 0; index < size + indicator.location.startColumn; index++) {
+					errorText += " ";
+				}
+				for (let index = 0; index < indicator.location.endColumn - indicator.location.startColumn + 1; index++) {
+					errorText += "^";
+				}
+				errorText += ` ${indicator.msg}\n`;
 			}
 		}
 		

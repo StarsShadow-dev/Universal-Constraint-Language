@@ -17,7 +17,7 @@ const Vec2 = struct {
 };
 
 const main = fn(): Vec2 {
-	var v1 = Vec2.new(0, 0);
+	const v1 = Vec2.new(0, 0);
 	v1 = Vec2.new(0, 1);
 	v1.x = 1;
 	ret v1;

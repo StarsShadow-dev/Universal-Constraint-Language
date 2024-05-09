@@ -49,7 +49,9 @@ while (i < process.argv.length) {
 try {
 	setUpBuiltin(false);
 	const context = compile(options.filePath, null);
-	if (!options.ideOptions) {
+	if (options.ideOptions) {
+		
+	} else {
 		if (options.outputPath) {
 			utilities.writeFile(options.outputPath, context.topCodeGenText.join(""));
 		} else {
