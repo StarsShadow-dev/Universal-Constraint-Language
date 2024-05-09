@@ -37,6 +37,10 @@ const utilities = {
 	writeFile(filePath: string, text: string) {
 		try {
 			fs.writeFileSync(path.normalize(filePath), text, { encoding: 'utf8' });
+			logger.writeFile({
+				path: filePath,
+				byteSize: utilities.byteSize(text),
+			});
 		} catch (error) {
 			throw new CompileError(`could not write file at path '${filePath}'`);
 		}

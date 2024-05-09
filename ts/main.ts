@@ -31,11 +31,10 @@ while (i < process.argv.length) {
 try {
 	setUpBuiltin(false);
 	const context = compile(filePath, null);
-	// console.log(context.topCodeGenText.join(""));
-	// logger.printFileAccessLogs();
-	// logger.printTimes();
 	if (options.outputPath) {
 		utilities.writeFile(options.outputPath, context.topCodeGenText.join(""));
+	} else {
+		console.log(context.topCodeGenText.join(""));
 	}
 } catch (error) {
 	if (error instanceof CompileError) {
@@ -46,3 +45,6 @@ try {
 		throw error;	
 	}
 }
+
+logger.printFileAccessLogs();
+logger.printTimes();

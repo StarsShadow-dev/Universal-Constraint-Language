@@ -2,9 +2,16 @@ type ReadFile = {
 	path: string,
 	byteSize: number,
 }
+type WriteFile = {
+	path: string,
+	byteSize: number,
+}
 
 let readFiles: ReadFile[] = [];
 let totalReadFileByteSize = 0;
+
+let writeFiles: ReadFile[] = [];
+let totalWriteFileByteSize = 0;
 
 const times: any = {};
 
@@ -15,6 +22,12 @@ export default {
 		totalReadFileByteSize += data.byteSize;
 	},
 	
+	writeFile(data: WriteFile) {
+		console.log("writeFile", data);
+		writeFiles.push(data);
+		totalWriteFileByteSize += data.byteSize;
+	},
+	
 	addTime(name: string, time: number) {
 		if (!times[name]) times[name] = 0;
 		times[name] += time;
@@ -23,11 +36,16 @@ export default {
 	//#region printing
 	
 	printFileAccessLogs() {
-		console.log("fileAccessLogs:");
+		console.log(`totalReadFileByteSize: ${totalReadFileByteSize}`);
+		console.log(`totalWriteFileByteSize: ${totalWriteFileByteSize}`);
+		console.log("readFiles:");
 		for (let i = 0; i < readFiles.length; i++) {
 			console.log(`\t'${readFiles[i].path}': ${readFiles[i].byteSize}`);
 		}
-		console.log(`totalReadFileByteSize: ${totalReadFileByteSize}`);
+		console.log("writeFiles:");
+		for (let i = 0; i < writeFiles.length; i++) {
+			console.log(`\t'${writeFiles[i].path}': ${writeFiles[i].byteSize}`);
+		}
 	},
 	
 	printTimes() {
