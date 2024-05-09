@@ -284,6 +284,24 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			};
 		}
 		
+		else if (node.name == "asComplexValue") {
+			const type = unwrapScopeObject(fc.forward());
+			
+			if (type.kind != "typeUse") {
+				throw utilities.TODO();
+			}
+			
+			if (context.options.codeGenText) {
+				context.options.codeGenText.push(argumentText.join(""));
+			}
+			
+			return {
+				kind: "complexValue",
+				originLocation: "builtin",
+				type: type,
+			};
+		}
+		
 		else if (node.name == "getCodeGen") {
 			return getString(argumentText.join(""));
 		}

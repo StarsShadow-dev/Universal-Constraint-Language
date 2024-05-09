@@ -609,7 +609,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "identifier": {
 				const alias = getAlias(context, node.name);
 				if (alias) {
-					if (doCodeGen(context)) codeGen.load(context.options.codeGenText, context, alias);
+					if (!alias.forceComptime && doCodeGen(context)) {
+						codeGen.load(context.options.codeGenText, context, alias);
+					}
 					addToScopeList(alias);
 				} else {
 					throw new CompileError(`alias '${node.name}' does not exist`).indicator(node.location, "here");
@@ -798,7 +800,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								if (alias.kind == "alias") {
 									if (alias.isAfield) continue;
 									if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
-										debugger;
 										addToScopeList(alias);
 										addToScopeList(left);
 										addedAlias = true;

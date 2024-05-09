@@ -132,8 +132,8 @@ const Dictionary = fn(comptime type: Any) comptime: Any {
 		const new = fn(): Self {
 			ret Self {};
 		};
-		const get = fn(self: Self, name: String) {
-			
+		const get = fn(self: Self, name: String): type {
+			ret @asComplexValue(@addCodeGen(@getCodeGen(self), "[", @getCodeGen(name), "]"), type);
 		};
 		const set = fn(self: Self, name: String, value: type) {
 			@addCodeGen("\t", @getCodeGen(self), "[", @getCodeGen(name), "] = ", @getCodeGen(value), ";\n");
