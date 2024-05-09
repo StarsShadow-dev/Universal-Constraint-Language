@@ -464,14 +464,14 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					
 					const equals = next(context);
 					if (equals.type != TokenType.operator || equals.text != "=") {
-						throw new CompileError("empty field definition").indicator(token.location, "here");
+						throw new CompileError("empty field initialization").indicator(token.location, "here");
 					}
 					
 					forward(context);
 						
 					const value = parse(context, ParserMode.single, null)[0];
 					if (!value) {
-						throw new CompileError("empty field definition").indicator(token.location, "here");
+						throw new CompileError("empty field initialization").indicator(token.location, "here");
 					}
 					
 					AST.push({
