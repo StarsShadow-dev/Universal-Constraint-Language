@@ -1,7 +1,7 @@
 // compOut
 // "use strict";
 // const symbols = {};
-// symbols["tests/js/Vec2.ucl:32,14:new"] = (x, y) => {
+// symbols["tests/js/Vec2.ucl:34,14:new"] = (x, y) => {
 // 	return (() => {
 // 		var __uclstruct__ = {};
 // 		__uclstruct__["x"] = x;
@@ -9,8 +9,8 @@
 // 		return __uclstruct__;
 // 	})();
 // }
-// symbols["tests/js/Vec2.ucl:39,14:add"] = (v1, v2) => {
-// 	return symbols["tests/js/Vec2.ucl:32,14:new"]((v1["x"] + v2["x"]), (v1["y"] + v2["y"]));
+// symbols["tests/js/Vec2.ucl:41,14:add"] = (v1, v2) => {
+// 	return symbols["tests/js/Vec2.ucl:34,14:new"]((v1["x"] + v2["x"]), (v1["y"] + v2["y"]));
 // }
 // symbols["main"] = () => {
 // 	var a = (() => {
@@ -19,7 +19,9 @@
 // 		__uclstruct__["y"] = 2;
 // 		return __uclstruct__;
 // 	})();
-// 	return symbols["tests/js/Vec2.ucl:39,14:add"](a, symbols["tests/js/Vec2.ucl:32,14:new"](1, 2));
+// 	a["x"] = 2;
+// 	a["y"] = a["x"];
+// 	return symbols["tests/js/Vec2.ucl:41,14:add"](a, symbols["tests/js/Vec2.ucl:34,14:new"](1, 2));
 // }
 // 
 
@@ -46,6 +48,8 @@ const main = fn(): Vec2 {
 		.x = @opaque(1);
 		.y = @opaque(2);
 	};
+	a.x = @opaque(2);
+	a.y = a.x;
 	ret a.add(Vec2.new(@opaque(1), @opaque(2)));
 };
 @export("main", main);

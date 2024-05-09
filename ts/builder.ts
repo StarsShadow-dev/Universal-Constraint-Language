@@ -1300,7 +1300,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					kind: "alias",
 					originLocation: node.location,
 					forceComptime: false,
-					mutable: false,
+					mutable: true,
 					isAfield: false, // TODO
 					name: node.name,
 					value: value,
