@@ -760,6 +760,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 						
 						left.value = right;
+					} else if (left.kind == "complexValue") {
+						if (doCodeGen(context)) {
+							codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
+						}
 					} else {
 						throw new CompileError(`attempted to assign to something other than an alias`)
 							.indicator(node.location, "reassignment here");
@@ -790,19 +794,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							const alias = typeUse.type.members[i];
 							if (alias.kind == "alias") {
 								if (alias.name == node.right[0].name) {
-									// if (left.kind == "complexValue") {
-									// 	if (alias.isAfield && alias.type) {
-									// 		addToScopeList({
-									// 			kind: "complexValue",
-									// 			originLocation: alias.originLocation,
-									// 			type: alias.type,
-									// 		});
-									// 		addedAlias = true;
-									// 		break;
-									// 	}
-									// } else {
-										
-									// }
 									if (!alias.isAfield && alias.value) {
 										addToScopeList(alias);
 										addedAlias = true;
@@ -849,11 +840,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								const alias = typeUse.type.members[i];
 								if (alias.name == node.right[0].name) {
 									if (alias.isAfield && alias.type) {
-										addToScopeList({
-											kind: "complexValue",
-											originLocation: alias.originLocation,
-											type: alias.type,
-										});
+										addToScopeList(alias);
 										addedAlias = true;
 										break;
 									}
@@ -902,11 +889,21 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false, false, false)[0]);
 					const rightText = getCGText();
-					const right = unwrapScopeObject(build(context, node.right, {
+					const _right = build(context, node.right, {
 						compileTime: false,
 						codeGenText: rightText,
 						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0]);
+					}, null, false, false, false)[0];
+					let right: ScopeObject;
+					if (_right.kind == "alias" && _right.isAfield && _right.type) {
+						right = {
+							kind: "complexValue",
+							originLocation: _right.originLocation,
+							type: _right.type
+						}
+					} else {
+						right = unwrapScopeObject(_right);
+					}
 					
 					if (left.kind == "complexValue" || right.kind == "complexValue") {
 						if (node.operatorText == "+") {

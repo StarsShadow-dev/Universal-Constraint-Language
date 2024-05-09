@@ -107,7 +107,9 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 			let right: ASTnode;
 			context.i++;
 			let mode;
-			if (nextOperator.text == ".") {
+			if (nextOperator.text == "=") {
+				mode = ParserMode.single;
+			} else if (nextOperator.text == ".") {
 				mode = ParserMode.singleNoContinue;
 			} else {
 				mode = ParserMode.singleNoOperatorContinue;
