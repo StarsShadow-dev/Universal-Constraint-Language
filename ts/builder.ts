@@ -210,6 +210,7 @@ export function callFunction(
 	callDest: CodeGenText,
 	innerDest: CodeGenText,
 	argumentText: CodeGenText | null,
+	checkHere?: boolean,
 ): ScopeObject {
 	if (!callArguments && comptime) utilities.unreachable();
 	
@@ -231,17 +232,21 @@ export function callFunction(
 		}
 		
 		let toBeAnalyzedHere: boolean;
-		if (context.inCheckMode) {
+		if (checkHere) {
 			toBeAnalyzedHere = true;
 		} else {
 			if (comptime) {
 				toBeAnalyzedHere = true;
 			} else {
-				if (functionToCall.toBeGenerated) {
-					toBeAnalyzedHere = true;
-					functionToCall.toBeGenerated = false;
-				} else {
+				if (context.inCheckMode) {
 					toBeAnalyzedHere = false;
+				} else {
+					if (functionToCall.toBeGenerated) {
+						toBeAnalyzedHere = true;
+						functionToCall.toBeGenerated = false;
+					} else {
+						toBeAnalyzedHere = false;
+					}
 				}
 			}
 		}
@@ -409,7 +414,7 @@ export function callFunction(
 				}
 			}
 			
-			// if (!disableFunctionGeneration) {
+			if (!checkHere) {
 				if (functionToCall.forceInline) {
 					if (callDest) callDest.push(text.join(""));
 				} else {
@@ -419,7 +424,7 @@ export function callFunction(
 					
 					if (innerDest) innerDest.push(text.join(""));
 				}
-			// }
+			}
 		} else {
 			if (callArguments) {
 				for (let index = 0; index < functionToCall.functionArguments.length; index++) {
@@ -731,7 +736,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						callArguments.unshift(functionToCall_[i]);
 					}
 					const result = callFunction(context, functionToCall, callArguments, node.location, context.options.compileTime, context.options.codeGenText, null, argumentText);
-					
 					addToScopeList(result);
 				} else {
 					throw new CompileError(`attempting a function call on something other than a function`)
@@ -746,8 +750,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					codeGenText: argumentText,
 					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false, false, false);
-				
-				if (context.inCheckMode) break;
 				
 				const result = builtinCall(context, node, callArguments, argumentText);
 				if (result) {
@@ -1086,6 +1088,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					forceInline: node.forceInline,
 					external: false,
 					toBeGenerated: true,
+					toBeChecked: true,
 					indentation: 0,
 					originLocation: node.location,
 					symbolName: `${getNextSymbolName(context)}`,
@@ -1153,11 +1156,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						compileTime: context.options.compileTime,
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, resultAtRet, true, false);
-					build(context, node.trueCodeBlock, {
-						codeGenText: null,
-						compileTime: context.options.compileTime,
-						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, resultAtRet, true, false);
+					if (node.falseCodeBlock) {
+						build(context, node.falseCodeBlock, {
+							codeGenText: null,
+							compileTime: context.options.compileTime,
+							disableValueEvaluation: context.options.disableValueEvaluation,
+						}, null, resultAtRet, true, false);
+					}
 					break;
 				}
 				

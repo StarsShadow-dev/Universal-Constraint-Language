@@ -88,7 +88,7 @@ function checkScopeLevel(context: BuilderContext, level: ScopeObject[]) {
 		}
 		const value = unwrapScopeObject(alias);
 		if (value.kind == "function") {
-			callFunction(context, value, null, "builtin", false, null, null, null);
+			callFunction(context, value, null, "builtin", false, null, null, null, true);
 		} else if (value.kind == "typeUse" && value.type.kind == "struct") {
 			checkScopeLevel(context, value.type.members);
 		}
@@ -104,11 +104,11 @@ export function compile(options: CompilerOptions, onTokens: null | ((tokens: Tok
 	
 	codeGen.start(context);
 	
-	// if (options.check) {
-	// 	context.inCheckMode = true;
-	// 	checkScopeLevel(context, context.file.scope.levels[0]);
-	// 	context.inCheckMode = false;
-	// }
+	if (options.check) {
+		context.inCheckMode = true;
+		checkScopeLevel(context, context.file.scope.levels[0]);
+		context.inCheckMode = false;
+	}
 	
 	for (let i = 0; i < context.exports.length; i++) {
 		const toExport = context.exports[i];

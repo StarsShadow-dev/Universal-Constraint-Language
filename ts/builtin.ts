@@ -308,6 +308,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "addCodeGen") {
+			if (context.inCheckMode) return;
+			
 			let str = "";
 			while (fc.next()) {
 				str += fc.string(true);
@@ -322,6 +324,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "addTopCodeGen") {
+			if (context.inCheckMode) return;
+			
 			let str = "";
 			while (fc.next()) {
 				str += fc.string(true);

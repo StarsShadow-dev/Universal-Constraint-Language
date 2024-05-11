@@ -528,12 +528,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "(") {
 			const left = AST.pop();
 			if (left != undefined) {
-				forward(context);
+				const location = forward(context).location;
 				const callArguments = parse(context, ParserMode.comma, ")");
 				
 				AST.push({
 					kind: "call",
-					location: next(context).location,
+					location: location,
 					left: [left],
 					callArguments: callArguments,
 				});

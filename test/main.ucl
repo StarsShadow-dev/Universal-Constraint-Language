@@ -1,25 +1,42 @@
 const js = @import("./js.ucl");
 
-const Vec2 = struct {
-	field x: Number;
-	field y: Number;
+// const Vec2 = struct {
+// 	field x: Number;
+// 	field y: Number;
 	
-	const new = fn(x: Number, y: Number): Vec2 {
-		ret Vec2 {
-			.x = x;
-			.y = y;
-		};
-	};
+// 	const new = fn(x: Number, y: Number): Vec2 {
+// 		ret Vec2 {
+// 			.x = x;
+// 			.y = y;
+// 		};
+// 	};
 	
-	const add = fn(v1: Vec2, v2: Vec2): Vec2 {
-		ret Vec2.new(v1.x + v2.x, v1.y + v2.y);
+// 	const add = fn(v1: Vec2, v2: Vec2): Vec2 {
+// 		ret Vec2.new(v1.x + v2.x, v1.y + v2.y);
+// 	};
+// };
+
+const a = struct {
+	const test = fn() {
+		b.test();
 	};
 };
 
-const main = fn() {
-	if (false) {
-		js.log(1);
-	}
+const b = struct {
+	const test = fn() {
+		js();
+		a.test();
+	};
+};
+
+const main = fn(): js.Dictionary(Number) {
+	// main();
+	// a.test();
+	// b.test();
+	var dictionary = js.Dictionary(Number).new();
+	dictionary.set("a", 1);
+	dictionary.set("b", 2);
+	ret dictionary.get("a");
 };
 @export("main", main);
 
