@@ -1,21 +1,10 @@
 // tsc -p ./tsconfig.json && node out/main.js test/main.ucl
 
 import { setUpBuiltin } from "./builtin";
-import { compile } from "./compiler";
+import { CompilerOptions, compile } from "./compiler";
 import { CompileError } from "./report";
 import logger from "./logger";
 import utilities from "./utilities";
-
-type IdeOptions = {
-	mode: "compileFile",
-}
-
-type CompilerOptions = {
-	filePath: string,
-	
-	outputPath?: string,
-	ideOptions?: IdeOptions,
-}
 
 let i = 2;
 
@@ -25,6 +14,7 @@ function next(): string {
 
 const options: CompilerOptions = {
 	filePath: next(),
+	check: true,
 };
 
 while (i < process.argv.length) {
@@ -41,6 +31,10 @@ while (i < process.argv.length) {
 		} else {
 			utilities.TODO();
 		}
+	} else if (arg == "-noCheck") {
+		options.check = false;
+	} else {
+		utilities.TODO();
 	}
 }
 
@@ -48,13 +42,11 @@ while (i < process.argv.length) {
 
 try {
 	setUpBuiltin(false);
-	const context = compile(options.filePath, null);
-	if (options.ideOptions) {
-		
+	const context = compile(options, null);
+	if (options.outputPath) {
+		utilities.writeFile(options.outputPath, context.topCodeGenText.join(""));
 	} else {
-		if (options.outputPath) {
-			utilities.writeFile(options.outputPath, context.topCodeGenText.join(""));
-		} else {
+		if (!options.ideOptions) {
 			console.log(context.topCodeGenText.join(""));
 		}
 	}

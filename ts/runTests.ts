@@ -5,7 +5,7 @@ import utilities from "./utilities";
 import { CompileError } from "./report";
 import { setUpBuiltin } from "./builtin";
 import path from "path";
-import { compile, resetCompiledFiles } from "./compiler";
+import { CompilerOptions, compile, resetCompiledFiles } from "./compiler";
 import logger from "./logger";
 
 const c_green = "\x1B[32m";
@@ -47,8 +47,13 @@ function testFile(filePath: string) {
 	let comments: any;
 	let mode: any;
 	
+	const options: CompilerOptions = {
+		filePath: filePath,
+		check: true,
+	};
+	
 	try {
-		const context = compile(filePath, (tokens) => {
+		const context = compile(options, (tokens) => {
 			if (!tokens[0] || tokens[0].type != TokenType.comment) {
 				console.log(`unable to test file '${filePath}'`);
 				utilities.unreachable();

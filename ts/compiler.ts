@@ -1,4 +1,4 @@
-import { ASTnode, CodeGenText, ScopeObject, Token, getCGText } from "./types";
+import { ASTnode, CodeGenText, ScopeObject, Token, getCGText, unwrapScopeObject } from "./types";
 import { lex } from "./lexer";
 import {
 	ParserMode,
@@ -8,6 +8,18 @@ import { build, callFunction } from "./builder";
 import utilities from "./utilities";
 import codeGen from "./codeGen";
 import logger from "./logger";
+
+export type IdeOptions = {
+	mode: "compileFile",
+}
+
+export type CompilerOptions = {
+	filePath: string,
+	check: boolean,
+	
+	outputPath?: string,
+	ideOptions?: IdeOptions,
+}
 
 export type ScopeInformation = {
 	levels: ScopeObject[][];
@@ -38,8 +50,9 @@ export type BuilderContext = {
 	nextSymbolName: number;
 	exports: ScopeObject[];
 	inIndentation: boolean,
-	
 	file: FileContext,
+	
+	inCheckMode: boolean,
 };
 
 // file is null!
@@ -54,8 +67,9 @@ export function newBuilderContext(): BuilderContext {
 		nextSymbolName: 0,
 		exports: [],
 		inIndentation: true,
-		
 		file: null as any,
+		
+		inCheckMode: false,
 	};
 }
 
@@ -66,14 +80,35 @@ export function resetCompiledFiles() {
 	compiledFiles = {};
 }
 
-export function compile(startFilePath: string, onTokens: null | ((tokens: Token[]) => void)): BuilderContext {
+function checkScopeLevel(context: BuilderContext, level: ScopeObject[]) {
+	for (let i = 0; i < level.length; i++) {
+		const alias = level[i];
+		if (alias.kind == "alias" && alias.isAfield) {
+			continue;
+		}
+		const value = unwrapScopeObject(alias);
+		if (value.kind == "function") {
+			callFunction(context, value, null, "builtin", false, null, null, null);
+		} else if (value.kind == "typeUse" && value.type.kind == "struct") {
+			checkScopeLevel(context, value.type.members);
+		}
+	}
+}
+
+export function compile(options: CompilerOptions, onTokens: null | ((tokens: Token[]) => void)): BuilderContext {
 	const context = newBuilderContext();
 	
-	context.file = compileFile(context, startFilePath, onTokens);
+	context.file = compileFile(context, options.filePath, onTokens);
 	
 	const exportStart = Date.now();
 	
 	codeGen.start(context);
+	
+	// if (options.check) {
+	// 	context.inCheckMode = true;
+	// 	checkScopeLevel(context, context.file.scope.levels[0]);
+	// 	context.inCheckMode = false;
+	// }
 	
 	for (let i = 0; i < context.exports.length; i++) {
 		const toExport = context.exports[i];

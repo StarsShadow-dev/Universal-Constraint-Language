@@ -127,7 +127,7 @@ var test = "1";
 
 const log = @extern("console.log", fn(text: String) {});
 
-const Dictionary = fn(comptime type: Any) comptime: Any {
+const Dictionary = fn(comptime type: Type) comptime: Type {
 	const Self = struct {
 		const new = fn(): Self {
 			ret Self {};

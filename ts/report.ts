@@ -37,13 +37,23 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 			if (indicator.location != "builtin") {
 				lineText += line.toString().padStart(lineNumberPadding, "0");
 				lineText += " |";
-				size = lineText.length;
+				let lineI = 0;
 				for (; i < text.length; i++) {
 					if (text[i] == "\n") line++;
 					
 					if (line != indicator.location.line) continue;
 					
-					lineText += text[i];
+					lineI++;
+					
+					if (text[i] == "\t") {
+						lineText += "    ";
+					} else {
+						lineText += text[i];
+					}
+					
+					if (lineI == indicator.location.startColumn) {
+						size = lineText.length - 1;
+					}
 				}
 				lineText += "\n";
 			} else {
@@ -60,7 +70,7 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 			if (line == indicator.location.line) {
 				if (text[i] == "\n") i++;
 				const size = writeLine();
-				for (let index = 0; index < size + indicator.location.startColumn; index++) {
+				for (let index = 0; index < size; index++) {
 					errorText += " ";
 				}
 				for (let index = 0; index < indicator.location.endColumn - indicator.location.startColumn + 1; index++) {

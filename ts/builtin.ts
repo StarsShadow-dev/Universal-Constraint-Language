@@ -117,6 +117,7 @@ export function setUpBuiltin(disableFileSystem: boolean) {
 		addType("Number");
 		addType("String");
 		addType("Any");
+		addType("__UnknownType");
 	}
 	
 	if (Object.keys(onCodeGen).length != 0) {

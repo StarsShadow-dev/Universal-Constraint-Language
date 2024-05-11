@@ -104,6 +104,10 @@ function expectType(
 		return;
 	}
 	
+	if (getTypeName(expectedType) == "builtin:Type" && actualType.type.kind == "struct") {
+		return;
+	}
+	
 	if (getTypeName(expectedType) != getTypeName(actualType)) {
 		compileError.msg = compileError.msg
 			.replace("$expectedTypeName", getTypeName(expectedType))
@@ -205,7 +209,7 @@ export function callFunction(
 	comptime: boolean,
 	callDest: CodeGenText,
 	innerDest: CodeGenText,
-	argumentText: CodeGenText | null
+	argumentText: CodeGenText | null,
 ): ScopeObject {
 	if (!callArguments && comptime) utilities.unreachable();
 	
@@ -226,21 +230,25 @@ export function callFunction(
 			comptime = true;
 		}
 		
-		let toBeGeneratedHere: boolean;
-		if (comptime) {
-			toBeGeneratedHere = true;
+		let toBeAnalyzedHere: boolean;
+		if (context.inCheckMode) {
+			toBeAnalyzedHere = true;
 		} else {
-			if (functionToCall.toBeGenerated) {
-				toBeGeneratedHere = true;
-				functionToCall.toBeGenerated = false;
+			if (comptime) {
+				toBeAnalyzedHere = true;
 			} else {
-				toBeGeneratedHere = false;
+				if (functionToCall.toBeGenerated) {
+					toBeAnalyzedHere = true;
+					functionToCall.toBeGenerated = false;
+				} else {
+					toBeAnalyzedHere = false;
+				}
 			}
 		}
 		
 		let result: ScopeObject;
 		
-		if (toBeGeneratedHere) {
+		if (toBeAnalyzedHere) {
 			let argumentNameText = "";
 			if (callArguments) {
 				let nameTextList = [];
@@ -301,6 +309,20 @@ export function callFunction(
 							type: argumentType,
 						});
 					} else {
+						let value: ScopeObject = {
+							kind: "complexValue",
+							originLocation: argument.originLocation,
+							type: argumentType,
+						};
+						if (argument.comptime) {
+							if (getTypeName(argument.type) == "builtin:Type") {
+								value = {
+									kind: "typeUse",
+									originLocation: argument.originLocation,
+									type: forceAsType(unwrapScopeObject(getAlias(context, "__UnknownType"))),
+								}
+							}
+						}
 						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
@@ -308,11 +330,7 @@ export function callFunction(
 							mutable: false,
 							isAfield: false,
 							name: argument.name,
-							value: {
-								kind: "complexValue",
-								originLocation: argument.originLocation,
-								type: argumentType,
-							},
+							value: value,
 							symbolName: symbolName,
 							type: argumentType,
 						});
@@ -391,15 +409,17 @@ export function callFunction(
 				}
 			}
 			
-			if (functionToCall.forceInline) {
-				if (callDest) callDest.push(text.join(""));
-			} else {
-				if (!comptime && !functionToCall.external) {
-					codeGen.function(context.topCodeGenText, context, functionToCall, text);
+			// if (!disableFunctionGeneration) {
+				if (functionToCall.forceInline) {
+					if (callDest) callDest.push(text.join(""));
+				} else {
+					if (!comptime && !functionToCall.external) {
+						codeGen.function(context.topCodeGenText, context, functionToCall, text);
+					}
+					
+					if (innerDest) innerDest.push(text.join(""));
 				}
-				
-				if (innerDest) innerDest.push(text.join(""));
-			}
+			// }
 		} else {
 			if (callArguments) {
 				for (let index = 0; index < functionToCall.functionArguments.length; index++) {
@@ -727,6 +747,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false, false, false);
 				
+				if (context.inCheckMode) break;
+				
 				const result = builtinCall(context, node, callArguments, argumentText);
 				if (result) {
 					addToScopeList(result);
@@ -840,7 +862,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								const alias = typeUse.type.members[i];
 								if (alias.name == node.right[0].name) {
 									if (alias.isAfield && alias.type) {
-										addToScopeList(alias);
+										addToScopeList({
+											kind: "complexValue",
+											originLocation: alias.originLocation,
+											type: alias.type,
+										});
 										addedAlias = true;
 										break;
 									}
@@ -1120,6 +1146,21 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					compileTime: context.options.compileTime,
 					disableValueEvaluation: context.options.disableValueEvaluation,
 				}, null, false, false, false)[0];
+				
+				if (context.inCheckMode) {
+					build(context, node.trueCodeBlock, {
+						codeGenText: null,
+						compileTime: context.options.compileTime,
+						disableValueEvaluation: context.options.disableValueEvaluation,
+					}, null, resultAtRet, true, false);
+					build(context, node.trueCodeBlock, {
+						codeGenText: null,
+						compileTime: context.options.compileTime,
+						disableValueEvaluation: context.options.disableValueEvaluation,
+					}, null, resultAtRet, true, false);
+					break;
+				}
+				
 				if (!_condition) {
 					throw new CompileError("if statement is missing a condition")
 						.indicator(node.location, "here");

@@ -1,3 +1,4 @@
 {
 	"conf.ucl_vscode.compilerPath": "./out/main.js",
+	"conf.ucl_vscode.mainPath": "./test/main.ucl",
 }
