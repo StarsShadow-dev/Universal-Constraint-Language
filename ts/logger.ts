@@ -15,6 +15,8 @@ let totalWriteFileByteSize = 0;
 
 const times: any = {};
 
+const globals: any[][] = [];
+
 export default {
 	readFile(data: ReadFile) {
 		// console.log("readFile", data);
@@ -31,6 +33,11 @@ export default {
 	addTime(name: string, time: number) {
 		if (!times[name]) times[name] = 0;
 		times[name] += time;
+	},
+	
+	global(...args: any[]) {
+		console.log("[global]", ...args);
+		globals.push(args);
 	},
 	
 	//#region printing

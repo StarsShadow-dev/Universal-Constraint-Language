@@ -38,7 +38,7 @@ while (i < process.argv.length) {
 	}
 }
 
-// console.log("options", options);
+logger.global("options:", options);
 
 try {
 	setUpBuiltin(false);
