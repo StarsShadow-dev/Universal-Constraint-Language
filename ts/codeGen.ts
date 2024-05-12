@@ -177,4 +177,10 @@ export default {
 			}
 		}
 	},
+	
+	panic(dest: CodeGenText, context: BuilderContext) {
+		if (onCodeGen["panic"]) {
+			callFunction(context, onCodeGen["panic"], [], "builtin", true, null, dest, null);
+		}
+	}
 }

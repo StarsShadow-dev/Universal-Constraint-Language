@@ -1,3 +1,20 @@
+const log = @extern("console.log", fn(text: String) {});
+
+const Dictionary = fn(comptime type: Type) comptime: Type {
+	const Self = struct {
+		const new = fn(): Self {
+			ret Self {};
+		};
+		const get = fn(self: Self, name: String): type {
+			ret @asComplexValue(@addCodeGen(@getCodeGen(self), "[", @getCodeGen(name), "]"), type);
+		};
+		const set = fn(self: Self, name: String, value: type) {
+			@addCodeGen("\t", @getCodeGen(self), "[", @getCodeGen(name), "] = ", @getCodeGen(value), ";\n");
+		};
+	};
+	ret Self;
+};
+
 @onCodeGen("startExpression", fn(indentation: Number) {
 	var i = 0;
 	while (i < indentation) {
@@ -123,19 +140,8 @@
 	}
 });
 
-const log = @extern("console.log", fn(text: String) {});
-
-const Dictionary = fn(comptime type: Type) comptime: Type {
-	const Self = struct {
-		const new = fn(): Self {
-			ret Self {};
-		};
-		const get = fn(self: Self, name: String): type {
-			ret @asComplexValue(@addCodeGen(@getCodeGen(self), "[", @getCodeGen(name), "]"), type);
-		};
-		const set = fn(self: Self, name: String, value: type) {
-			@addCodeGen("\t", @getCodeGen(self), "[", @getCodeGen(name), "] = ", @getCodeGen(value), ";\n");
-		};
-	};
-	ret Self;
-};
+@onCodeGen("panic", fn() {
+	@addCodeGen_startExpression();
+	@addCodeGen("throw \"ucl_panic\"");
+	@addCodeGen_endExpression();
+});

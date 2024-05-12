@@ -257,6 +257,10 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			debugger;
 		}
 		
+		else if (node.name == "panic") {
+			codeGen.panic(context.options.codeGenText, context);
+		}
+		
 		else if (node.name == "assert") {
 			const bool = fc.bool(false);
 			
