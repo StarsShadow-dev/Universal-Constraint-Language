@@ -1,0 +1,14 @@
+// compOut
+// "use strict";
+// const symbols = {};
+// symbols["main"] = (arg) => {
+// 	throw "ucl_panic";
+// }
+// 
+
+const js = @import("./../../test/js.ucl");
+
+const main = fn(arg: String) {
+	@panic();
+};
+@export("main", main);

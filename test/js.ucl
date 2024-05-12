@@ -140,8 +140,8 @@ const Dictionary = fn(comptime type: Type) comptime: Type {
 	}
 });
 
-@onCodeGen("panic", fn() {
+@onCodeGen("panic", fn(text: String) {
 	@addCodeGen_startExpression();
-	@addCodeGen("throw \"ucl_panic\"");
+	@addCodeGen("throw \"", text, "\"");
 	@addCodeGen_endExpression();
 });

@@ -258,7 +258,7 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		}
 		
 		else if (node.name == "panic") {
-			codeGen.panic(context.options.codeGenText, context);
+			codeGen.panic(context.options.codeGenText, context, "ucl_panic");
 		}
 		
 		else if (node.name == "assert") {

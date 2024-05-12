@@ -1,13 +1,13 @@
 // compOut
 // "use strict";
 // const symbols = {};
-// symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:130,15:new"] = () => {
+// symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:5,15:new"] = () => {
 // 	return (() => {
 // 		var __uclstruct__ = {};
 // 		return __uclstruct__;
 // 	})();
 // }
-// symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:136,15:set"] = (self, name, value) => {
+// symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:11,15:set"] = (self, name, value) => {
 // 	self[name] = value;
 // }
 // symbols["tests/js/Dictionary.ucl:62,14:new"] = (x, y) => {
@@ -18,38 +18,38 @@
 // 		return __uclstruct__;
 // 	})();
 // }
-// symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:133,15:get"] = (self, name) => {
+// symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:8,15:get"] = (self, name) => {
 // 	return self[name];
 // }
 // symbols["Dictionary_Vec2"] = () => {
-// 	var dictionary = symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:130,15:new"]();
-// 	symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:136,15:set"](dictionary, "a", (() => {
+// 	var dictionary = symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:5,15:new"]();
+// 	symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:11,15:set"](dictionary, "a", (() => {
 // 		var __uclstruct__ = {};
 // 		__uclstruct__["x"] = 1;
 // 		__uclstruct__["y"] = 2;
 // 		return __uclstruct__;
 // 	})());
-// 	symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:136,15:set"](dictionary, "b", symbols["tests/js/Dictionary.ucl:62,14:new"](22, 22));
-// 	symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:136,15:set"](dictionary, "b", symbols["tests/js/Dictionary.ucl:62,14:new"](333, 333));
-// 	return symbols["test/js.ucl:128,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:133,15:get"](dictionary, "b");
+// 	symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:11,15:set"](dictionary, "b", symbols["tests/js/Dictionary.ucl:62,14:new"](22, 22));
+// 	symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:11,15:set"](dictionary, "b", symbols["tests/js/Dictionary.ucl:62,14:new"](333, 333));
+// 	return symbols["test/js.ucl:3,20:Dictionary(tests/js/Dictionary.ucl:58,14:Vec2).test/js.ucl:8,15:get"](dictionary, "b");
 // }
-// symbols["test/js.ucl:128,20:Dictionary(builtin:Number).test/js.ucl:130,15:new"] = () => {
+// symbols["test/js.ucl:3,20:Dictionary(builtin:Number).test/js.ucl:5,15:new"] = () => {
 // 	return (() => {
 // 		var __uclstruct__ = {};
 // 		return __uclstruct__;
 // 	})();
 // }
-// symbols["test/js.ucl:128,20:Dictionary(builtin:Number).test/js.ucl:136,15:set"] = (self, name, value) => {
+// symbols["test/js.ucl:3,20:Dictionary(builtin:Number).test/js.ucl:11,15:set"] = (self, name, value) => {
 // 	self[name] = value;
 // }
-// symbols["test/js.ucl:128,20:Dictionary(builtin:Number).test/js.ucl:133,15:get"] = (self, name) => {
+// symbols["test/js.ucl:3,20:Dictionary(builtin:Number).test/js.ucl:8,15:get"] = (self, name) => {
 // 	return self[name];
 // }
 // symbols["Dictionary_Number"] = () => {
-// 	var dictionary = symbols["test/js.ucl:128,20:Dictionary(builtin:Number).test/js.ucl:130,15:new"]();
-// 	symbols["test/js.ucl:128,20:Dictionary(builtin:Number).test/js.ucl:136,15:set"](dictionary, "a", 1);
-// 	symbols["test/js.ucl:128,20:Dictionary(builtin:Number).test/js.ucl:136,15:set"](dictionary, "b", 2);
-// 	return symbols["test/js.ucl:128,20:Dictionary(builtin:Number).test/js.ucl:133,15:get"](dictionary, "a");
+// 	var dictionary = symbols["test/js.ucl:3,20:Dictionary(builtin:Number).test/js.ucl:5,15:new"]();
+// 	symbols["test/js.ucl:3,20:Dictionary(builtin:Number).test/js.ucl:11,15:set"](dictionary, "a", 1);
+// 	symbols["test/js.ucl:3,20:Dictionary(builtin:Number).test/js.ucl:11,15:set"](dictionary, "b", 2);
+// 	return symbols["test/js.ucl:3,20:Dictionary(builtin:Number).test/js.ucl:8,15:get"](dictionary, "a");
 // }
 // 
 

@@ -178,9 +178,11 @@ export default {
 		}
 	},
 	
-	panic(dest: CodeGenText, context: BuilderContext) {
+	panic(dest: CodeGenText, context: BuilderContext, text: string) {
 		if (onCodeGen["panic"]) {
-			callFunction(context, onCodeGen["panic"], [], "builtin", true, null, dest, null);
+			callFunction(context, onCodeGen["panic"], [
+				getString(text),
+			], "builtin", true, null, dest, null);
 		}
 	}
 }
