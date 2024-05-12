@@ -24,7 +24,7 @@ const a = struct {
 
 const b = struct {
 	const test = fn() {
-		js();
+		js.log(4);
 		a.test();
 	};
 };

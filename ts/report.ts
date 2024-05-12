@@ -2,6 +2,7 @@ import { SourceLocation } from "./types";
 import utilities from "./utilities";
 
 const lineNumberPadding = 4;
+const indicatorTextWindowSize = 5;
 
 export type Indicator = {
 	location: SourceLocation,
@@ -39,9 +40,10 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 				lineText += " |";
 				let lineI = 0;
 				for (; i < text.length; i++) {
-					if (text[i] == "\n") line++;
-					
-					if (line != indicator.location.line) continue;
+					if (text[i] == "\n") {
+						line++;
+						break;
+					}
 					
 					lineI++;
 					
@@ -77,6 +79,12 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 					errorText += "^";
 				}
 				errorText += ` ${indicator.msg}\n`;
+			} else if (
+				line > indicator.location.line - indicatorTextWindowSize - 1 &&
+				line < indicator.location.line + indicatorTextWindowSize + 1
+			) {
+				if (text[i] == "\n") i++;
+				writeLine();
 			}
 		}
 		
