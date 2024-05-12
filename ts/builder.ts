@@ -215,6 +215,8 @@ export function callFunction(
 	if (!callArguments && comptime) utilities.unreachable();
 	
 	if (functionToCall.kind == "function") {
+		if (functionToCall.hadError) return undefined as any;
+		
 		if (callArguments) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
 				throw new CompileError(`too many arguments passed to function '${functionToCall.symbolName}'`)
@@ -251,7 +253,7 @@ export function callFunction(
 			}
 		}
 		
-		let result: ScopeObject;
+		let result: ScopeObject | undefined;
 		
 		if (toBeAnalyzedHere) {
 			let argumentNameText = "";
@@ -345,15 +347,29 @@ export function callFunction(
 				}
 			}
 			
+			let gotError = false;
+			
 			const text = getCGText();
-			result = build(context, functionToCall.AST, {
-				compileTime: comptime,
-				codeGenText: text,
-				disableValueEvaluation: context.options.disableValueEvaluation,
-			}, {
-				location: functionToCall.originLocation,
-				msg: `function ${functionToCall.symbolName}`,
-			}, true, true, false)[0];
+			try {
+				result = build(context, functionToCall.AST, {
+					compileTime: comptime,
+					codeGenText: text,
+					disableValueEvaluation: context.options.disableValueEvaluation,
+				}, {
+					location: functionToCall.originLocation,
+					msg: `function ${functionToCall.symbolName}`,
+				}, true, true, false)[0];
+			} catch (error) {
+				if (error instanceof CompileError) {
+					context.errors.push(error);
+					gotError = true;
+					functionToCall.toBeGenerated = false;
+					functionToCall.toBeChecked = false;
+					functionToCall.hadError = true;
+				} else {
+					throw error;
+				}
+			}
 			
 			context.file.scope = oldScope;
 			context.file.scope.generatingFunction = oldGeneratingFunction;
@@ -387,29 +403,24 @@ export function callFunction(
 							type: functionToCall.returnType,
 						};
 					}
-				} else {
-					throw new CompileError(`void function returned a value`)
-						.indicator(location, "function called here")
-						.indicator(functionToCall.originLocation, "function defined here");
 				}
 			} else {
-				if (functionToCall.returnType) {
+				if (functionToCall.returnType && !gotError) {
 					throw new CompileError(`non-void function returned void`)
 						.indicator(location, "call here")
 						.indicator(functionToCall.originLocation, "function defined here");
 				}
-				if (comptime) {
+				
+				if (functionToCall.returnType) {
+					result = {
+						kind: "complexValue",
+						originLocation: location,
+						type: functionToCall.returnType,
+					};
+				} else {
 					result = {
 						kind: "void",
 						originLocation: location,
-					}
-				} else {
-					if (functionToCall.returnType) {
-						result = {
-							kind: "complexValue",
-							originLocation: location,
-							type: functionToCall.returnType,
-						};
 					}
 				}
 			}
@@ -474,7 +485,8 @@ export function callFunction(
 			}
 		}
 		
-		return result;
+		// if (!result) throw utilities.unreachable();
+		return result as ScopeObject;
 	} else {
 		utilities.unreachable();
 		return {} as ScopeObject;
@@ -1089,6 +1101,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					external: false,
 					toBeGenerated: true,
 					toBeChecked: true,
+					hadError: false,
 					indentation: 0,
 					originLocation: node.location,
 					symbolName: `${getNextSymbolName(context)}`,
@@ -1229,12 +1242,29 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					throw new CompileError("unexpected return").indicator(node.location, "here");
 				}
 				if (node.value) {
+					if (!context.file.scope.function) {
+						throw utilities.unreachable();
+					}
+					
+					if (!context.file.scope.function.returnType) {
+						throw new CompileError(`void function returned a value`)
+							.indicator(node.location, "return here")
+							.indicator(context.file.scope.function.originLocation, "function defined here");
+					}
+					
 					const valueText: CodeGenText = [];
 					const value = build(context, [node.value], {
 						codeGenText: valueText,
 						compileTime: context.options.compileTime,
 						disableValueEvaluation: context.options.disableValueEvaluation,
 					}, null, false, false, false)[0];
+					
+					expectType(context, context.file.scope.function.returnType, getTypeOf(context, unwrapScopeObject(value)),
+						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+							.indicator(node.location, "return here")
+							.indicator(context.file.scope.function.originLocation, "function defined here")
+					);
+					
 					scopeList.push(value);
 					
 					if (doCodeGen(context)) {

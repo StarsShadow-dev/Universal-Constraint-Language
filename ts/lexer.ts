@@ -48,7 +48,7 @@ export function lex(filePath: string, text: string): Token[] {
 	let tokens: Token[] = [];
 	
 	let line = 1;
-	let column = 0;
+	let column = 1;
 	let columnStartI = 0
 	
 	for (let i = 0; i < text.length; i++) {

@@ -8,6 +8,7 @@ import { build, callFunction } from "./builder";
 import utilities from "./utilities";
 import codeGen from "./codeGen";
 import logger from "./logger";
+import { CompileError } from "./report";
 
 export type IdeOptions = {
 	mode: "compileFile",
@@ -16,6 +17,7 @@ export type IdeOptions = {
 export type CompilerOptions = {
 	filePath: string,
 	check: boolean,
+	fancyErrors: boolean,
 	
 	outputPath?: string,
 	ideOptions?: IdeOptions,
@@ -45,19 +47,22 @@ export type FileContext = {
 }
 
 export type BuilderContext = {
+	compilerOptions: CompilerOptions,
 	topCodeGenText: string[];
 	options: BuilderOptions;
 	nextSymbolName: number;
 	exports: ScopeObject[];
 	inIndentation: boolean,
 	file: FileContext,
+	errors: CompileError[],
 	
 	inCheckMode: boolean,
 };
 
 // file is null!
-export function newBuilderContext(): BuilderContext {
+export function newBuilderContext(compilerOptions: CompilerOptions): BuilderContext {
 	return {
+		compilerOptions: compilerOptions,
 		topCodeGenText: getCGText(),
 		options: {
 			compileTime: true,
@@ -68,6 +73,7 @@ export function newBuilderContext(): BuilderContext {
 		exports: [],
 		inIndentation: true,
 		file: null as any,
+		errors: [],
 		
 		inCheckMode: false,
 	};
@@ -87,7 +93,7 @@ function checkScopeLevel(context: BuilderContext, level: ScopeObject[]) {
 			continue;
 		}
 		const value = unwrapScopeObject(alias);
-		if (value.kind == "function") {
+		if (value.kind == "function" && !value.external) {
 			callFunction(context, value, null, "builtin", false, null, null, null, true);
 		} else if (value.kind == "typeUse" && value.type.kind == "struct") {
 			checkScopeLevel(context, value.type.members);
@@ -95,16 +101,23 @@ function checkScopeLevel(context: BuilderContext, level: ScopeObject[]) {
 	}
 }
 
-export function compile(options: CompilerOptions, onTokens: null | ((tokens: Token[]) => void)): BuilderContext {
-	const context = newBuilderContext();
-	
-	context.file = compileFile(context, options.filePath, onTokens);
+export function compile(context: BuilderContext, onTokens: null | ((tokens: Token[]) => void)) {
+	try {
+		context.file = compileFile(context, context.compilerOptions.filePath, onTokens);
+	} catch (error) {
+		if (error instanceof CompileError) {
+			context.errors.push(error);
+			return;
+		} else {
+			throw error;
+		}
+	}
 	
 	const exportStart = Date.now();
 	
 	codeGen.start(context);
 	
-	if (options.check) {
+	if (context.compilerOptions.check) {
 		context.inCheckMode = true;
 		checkScopeLevel(context, context.file.scope.levels[0]);
 		context.inCheckMode = false;
@@ -118,8 +131,6 @@ export function compile(options: CompilerOptions, onTokens: null | ((tokens: Tok
 	}
 	
 	logger.addTime("exporting", Date.now() - exportStart);
-	
-	return context;
 }
 
 export function compileFile(context: BuilderContext, filePath: string, onTokens: null | ((tokens: Token[]) => void)): FileContext {

@@ -36,7 +36,7 @@ export default {
 	},
 	
 	global(...args: any[]) {
-		console.log("[global]", ...args);
+		// console.log("[global]", ...args);
 		globals.push(args);
 	},
 	

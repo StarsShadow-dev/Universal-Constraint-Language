@@ -165,6 +165,7 @@ export type ScopeObject = GenericScopeObject & {
 	external: boolean,
 	toBeGenerated: boolean,
 	toBeChecked: boolean,
+	hadError: boolean,
 	indentation: number,
 	symbolName: string,
 	functionArguments: (ScopeObject & { kind: "argument" })[],

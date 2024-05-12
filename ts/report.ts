@@ -1,8 +1,9 @@
+import { CompilerOptions } from "./compiler";
 import { SourceLocation } from "./types";
 import utilities from "./utilities";
 
 const lineNumberPadding = 4;
-const indicatorTextWindowSize = 5;
+const indicatorTextWindowSize = 2;
 
 export type Indicator = {
 	location: SourceLocation,
@@ -27,7 +28,7 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 		const text = utilities.readFile(indicator.location.path);
 		// console.log("compileError location:", location);
 		
-		errorText += `at ${indicator.location.path}:${indicator.location.line}\n\n`;
+		errorText += `at ${indicator.location.path}:${indicator.location.line}\n`;
 		
 		let i = 0;
 		let line = 1;
@@ -45,6 +46,7 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 			if (indicator.location != "builtin") {
 				lineText += line.toString().padStart(lineNumberPadding, "0");
 				lineText += " |";
+				size = lineText.length;
 				
 				let lineI = 0;
 				while (i < text.length) {
@@ -101,6 +103,16 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 	}
 	
 	return errorText;
+}
+
+export function printErrors(options: CompilerOptions, errors: CompileError[]) {
+	if (options.ideOptions && options.ideOptions.mode == "compileFile") {
+		console.log(JSON.stringify(errors));
+	} else {
+		for (const error of errors) {
+			console.log(error.getText(true));
+		}
+	}
 }
 
 export class CompileError {

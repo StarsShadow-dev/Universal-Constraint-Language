@@ -18,24 +18,25 @@ const js = @import("./js.ucl");
 
 const a = struct {
 	const test = fn() {
+		js.log(4);
 		b.test();
 	};
 };
 
 const b = struct {
 	const test = fn() {
-		a.test();
+		a.test(5);
 	};
 };
 
-const main = fn(): js.Dictionary(Number) {
+const main = fn(): Number {
 	// main();
 	// a.test();
 	// b.test();
 	var dictionary = js.Dictionary(Number).new();
 	dictionary.set("a", 1);
 	dictionary.set("b", 2);
-	ret dictionary.get("a");
+	ret dictionary.ge("a");
 };
 @export("main", main);
 

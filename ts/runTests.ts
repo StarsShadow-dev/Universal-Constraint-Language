@@ -5,7 +5,7 @@ import utilities from "./utilities";
 import { CompileError } from "./report";
 import { setUpBuiltin } from "./builtin";
 import path from "path";
-import { CompilerOptions, compile, resetCompiledFiles } from "./compiler";
+import { CompilerOptions, compile, newBuilderContext, resetCompiledFiles } from "./compiler";
 import logger from "./logger";
 
 const c_green = "\x1B[32m";
@@ -50,10 +50,13 @@ function testFile(filePath: string) {
 	const options: CompilerOptions = {
 		filePath: filePath,
 		check: true,
+		fancyErrors: false,
 	};
 	
+	const context = newBuilderContext(options);
+	
 	try {
-		const context = compile(options, (tokens) => {
+		compile(context, (tokens) => {
 			if (!tokens[0] || tokens[0].type != TokenType.comment) {
 				console.log(`unable to test file '${filePath}'`);
 				utilities.unreachable();
@@ -68,10 +71,17 @@ function testFile(filePath: string) {
 				throw `unknown mode "${mode}"`;
 			}
 		});
-		
+	} catch (error) {
+		if (error == "__testSkip__") {
+			testSkip();
+			return;
+		}
+	}
+	
+	if (context.errors.length == 0) {
 		if (mode == "compError") {
 			const expectedOutput = comments.join("\n");
-			testFailure(`expected error output = ${expectedOutput}\nactual output = success`);
+			testFailure(`expected error output = ${expectedOutput}\nactual output is success`);
 		} else if (mode == "compSucceed") {
 			testSuccess();
 		} else if (mode == "compOut") {
@@ -83,27 +93,22 @@ function testFile(filePath: string) {
 				testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
 			}
 		}
-	} catch (error) {
-		if (error == "__testSkip__") {
-			testSkip();
-			return;
+	} else {
+		let errorText = "";
+		for (const error of context.errors) {
+			errorText += error.getText(false);
 		}
-		if (error instanceof CompileError) {
-			if (mode == "compSucceed") {
-				testFailure(`compilation failed, output = ${error.getText(false)}`);
-			} else {
-				const expectedOutput = comments.join("\n");
-				const actualOutput = error.getText(false);
-				if (expectedOutput == actualOutput) {
-					testSuccess();
-				} else {
-					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
-				}
-			}
-			
-			return;
+		
+		if (mode == "compSucceed") {
+			testFailure(`compilation failed, output = ${errorText}`);
 		} else {
-			throw error;
+			const expectedOutput = comments.join("\n");
+			const actualOutput = errorText;
+			if (expectedOutput == actualOutput) {
+				testSuccess();
+			} else {
+				testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+			}
 		}
 	}
 }

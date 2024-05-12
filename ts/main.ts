@@ -1,8 +1,8 @@
 // tsc -p ./tsconfig.json && node out/main.js test/main.ucl
 
 import { setUpBuiltin } from "./builtin";
-import { CompilerOptions, compile } from "./compiler";
-import { CompileError } from "./report";
+import { CompilerOptions, compile, newBuilderContext } from "./compiler";
+import { CompileError, printErrors } from "./report";
 import logger from "./logger";
 import utilities from "./utilities";
 
@@ -15,6 +15,7 @@ function next(): string {
 const options: CompilerOptions = {
 	filePath: next(),
 	check: true,
+	fancyErrors: true,
 };
 
 while (i < process.argv.length) {
@@ -33,6 +34,8 @@ while (i < process.argv.length) {
 		}
 	} else if (arg == "-noCheck") {
 		options.check = false;
+	} else if (arg == "-noFancyErrors") {
+		options.fancyErrors = false;
 	} else {
 		utilities.TODO();
 	}
@@ -40,9 +43,11 @@ while (i < process.argv.length) {
 
 logger.global("options:", options);
 
-try {
-	setUpBuiltin(false);
-	const context = compile(options, null);
+const context = newBuilderContext(options);
+
+setUpBuiltin(false);
+compile(context, null);
+if (context.errors.length == 0) {
 	if (options.outputPath) {
 		utilities.writeFile(options.outputPath, context.topCodeGenText.join(""));
 	} else {
@@ -50,18 +55,9 @@ try {
 			console.log(context.topCodeGenText.join(""));
 		}
 	}
-} catch (error) {
-	if (error instanceof CompileError) {
-		process.exitCode = 1;
-		if (options.ideOptions && options.ideOptions.mode == "compileFile") {
-			console.log(JSON.stringify(error));
-		} else {
-			console.log("uncaught compiler error");
-			console.log(error.getText(true));
-		}
-	} else {
-		throw error;	
-	}
+} else {
+	process.exitCode = 1;
+	printErrors(options, context.errors);
 }
 
 // logger.printFileAccessLogs();
