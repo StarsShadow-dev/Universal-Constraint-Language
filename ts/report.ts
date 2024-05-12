@@ -32,25 +32,34 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 		let i = 0;
 		let line = 1;
 		
+		function next(): string {
+			if (text[i] == "\n") {
+				line++;
+			}
+			return text[i++];
+		}
+		
 		function writeLine(): number {
 			let size = 0
 			let lineText = "";
 			if (indicator.location != "builtin") {
 				lineText += line.toString().padStart(lineNumberPadding, "0");
 				lineText += " |";
+				
 				let lineI = 0;
-				for (; i < text.length; i++) {
-					if (text[i] == "\n") {
-						line++;
-						break;
-					}
+				while (i < text.length) {
+					const char = next();
 					
 					lineI++;
 					
-					if (text[i] == "\t") {
+					if (char == "\n") {
+						break;
+					}
+					
+					if (char == "\t") {
 						lineText += "    ";
 					} else {
-						lineText += text[i];
+						lineText += char;
 					}
 					
 					if (lineI == indicator.location.startColumn) {
@@ -66,11 +75,8 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 			return size;
 		}
 		
-		for (; i < text.length; i++) {
-			if (text[i] == "\n") line++;
-			
+		while (i < text.length) {
 			if (line == indicator.location.line) {
-				if (text[i] == "\n") i++;
 				const size = writeLine();
 				for (let index = 0; index < size; index++) {
 					errorText += " ";
@@ -83,8 +89,9 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 				line > indicator.location.line - indicatorTextWindowSize - 1 &&
 				line < indicator.location.line + indicatorTextWindowSize + 1
 			) {
-				if (text[i] == "\n") i++;
 				writeLine();
+			} else {
+				next();
 			}
 		}
 		
