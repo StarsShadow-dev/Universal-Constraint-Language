@@ -11,6 +11,13 @@ const utilities = {
 		exit(1);
 	},
 	
+	assert(condition: boolean, msg?: string): asserts condition {
+		if (!condition) {
+			debugger;
+			throw msg;
+		}
+	},
+	
 	TODO(): never {
 		debugger;
 		console.error("TODO reached");

@@ -116,13 +116,25 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 			}
 			right = parseOperators(context, parse(context, mode, null)[0], nextPrecedence);
 			
-			return {
-				kind: "operator",
-				location: nextOperator.location,
-				operatorText: nextOperator.text,
-				left: [left],
-				right: [right],
-			}	
+			if (nextOperator.text == "=") {
+				if (left.kind != "identifier") {
+					throw utilities.TODO();
+				}
+				return {
+					kind: "definition",
+					location: nextOperator.location,
+					name: left.name,
+					value: right,
+				}
+			} else {
+				return {
+					kind: "operator",
+					location: nextOperator.location,
+					operatorText: nextOperator.text,
+					left: [left],
+					right: [right],
+				}
+			}
 		}
 	}
 	
@@ -240,7 +252,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 	
 	while (context.i < context.tokens.length) {
 		let token = forward(context);
-		let needsSemicolon = true;
 		
 		switch (token.type) {
 			case TokenType.comment: {
@@ -266,35 +277,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenType.word: {
-				let comptimeFlag = false;
-				if (
-					token.text == "comptime"
-				) {
-					if (context.tokens[context.i] && next(context).type == TokenType.word) {
-						comptimeFlag = true;
-						token = forward(context);
-					} else {
-						if (
-							context.tokens[context.i] &&
-							next(context).type == TokenType.separator &&
-							next(context).text == "{"
-						) {
-							forward(context);
-							const codeBlock = parse(context, ParserMode.normal, "}");
-							
-							AST.push({
-								kind: "codeBlock",
-								location: token.location,
-								comptime: true,
-								codeBlock: codeBlock,
-							});
-							
-							needsSemicolon = false;
-							break;
-						}
-					}
-				}
-				
 				if (token.text == "true" || token.text == "false") {
 					AST.push({
 						kind: "bool",
@@ -303,35 +285,22 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
-				else if (token.text == "const" || token.text == "var" || token.text == "field") {
+				else if (token.text == "field") {
 					const name = forward(context);
 					if (name.type != TokenType.word) {
 						throw new CompileError("expected name").indicator(name.location, "here");
 					}
 					
 					const type = parseType(context);
-					
-					let value: ASTnode | null = null;
-					
-					const equals = next(context);
-					if (equals.type == TokenType.operator || equals.text == "=") {
-						forward(context);
-						
-						value = parse(context, ParserMode.single, null)[0];
-						if (!value) {
-							throw new CompileError("empty definition").indicator(name.location, "here");
-						}
+					if (!type) {
+						throw new CompileError("a field must have a type").indicator(name.location, "here");
 					}
 					
 					AST.push({
-						kind: "definition",
+						kind: "field",
 						location: token.location,
-						comptime: comptimeFlag,
-						mutable: token.text != "const",
-						isAfield: token.text == "field",
 						name: name.text,
 						type: type,
-						value: value,
 					});
 				}
 				
@@ -386,8 +355,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 							falseCodeBlock: falseCodeBlock,
 						});	
 					}
-					
-					needsSemicolon = false;
 				}
 				
 				else if (token.text == "inline") {
@@ -410,31 +377,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						location: token.location,
 						codeBlock: codeBlock,
 					});
-					
-					needsSemicolon = false;
 				}
 				
 				else if (token.text == "fn") {
 					parseFunction(context, AST, token.location, false);
-				}
-				
-				else if (token.text == "ret") {
-					const semicolon = next(context);
-					if (semicolon.type == TokenType.separator && semicolon.text == ";") {
-						AST.push({
-							kind: "return",
-							location: token.location,
-							value: null,
-						});
-					} else {
-						const value = parse(context, ParserMode.single, null)[0];
-						
-						AST.push({
-							kind: "return",
-							location: token.location,
-							value: value,
-						});
-					}
 				}
 				
 				else {
@@ -456,30 +402,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			case TokenType.operator: {
 				const left = AST[AST.length-1];
-				if (left == undefined || left.kind == "setInstanceField") {
-					const name = forward(context);
-					if (name.type != TokenType.word) {
-						throw new CompileError("expected name").indicator(name.location, "here");
-					}
-					
-					const equals = next(context);
-					if (equals.type != TokenType.operator || equals.text != "=") {
-						throw new CompileError("empty field initialization").indicator(token.location, "here");
-					}
-					
-					forward(context);
-						
-					const value = parse(context, ParserMode.single, null)[0];
-					if (!value) {
-						throw new CompileError("empty field initialization").indicator(token.location, "here");
-					}
-					
-					AST.push({
-						kind: "setInstanceField",
-						location: name.location,
-						name: name.text,
-						value: value,
-					});
+				if (left == undefined) {
+					utilities.TODO();
 				} else {
 					context.i--;
 					AST.pop();
@@ -580,16 +504,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.single) {
 			return AST;
-		}
-		
-		if (mode != ParserMode.comma && needsSemicolon) {
-			if (!context.tokens[context.i]) {
-				throw new CompileError(`expected a semicolon but the file ended`).indicator(context.tokens[context.i-1].location, "here");
-			}
-			const semicolon = forward(context);
-			if (semicolon.type != TokenType.separator || semicolon.text != ";") {
-				throw new CompileError(`expected a semicolon but got '${semicolon.text}'`).indicator(semicolon.location, "here");
-			}
 		}
 		
 		if (endAt != null) {

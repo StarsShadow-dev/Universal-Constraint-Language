@@ -60,5 +60,5 @@ if (context.errors.length == 0) {
 	printErrors(options, context.errors);
 }
 
-// logger.printFileAccessLogs();
-// logger.printTimes();
+logger.printFileAccessLogs();
+logger.printTimes();

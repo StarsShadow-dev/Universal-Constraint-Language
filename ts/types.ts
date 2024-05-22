@@ -79,12 +79,12 @@ export type ASTnode = genericASTnode & {
 	right: ASTnode[],
 } | genericASTnode & {
 	kind: "definition",
-	comptime: boolean,
-	mutable: boolean,
-	isAfield: boolean,
 	name: string,
-	type: ASTnode & { kind: "typeUse" } | null,
-	value: ASTnode | null,
+	value: ASTnode,
+} | genericASTnode & {
+	kind: "field",
+	name: string,
+	type: ASTnode,
 } | genericASTnode & {
 	kind: "function",
 	forceInline: boolean,
@@ -109,9 +109,6 @@ export type ASTnode = genericASTnode & {
 	comptime: boolean,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
-	kind: "return",
-	value: ASTnode | null,
-} | genericASTnode & {
 	kind: "argument",
 	comptime: boolean,
 	name: string,
@@ -121,20 +118,89 @@ export type ASTnode = genericASTnode & {
 	templateStruct: ASTnode & { kind: "typeUse" },
 	codeBlock: ASTnode[],
 } | genericASTnode & {
-	kind: "setInstanceField",
-	name: string,
-	value: ASTnode,
-} | genericASTnode & {
 	kind: "typeUse",
 	value: ASTnode,
 }
+
 //
 // scope
 //
 
 type GenericScopeObject = {
 	originLocation: SourceLocation,
+};
+
+type _ScopeObject_alias = GenericScopeObject & {
+	kind: "alias",
+	isAfield: boolean,
+	name: string,
+	symbolName: string,
+};
+type ScopeObject_alias_value = _ScopeObject_alias & {
+	value: ScopeObject,
+	type: ScopeObjectType,
+};
+type ScopeObject_alias_unknownType = _ScopeObject_alias & {
+	value: ScopeObject | null,
+	type: null,
+};
+export type ScopeObject_alias = ScopeObject_alias_value | ScopeObject_alias_unknownType;
+
+// The result of a struct should be a ""
+export type ScopeObjectType = ScopeObject_alias & {
+	value: ScopeObject_function | ScopeObject_struct,
+};
+export function isScopeObjectType(scopeObject: ScopeObject): scopeObject is ScopeObjectType {
+	if (scopeObject.kind != "alias" || !scopeObject.value) {
+		return false;
+	}
+	if (scopeObject.value.kind != "function" && scopeObject.value.kind != "struct") {
+		return false;
+	}
+	return true;
 }
+export function cast_ScopeObjectType(scopeObject: ScopeObject | null): ScopeObjectType {
+	if (!scopeObject || !isScopeObjectType(scopeObject)) {
+		throw utilities.unreachable();
+	}
+	
+	return scopeObject;
+}
+
+export type ScopeObject_function = GenericScopeObject & {
+	kind: "function",
+	forceInline: boolean,
+	external: boolean,
+	toBeGenerated: boolean,
+	toBeChecked: boolean,
+	hadError: boolean,
+	indentation: number,
+	symbolName: string,
+	functionArguments: (ScopeObject & { kind: "argument" })[],
+	returnType: ScopeObjectType | null,
+	comptimeReturn: boolean,
+	AST: ASTnode[],
+	visible: ScopeObject_alias[],
+};
+
+export type ScopeObject_struct = GenericScopeObject & {
+	kind: "struct",
+	name: string,
+	toBeChecked: boolean,
+	members: ScopeObject_alias[],
+};
+
+export type ScopeObject_argument = GenericScopeObject & {
+	kind: "argument",
+	comptime: boolean,
+	name: string,
+	type: ScopeObjectType,
+};
+
+export type ScopeObject_complexValue = GenericScopeObject & {
+	kind: "complexValue",
+	type: ScopeObjectType,
+};
 
 export type ScopeObject = GenericScopeObject & {
 	kind: "bool",
@@ -147,49 +213,17 @@ export type ScopeObject = GenericScopeObject & {
 	value: string,
 } | GenericScopeObject & {
 	kind: "void",
-} | GenericScopeObject & {
-	kind: "complexValue",
-	type: (ScopeObject & { kind: "typeUse" }),
-} | GenericScopeObject & {
-	kind: "alias",
-	forceComptime: boolean,
-	mutable: boolean,
-	isAfield: boolean,
-	name: string,
-	value: ScopeObject | null,
-	symbolName: string,
-	type: (ScopeObject & { kind: "typeUse" }) | null,
-} | GenericScopeObject & {
-	kind: "function",
-	forceInline: boolean,
-	external: boolean,
-	toBeGenerated: boolean,
-	toBeChecked: boolean,
-	hadError: boolean,
-	indentation: number,
-	symbolName: string,
-	functionArguments: (ScopeObject & { kind: "argument" })[],
-	returnType: (ScopeObject & { kind: "typeUse" }) | null,
-	comptimeReturn: boolean,
-	AST: ASTnode[],
-	visible: ScopeObject[],
-} | GenericScopeObject & {
-	kind: "argument",
-	comptime: boolean,
-	name: string,
-	type: (ScopeObject & { kind: "typeUse" }),
-} | GenericScopeObject & {
-	kind: "struct",
-	name: string,
-	members: (ScopeObject & { kind: "alias" })[],
-} | GenericScopeObject & {
+} | 
+ScopeObject_complexValue |
+ScopeObject_alias |
+ScopeObject_function | 
+ScopeObject_argument | 
+ScopeObject_struct |
+GenericScopeObject & {
 	kind: "structInstance",
 	templateStruct: (ScopeObject & { kind: "struct" }),
-	fields: (ScopeObject & { kind: "alias" })[],
-} | GenericScopeObject & {
-	kind: "typeUse",
-	type: ScopeObject,
-}
+	fields: ScopeObject_alias[],
+};
 
 export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {
 	if (scopeObject) {
@@ -208,10 +242,6 @@ export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject 
 	}
 }
 
-export function getTypeName(typeUse: ScopeObject & { kind: "typeUse" }): string {
-	if (typeUse.type.kind == "struct") {
-		return typeUse.type.name;
-	} else {
-		throw utilities.unreachable();
-	}
+export function getTypeName(type: ScopeObjectType): string {
+	return type.name;
 }

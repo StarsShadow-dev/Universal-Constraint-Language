@@ -1,4 +1,4 @@
-import { ASTnode, CodeGenText, ScopeObject, Token, getCGText, unwrapScopeObject } from "./types";
+import { ASTnode, CodeGenText, ScopeObject, ScopeObject_alias, ScopeObject_function, Token, getCGText, unwrapScopeObject } from "./types";
 import { lex } from "./lexer";
 import {
 	ParserMode,
@@ -24,26 +24,27 @@ export type CompilerOptions = {
 }
 
 export type ScopeInformation = {
-	levels: ScopeObject[][];
+	levels: ScopeObject_alias[][];
 	currentLevel: number;
 
-	function: (ScopeObject & { kind: "function"; }) | null;
+	function: ScopeObject_function | null;
 	functionArgumentNameText: string,
 
 	// the function that is being generated
-	generatingFunction: (ScopeObject & { kind: "function"; }) | null;
+	generatingFunction: ScopeObject_function | null;
 };
 
 export type BuilderOptions = {
 	compileTime: boolean;
 	codeGenText: CodeGenText;
-	disableValueEvaluation: boolean;
+	disableDependencyAccess: boolean;
 	// getStruct: boolean,
 };
 
 export type FileContext = {
 	path: string;
 	scope: ScopeInformation;
+	AST: ASTnode[],
 }
 
 export type BuilderContext = {
@@ -67,7 +68,7 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 		options: {
 			compileTime: true,
 			codeGenText: [],
-			disableValueEvaluation: false,
+			disableDependencyAccess: false,
 		},
 		nextSymbolName: 0,
 		exports: [],
@@ -80,68 +81,84 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 }
 
 // filePath -> FileContext
-let compiledFiles: any = {};
+let filesToCompile: any = {};
 
-export function resetCompiledFiles() {
-	compiledFiles = {};
+export function resetFilesToCompile() {
+	filesToCompile = {};
 }
 
 function checkScopeLevel(context: BuilderContext, level: ScopeObject[]) {
-	for (let i = 0; i < level.length; i++) {
-		const alias = level[i];
-		if (alias.kind == "alias" && alias.isAfield) {
-			continue;
-		}
-		const value = unwrapScopeObject(alias);
-		if (value.kind == "function" && !value.external) {
-			callFunction(context, value, null, "builtin", false, null, null, null, true);
-		} else if (value.kind == "typeUse" && value.type.kind == "struct") {
-			checkScopeLevel(context, value.type.members);
-		}
-	}
+	// utilities.TODO();
+	// for (let i = 0; i < level.length; i++) {
+	// 	const alias = level[i];
+	// 	if (alias.kind == "alias" && alias.isAfield) {
+	// 		continue;
+	// 	}
+	// 	const value = unwrapScopeObject(alias);
+	// 	if (value.kind == "function" && !value.external && value.toBeChecked) {
+	// 		callFunction(context, value, null, "builtin", false, null, null, null, true);
+	// 	} else if (value.kind == "alias" && value.type && value.type. && value.toBeChecked) {
+	// 		checkScopeLevel(context, value.type.members);
+	// 	}
+	// }
 }
 
 export function compile(context: BuilderContext, onTokens: null | ((tokens: Token[]) => void)) {
+	let mainFile: FileContext;
 	try {
-		context.file = compileFile(context, context.compilerOptions.filePath, onTokens);
+		mainFile = compileFile(context, context.compilerOptions.filePath, onTokens);
 	} catch (error) {
 		if (error instanceof CompileError) {
 			context.errors.push(error);
+			return;
+		} else if (error == "__done__") {
 			return;
 		} else {
 			throw error;
 		}
 	}
 	
-	const exportStart = Date.now();
+	for (const key in filesToCompile) {
+		context.file = filesToCompile[key];
+		context.file.scope.levels[0] = [];
+		const scopeList = build(context, filesToCompile[key].AST, {
+			codeGenText: null,
+			compileTime: true,
+			disableDependencyAccess: false,
+		}, null, false, false, true);
+		context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
+	}
 	
-	codeGen.start(context);
+	context.file = mainFile;
 	
+	const checkStart = Date.now();
 	if (context.compilerOptions.check) {
 		context.inCheckMode = true;
 		checkScopeLevel(context, context.file.scope.levels[0]);
 		context.inCheckMode = false;
 	}
+	logger.addTime("checking", Date.now() - checkStart);
 	
+	const exportStart = Date.now();
+	codeGen.start(context);
 	for (let i = 0; i < context.exports.length; i++) {
 		const toExport = context.exports[i];
 		if (toExport.kind == "function") {
 			callFunction(context, toExport, null, "builtin", false, null, null, null);
 		}
 	}
-	
 	logger.addTime("exporting", Date.now() - exportStart);
 }
 
 export function compileFile(context: BuilderContext, filePath: string, onTokens: null | ((tokens: Token[]) => void)): FileContext {
 	// if the file has already been compiled, there is no point compiling it again
 	// (this also lets two files import each other)
-	if (compiledFiles[filePath]) {
-		return compiledFiles[filePath];
+	if (filesToCompile[filePath]) {
+		return filesToCompile[filePath];
 	}
 	
 	const oldFile = context.file;
-	const newFile = {
+	const newFile: FileContext = {
 		path: filePath,
 		scope: {
 			levels: [],
@@ -150,39 +167,37 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 			functionArgumentNameText: "",
 			generatingFunction: null,
 		},
+		AST: [],
 	};
 	context.file = newFile;
-	compiledFiles[filePath] = newFile;
+	filesToCompile[filePath] = newFile;
 	
-	// get tokens
 	const text = utilities.readFile(filePath);
 	// console.log("text:", text);
 	
 	const lexStart = Date.now();
 	const tokens = lex(filePath, text);
 	logger.addTime("lexing", Date.now() - lexStart);
-	
-	// console.log("tokens:", tokens);
+	console.log("tokens:", tokens);
 	
 	if (onTokens) {
 		onTokens(tokens);
 	}
 	
-	// get AST
 	const parseStart = Date.now();
-	let AST: ASTnode[] = [];
-	AST = parse({
+	newFile.AST = parse({
 		tokens: tokens,
 		i: 0,
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
+	console.log(`AST '${filePath}':`, JSON.stringify(newFile.AST, undefined, 4));
 	
-	// console.log(`AST '${filePath}':`, JSON.stringify(AST, undefined, 4));
-	
-	// build
-	const buildStart = Date.now();
-	const scopeList = build(context, AST, null, null, false, false, false);
-	logger.addTime("building", Date.now() - buildStart);
+	const scopeList = build(context, newFile.AST, {
+		codeGenText: null,
+		compileTime: true,
+		disableDependencyAccess: true,
+	}, null, false, false, true);
+	context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
 	
 	// console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`);
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));

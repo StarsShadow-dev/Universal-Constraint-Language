@@ -6,10 +6,15 @@ import {
 	CodeGenText,
 	getCGText,
 	getTypeName,
+	ScopeObjectType,
+	cast_ScopeObjectType,
+	ScopeObject_alias,
+	ScopeObject_argument,
+	isScopeObjectType,
 } from "./types";
 import utilities from "./utilities";
 import { Indicator, CompileError } from "./report";
-import { builtinScopeLevel, builtinCall, getComplexValue } from "./builtin";
+import { builtinScopeLevel, builtinCall, getComplexValueFromString } from "./builtin";
 import codeGen from "./codeGen";
 import { BuilderContext, BuilderOptions } from "./compiler";
 
@@ -21,53 +26,8 @@ export function getNextSymbolName(context: BuilderContext) {
 	return `${context.nextSymbolName++}:${context.file.path}`;
 }
 
-export function getTypeText(type: ScopeObject & { kind: "typeUse" }) {
+export function getTypeText(type: ScopeObjectType) {
 	return `'${getTypeName(type)}'`;
-}
-
-export function forceAsType(type: ScopeObject): ScopeObject & { kind: "typeUse" } {
-	if (type.kind == "typeUse") {
-		return type;
-	} else {
-		throw utilities.unreachable();
-	}
-}
-
-export function getTypeOf(context: BuilderContext, value: ScopeObject): ScopeObject & { kind: "typeUse" } {
-	if (value.kind == "bool") {
-		return forceAsType(unwrapScopeObject(getAlias(context, "Bool")));
-	} else if (value.kind == "number") {
-		return forceAsType(unwrapScopeObject(getAlias(context, "Number")));
-	} else if (value.kind == "string") {
-		return forceAsType(unwrapScopeObject(getAlias(context, "String")));
-	} else if (value.kind == "typeUse") {
-		if (value.type.kind == "struct") {
-			return value;
-		}
-		return forceAsType(unwrapScopeObject(getAlias(context, "Type")));
-	} else if (value.kind == "complexValue") {
-		return value.type;
-	} else if (value.kind == "function") {
-		return {
-			kind: "typeUse",
-			originLocation: value.originLocation,
-			type: value,
-		};
-	} else if (value.kind == "struct") {
-		return {
-			kind: "typeUse",
-			originLocation: value.originLocation,
-			type: value,
-		};
-	} else if (value.kind == "structInstance") {
-		return {
-			kind: "typeUse",
-			originLocation: value.templateStruct.originLocation,
-			type: value.templateStruct,
-		};
-	} else {
-		throw utilities.unreachable();
-	}
 }
 
 export function getNameText(scopeObject: ScopeObject): string | null {
@@ -79,12 +39,6 @@ export function getNameText(scopeObject: ScopeObject): string | null {
 		return `${object.value}`;
 	} else if (object.kind == "string") {
 		return `"${object.value}"`;
-	} else if (object.kind == "typeUse") {
-		if (object.type.kind == "struct") {
-			return `${object.type.name}`;
-		} else {
-			throw utilities.TODO();
-		}
 	} else if (object.kind == "complexValue") {
 		return null;
 	} else if (object.kind == "structInstance") {
@@ -94,17 +48,23 @@ export function getNameText(scopeObject: ScopeObject): string | null {
 	}
 }
 
+function getTypeOf(context: BuilderContext, scopeObject: ScopeObject): ScopeObjectType {
+	if (scopeObject.kind == "bool") {
+		return cast_ScopeObjectType(getAlias(context, "Bool"));
+	} else if (scopeObject.kind == "number") {
+		return cast_ScopeObjectType(getAlias(context, "Number"));
+	} else {
+		throw utilities.TODO();
+	}
+}
+
 function expectType(
 	context: BuilderContext,
-	expectedType: ScopeObject & { kind: "typeUse" },
-	actualType: ScopeObject & { kind: "typeUse" },
+	expectedType: ScopeObjectType,
+	actualType: ScopeObjectType,
 	compileError: CompileError
 ) {
 	if (getTypeName(expectedType) == "builtin:Any") {
-		return;
-	}
-	
-	if (getTypeName(expectedType) == "builtin:Type" && actualType.type.kind == "struct") {
 		return;
 	}
 	
@@ -116,16 +76,12 @@ function expectType(
 	}
 }
 
-export function getAlias(context: BuilderContext, name: string, getProperties?: boolean): ScopeObject & { kind: "alias" } | null {
+export function getAlias(context: BuilderContext, name: string, getProperties?: boolean): ScopeObject_alias | null {
 	// builtin
 	for (let i = 0; i < builtinScopeLevel.length; i++) {
 		const scopeObject = builtinScopeLevel[i];
-		if (scopeObject.kind == "alias") {
-			if (scopeObject.name == name) {
-				return scopeObject;
-			}
-		} else {
-			utilities.unreachable();
+		if (scopeObject.name == name) {
+			return scopeObject;
 		}
 	}
 	
@@ -133,13 +89,9 @@ export function getAlias(context: BuilderContext, name: string, getProperties?: 
 	for (let level = context.file.scope.currentLevel; level >= 0; level--) {
 		for (let i = 0; i < context.file.scope.levels[level].length; i++) {
 			const scopeObject = context.file.scope.levels[level][i];
-			if (scopeObject.kind == "alias") {
-				if (!getProperties && scopeObject.isAfield) continue;
-				if (scopeObject.name == name) {
-					return scopeObject;
-				}
-			} else {
-				utilities.unreachable();
+			if (!getProperties && scopeObject.isAfield) continue;
+			if (scopeObject.name == name) {
+				return scopeObject;
 			}
 		}
 	}
@@ -148,12 +100,8 @@ export function getAlias(context: BuilderContext, name: string, getProperties?: 
 	if (context.file.scope.function) {
 		for (let i = 0; i < context.file.scope.function.visible.length; i++) {
 			const scopeObject = context.file.scope.function.visible[i];
-			if (scopeObject.kind == "alias") {
-				if (scopeObject.name == name) {
-					return scopeObject;
-				}
-			} else {
-				utilities.unreachable();
+			if (scopeObject.name == name) {
+				return scopeObject;
 			}
 		}
 	}
@@ -161,8 +109,8 @@ export function getAlias(context: BuilderContext, name: string, getProperties?: 
 	return null;
 }
 
-function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
-	let list: ScopeObject[] = [];
+function getVisibleAsliases(context: BuilderContext): ScopeObject_alias[] {
+	let list: ScopeObject_alias[] = [];
 	
 	// scopeLevels
 	for (let level = context.file.scope.currentLevel; level >= 0; level--) {
@@ -185,7 +133,7 @@ function getVisibleAsliases(context: BuilderContext): ScopeObject[] {
 	return list;
 }
 
-function addAlias(context: BuilderContext, level: number, alias: ScopeObject) {
+function addAlias(context: BuilderContext, level: number, alias: ScopeObject_alias) {
 	if (alias.kind == "alias") {
 		if (!alias.isAfield) {
 			const oldAlias = getAlias(context, alias.name);
@@ -285,9 +233,7 @@ export function callFunction(
 			for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 				const argument = functionToCall.functionArguments[index];
 				
-				const argumentType = unwrapScopeObject(argument.type);
-				
-				if (argument.kind == "argument" && argumentType.kind == "typeUse") {
+				if (argument.kind == "argument") {
 					let symbolName = argument.name;
 					
 					if (callArguments) {
@@ -298,7 +244,7 @@ export function callFunction(
 								.indicator(location, "function call here");
 						}
 						
-						expectType(context, argumentType, getTypeOf(context, callArgument),
+						expectType(context, argument.type, getTypeOf(context, callArgument),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(callArgument.originLocation, "argument here")
 								.indicator(argument.originLocation, "argument defined here")
@@ -307,39 +253,26 @@ export function callFunction(
 						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
-							forceComptime: argument.comptime,
-							mutable: false,
 							isAfield: false,
 							name: argument.name,
 							value: callArgument,
 							symbolName: symbolName,
-							type: argumentType,
+							type: argument.type,
 						});
 					} else {
 						let value: ScopeObject = {
 							kind: "complexValue",
 							originLocation: argument.originLocation,
-							type: argumentType,
+							type: argument.type,
 						};
-						if (argument.comptime) {
-							if (getTypeName(argument.type) == "builtin:Type") {
-								value = {
-									kind: "typeUse",
-									originLocation: argument.originLocation,
-									type: forceAsType(unwrapScopeObject(getAlias(context, "__UnknownType"))),
-								}
-							}
-						}
 						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
-							forceComptime: argument.comptime,
-							mutable: false,
 							isAfield: false,
 							name: argument.name,
 							value: value,
 							symbolName: symbolName,
-							type: argumentType,
+							type: argument.type,
 						});
 					}
 				} else {
@@ -354,7 +287,7 @@ export function callFunction(
 				result = build(context, functionToCall.AST, {
 					compileTime: comptime,
 					codeGenText: text,
-					disableValueEvaluation: context.options.disableValueEvaluation,
+					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, {
 					location: functionToCall.originLocation,
 					msg: `function ${functionToCall.symbolName}`,
@@ -377,21 +310,9 @@ export function callFunction(
 			if (result) {
 				const unwrappedResult = unwrapScopeObject(result);
 				
-				if (result.originLocation != "builtin" && callArguments) {
-					if (
-						unwrappedResult.kind == "typeUse" && unwrappedResult.type.kind == "struct"
-					) {
-						unwrappedResult.type.name = `${functionToCall.symbolName}(${argumentNameText})`;
-					}
-				}
-				
 				if (functionToCall.returnType) {
 					if (comptime) {
-						const returnType = unwrapScopeObject(functionToCall.returnType);
-						if (returnType.kind != "typeUse") {
-							throw utilities.unreachable();
-						}
-						expectType(context, returnType, getTypeOf(context, unwrappedResult),
+						expectType(context, functionToCall.returnType, getTypeOf(context, unwrappedResult),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(location, "call here")
 								.indicator(functionToCall.originLocation, "function defined here")
@@ -441,9 +362,7 @@ export function callFunction(
 				for (let index = 0; index < functionToCall.functionArguments.length; index++) {
 					const argument = functionToCall.functionArguments[index];
 					
-					const argumentType = unwrapScopeObject(argument.type);
-					
-					if (argument.kind == "argument" && argumentType.kind == "typeUse") {
+					if (argument.kind == "argument") {
 					
 						const callArgument = unwrapScopeObject(callArguments[index]);
 						
@@ -452,7 +371,7 @@ export function callFunction(
 								.indicator(location, "function call here");
 						}
 						
-						expectType(context, argumentType, getTypeOf(context, callArgument),
+						expectType(context, argument.type, getTypeOf(context, callArgument),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(callArgument.originLocation, "argument here")
 								.indicator(argument.originLocation, "argument defined here")
@@ -514,10 +433,10 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		if (options) {
 			const oldOptions = context.options;
 			context.options = options;
-			scopeList = _build(context, AST, resultAtRet);
+			scopeList = _build(context, AST, resultAtRet, getLevel);
 			context.options = oldOptions;
 		} else {
-			scopeList = _build(context, AST, resultAtRet);
+			scopeList = _build(context, AST, resultAtRet, getLevel);
 		}
 	} catch (error) {
 		if (error instanceof CompileError && sackMarker != null) {
@@ -533,14 +452,12 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 		context.file.scope.generatingFunction.indentation--;
 	}
 	
-	let level: ScopeObject[] = [];
+	let level: ScopeObject_alias[] = [];
 	if (getLevel == true) {
 		level = context.file.scope.levels[context.file.scope.currentLevel];
 	}
 	
-	if (context.file.scope.currentLevel != 0) {
-		context.file.scope.levels[context.file.scope.currentLevel] = [];
-	}
+	context.file.scope.levels[context.file.scope.currentLevel] = [];
 	context.file.scope.currentLevel--;
 	
 	if (getLevel == true) {
@@ -550,7 +467,7 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 	return scopeList;
 }
 
-export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boolean): ScopeObject[] {
+export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boolean, getLevel: boolean): ScopeObject[] {
 	let scopeList: ScopeObject[] = [];
 	
 	function addToScopeList(scopeObject: ScopeObject) {
@@ -564,19 +481,17 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		
 		if (node.kind == "definition") {
 			let value: ScopeObject | null = null;
-			if (node.value && node.value.kind == "struct" && !context.options.disableValueEvaluation) {
+			if (node.value && node.value.kind == "struct" && !context.options.disableDependencyAccess) {
 				value = unwrapScopeObject(build(context, [node.value], {
 					codeGenText: null,
 					compileTime: context.options.compileTime,
-					disableValueEvaluation: true,
+					disableDependencyAccess: true,
 				}, null, false, false, false)[0]);
 			}
 			addAlias(context, context.file.scope.currentLevel, {
 				kind: "alias",
 				originLocation: node.location,
-				forceComptime: node.comptime,
-				mutable: node.mutable,
-				isAfield: node.isAfield,
+				isAfield: false,
 				name: node.name,
 				value: value,
 				symbolName: node.name,
@@ -591,94 +506,47 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		if (node.kind == "definition") {
 			const alias = getAlias(context, node.name, true);
 			if (alias) {
-				const typeText = getCGText();
-				let type = undefined as any as ScopeObject & { kind: "typeUse" };
+				const valueText = getCGText();
+				const value = unwrapScopeObject(build(context, [node.value], {
+					codeGenText: valueText,
+					compileTime: context.options.compileTime,
+					disableDependencyAccess: context.options.disableDependencyAccess,
+				}, null, false, false, false)[0]);
 				
-				if (node.type) {
-					type = unwrapScopeObject(build(context, [node.type.value], {
-						codeGenText: typeText,
-						compileTime: context.options.compileTime,
-						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0]) as ScopeObject & { kind: "typeUse" };
+				if (!value) {
+					throw new CompileError(`no value for definition`).indicator(node.location, "here");
 				}
 				
-				if (node.value && !context.options.disableValueEvaluation) {
-					const valueText = getCGText();
-					const value = unwrapScopeObject(build(context, [node.value], {
-						codeGenText: valueText,
-						compileTime: context.options.compileTime,
-						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0]);
+				// if (value.originLocation != "builtin") {
+				// 	const path = value.originLocation.path;
+				// 	const line = value.originLocation.line;
+				// 	const startColumn = value.originLocation.startColumn;
 					
-					if (!value) {
-						throw new CompileError(`no value for alias`).indicator(node.location, "here");
-					}
-					
-					if (node.type) {
-						expectType(context, type, getTypeOf(context, value),
-							new CompileError(`definition expected type $expectedTypeName but got type $actualTypeName`)
-								.indicator(node.location, "definition here")
-						);
-					} else {
-						type = getTypeOf(context, value);
-					}
-					
-					if (value.originLocation != "builtin") {
-						const path = value.originLocation.path;
-						const line = value.originLocation.line;
-						const startColumn = value.originLocation.startColumn;
-						
-						let symbolName: string;
-						if (context.file.scope.function) {
-							const functionSymbolName = context.file.scope.function.symbolName;
-							const functionArgumentNameText = context.file.scope.functionArgumentNameText;
-							symbolName = `${functionSymbolName}(${functionArgumentNameText}).${path}:${line},${startColumn}:${alias.name}`;
-						} else {
-							symbolName = `${path}:${line},${startColumn}:${alias.name}`;
-						}
-						if (node.value.kind == "function" && value.kind == "function") {
-							value.symbolName = symbolName;
-						} else if (node.value.kind == "struct" && value.kind == "typeUse" && value.type.kind == "struct") {
-							value.type.name = symbolName;
-						}
-					}
-					
-					if (alias.value) {
-						if (
-							alias.value.kind == "typeUse" && alias.value.type.kind == "struct" && 
-							value.kind == "typeUse" && value.type.kind == "struct"
-						) {
-							alias.value.type.name = value.type.name;
-							alias.value.type.members = value.type.members;
-						} else {
-							utilities.TODO();
-						}
-					} else {
-						alias.value = value;
-					}
-					
-					if (!node.comptime && doCodeGen(context)) {
-						codeGen.alias(context.options.codeGenText, context, alias, valueText);
-					}
-				}
+				// 	let symbolName: string;
+				// 	if (context.file.scope.function) {
+				// 		const functionSymbolName = context.file.scope.function.symbolName;
+				// 		const functionArgumentNameText = context.file.scope.functionArgumentNameText;
+				// 		symbolName = `${functionSymbolName}(${functionArgumentNameText}).${path}:${line},${startColumn}:${alias.name}`;
+				// 	} else {
+				// 		symbolName = `${path}:${line},${startColumn}:${alias.name}`;
+				// 	}
+				// 	if (node.value.kind == "function" && value.kind == "function") {
+				// 		value.symbolName = symbolName;
+				// 	} else if (node.value.kind == "struct" && value.kind == "typeUse" && value.type.kind == "struct") {
+				// 		value.type.name = symbolName;
+				// 	}
+				// }
 				
-				if (type) {
-					if (type.kind == "typeUse") {
-						alias.type = type;
-					} else {
-						throw utilities.unreachable();
-					}
-				}
+				alias.value = value;
+				alias.type = getTypeOf(context, value);
 			} else {
 				utilities.unreachable();
 			}
 			continue;
 		}
 		
-		if (context.options.disableValueEvaluation) {
-			if (node.kind == "if" || node.kind == "builtinCall") {
-				continue;
-			}
+		if (getLevel && context.options.disableDependencyAccess) {
+			continue;
 		}
 		
 		switch (node.kind) {
@@ -713,9 +581,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "identifier": {
 				const alias = getAlias(context, node.name);
 				if (alias) {
-					if (!alias.forceComptime && doCodeGen(context)) {
-						codeGen.load(context.options.codeGenText, context, alias);
-					}
 					addToScopeList(alias);
 				} else {
 					throw new CompileError(`alias '${node.name}' does not exist`).indicator(node.location, "here");
@@ -727,7 +592,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const functionToCall_ = build(context, node.left, {
 					compileTime: context.options.compileTime,
 					codeGenText: leftText,
-					disableValueEvaluation: context.options.disableValueEvaluation,
+					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, false)
 				if (!functionToCall_[0]) {
 					utilities.TODO();
@@ -740,7 +605,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
-					disableValueEvaluation: context.options.disableValueEvaluation,
+					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, false);
 				
 				if (functionToCall.kind == "function") {
@@ -760,7 +625,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
-					disableValueEvaluation: context.options.disableValueEvaluation,
+					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, false);
 				
 				const result = builtinCall(context, node, callArguments, argumentText);
@@ -770,169 +635,133 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "operator": {
-				if (node.operatorText == "=") {
-					const leftText = getCGText();
-					const left = build(context, node.left, {
-						compileTime: context.options.compileTime,
-						codeGenText: leftText,
-						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0];
-					const rightText = getCGText();
-					const right = unwrapScopeObject(build(context, node.right, {
-						compileTime: context.options.compileTime,
-						codeGenText: rightText,
-						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0]);
+				// if (node.operatorText == ".") {
+				// 	const leftText = getCGText();
+				// 	const left = unwrapScopeObject(build(context, node.left, {
+				// 		compileTime: context.options.compileTime,
+				// 		codeGenText: leftText,
+				// 		disableDependencyAccess: context.options.disableDependencyAccess,
+				// 	}, null, false, false, false)[0]);
 					
-					if (left.kind == "alias") {
-						if (!left.mutable) {
-							throw new CompileError(`the alias '${left.name}' is not mutable`)
-								.indicator(node.location, "reassignment here")
-								.indicator(left.originLocation, "alias defined here");
-						}
-						
-						if (!left.forceComptime && doCodeGen(context)) {
-							codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
-						}
-						
-						left.value = right;
-					} else if (left.kind == "complexValue") {
-						if (doCodeGen(context)) {
-							codeGen.set(context.options.codeGenText, context, left, leftText, rightText);
-						}
-					} else {
-						throw new CompileError(`attempted to assign to something other than an alias`)
-							.indicator(node.location, "reassignment here");
-					}
-				}
-				
-				else if (node.operatorText == ".") {
-					const leftText = getCGText();
-					const left = unwrapScopeObject(build(context, node.left, {
-						compileTime: context.options.compileTime,
-						codeGenText: leftText,
-						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0]);
+				// 	if (node.right[0].kind != "identifier") {
+				// 		throw utilities.TODO();
+				// 	}
 					
-					if (node.right[0].kind != "identifier") {
-						throw utilities.TODO();
-					}
+				// 	let addedAlias = false;
 					
-					let addedAlias = false;
-					
-					if (left.kind == "typeUse") {
-						const typeUse = left;
-						if (typeUse.type.kind != "struct") {
-							throw utilities.unreachable();
-						}
+				// 	if (left.kind == "typeUse") {
+				// 		const typeUse = left;
+				// 		if (typeUse.type.kind != "struct") {
+				// 			throw utilities.unreachable();
+				// 		}
 						
-						for (let i = 0; i < typeUse.type.members.length; i++) {
-							const alias = typeUse.type.members[i];
-							if (alias.kind == "alias") {
-								if (alias.name == node.right[0].name) {
-									if (!alias.isAfield && alias.value) {
-										addToScopeList(alias);
-										addedAlias = true;
-										break;
-									}
-								}
-							} else {
-								utilities.unreachable();
-							}
-						}
-					}
-					else if (left.kind == "structInstance" || left.kind == "complexValue") {
-						const typeUse = getTypeOf(context, left);
-						if (typeUse.type.kind != "struct") {
-							throw utilities.unreachable();
-						}
+				// 		for (let i = 0; i < typeUse.type.members.length; i++) {
+				// 			const alias = typeUse.type.members[i];
+				// 			if (alias.kind == "alias") {
+				// 				if (alias.name == node.right[0].name) {
+				// 					if (!alias.isAfield && alias.value) {
+				// 						addToScopeList(alias);
+				// 						addedAlias = true;
+				// 						break;
+				// 					}
+				// 				}
+				// 			} else {
+				// 				utilities.unreachable();
+				// 			}
+				// 		}
+				// 	}
+				// 	else if (left.kind == "structInstance" || left.kind == "complexValue") {
+				// 		const typeUse = getTypeOf(context, left);
+				// 		if (typeUse.type.kind != "struct") {
+				// 			throw utilities.unreachable();
+				// 		}
 						
-						if (left.kind == "structInstance") {
-							for (let i = 0; i < left.fields.length; i++) {
-								const alias = left.fields[i];
-								if (alias.name == node.right[0].name) {
-									// if (left.kind == "complexValue") {
-									// 	if (alias.isAfield && alias.type) {
-									// 		addToScopeList({
-									// 			kind: "complexValue",
-									// 			originLocation: alias.originLocation,
-									// 			type: alias.type,
-									// 		});
-									// 		addedAlias = true;
-									// 		break;
-									// 	}
-									// } else {
+				// 		if (left.kind == "structInstance") {
+				// 			for (let i = 0; i < left.fields.length; i++) {
+				// 				const alias = left.fields[i];
+				// 				if (alias.name == node.right[0].name) {
+				// 					// if (left.kind == "complexValue") {
+				// 					// 	if (alias.isAfield && alias.type) {
+				// 					// 		addToScopeList({
+				// 					// 			kind: "complexValue",
+				// 					// 			originLocation: alias.originLocation,
+				// 					// 			type: alias.type,
+				// 					// 		});
+				// 					// 		addedAlias = true;
+				// 					// 		break;
+				// 					// 	}
+				// 					// } else {
 										
-									// }
-									if (!alias.isAfield && alias.value) {
-										addToScopeList(alias);
-										addedAlias = true;
-										break;
-									}
-								}
-							}
-						} else if (left.kind == "complexValue") {
-							for (let i = 0; i < typeUse.type.members.length; i++) {
-								const alias = typeUse.type.members[i];
-								if (alias.name == node.right[0].name) {
-									if (alias.isAfield && alias.type) {
-										addToScopeList({
-											kind: "complexValue",
-											originLocation: alias.originLocation,
-											type: alias.type,
-										});
-										addedAlias = true;
-										break;
-									}
-								}
-							}
-						}
+				// 					// }
+				// 					if (!alias.isAfield && alias.value) {
+				// 						addToScopeList(alias);
+				// 						addedAlias = true;
+				// 						break;
+				// 					}
+				// 				}
+				// 			}
+				// 		} else if (left.kind == "complexValue") {
+				// 			for (let i = 0; i < typeUse.type.members.length; i++) {
+				// 				const alias = typeUse.type.members[i];
+				// 				if (alias.name == node.right[0].name) {
+				// 					if (alias.isAfield && alias.type) {
+				// 						addToScopeList({
+				// 							kind: "complexValue",
+				// 							originLocation: alias.originLocation,
+				// 							type: alias.type,
+				// 						});
+				// 						addedAlias = true;
+				// 						break;
+				// 					}
+				// 				}
+				// 			}
+				// 		}
 						
-						if (!addedAlias) {
-							for (let i = 0; i < typeUse.type.members.length; i++) {
-								const alias = typeUse.type.members[i];
-								if (alias.kind == "alias") {
-									if (alias.isAfield) continue;
-									if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
-										addToScopeList(alias);
-										addToScopeList(left);
-										addedAlias = true;
-										if (doCodeGen(context) && context.options.codeGenText) {
-											context.options.codeGenText.push(leftText.join(""));
-										}
-										break;
-									}
-								} else {
-									utilities.unreachable();
-								}
-							}
-						} else {
-							if (doCodeGen(context)) {
-								codeGen.memberAccess(context.options.codeGenText, context, leftText.join(""), node.right[0].name);
-							}
-						}
-					} else {
-						utilities.TODO();
-					}
+				// 		if (!addedAlias) {
+				// 			for (let i = 0; i < typeUse.type.members.length; i++) {
+				// 				const alias = typeUse.type.members[i];
+				// 				if (alias.kind == "alias") {
+				// 					if (alias.isAfield) continue;
+				// 					if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
+				// 						addToScopeList(alias);
+				// 						addToScopeList(left);
+				// 						addedAlias = true;
+				// 						if (doCodeGen(context) && context.options.codeGenText) {
+				// 							context.options.codeGenText.push(leftText.join(""));
+				// 						}
+				// 						break;
+				// 					}
+				// 				} else {
+				// 					utilities.unreachable();
+				// 				}
+				// 			}
+				// 		} else {
+				// 			if (doCodeGen(context)) {
+				// 				codeGen.memberAccess(context.options.codeGenText, context, leftText.join(""), node.right[0].name);
+				// 			}
+				// 		}
+				// 	} else {
+				// 		utilities.TODO();
+				// 	}
 					
-					if (!addedAlias) {
-						throw new CompileError(`no member named '${node.right[0].name}'`)
-							.indicator(node.right[0].location, "here");
-					}
-				}
+				// 	if (!addedAlias) {
+				// 		throw new CompileError(`no member named '${node.right[0].name}'`)
+				// 			.indicator(node.right[0].location, "here");
+				// 	}
+				// }
 				
-				else {
+				{
 					const leftText = getCGText();
 					const left = unwrapScopeObject(build(context, node.left, {
 						compileTime: false,
 						codeGenText: leftText,
-						disableValueEvaluation: context.options.disableValueEvaluation,
+						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, false)[0]);
 					const rightText = getCGText();
 					const _right = build(context, node.right, {
 						compileTime: false,
 						codeGenText: rightText,
-						disableValueEvaluation: context.options.disableValueEvaluation,
+						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, false)[0];
 					let right: ScopeObject;
 					if (_right.kind == "alias" && _right.isAfield && _right.type) {
@@ -947,19 +776,19 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					
 					if (left.kind == "complexValue" || right.kind == "complexValue") {
 						if (node.operatorText == "+") {
-							addToScopeList(getComplexValue(context, "Number"));
+							addToScopeList(getComplexValueFromString(context, "Number"));
 						} else if (node.operatorText == "-") {
-							addToScopeList(getComplexValue(context, "Number"));
+							addToScopeList(getComplexValueFromString(context, "Number"));
 						} else if (node.operatorText == "==") {
-							addToScopeList(getComplexValue(context, "Bool"));
+							addToScopeList(getComplexValueFromString(context, "Bool"));
 						} else if (node.operatorText == "<") {
-							addToScopeList(getComplexValue(context, "Bool"));
+							addToScopeList(getComplexValueFromString(context, "Bool"));
 						} else if (node.operatorText == ">") {
-							addToScopeList(getComplexValue(context, "Bool"));
+							addToScopeList(getComplexValueFromString(context, "Bool"));
 						} else if (node.operatorText == "&&") {
-							addToScopeList(getComplexValue(context, "Bool"));
+							addToScopeList(getComplexValueFromString(context, "Bool"));
 						} else if (node.operatorText == "||") {
-							addToScopeList(getComplexValue(context, "Bool"));
+							addToScopeList(getComplexValueFromString(context, "Bool"));
 						} else {
 							utilities.unreachable();
 						}
@@ -1057,37 +886,33 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "function": {
 				let returnType = null;
 				if (node.returnType) {
-					const _returnType = unwrapScopeObject(build(context, [node.returnType.value], null, null, false, false, false)[0]);
-					if (_returnType.kind == "typeUse") {
-						returnType = _returnType;
+					const _returnType = build(context, [node.returnType.value], null, null, false, false, false)[0];
+					if (_returnType.kind == "alias") {
+						returnType = cast_ScopeObjectType(_returnType);
 					} else {
 						utilities.TODO();
 					}
 				}
 				
-				let functionArguments: (ScopeObject & { kind: "argument" })[] = [];
+				let functionArguments: ScopeObject_argument[] = [];
 				
 				for (let i = 0; i < node.functionArguments.length; i++) {
 					const argument = node.functionArguments[i];
 					
 					if (argument.kind == "argument") {
-						const argumentType = unwrapScopeObject(build(context, [argument.type.value], {
+						const argumentType = cast_ScopeObjectType(build(context, [argument.type.value], {
 							codeGenText: null,
 							compileTime: true,
-							disableValueEvaluation: context.options.disableValueEvaluation,
+							disableDependencyAccess: context.options.disableDependencyAccess,
 						}, null, false, false, false)[0]);
 						
-						if (argumentType.kind == "typeUse") {
-							functionArguments.push({
-								kind: "argument",
-								originLocation: argument.location,
-								comptime: argument.comptime,
-								name: argument.name,
-								type: argumentType,
-							});	
-						} else {
-							utilities.TODO();
-						}
+						functionArguments.push({
+							kind: "argument",
+							originLocation: argument.location,
+							comptime: argument.comptime,
+							name: argument.name,
+							type: argumentType,
+						});	
 					} else {
 						utilities.unreachable();
 					}
@@ -1118,23 +943,24 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const members = build(context, node.codeBlock, {
 					codeGenText: codeBlockText,
 					compileTime: context.options.compileTime,
-					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false, true, true) as (ScopeObject & { kind: "alias" })[];
+					disableDependencyAccess: context.options.disableDependencyAccess,
+				}, null, false, true, true) as ScopeObject_alias[];
 				
 				const struct: ScopeObject = {
 					kind: "struct",
 					originLocation: node.location,
 					name: `${getNextSymbolName(context)}`,
+					toBeChecked: true,
 					members: members,
 				};
 				
-				addToScopeList({
-					kind: "typeUse",
-					originLocation: node.location,
-					type: struct,
-				});
+				// addToScopeList({
+				// 	kind: "typeUse",
+				// 	originLocation: node.location,
+				// 	type: struct,
+				// });
 				
-				if (!context.options.disableValueEvaluation && doCodeGen(context)) {
+				if (!context.options.disableDependencyAccess && doCodeGen(context)) {
 					codeGen.struct(context.options.codeGenText, context, struct, codeBlockText);
 				}
 				break;
@@ -1160,20 +986,20 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const _condition = build(context, node.condition, {
 					codeGenText: conditionText,
 					compileTime: context.options.compileTime,
-					disableValueEvaluation: context.options.disableValueEvaluation,
+					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, false)[0];
 				
 				if (context.inCheckMode) {
 					build(context, node.trueCodeBlock, {
 						codeGenText: null,
 						compileTime: context.options.compileTime,
-						disableValueEvaluation: context.options.disableValueEvaluation,
+						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, resultAtRet, true, false);
 					if (node.falseCodeBlock) {
 						build(context, node.falseCodeBlock, {
 							codeGenText: null,
 							compileTime: context.options.compileTime,
-							disableValueEvaluation: context.options.disableValueEvaluation,
+							disableDependencyAccess: context.options.disableDependencyAccess,
 						}, null, resultAtRet, true, false);
 					}
 					break;
@@ -1209,13 +1035,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					build(context, node.trueCodeBlock, {
 						codeGenText: trueText,
 						compileTime: context.options.compileTime,
-						disableValueEvaluation: context.options.disableValueEvaluation,
+						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, resultAtRet, true, false);
 					if (node.falseCodeBlock) {
 						build(context, node.falseCodeBlock, {
 							codeGenText: falseText,
 							compileTime: context.options.compileTime,
-							disableValueEvaluation: context.options.disableValueEvaluation,
+							disableDependencyAccess: context.options.disableDependencyAccess,
 						}, null, resultAtRet, true, false);
 					}
 					if (doCodeGen(context)) codeGen.if(context.options.codeGenText, context, conditionText, trueText, falseText);
@@ -1231,77 +1057,30 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				build(context, node.codeBlock, {
 					codeGenText: text,
 					compileTime: context.options.compileTime || node.comptime,
-					disableValueEvaluation: context.options.disableValueEvaluation,
+					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, resultAtRet, true, false);
-				
-				
 				break;
-			}
-			case "return": {
-				if (!resultAtRet) {
-					throw new CompileError("unexpected return").indicator(node.location, "here");
-				}
-				if (node.value) {
-					if (!context.file.scope.function) {
-						throw utilities.unreachable();
-					}
-					
-					if (!context.file.scope.function.returnType) {
-						throw new CompileError(`void function returned a value`)
-							.indicator(node.location, "return here")
-							.indicator(context.file.scope.function.originLocation, "function defined here");
-					}
-					
-					const valueText: CodeGenText = [];
-					const value = build(context, [node.value], {
-						codeGenText: valueText,
-						compileTime: context.options.compileTime,
-						disableValueEvaluation: context.options.disableValueEvaluation,
-					}, null, false, false, false)[0];
-					
-					expectType(context, context.file.scope.function.returnType, getTypeOf(context, unwrapScopeObject(value)),
-						new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-							.indicator(node.location, "return here")
-							.indicator(context.file.scope.function.originLocation, "function defined here")
-					);
-					
-					scopeList.push(value);
-					
-					if (doCodeGen(context)) {
-						codeGen.startExpression(context.options.codeGenText, context);
-						codeGen.return(context.options.codeGenText, context, valueText);
-						codeGen.endExpression(context.options.codeGenText, context);
-					}
-				} else {
-					if (doCodeGen(context)) {
-						codeGen.startExpression(context.options.codeGenText, context);
-						codeGen.return(context.options.codeGenText, context, []);
-						codeGen.endExpression(context.options.codeGenText, context);
-					}
-				}
-				return scopeList;
 			}
 			
 			case "structInstance": {
-				const templateType = unwrapScopeObject(build(context, [node.templateStruct.value], {
+				const templateType = cast_ScopeObjectType(build(context, [node.templateStruct.value], {
 					codeGenText: [],
 					compileTime: context.options.compileTime,
-					disableValueEvaluation: context.options.disableValueEvaluation,
+					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, false)[0]);
 				
-				if (templateType.kind != "typeUse" || templateType.type.kind != "struct") {
-					throw new CompileError(`a struct instance can only use another struct as a template`)
-						.indicator(node.location, "here");
+				if (templateType.value.kind != "struct") {
+					throw utilities.TODO();
 				}
 				
-				const templateStruct = templateType.type;
+				const templateStruct = templateType.value;
 				
 				const fieldText = getCGText();
 				const fields = build(context, node.codeBlock, {
 					codeGenText: fieldText,
 					compileTime: context.options.compileTime,
-					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false, true, true) as (ScopeObject & { kind: "alias" })[];
+					disableDependencyAccess: context.options.disableDependencyAccess,
+				}, null, false, true, true) as ScopeObject_alias[];
 				
 				let fieldNames: string[] = [];
 				
@@ -1356,39 +1135,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				if (doCodeGen(context)) {
 					codeGen.struct(context.options.codeGenText, context, struct, fieldText);
-				}
-				
-				break;
-			}
-			case "setInstanceField": {
-				const valueText = getCGText();
-				let value = build(context, [node.value], {
-					codeGenText: valueText,
-					compileTime: context.options.compileTime,
-					disableValueEvaluation: context.options.disableValueEvaluation,
-				}, null, false, false, false)[0];
-				if (!value) {
-					throw new CompileError(`no value for field`).indicator(node.location, "here");
-				}
-				value = unwrapScopeObject(value);
-				
-				const alias: ScopeObject = {
-					kind: "alias",
-					originLocation: node.location,
-					forceComptime: false,
-					mutable: true,
-					isAfield: false, // TODO
-					name: node.name,
-					value: value,
-					symbolName: `TODO: setInstanceField symbolName?`,
-					type: getTypeOf(context, value),
-				};
-				context.file.scope.levels[context.file.scope.currentLevel].push(alias);
-				
-				if (doCodeGen(context)) {
-					const accessText = getCGText();
-					codeGen.memberAccess(accessText, context, "__uclstruct__", node.name);
-					codeGen.set(context.options.codeGenText, context, alias, accessText, valueText);
 				}
 				
 				break;

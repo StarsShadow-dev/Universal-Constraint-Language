@@ -70,8 +70,7 @@ export default {
 			if (onCodeGen["alias"]) {
 				callFunction(context, onCodeGen["alias"], [
 					getString(alias.symbolName),
-					getString(valueText.join("")),
-					getBool(alias.mutable)
+					getString(valueText.join(""))
 				], "builtin", true, null, dest, null);
 			}
 		}

@@ -1,53 +1,61 @@
-import * as fs from "fs";
-import { stdout } from "process";
 import path from "path";
 
-import { compileFile } from "./compiler";
+import { FileContext, compileFile } from "./compiler";
 import {
 	ASTnode,
 	ScopeObject,
+	ScopeObjectType,
+	ScopeObject_alias,
+	ScopeObject_complexValue,
+	ScopeObject_function,
+	ScopeObject_struct,
+	cast_ScopeObjectType,
 	unwrapScopeObject,
 } from "./types";
 import { CompileError } from "./report";
 import utilities from "./utilities";
-import { forceAsType, getAlias, getNextSymbolName, getTypeOf } from "./builder";
+import { getAlias, getNextSymbolName } from "./builder";
 import { BuilderContext } from "./compiler";
-import codeGen from "./codeGen";
 
 let fileSystemDisabled = false;
 
-export let builtinScopeLevel: ScopeObject[] = [];
+export let builtinScopeLevel: ScopeObject_alias[] = [];
 
 export let onCodeGen: any = {};
 
-const typeType: ScopeObject & { kind: "typeUse" } = {
-	kind: "typeUse",
+const typeTypeStruct: ScopeObject_struct = {
+	kind: "struct",
 	originLocation: "builtin",
-	type: {
-		kind: "struct",
-		originLocation: "builtin",
-		name: "builtin:Type",
-		members: [],
-	},
+	toBeChecked: false,
+	name: "builtin:Type",
+	members: [],
 };
+
+let typeType: ScopeObjectType = {
+	kind: "alias",
+	originLocation: "builtin",
+	forceComptime: false,
+	mutable: false,
+	isAfield: false,
+	name: "Type",
+	value: typeTypeStruct,
+	symbolName: "",
+	type: undefined,
+} as any;
+typeType.type = typeType;
 
 function addType(name: string) {
 	builtinScopeLevel.push({
 		kind: "alias",
 		originLocation: "builtin",
-		forceComptime: false,
-		mutable: false,
 		isAfield: false,
 		name: name,
 		value: {
-			kind: "typeUse",
+			kind: "struct",
 			originLocation: "builtin",
-			type: {
-				kind: "struct",
-				originLocation: "builtin",
-				name: "builtin:" + name,
-				members: [],
-			},
+			toBeChecked: false,
+			name: "builtin:" + name,
+			members: [],
 		},
 		symbolName: "",
 		type: typeType,
@@ -78,24 +86,21 @@ export function getString(value: string): ScopeObject {
 	};
 }
 
-export function getComplexValue(context: BuilderContext, name: string): ScopeObject & { kind: "complexValue" } {
+export function getStruct(context: BuilderContext, members: ScopeObject_alias[], toBeChecked: boolean): ScopeObject_struct {
 	return {
-		kind: "complexValue",
+		kind: "struct",
 		originLocation: "builtin",
-		type: forceAsType(unwrapScopeObject(getAlias(context, name))),
+		toBeChecked: toBeChecked,
+		name: `${getNextSymbolName(context)}`,
+		members: members,
 	};
 }
 
-function getStruct(context: BuilderContext, members: (ScopeObject & { kind: "alias" })[]): ScopeObject {
+export function getComplexValueFromString(context: BuilderContext, name: string): ScopeObject_complexValue {
 	return {
-		kind: "typeUse",
+		kind: "complexValue",
 		originLocation: "builtin",
-		type: {
-			kind: "struct",
-			originLocation: "builtin",
-			name: `${getNextSymbolName(context)}`,
-			members: members,
-		},
+		type: cast_ScopeObjectType(unwrapScopeObject(getAlias(context, name))),
 	};
 }
 
@@ -105,8 +110,6 @@ export function setUpBuiltin(disableFileSystem: boolean) {
 		builtinScopeLevel.push({
 			kind: "alias",
 			originLocation: "builtin",
-			forceComptime: false,
-			mutable: false,
 			isAfield: false,
 			name: "Type",
 			value: typeType,
@@ -189,7 +192,7 @@ class FC {
 		}
 	}
 	
-	public "function" = (comptime: boolean): ScopeObject & { kind: "function" } => {
+	public "function" = (comptime: boolean): ScopeObject_function => {
 		const value = this.get("function", comptime);
 		if (value.kind == "function") {
 			return value;
@@ -198,16 +201,7 @@ class FC {
 		}
 	}
 	
-	public "type" = (): ScopeObject & { kind: "typeUse" } => {
-		const value = this.get("type", true, true);
-		if (value.kind == "typeUse") {
-			return value;
-		} else {
-			throw utilities.unreachable();
-		}
-	}
-	
-	public "alias" = (comptime: boolean): ScopeObject & { kind: "alias" } => {
+	public "alias" = (comptime: boolean): ScopeObject_alias => {
 		const value = this.get("alias", comptime, false);
 		if (value.kind == "alias") {
 			return value;
@@ -241,177 +235,28 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 	if (node.kind == "builtinCall") {
 		const fc = new FC(node, callArguments, node.callArguments);
 		
-		if (node.name == "compileLog") {
-			let str = "[compileLog] ";
-			while (fc.next()) {
-				str += fc.string(true);
-			}
-			str += "\n"
-			fc.done();
-			
-			stdout.write(str);
-		}
-		
-		else if (node.name == "compileDebug") {
+		if (node.name == "compileDebug") {
 			console.log("compileDebug", callArguments);
 			debugger;
-		}
-		
-		else if (node.name == "panic") {
-			codeGen.panic(context.options.codeGenText, context, "ucl_panic");
-		}
-		
-		else if (node.name == "assert") {
-			const bool = fc.bool(false);
-			
-			if (!bool) {
-				throw new CompileError(`assert failed`)
-					.indicator(node.location, "here");
-			}
-		}
-		
-		else if (node.name == "opaque") {
-			const value = fc.forward();
-			fc.done();
-			
-			if (context.options.codeGenText) {
-				context.options.codeGenText.push(argumentText.join(""));
-			}
-			
-			return {
-				kind: "complexValue",
-				originLocation: "builtin",
-				type: {
-					kind: "typeUse",
-					originLocation: "builtin",
-					type: getTypeOf(context, value).type,
-				},
-			};
-		}
-		
-		else if (node.name == "asComplexValue") {
-			const type = unwrapScopeObject(fc.forward());
-			
-			if (type.kind != "typeUse") {
-				throw utilities.TODO();
-			}
-			
-			if (context.options.codeGenText) {
-				context.options.codeGenText.push(argumentText.join(""));
-			}
-			
-			return {
-				kind: "complexValue",
-				originLocation: "builtin",
-				type: type,
-			};
-		}
-		
-		else if (node.name == "getCodeGen") {
-			return getString(argumentText.join(""));
-		}
-		
-		else if (node.name == "addCodeGen") {
-			if (context.inCheckMode) return;
-			
-			let str = "";
-			while (fc.next()) {
-				str += fc.string(true);
-			}
-			fc.done();
-			
-			if (context.options.codeGenText) {
-				context.options.codeGenText.push(str);
-			} else {
-				console.log("no context.options.codeGenText", str);
-			}
-		}
-		
-		else if (node.name == "addTopCodeGen") {
-			if (context.inCheckMode) return;
-			
-			let str = "";
-			while (fc.next()) {
-				str += fc.string(true);
-			}
-			fc.done();
-			
-			context.topCodeGenText.push(str);
-		}
-		
-		else if (node.name == "addCodeGen_startExpression") {
-			fc.done();
-			
-			if (context.file.scope.generatingFunction) {
-				context.file.scope.generatingFunction.indentation--;
-				codeGen.startExpression(context.options.codeGenText, context);
-				context.file.scope.generatingFunction.indentation++;
-			}
-		}
-		
-		else if (node.name == "addCodeGen_endExpression") {
-			fc.done();
-			
-			if (context.file.scope.generatingFunction) {
-				codeGen.endExpression(context.options.codeGenText, context);
-			}
-		}
-		
-		else if (node.name == "onCodeGen") {
-			const name = fc.string(true);
-			const fn = fc.function(true);
-			fc.done();
-			
-			onCodeGen[name] = fn;
-		}
-		
-		else if (node.name == "writeTofile") {
-			if (fileSystemDisabled) {
-				utilities.unreachable();
-			}
-			
-			const outPath = fc.string(true);
-			fc.done();
-			
-			const newPath = path.join(path.dirname(context.file.path), outPath);
-			const dir = path.dirname(newPath);
-			
-			if (!fs.existsSync(dir)) {
-				fs.mkdirSync(dir, { recursive: true });
-			}
-			
-			fs.writeFileSync(newPath, context.topCodeGenText.join(""));
 		}
 		
 		else if (node.name == "import") {
 			const filePath = fc.string(true);
 			fc.done();
 			
-			const newContext = compileFile(context, path.join(path.dirname(context.file.path), filePath), null);
-			
-			return getStruct(context, newContext.scope.levels[0] as (ScopeObject & { kind: "alias" })[]);
-		}
-		
-		else if (node.name == "export") {
-			const name = fc.string(true);
-			const fnAlias = fc.alias(false);
-			const fn = unwrapScopeObject(fnAlias);
-			fc.done();
-			
-			if (fn.kind == "function") {
-				fn.symbolName = name;
-				context.exports.push(fn);
+			let newContext: FileContext;
+			try {
+				newContext = compileFile(context, path.join(path.dirname(context.file.path), filePath), null);
+			} catch (error) {
+				if (error instanceof CompileError) {
+					context.errors.push(error);
+					throw "__done__";
+				} else {
+					throw error;
+				}
 			}
-		}
-		else if (node.name == "extern") {
-			const name = fc.string(true);
-			const fn = fc.function(true);
-			fc.done();
 			
-			fn.symbolName = name;
-			fn.external = true;
-			
-			return fn;
+			return getStruct(context, newContext.scope.levels[0] as ScopeObject_alias[], false);
 		}
 		
 		else {

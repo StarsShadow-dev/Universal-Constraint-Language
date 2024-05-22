@@ -2,10 +2,9 @@ import * as fs from "fs";
 
 import { TokenType } from "./types";
 import utilities from "./utilities";
-import { CompileError } from "./report";
 import { setUpBuiltin } from "./builtin";
 import path from "path";
-import { CompilerOptions, compile, newBuilderContext, resetCompiledFiles } from "./compiler";
+import { CompilerOptions, compile, newBuilderContext, resetFilesToCompile } from "./compiler";
 import logger from "./logger";
 
 const c_green = "\x1B[32m";
@@ -41,7 +40,7 @@ function testFile(filePath: string) {
 	
 	console.log(`running test: '${filePath}'`);
 	
-	resetCompiledFiles();
+	resetFilesToCompile();
 	setUpBuiltin(true);
 	
 	let comments: any;
