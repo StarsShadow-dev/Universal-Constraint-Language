@@ -15,6 +15,7 @@ import {
 	cast_ScopeObjectType,
 	ScopeObject_alias,
 	ScopeObject_argument,
+	ScopeObject_function,
 } from "./types";
 
 function doCodeGen(context: BuilderContext): boolean {
@@ -258,8 +259,9 @@ export function callFunction(
 							originLocation: argument.originLocation,
 							isAfield: false,
 							name: argument.name,
-							value: callArgument,
 							symbolName: symbolName,
+							value: callArgument,
+							valueAST: null,
 						});
 					} else {
 						let value: ScopeObject = {
@@ -272,8 +274,9 @@ export function callFunction(
 							originLocation: argument.originLocation,
 							isAfield: false,
 							name: argument.name,
-							value: value,
 							symbolName: symbolName,
+							value: value,
+							valueAST: null,
 						});
 					}
 				} else {
@@ -456,9 +459,10 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 	let level: ScopeObject_alias[] = [];
 	if (getLevel == true) {
 		level = context.file.scope.levels[context.file.scope.currentLevel];
+	} else {
+		context.file.scope.levels[context.file.scope.currentLevel] = [];
 	}
 	
-	context.file.scope.levels[context.file.scope.currentLevel] = [];
 	context.file.scope.currentLevel--;
 	
 	if (getLevel == true) {
@@ -481,21 +485,20 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
-			let value: ScopeObject | null = null;
-			if (node.value && node.value.kind == "struct" && !context.options.disableDependencyAccess) {
-				value = unwrapScopeObject(build(context, [node.value], {
-					codeGenText: null,
-					compileTime: context.options.compileTime,
-					disableDependencyAccess: true,
-				}, null, false, false, false)[0]);
-			}
+			const value = unwrapScopeObject(build(context, [node.value], {
+				codeGenText: null,
+				compileTime: context.options.compileTime,
+				disableDependencyAccess: true,
+			}, null, false, false, false)[0]);
+			
 			addAlias(context, context.file.scope.currentLevel, {
 				kind: "alias",
 				originLocation: node.location,
 				isAfield: false,
 				name: node.name,
-				value: value,
 				symbolName: node.name,
+				value: value,
+				valueAST: node.value,
 			});
 		}
 	}
@@ -517,6 +520,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					throw new CompileError(`no value for definition`).indicator(node.location, "here");
 				}
 				
+				alias.value = value;
+				
 				// if (value.originLocation != "builtin") {
 				// 	const path = value.originLocation.path;
 				// 	const line = value.originLocation.line;
@@ -536,8 +541,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				// 		value.type.name = symbolName;
 				// 	}
 				// }
-				
-				alias.value = value;
 			} else {
 				utilities.unreachable();
 			}
@@ -919,7 +922,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				const visible = getVisibleAsliases(context);
 				
-				addToScopeList({
+				const fn: ScopeObject_function = {
 					kind: "function",
 					forceInline: node.forceInline,
 					external: false,
@@ -934,7 +937,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					comptimeReturn: node.comptimeReturn,
 					AST: node.codeBlock,
 					visible: visible,
-				});
+				};
+				
+				addToScopeList(fn);
+				
+				if (context.inCheckMode) {
+					callFunction(context, fn, null, "builtin", false, null, null, null, true);
+				}
 				break;
 			}
 			case "struct": {

@@ -3,7 +3,6 @@
 //
 
 import utilities from "./utilities";
-import { CompileError } from "./report";
 
 export type SourceLocation = {
 	path: string,
@@ -130,21 +129,14 @@ type GenericScopeObject = {
 	originLocation: SourceLocation,
 };
 
-type _ScopeObject_alias = GenericScopeObject & {
+export type ScopeObject_alias = GenericScopeObject & {
 	kind: "alias",
 	isAfield: boolean,
 	name: string,
 	symbolName: string,
-};
-type ScopeObject_alias_value = _ScopeObject_alias & {
 	value: ScopeObject,
-	// type: ScopeObjectType,
+	valueAST: ASTnode | null,
 };
-type ScopeObject_alias_unknownType = _ScopeObject_alias & {
-	value: ScopeObject | null,
-	// type: null,
-};
-export type ScopeObject_alias = ScopeObject_alias_value | ScopeObject_alias_unknownType;
 
 export type ScopeObjectType = ScopeObject_alias & {
 	value: ScopeObject_function | ScopeObject_struct,
@@ -225,20 +217,15 @@ GenericScopeObject & {
 };
 
 export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {
-	if (scopeObject) {
-		if (scopeObject.kind == "alias") {
-			if (scopeObject.value) {
-				return scopeObject.value;
-			} else {
-				throw new CompileError(`alias '${scopeObject.name}' used before its definition`)
-					.indicator(scopeObject.originLocation, "alias defined here");
-			}
-		}
-		
-		return scopeObject;	
-	} else {
+	if (!scopeObject) {
 		throw utilities.unreachable();
 	}
+	
+	if (scopeObject.kind == "alias") {
+		return scopeObject.value;
+	}
+	
+	return scopeObject;	
 }
 
 export function getTypeName(type: ScopeObjectType): string {

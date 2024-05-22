@@ -36,8 +36,9 @@ let typeType: ScopeObjectType = {
 	originLocation: "builtin",
 	isAfield: false,
 	name: "Type",
-	value: typeTypeStruct,
 	symbolName: "",
+	value: typeTypeStruct,
+	valueAST: null,
 };
 
 function addType(name: string) {
@@ -46,6 +47,7 @@ function addType(name: string) {
 		originLocation: "builtin",
 		isAfield: false,
 		name: name,
+		symbolName: "",
 		value: {
 			kind: "struct",
 			originLocation: "builtin",
@@ -53,7 +55,7 @@ function addType(name: string) {
 			name: "builtin:" + name,
 			members: [],
 		},
-		symbolName: "",
+		valueAST: null,
 	});
 }
 

@@ -16,6 +16,7 @@ import {
 	ScopeObject_function,
 	Token,
 	getCGText,
+	unwrapScopeObject,
 } from "./types";
 
 export type IdeOptions = {
@@ -95,20 +96,23 @@ export function resetFilesToCompile() {
 	filesToCompile = {};
 }
 
-function checkScopeLevel(context: BuilderContext, level: ScopeObject[]) {
-	// utilities.TODO();
-	// for (let i = 0; i < level.length; i++) {
-	// 	const alias = level[i];
-	// 	if (alias.kind == "alias" && alias.isAfield) {
-	// 		continue;
-	// 	}
-	// 	const value = unwrapScopeObject(alias);
-	// 	if (value.kind == "function" && !value.external && value.toBeChecked) {
-	// 		callFunction(context, value, null, "builtin", false, null, null, null, true);
-	// 	} else if (value.kind == "alias" && value.type && value.type. && value.toBeChecked) {
-	// 		checkScopeLevel(context, value.type.members);
-	// 	}
-	// }
+function checkScopeLevel(context: BuilderContext, level: ScopeObject_alias[]) {
+	for (let i = 0; i < level.length; i++) {
+		const alias = level[i];
+		if (alias.isAfield) {
+			continue;
+		}
+		
+		if (alias.valueAST) {
+			const valueAST = alias.valueAST;
+			alias.valueAST = null;
+			const scopeList = build(context, [valueAST], {
+				codeGenText: null,
+				compileTime: true,
+				disableDependencyAccess: false,
+			}, null, false, false, true);
+		}
+	}
 }
 
 export function compile(context: BuilderContext, onTokens: null | ((tokens: Token[]) => void)) {
@@ -142,7 +146,10 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 	const checkStart = Date.now();
 	if (context.compilerOptions.check) {
 		context.inCheckMode = true;
-		checkScopeLevel(context, context.file.scope.levels[0]);
+		for (const key in filesToCompile) {
+			context.file = filesToCompile[key];
+			checkScopeLevel(context, context.file.scope.levels[0]);
+		}
 		context.inCheckMode = false;
 	}
 	logger.addTime("checking", Date.now() - checkStart);
@@ -186,7 +193,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	const lexStart = Date.now();
 	const tokens = lex(filePath, text);
 	logger.addTime("lexing", Date.now() - lexStart);
-	console.log("tokens:", tokens);
+	// console.log("tokens:", tokens);
 	
 	if (onTokens) {
 		onTokens(tokens);

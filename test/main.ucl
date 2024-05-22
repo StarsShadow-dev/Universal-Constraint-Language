@@ -4,4 +4,7 @@ function = fn(): Number {
 	1
 }
 
-@compDebug(function())
+main = fn(): String {
+	@compDebug(function())
+	"Hello, World!"
+}
