@@ -207,7 +207,6 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	}, null, false, false, true);
 	context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
 	
-	// console.log(`top '${filePath}':\n\n${codeGen.getTop().join("")}`);
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
 	
 	context.file = oldFile;

@@ -34,15 +34,11 @@ const typeTypeStruct: ScopeObject_struct = {
 let typeType: ScopeObjectType = {
 	kind: "alias",
 	originLocation: "builtin",
-	forceComptime: false,
-	mutable: false,
 	isAfield: false,
 	name: "Type",
 	value: typeTypeStruct,
 	symbolName: "",
-	type: undefined,
-} as any;
-typeType.type = typeType;
+};
 
 function addType(name: string) {
 	builtinScopeLevel.push({
@@ -58,7 +54,6 @@ function addType(name: string) {
 			members: [],
 		},
 		symbolName: "",
-		type: typeType,
 	});
 }
 
@@ -107,15 +102,7 @@ export function getComplexValueFromString(context: BuilderContext, name: string)
 export function setUpBuiltin(disableFileSystem: boolean) {
 	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
-		builtinScopeLevel.push({
-			kind: "alias",
-			originLocation: "builtin",
-			isAfield: false,
-			name: "Type",
-			value: typeType,
-			symbolName: "",
-			type: typeType,
-		});
+		builtinScopeLevel.push(typeType);
 		addType("Bool");
 		addType("Number");
 		addType("String");
@@ -235,8 +222,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 	if (node.kind == "builtinCall") {
 		const fc = new FC(node, callArguments, node.callArguments);
 		
-		if (node.name == "compileDebug") {
-			console.log("compileDebug", callArguments);
+		if (node.name == "compDebug") {
+			console.log("compDebug", callArguments);
 			debugger;
 		}
 		

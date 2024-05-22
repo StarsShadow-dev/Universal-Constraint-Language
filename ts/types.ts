@@ -138,15 +138,14 @@ type _ScopeObject_alias = GenericScopeObject & {
 };
 type ScopeObject_alias_value = _ScopeObject_alias & {
 	value: ScopeObject,
-	type: ScopeObjectType,
+	// type: ScopeObjectType,
 };
 type ScopeObject_alias_unknownType = _ScopeObject_alias & {
 	value: ScopeObject | null,
-	type: null,
+	// type: null,
 };
 export type ScopeObject_alias = ScopeObject_alias_value | ScopeObject_alias_unknownType;
 
-// The result of a struct should be a ""
 export type ScopeObjectType = ScopeObject_alias & {
 	value: ScopeObject_function | ScopeObject_struct,
 };

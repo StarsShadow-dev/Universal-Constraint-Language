@@ -52,6 +52,10 @@ function getTypeOf(context: BuilderContext, scopeObject: ScopeObject): ScopeObje
 		return cast_ScopeObjectType(getAlias(context, "Bool"));
 	} else if (scopeObject.kind == "number") {
 		return cast_ScopeObjectType(getAlias(context, "Number"));
+	} else if (scopeObject.kind == "string") {
+		return cast_ScopeObjectType(getAlias(context, "String"));
+	} else if (scopeObject.kind == "function") {
+		return cast_ScopeObjectType(scopeObject);
 	} else {
 		throw utilities.TODO();
 	}
@@ -256,7 +260,6 @@ export function callFunction(
 							name: argument.name,
 							value: callArgument,
 							symbolName: symbolName,
-							type: argument.type,
 						});
 					} else {
 						let value: ScopeObject = {
@@ -271,7 +274,6 @@ export function callFunction(
 							name: argument.name,
 							value: value,
 							symbolName: symbolName,
-							type: argument.type,
 						});
 					}
 				} else {
@@ -290,7 +292,7 @@ export function callFunction(
 				}, {
 					location: functionToCall.originLocation,
 					msg: `function ${functionToCall.symbolName}`,
-				}, true, true, false)[0];
+				}, false, true, false)[0];
 			} catch (error) {
 				if (error instanceof CompileError) {
 					context.errors.push(error);
@@ -494,7 +496,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				name: node.name,
 				value: value,
 				symbolName: node.name,
-				type: null,
 			});
 		}
 	}
@@ -537,7 +538,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				// }
 				
 				alias.value = value;
-				alias.type = getTypeOf(context, value);
 			} else {
 				utilities.unreachable();
 			}
@@ -763,11 +763,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, false)[0];
 					let right: ScopeObject;
-					if (_right.kind == "alias" && _right.isAfield && _right.type) {
+					if (_right.kind == "alias" && _right.isAfield) {
 						right = {
 							kind: "complexValue",
 							originLocation: _right.originLocation,
-							type: _right.type
+							type: getTypeOf(context, unwrapScopeObject(_right))
 						}
 					} else {
 						right = unwrapScopeObject(_right);
@@ -1062,79 +1062,76 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			
 			case "structInstance": {
-				const templateType = cast_ScopeObjectType(build(context, [node.templateStruct.value], {
-					codeGenText: [],
-					compileTime: context.options.compileTime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
-				}, null, false, false, false)[0]);
+				// const templateType = cast_ScopeObjectType(build(context, [node.templateStruct.value], {
+				// 	codeGenText: [],
+				// 	compileTime: context.options.compileTime,
+				// 	disableDependencyAccess: context.options.disableDependencyAccess,
+				// }, null, false, false, false)[0]);
 				
-				if (templateType.value.kind != "struct") {
-					throw utilities.TODO();
-				}
+				// if (templateType.value.kind != "struct") {
+				// 	throw utilities.TODO();
+				// }
 				
-				const templateStruct = templateType.value;
+				// const templateStruct = templateType.value;
 				
-				const fieldText = getCGText();
-				const fields = build(context, node.codeBlock, {
-					codeGenText: fieldText,
-					compileTime: context.options.compileTime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
-				}, null, false, true, true) as ScopeObject_alias[];
+				// const fieldText = getCGText();
+				// const fields = build(context, node.codeBlock, {
+				// 	codeGenText: fieldText,
+				// 	compileTime: context.options.compileTime,
+				// 	disableDependencyAccess: context.options.disableDependencyAccess,
+				// }, null, false, true, true) as ScopeObject_alias[];
 				
-				let fieldNames: string[] = [];
+				// let fieldNames: string[] = [];
 				
-				// loop over all the fields and make sure that they are supposed to exist
-				for (let a = 0; a < fields.length; a++) {
-					const field = fields[a];
-					fieldNames.push(field.name);
-					let fieldShouldExist = false;
-					for (let e = 0; e < templateStruct.members.length; e++) {
-						const member = templateStruct.members[e];
-						if (member.isAfield) {
-							if (field.name == member.name) {
-								if (!field.type || !member.type) {
-									throw utilities.unreachable();
-								}
-								expectType(context, member.type, field.type,
-									new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-										.indicator(field.originLocation, "field defined here")
-										.indicator(member.originLocation, "field originally defined here")
-								);
-								fieldShouldExist = true;
-								break;
-							}
-						}
-					}
-					if (!fieldShouldExist) {
-						throw new CompileError(`field '${field.name}' should not exist`)
-							.indicator(field.originLocation, "field here");
-					}
-				}
+				// // loop over all the fields and make sure that they are supposed to exist
+				// for (let a = 0; a < fields.length; a++) {
+				// 	const field = fields[a];
+				// 	fieldNames.push(field.name);
+				// 	let fieldShouldExist = false;
+				// 	for (let e = 0; e < templateStruct.members.length; e++) {
+				// 		const member = templateStruct.members[e];
+				// 		if (member.isAfield) {
+				// 			if (field.name == member.name) {
+				// 				expectType(context, member.type, field.type,
+				// 					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+				// 						.indicator(field.originLocation, "field defined here")
+				// 						.indicator(member.originLocation, "field originally defined here")
+				// 				);
+				// 				fieldShouldExist = true;
+				// 				break;
+				// 			}
+				// 		}
+				// 	}
+				// 	if (!fieldShouldExist) {
+				// 		throw new CompileError(`field '${field.name}' should not exist`)
+				// 			.indicator(field.originLocation, "field here");
+				// 	}
+				// }
 				
-				// loop over all of the templates fields, to make sure that there are not any missing fields
-				for (let e = 0; e < templateStruct.members.length; e++) {
-					const member = templateStruct.members[e];
-					if (member.isAfield) {
-						if (!fieldNames.includes(member.name)) {
-							throw new CompileError(`struct instance is missing field '${member.name}'`)
-								.indicator(node.location, "struct instance here")
-								.indicator(member.originLocation, "field originally defined here");
-						}
-					}
-				}
+				// // loop over all of the templates fields, to make sure that there are not any missing fields
+				// for (let e = 0; e < templateStruct.members.length; e++) {
+				// 	const member = templateStruct.members[e];
+				// 	if (member.isAfield) {
+				// 		if (!fieldNames.includes(member.name)) {
+				// 			throw new CompileError(`struct instance is missing field '${member.name}'`)
+				// 				.indicator(node.location, "struct instance here")
+				// 				.indicator(member.originLocation, "field originally defined here");
+				// 		}
+				// 	}
+				// }
 				
-				const struct: ScopeObject = {
-					kind: "structInstance",
-					originLocation: node.location,
-					templateStruct: templateStruct,
-					fields: fields,
-				};
+				// const struct: ScopeObject = {
+				// 	kind: "structInstance",
+				// 	originLocation: node.location,
+				// 	templateStruct: templateStruct,
+				// 	fields: fields,
+				// };
 				
-				addToScopeList(struct);
+				// addToScopeList(struct);
 				
-				if (doCodeGen(context)) {
-					codeGen.struct(context.options.codeGenText, context, struct, fieldText);
-				}
+				// if (doCodeGen(context)) {
+				// 	codeGen.struct(context.options.codeGenText, context, struct, fieldText);
+				// }
 				
 				break;
 			}
