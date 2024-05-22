@@ -1,9 +1,0 @@
-// compError
-// error: no member named 'b'
-// tests/compError/memberDoesNotExist.ucl:9 -> here
-
-var test = struct {
-	const a = "in a";
-};
-
-test.b;

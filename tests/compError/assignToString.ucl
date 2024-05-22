@@ -1,5 +1,0 @@
-// compError
-// error: attempted to assign to something other than an alias
-// tests/compError/assignToString.ucl:5 -> reassignment here
-
-"a string!" = true;

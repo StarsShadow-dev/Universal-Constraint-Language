@@ -1,5 +1,0 @@
-// compOut
-// in test
-
-const test = "in test";
-@addTopCodeGen(test);

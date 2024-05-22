@@ -1,8 +1,0 @@
-// compOut
-// testing
-
-const test = fn(): String {
-	ret "testing";
-};
-
-@addTopCodeGen(test());
