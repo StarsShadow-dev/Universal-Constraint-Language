@@ -1,3 +1,8 @@
+import utilities from "./utilities";
+import codeGen from "./codeGen";
+import { Indicator, CompileError } from "./report";
+import { builtinScopeLevel, builtinCall, getComplexValueFromString } from "./builtin";
+import { BuilderContext, BuilderOptions } from "./compiler";
 import {
 	SourceLocation,
 	ASTnode,
@@ -10,13 +15,7 @@ import {
 	cast_ScopeObjectType,
 	ScopeObject_alias,
 	ScopeObject_argument,
-	isScopeObjectType,
 } from "./types";
-import utilities from "./utilities";
-import { Indicator, CompileError } from "./report";
-import { builtinScopeLevel, builtinCall, getComplexValueFromString } from "./builtin";
-import codeGen from "./codeGen";
-import { BuilderContext, BuilderOptions } from "./compiler";
 
 function doCodeGen(context: BuilderContext): boolean {
 	return !context.options.compileTime;

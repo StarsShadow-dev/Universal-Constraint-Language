@@ -1,10 +1,10 @@
 // tsc -p ./tsconfig.json && node out/main.js test/main.ucl
 
+import utilities from "./utilities";
+import logger from "./logger";
 import { setUpBuiltin } from "./builtin";
 import { CompilerOptions, compile, newBuilderContext } from "./compiler";
-import { CompileError, printErrors } from "./report";
-import logger from "./logger";
-import utilities from "./utilities";
+import { printErrors } from "./report";
 
 let i = 2;
 

@@ -1,6 +1,6 @@
+import utilities from "./utilities";
 import { CompilerOptions } from "./compiler";
 import { SourceLocation } from "./types";
-import utilities from "./utilities";
 
 const lineNumberPadding = 4;
 const indicatorTextWindowSize = 2;

@@ -1,8 +1,9 @@
 import * as fs from "fs";
 import { exit } from "process";
-import { CompileError } from "./report";
-import logger from "./logger";
 import path from "path";
+
+import logger from "./logger";
+import { CompileError } from "./report";
 
 const utilities = {
 	unreachable(): never {

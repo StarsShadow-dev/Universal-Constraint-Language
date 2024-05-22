@@ -1,14 +1,22 @@
-import { ASTnode, CodeGenText, ScopeObject, ScopeObject_alias, ScopeObject_function, Token, getCGText, unwrapScopeObject } from "./types";
+import utilities from "./utilities";
+import logger from "./logger";
+import codeGen from "./codeGen";
 import { lex } from "./lexer";
+import { build, callFunction } from "./builder";
+import { CompileError } from "./report";
 import {
 	ParserMode,
 	parse,
 } from './parser';
-import { build, callFunction } from "./builder";
-import utilities from "./utilities";
-import codeGen from "./codeGen";
-import logger from "./logger";
-import { CompileError } from "./report";
+import {
+	ASTnode,
+	CodeGenText,
+	ScopeObject,
+	ScopeObject_alias,
+	ScopeObject_function,
+	Token,
+	getCGText,
+} from "./types";
 
 export type IdeOptions = {
 	mode: "compileFile",

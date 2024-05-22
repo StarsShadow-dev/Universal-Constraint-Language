@@ -1,12 +1,11 @@
+import utilities from "./utilities";
 import {
 	TokenType,
 	Token,
-	
 	ASTnode,
 	SourceLocation,
 } from "./types";
 import { CompileError } from "./report";
-import utilities from "./utilities";
 
 export type ParserContext = {
 	tokens: Token[],

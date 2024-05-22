@@ -1,6 +1,10 @@
 import path from "path";
 
+import utilities from "./utilities";
 import { FileContext, compileFile } from "./compiler";
+import { CompileError } from "./report";
+import { getAlias, getNextSymbolName } from "./builder";
+import { BuilderContext } from "./compiler";
 import {
 	ASTnode,
 	ScopeObject,
@@ -12,10 +16,6 @@ import {
 	cast_ScopeObjectType,
 	unwrapScopeObject,
 } from "./types";
-import { CompileError } from "./report";
-import utilities from "./utilities";
-import { getAlias, getNextSymbolName } from "./builder";
-import { BuilderContext } from "./compiler";
 
 let fileSystemDisabled = false;
 

@@ -2,8 +2,8 @@
 // general
 //
 
-import { CompileError } from "./report";
 import utilities from "./utilities";
+import { CompileError } from "./report";
 
 export type SourceLocation = {
 	path: string,

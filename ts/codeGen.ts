@@ -1,13 +1,18 @@
+import utilities from "./utilities";
+import { callFunction } from "./builder";
+import { BuilderContext } from "./compiler";
+import { ScopeObject } from "./types";
+import {
+	getBool,
+	getNumber,
+	getString,
+	onCodeGen
+} from "./builtin";
 import {
 	CodeGenText,
 	getCGText,
 	unwrapScopeObject,
 } from "./types";
-import { callFunction } from "./builder";
-import { BuilderContext } from "./compiler";
-import { ScopeObject } from "./types";
-import { getBool, getNumber, getString, onCodeGen } from "./builtin";
-import utilities from "./utilities";
 
 export default {
 	startExpression(dest: CodeGenText, context: BuilderContext) {

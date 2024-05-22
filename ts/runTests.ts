@@ -1,11 +1,16 @@
 import * as fs from "fs";
-
-import { TokenType } from "./types";
-import utilities from "./utilities";
-import { setUpBuiltin } from "./builtin";
 import path from "path";
-import { CompilerOptions, compile, newBuilderContext, resetFilesToCompile } from "./compiler";
+
+import utilities from "./utilities";
 import logger from "./logger";
+import { TokenType } from "./types";
+import { setUpBuiltin } from "./builtin";
+import {
+	CompilerOptions,
+	compile,
+	newBuilderContext,
+	resetFilesToCompile
+} from "./compiler";
 
 const c_green = "\x1B[32m";
 const c_red = "\x1B[31m"
@@ -130,4 +135,6 @@ console.log(`skipped: ${skipped}`);
 console.log(`succeeded: ${c_green}${succeeded}${c_reset}`);
 console.log(`failed: ${c_red}${failed}${c_reset}`);
 
-// logger.printTimes();
+function print() {
+	logger.printTimes();
+}
