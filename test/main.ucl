@@ -1,5 +1,4 @@
 Vec2 = struct(x: Number, y: Number) {
-	// @compDebug(Vec2)
 	new = fn(x: Number, y: Number): Vec2 {
 		Vec2 {
 			x = x
@@ -8,9 +7,9 @@ Vec2 = struct(x: Number, y: Number) {
 	}
 }
 
+@compDebug(Vec2.new(1, 0))
+
 // main = fn(): String {
 // 	@compDebug(function())
 // 	"Hello, World!"
 // }
-
-@compDebug(Vec2.new(1, 0))

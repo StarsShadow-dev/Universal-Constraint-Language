@@ -88,7 +88,7 @@ export type ASTnode = genericASTnode & {
 	kind: "function",
 	forceInline: boolean,
 	functionArguments: ASTnode[],
-	returnType: ASTnode & { kind: "typeUse" } | null,
+	returnType: ASTnode & { kind: "typeUse" },
 	comptimeReturn: boolean,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
@@ -173,7 +173,7 @@ export type ScopeObject_function = GenericScopeObject & {
 	indentation: number,
 	symbolName: string,
 	functionArguments: (ScopeObject & { kind: "argument" })[],
-	returnType: ScopeObjectType | null,
+	returnType: ScopeObjectType,
 	comptimeReturn: boolean,
 	AST: ASTnode[],
 	visible: ScopeObject_alias[],
@@ -208,8 +208,6 @@ export type ScopeObject = GenericScopeObject & {
 } | GenericScopeObject & {
 	kind: "string",
 	value: string,
-} | GenericScopeObject & {
-	kind: "void",
 } | 
 ScopeObject_complexValue |
 ScopeObject_alias |

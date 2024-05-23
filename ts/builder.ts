@@ -334,24 +334,16 @@ export function callFunction(
 					}
 				}
 			} else {
-				if (functionToCall.returnType && !gotError) {
-					throw new CompileError(`non-void function returned void`)
-						.indicator(location, "call here")
+				if (!gotError) {
+					throw new CompileError(`function did not return`)
 						.indicator(functionToCall.originLocation, "function defined here");
 				}
 				
-				if (functionToCall.returnType) {
-					result = {
-						kind: "complexValue",
-						originLocation: location,
-						type: functionToCall.returnType,
-					};
-				} else {
-					result = {
-						kind: "void",
-						originLocation: location,
-					}
-				}
+				result = {
+					kind: "complexValue",
+					originLocation: location,
+					type: functionToCall.returnType,
+				};
 			}
 			
 			if (!checkHere) {
@@ -390,18 +382,11 @@ export function callFunction(
 				}
 			}
 			
-			if (functionToCall.returnType) {
-				result = {
-					kind: "complexValue",
-					originLocation: location,
-					type: functionToCall.returnType,
-				};
-			} else {
-				result = {
-					kind: "void",
-					originLocation: location,
-				}
-			}
+			result = {
+				kind: "complexValue",
+				originLocation: location,
+				type: functionToCall.returnType,
+			};
 		}
 		
 		if (!functionToCall.forceInline && !comptime) {
@@ -879,15 +864,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			
 			case "function": {
-				let returnType = null;
-				if (node.returnType) {
-					const _returnType = build(context, [node.returnType.value], null, null, false, false, "no")[0];
-					if (_returnType.kind == "alias") {
-						returnType = cast_ScopeObjectType(_returnType);
-					} else {
-						utilities.TODO();
-					}
-				}
+				let returnType = cast_ScopeObjectType(build(context, [node.returnType.value], null, null, false, false, "no")[0]);
 				
 				let functionArguments: ScopeObject_argument[] = [];
 				for (let i = 0; i < node.functionArguments.length; i++) {
