@@ -1,0 +1,7 @@
+// compError
+// error: functions must have a return type
+// tests/compError/fnWithoutReturnType.ucl:5 -> here
+
+test = fn() {
+	1
+}

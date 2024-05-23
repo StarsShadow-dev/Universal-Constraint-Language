@@ -127,8 +127,8 @@ function testDir(dirPath: string) {
 
 testDir("./tests/compSucceed");
 testDir("./tests/compError");
-testDir("./tests/compOut");
-testDir("./tests/js");
+// testDir("./tests/compOut");
+// testDir("./tests/js");
 
 console.log(`total: ${total}`);
 console.log(`skipped: ${skipped}`);

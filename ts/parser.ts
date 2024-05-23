@@ -227,6 +227,9 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 	}
 	
 	const returnType = parseType(context);
+	if (!returnType) {
+		throw new CompileError("functions must have a return type").indicator(location, "here");
+	}
 	
 	const openingBracket = forward(context);
 	if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
