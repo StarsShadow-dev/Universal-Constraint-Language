@@ -119,6 +119,40 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 	let mainFile: FileContext;
 	try {
 		mainFile = compileFile(context, context.compilerOptions.filePath, onTokens);
+		
+		for (const key in filesToCompile) {
+			context.file = filesToCompile[key];
+			context.file.scope.levels[0] = [];
+			const scopeList = build(context, filesToCompile[key].AST, {
+				codeGenText: null,
+				compileTime: true,
+				disableDependencyAccess: false,
+			}, null, false, false, true);
+			context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
+		}
+		
+		// context.file = mainFile;
+		
+		const checkStart = Date.now();
+		if (context.compilerOptions.check) {
+			context.inCheckMode = true;
+			for (const key in filesToCompile) {
+				context.file = filesToCompile[key];
+				checkScopeLevel(context, context.file.scope.levels[0]);
+			}
+			context.inCheckMode = false;
+		}
+		logger.addTime("checking", Date.now() - checkStart);
+		
+		const exportStart = Date.now();
+		codeGen.start(context);
+		for (let i = 0; i < context.exports.length; i++) {
+			const toExport = context.exports[i];
+			if (toExport.kind == "function") {
+				callFunction(context, toExport, null, "builtin", false, null, null, null);
+			}
+		}
+		logger.addTime("exporting", Date.now() - exportStart);
 	} catch (error) {
 		if (error instanceof CompileError) {
 			context.errors.push(error);
@@ -129,40 +163,6 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 			throw error;
 		}
 	}
-	
-	for (const key in filesToCompile) {
-		context.file = filesToCompile[key];
-		context.file.scope.levels[0] = [];
-		const scopeList = build(context, filesToCompile[key].AST, {
-			codeGenText: null,
-			compileTime: true,
-			disableDependencyAccess: false,
-		}, null, false, false, true);
-		context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
-	}
-	
-	context.file = mainFile;
-	
-	const checkStart = Date.now();
-	if (context.compilerOptions.check) {
-		context.inCheckMode = true;
-		for (const key in filesToCompile) {
-			context.file = filesToCompile[key];
-			checkScopeLevel(context, context.file.scope.levels[0]);
-		}
-		context.inCheckMode = false;
-	}
-	logger.addTime("checking", Date.now() - checkStart);
-	
-	const exportStart = Date.now();
-	codeGen.start(context);
-	for (let i = 0; i < context.exports.length; i++) {
-		const toExport = context.exports[i];
-		if (toExport.kind == "function") {
-			callFunction(context, toExport, null, "builtin", false, null, null, null);
-		}
-	}
-	logger.addTime("exporting", Date.now() - exportStart);
 }
 
 export function compileFile(context: BuilderContext, filePath: string, onTokens: null | ((tokens: Token[]) => void)): FileContext {
