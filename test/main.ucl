@@ -7,7 +7,7 @@ Vec2 = struct(x: Number, y: Number) {
 	}
 }
 
-@compDebug(Vec2.new(1, 0))
+@compDebug(Vec2.new(1, 0).x)
 
 // main = fn(): String {
 // 	@compDebug(function())
