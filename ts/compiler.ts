@@ -205,7 +205,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 		i: 0,
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
-	console.log(`AST '${filePath}':`, JSON.stringify(newFile.AST, undefined, 4));
+	// console.log(`AST '${filePath}':`, JSON.stringify(newFile.AST, undefined, 4));
 	
 	const scopeList = build(context, newFile.AST, {
 		codeGenText: null,
