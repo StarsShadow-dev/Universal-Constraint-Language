@@ -138,6 +138,7 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 			context.inCheckMode = true;
 			for (const key in filesToCompile) {
 				context.file = filesToCompile[key];
+				context.file.scope.currentLevel = 0;
 				checkScopeLevel(context, context.file.scope.levels[0]);
 			}
 			context.inCheckMode = false;

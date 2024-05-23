@@ -448,10 +448,9 @@ export function build(context: BuilderContext, AST: ASTnode[], options: BuilderO
 	let level: ScopeObject_alias[] = [];
 	if (getLevel != "no") {
 		level = context.file.scope.levels[context.file.scope.currentLevel];
-	} else {
-		context.file.scope.levels[context.file.scope.currentLevel] = [];
 	}
 	
+	context.file.scope.levels[context.file.scope.currentLevel] = [];
 	context.file.scope.currentLevel--;
 	
 	if (getLevel != "no") {
