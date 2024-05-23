@@ -1,0 +1,7 @@
+// compError
+// error: expected type String but got type Number
+// tests/compError/wrongReturnType.ucl:5 -> function defined here
+
+test = fn(): String {
+	1
+}

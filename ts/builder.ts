@@ -319,7 +319,7 @@ export function callFunction(
 				const unwrappedResult = unwrapScopeObject(result);
 				
 				if (functionToCall.returnType) {
-					if (comptime) {
+					if (comptime || context.inCheckMode) {
 						expectType(context, functionToCall.returnType, getTypeOf(context, unwrappedResult),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(location, "call here")

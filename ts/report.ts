@@ -136,6 +136,9 @@ export class CompileError {
 		let text = `error: ${this.msg}\n`;
 		for (let i = 0; i < this.indicators.length; i++) {
 			const indicator = this.indicators[i];
+			
+			if (indicator.location == "builtin") continue;
+			
 			text += getIndicator(indicator, fancyIndicators);
 			if (!fancyIndicators && this.indicators[i + 1]) {
 				text += "\n";
