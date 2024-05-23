@@ -135,7 +135,7 @@ export type ScopeObject_alias = GenericScopeObject & {
 	isAfield: boolean,
 	name: string,
 	symbolName: string,
-	value: ScopeObject,
+	value: ScopeObject | null,
 	valueAST: ASTnode | null,
 };
 
@@ -143,12 +143,16 @@ export type ScopeObjectType = ScopeObject_alias & {
 	value: ScopeObject_function | ScopeObject_struct,
 };
 export function isScopeObjectType(scopeObject: ScopeObject): scopeObject is ScopeObjectType {
-	if (scopeObject.kind != "alias" || !scopeObject.value) {
+	if (scopeObject.kind != "alias") {
 		return false;
 	}
-	if (scopeObject.value.kind != "function" && scopeObject.value.kind != "struct") {
-		return false;
+	
+	if (scopeObject.value) {
+		if (scopeObject.value.kind != "function" && scopeObject.value.kind != "struct") {
+			return false;
+		}
 	}
+	
 	return true;
 }
 export function cast_ScopeObjectType(scopeObject: ScopeObject | null): ScopeObjectType {
@@ -214,7 +218,7 @@ ScopeObject_argument |
 ScopeObject_struct |
 GenericScopeObject & {
 	kind: "structInstance",
-	templateStruct: (ScopeObject & { kind: "struct" }),
+	templateStruct: ScopeObjectType,
 	fields: ScopeObject_alias[],
 };
 
@@ -223,7 +227,7 @@ export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject 
 		throw utilities.unreachable();
 	}
 	
-	if (scopeObject.kind == "alias") {
+	if (scopeObject.kind == "alias" && scopeObject.value) {
 		return scopeObject.value;
 	}
 	

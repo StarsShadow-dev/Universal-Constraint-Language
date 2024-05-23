@@ -57,6 +57,10 @@ function getTypeOf(context: BuilderContext, scopeObject: ScopeObject): ScopeObje
 		return cast_ScopeObjectType(getAlias(context, "String"));
 	} else if (scopeObject.kind == "function") {
 		return cast_ScopeObjectType(scopeObject);
+	} else if (scopeObject.kind == "complexValue") {
+		return scopeObject.type;
+	} else if (scopeObject.kind == "structInstance") {
+		return scopeObject.templateStruct;
 	} else {
 		throw utilities.TODO();
 	}
@@ -485,26 +489,33 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
-			const value = unwrapScopeObject(build(context, [node.value], {
-				codeGenText: null,
-				compileTime: context.options.compileTime,
-				disableDependencyAccess: true,
-			}, null, false, false, "no")[0]);
-			
 			const newAlias: ScopeObject_alias = {
 				kind: "alias",
 				originLocation: node.location,
 				isAfield: false,
 				name: node.name,
 				symbolName: node.name,
-				value: value,
+				value: null,
 				valueAST: node.value,
 			}
 			
+			function buildValue() {
+				if (node.kind != "definition") {
+					throw utilities.unreachable();
+				}
+				newAlias.value = unwrapScopeObject(build(context, [node.value], {
+					codeGenText: null,
+					compileTime: context.options.compileTime,
+					disableDependencyAccess: true,
+				}, null, false, false, "no")[0]);
+			}
+			
 			if (getLevel == "allowShadowing") {
+				buildValue();
 				context.file.scope.levels[context.file.scope.currentLevel].push(newAlias);
 			} else {
 				addAlias(context, context.file.scope.currentLevel, newAlias);
+				buildValue();
 			}
 		}
 	}
@@ -513,43 +524,23 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[index];
 		
 		if (node.kind == "definition") {
-			const alias = getAlias(context, node.name, true);
-			if (alias) {
-				const valueText = getCGText();
-				const value = unwrapScopeObject(build(context, [node.value], {
-					codeGenText: valueText,
-					compileTime: context.options.compileTime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
-				}, null, false, false, "no")[0]);
+			// const alias = getAlias(context, node.name, true);
+			// if (alias) {
+			// 	const valueText = getCGText();
+			// 	const value = unwrapScopeObject(build(context, [node.value], {
+			// 		codeGenText: valueText,
+			// 		compileTime: context.options.compileTime,
+			// 		disableDependencyAccess: context.options.disableDependencyAccess,
+			// 	}, null, false, false, "no")[0]);
 				
-				if (!value) {
-					throw new CompileError(`no value for definition`).indicator(node.location, "here");
-				}
+			// 	if (!value) {
+			// 		throw new CompileError(`no value for definition`).indicator(node.location, "here");
+			// 	}
 				
-				alias.value = value;
-				
-				// if (value.originLocation != "builtin") {
-				// 	const path = value.originLocation.path;
-				// 	const line = value.originLocation.line;
-				// 	const startColumn = value.originLocation.startColumn;
-					
-				// 	let symbolName: string;
-				// 	if (context.file.scope.function) {
-				// 		const functionSymbolName = context.file.scope.function.symbolName;
-				// 		const functionArgumentNameText = context.file.scope.functionArgumentNameText;
-				// 		symbolName = `${functionSymbolName}(${functionArgumentNameText}).${path}:${line},${startColumn}:${alias.name}`;
-				// 	} else {
-				// 		symbolName = `${path}:${line},${startColumn}:${alias.name}`;
-				// 	}
-				// 	if (node.value.kind == "function" && value.kind == "function") {
-				// 		value.symbolName = symbolName;
-				// 	} else if (node.value.kind == "struct" && value.kind == "typeUse" && value.type.kind == "struct") {
-				// 		value.type.name = symbolName;
-				// 	}
-				// }
-			} else {
-				utilities.unreachable();
-			}
+			// 	alias.value = value;
+			// } else {
+			// 	utilities.unreachable();
+			// }
 			continue;
 		} else if (node.kind == "field") {
 			
@@ -645,122 +636,116 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "operator": {
-				// if (node.operatorText == ".") {
-				// 	const leftText = getCGText();
-				// 	const left = unwrapScopeObject(build(context, node.left, {
-				// 		compileTime: context.options.compileTime,
-				// 		codeGenText: leftText,
-				// 		disableDependencyAccess: context.options.disableDependencyAccess,
-				// 	}, null, false, false, false)[0]);
+				if (node.operatorText == ".") {
+					const leftText = getCGText();
+					const left = unwrapScopeObject(build(context, node.left, {
+						compileTime: context.options.compileTime,
+						codeGenText: leftText,
+						disableDependencyAccess: context.options.disableDependencyAccess,
+					}, null, false, false, "no")[0]);
 					
-				// 	if (node.right[0].kind != "identifier") {
-				// 		throw utilities.TODO();
-				// 	}
+					if (node.right[0].kind != "identifier") {
+						throw utilities.TODO();
+					}
 					
-				// 	let addedAlias = false;
+					let addedAlias = false;
 					
-				// 	if (left.kind == "typeUse") {
-				// 		const typeUse = left;
-				// 		if (typeUse.type.kind != "struct") {
-				// 			throw utilities.unreachable();
-				// 		}
+					if (left.kind == "struct") {
+						for (let i = 0; i < left.members.length; i++) {
+							const alias = left.members[i];
+							if (alias.kind == "alias") {
+								if (alias.name == node.right[0].name) {
+									if (!alias.isAfield && alias.value) {
+										addToScopeList(alias);
+										addedAlias = true;
+										break;
+									}
+								}
+							} else {
+								utilities.unreachable();
+							}
+						}
+					}
+					
+					// else if (left.kind == "structInstance" || left.kind == "complexValue") {
+					// 	const typeUse = getTypeOf(context, left);
+					// 	if (typeUse.type.kind != "struct") {
+					// 		throw utilities.unreachable();
+					// 	}
 						
-				// 		for (let i = 0; i < typeUse.type.members.length; i++) {
-				// 			const alias = typeUse.type.members[i];
-				// 			if (alias.kind == "alias") {
-				// 				if (alias.name == node.right[0].name) {
-				// 					if (!alias.isAfield && alias.value) {
-				// 						addToScopeList(alias);
-				// 						addedAlias = true;
-				// 						break;
-				// 					}
-				// 				}
-				// 			} else {
-				// 				utilities.unreachable();
-				// 			}
-				// 		}
-				// 	}
-				// 	else if (left.kind == "structInstance" || left.kind == "complexValue") {
-				// 		const typeUse = getTypeOf(context, left);
-				// 		if (typeUse.type.kind != "struct") {
-				// 			throw utilities.unreachable();
-				// 		}
-						
-				// 		if (left.kind == "structInstance") {
-				// 			for (let i = 0; i < left.fields.length; i++) {
-				// 				const alias = left.fields[i];
-				// 				if (alias.name == node.right[0].name) {
-				// 					// if (left.kind == "complexValue") {
-				// 					// 	if (alias.isAfield && alias.type) {
-				// 					// 		addToScopeList({
-				// 					// 			kind: "complexValue",
-				// 					// 			originLocation: alias.originLocation,
-				// 					// 			type: alias.type,
-				// 					// 		});
-				// 					// 		addedAlias = true;
-				// 					// 		break;
-				// 					// 	}
-				// 					// } else {
+					// 	if (left.kind == "structInstance") {
+					// 		for (let i = 0; i < left.fields.length; i++) {
+					// 			const alias = left.fields[i];
+					// 			if (alias.name == node.right[0].name) {
+					// 				// if (left.kind == "complexValue") {
+					// 				// 	if (alias.isAfield && alias.type) {
+					// 				// 		addToScopeList({
+					// 				// 			kind: "complexValue",
+					// 				// 			originLocation: alias.originLocation,
+					// 				// 			type: alias.type,
+					// 				// 		});
+					// 				// 		addedAlias = true;
+					// 				// 		break;
+					// 				// 	}
+					// 				// } else {
 										
-				// 					// }
-				// 					if (!alias.isAfield && alias.value) {
-				// 						addToScopeList(alias);
-				// 						addedAlias = true;
-				// 						break;
-				// 					}
-				// 				}
-				// 			}
-				// 		} else if (left.kind == "complexValue") {
-				// 			for (let i = 0; i < typeUse.type.members.length; i++) {
-				// 				const alias = typeUse.type.members[i];
-				// 				if (alias.name == node.right[0].name) {
-				// 					if (alias.isAfield && alias.type) {
-				// 						addToScopeList({
-				// 							kind: "complexValue",
-				// 							originLocation: alias.originLocation,
-				// 							type: alias.type,
-				// 						});
-				// 						addedAlias = true;
-				// 						break;
-				// 					}
-				// 				}
-				// 			}
-				// 		}
+					// 				// }
+					// 				if (!alias.isAfield && alias.value) {
+					// 					addToScopeList(alias);
+					// 					addedAlias = true;
+					// 					break;
+					// 				}
+					// 			}
+					// 		}
+					// 	} else if (left.kind == "complexValue") {
+					// 		for (let i = 0; i < typeUse.type.members.length; i++) {
+					// 			const alias = typeUse.type.members[i];
+					// 			if (alias.name == node.right[0].name) {
+					// 				if (alias.isAfield && alias.type) {
+					// 					addToScopeList({
+					// 						kind: "complexValue",
+					// 						originLocation: alias.originLocation,
+					// 						type: alias.type,
+					// 					});
+					// 					addedAlias = true;
+					// 					break;
+					// 				}
+					// 			}
+					// 		}
+					// 	}
 						
-				// 		if (!addedAlias) {
-				// 			for (let i = 0; i < typeUse.type.members.length; i++) {
-				// 				const alias = typeUse.type.members[i];
-				// 				if (alias.kind == "alias") {
-				// 					if (alias.isAfield) continue;
-				// 					if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
-				// 						addToScopeList(alias);
-				// 						addToScopeList(left);
-				// 						addedAlias = true;
-				// 						if (doCodeGen(context) && context.options.codeGenText) {
-				// 							context.options.codeGenText.push(leftText.join(""));
-				// 						}
-				// 						break;
-				// 					}
-				// 				} else {
-				// 					utilities.unreachable();
-				// 				}
-				// 			}
-				// 		} else {
-				// 			if (doCodeGen(context)) {
-				// 				codeGen.memberAccess(context.options.codeGenText, context, leftText.join(""), node.right[0].name);
-				// 			}
-				// 		}
-				// 	} else {
-				// 		utilities.TODO();
-				// 	}
+					// 	if (!addedAlias) {
+					// 		for (let i = 0; i < typeUse.type.members.length; i++) {
+					// 			const alias = typeUse.type.members[i];
+					// 			if (alias.kind == "alias") {
+					// 				if (alias.isAfield) continue;
+					// 				if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
+					// 					addToScopeList(alias);
+					// 					addToScopeList(left);
+					// 					addedAlias = true;
+					// 					if (doCodeGen(context) && context.options.codeGenText) {
+					// 						context.options.codeGenText.push(leftText.join(""));
+					// 					}
+					// 					break;
+					// 				}
+					// 			} else {
+					// 				utilities.unreachable();
+					// 			}
+					// 		}
+					// 	} else {
+					// 		if (doCodeGen(context)) {
+					// 			codeGen.memberAccess(context.options.codeGenText, context, leftText.join(""), node.right[0].name);
+					// 		}
+					// 	}
+					// } else {
+					// 	utilities.TODO();
+					// }
 					
-				// 	if (!addedAlias) {
-				// 		throw new CompileError(`no member named '${node.right[0].name}'`)
-				// 			.indicator(node.right[0].location, "here");
-				// 	}
-				// }
-				
-				{
+					if (!addedAlias) {
+						throw new CompileError(`no member named '${node.right[0].name}'`)
+							.indicator(node.right[0].location, "here");
+					}
+				} else {
 					const leftText = getCGText();
 					const left = unwrapScopeObject(build(context, node.left, {
 						compileTime: context.options.compileTime,
@@ -981,7 +966,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					codeGenText: null,
 					compileTime: context.options.compileTime,
 					disableDependencyAccess: context.options.disableDependencyAccess,
-				}, null, false, true, "no") as ScopeObject_alias[];
+				}, null, false, true, "yes") as ScopeObject_alias[];
 				
 				const struct: ScopeObject = {
 					kind: "struct",
@@ -1121,8 +1106,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					let fieldShouldExist = false;
 					for (let e = 0; e < templateStruct.fields.length; e++) {
 						const field = templateStruct.fields[e];
-						if (fieldValue.name == field.name) {
-							expectType(context, field.type, getTypeOf(context, fieldValue.value),
+						if (fieldValue.value && fieldValue.name == field.name) {
+							expectType(context, field.type, getTypeOf(context, unwrapScopeObject(fieldValue.value)),
 								new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 									.indicator(fieldValue.originLocation, "field defined here")
 									.indicator(field.originLocation, "field originally defined here")
@@ -1152,7 +1137,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const struct: ScopeObject = {
 					kind: "structInstance",
 					originLocation: node.location,
-					templateStruct: templateStruct,
+					templateStruct: templateType,
 					fields: fieldValues,
 				};
 				

@@ -1,5 +1,5 @@
 // compError
 // error: assert failed
-// tests/compError/compAssert.ucl:5 -> here
+// tests/compError/assert_false.ucl:5 -> here
 
 @compAssert(false)
