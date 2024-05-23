@@ -1,7 +1,7 @@
 // compError
 // error: alias 'test' already exists
-// tests/compError/reassignment.ucl:6 -> alias originally defined here
 // tests/compError/reassignment.ucl:7 -> alias redefined here
+// tests/compError/reassignment.ucl:6 -> alias originally defined here
 
 test = 1
 test = 2

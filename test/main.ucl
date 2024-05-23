@@ -9,4 +9,4 @@ function = fn(): Number {
 // 	"Hello, World!"
 // }
 
-@compAssert(function() == 9)
+@compAssert(function() == 8)

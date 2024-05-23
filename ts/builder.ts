@@ -143,8 +143,8 @@ function addAlias(context: BuilderContext, level: number, alias: ScopeObject_ali
 			const oldAlias = getAlias(context, alias.name);
 			if (oldAlias) {
 				throw new CompileError(`alias '${alias.name}' already exists`)
-					.indicator(oldAlias.originLocation, "alias originally defined here")
-					.indicator(alias.originLocation, "alias redefined here");
+					.indicator(alias.originLocation, "alias redefined here")
+					.indicator(oldAlias.originLocation, "alias originally defined here");
 			}
 		}
 		context.file.scope.levels[level].push(alias);
