@@ -1,10 +1,12 @@
-// test = 1
+test = 8
 
 function = fn(): Number {
-	1
+	test
 }
 
-main = fn(): String {
-	@compDebug(function())
-	"Hello, World!"
-}
+// main = fn(): String {
+// 	@compDebug(function())
+// 	"Hello, World!"
+// }
+
+@compAssert(function() == 9)

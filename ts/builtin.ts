@@ -97,7 +97,7 @@ export function getComplexValueFromString(context: BuilderContext, name: string)
 	return {
 		kind: "complexValue",
 		originLocation: "builtin",
-		type: cast_ScopeObjectType(unwrapScopeObject(getAlias(context, name))),
+		type: cast_ScopeObjectType(getAlias(context, name)),
 	};
 }
 
@@ -227,6 +227,15 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 		if (node.name == "compDebug") {
 			console.log("compDebug", callArguments);
 			debugger;
+		}
+		
+		else if (node.name == "compAssert") {
+			const bool = fc.bool(true);
+			
+			if (!bool) {
+				throw new CompileError(`assert failed`)
+					.indicator(node.location, "here");
+			}
 		}
 		
 		else if (node.name == "import") {

@@ -755,13 +755,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				{
 					const leftText = getCGText();
 					const left = unwrapScopeObject(build(context, node.left, {
-						compileTime: false,
+						compileTime: context.options.compileTime,
 						codeGenText: leftText,
 						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, false)[0]);
 					const rightText = getCGText();
 					const _right = build(context, node.right, {
-						compileTime: false,
+						compileTime: context.options.compileTime,
 						codeGenText: rightText,
 						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, false)[0];
