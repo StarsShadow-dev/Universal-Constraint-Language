@@ -367,16 +367,22 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "struct") {
+					const openingParentheses = forward(context);
+					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
+					}
+					const fields = parseFunctionArguments(context);
+					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
-					
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
 					AST.push({
 						kind: "struct",
 						location: token.location,
+						fields: fields,
 						codeBlock: codeBlock,
 					});
 				}

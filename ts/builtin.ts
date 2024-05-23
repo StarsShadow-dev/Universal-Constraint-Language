@@ -28,6 +28,7 @@ const typeTypeStruct: ScopeObject_struct = {
 	originLocation: "builtin",
 	toBeChecked: false,
 	name: "builtin:Type",
+	fields: [],
 	members: [],
 };
 
@@ -53,6 +54,7 @@ function addType(name: string) {
 			originLocation: "builtin",
 			toBeChecked: false,
 			name: "builtin:" + name,
+			fields: [],
 			members: [],
 		},
 		valueAST: null,
@@ -89,6 +91,7 @@ export function getStruct(context: BuilderContext, members: ScopeObject_alias[],
 		originLocation: "builtin",
 		toBeChecked: toBeChecked,
 		name: `${getNextSymbolName(context)}`,
+		fields: [],
 		members: members,
 	};
 }

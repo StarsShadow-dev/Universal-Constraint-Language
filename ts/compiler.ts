@@ -110,7 +110,7 @@ function checkScopeLevel(context: BuilderContext, level: ScopeObject_alias[]) {
 				codeGenText: null,
 				compileTime: true,
 				disableDependencyAccess: false,
-			}, null, false, false, true);
+			}, null, false, false, "yes");
 		}
 	}
 }
@@ -127,7 +127,7 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 				codeGenText: null,
 				compileTime: true,
 				disableDependencyAccess: false,
-			}, null, false, false, true);
+			}, null, false, false, "yes");
 			context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
 		}
 		
@@ -205,13 +205,13 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 		i: 0,
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
-	// console.log(`AST '${filePath}':`, JSON.stringify(newFile.AST, undefined, 4));
+	console.log(`AST '${filePath}':`, JSON.stringify(newFile.AST, undefined, 4));
 	
 	const scopeList = build(context, newFile.AST, {
 		codeGenText: null,
 		compileTime: true,
 		disableDependencyAccess: true,
-	}, null, false, false, true);
+	}, null, false, false, "yes");
 	context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
 	
 	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));

@@ -1,7 +1,10 @@
-test = 8
-
-function = fn(): Number {
-	test
+Vec2 = struct(x: Number, y: Number) {
+	// new = fn(x: Number, y: Number): Vec2 {
+	// 	Vec2 {
+	// 		x = x,
+	// 		y = y,
+	// 	}
+	// }
 }
 
 // main = fn(): String {
@@ -9,4 +12,9 @@ function = fn(): Number {
 // 	"Hello, World!"
 // }
 
-@compAssert(function() == 8)
+x = 1
+
+@compDebug(Vec2 {
+	x = x
+	y = 2
+})

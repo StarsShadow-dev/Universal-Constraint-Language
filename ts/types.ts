@@ -93,6 +93,7 @@ export type ASTnode = genericASTnode & {
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
+	fields: ASTnode[],
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "while",
@@ -178,6 +179,7 @@ export type ScopeObject_struct = GenericScopeObject & {
 	kind: "struct",
 	name: string,
 	toBeChecked: boolean,
+	fields: ScopeObject_argument[],
 	members: ScopeObject_alias[],
 };
 
