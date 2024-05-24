@@ -28,8 +28,8 @@ function twoCharacterOperator(text: string, i: number): boolean {
 	return text[i] == '=' && text[i+1] == '=' ||
 	text[i] == '!' && text[i+1] == '=' ||
 	text[i] == '&' && text[i+1] == '&' ||
-	text[i] == '|' && text[i+1] == '|';
-	// text[i] == 'a' && text[i+1] == 's';
+	text[i] == '|' && text[i+1] == '|' ||
+	text[i] == '-' && text[i+1] == '>';
 }
 
 function separator(text: string, i: number): boolean {

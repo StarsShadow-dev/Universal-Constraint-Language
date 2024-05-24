@@ -401,6 +401,23 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
+				else if (token.text == "match") {
+					const expression = parse(context, ParserMode.singleNoContinue, "}")[0];
+					
+					const openingBracket = forward(context);
+					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+					}
+					const codeBlock = parse(context, ParserMode.normal, "}");
+					
+					AST.push({
+						kind: "match",
+						location: token.location,
+						expression: expression,
+						codeBlock: codeBlock,
+					});
+				}
+				
 				else if (token.text == "fn") {
 					parseFunction(context, AST, token.location, false);
 				}
@@ -427,9 +444,29 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				if (left == undefined) {
 					utilities.TODO();
 				} else {
-					context.i--;
-					AST.pop();
-					AST.push(parseOperators(context, left, 0));
+					if (token.text == "->") {
+						const identifier = AST.pop();
+						if (!identifier || identifier.kind != "identifier") {
+							throw utilities.TODO();
+						}
+						
+						const openingBracket = forward(context);
+						if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+							throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+						}
+						const codeBlock = parse(context, ParserMode.normal, "}");
+						
+						AST.push({
+							kind: "matchCase",
+							location: identifier.location,
+							identifier: identifier.name,
+							codeBlock: codeBlock,
+						});
+					} else {
+						context.i--;
+						AST.pop();
+						AST.push(parseOperators(context, left, 0));
+					}
 				}
 				break;
 			}
@@ -510,9 +547,9 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				const codeBlock = parse(context, ParserMode.normal, "}");
 				
 				AST.push({
-					kind: "structInstance",
+					kind: "newInstance",
 					location: next(context).location,
-					templateStruct: {
+					template: {
 						kind: "typeUse",
 						location: left.location,
 						value: left,

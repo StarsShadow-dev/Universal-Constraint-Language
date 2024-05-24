@@ -7,24 +7,23 @@ Color = enum {
 }
 
 getColorText = fn(color: Color): String {
-	"from getColorText"
-	// match color {
-	// 	Red -> {
-	// 		"red"
-	// 	}
-	// 	Green -> {
-	// 		"green"
-	// 	}
-	// 	Blue -> {
-	// 		"blue"
-	// 	}
-	// 	Custom(rgb) -> {
-	// 		"custom(\(rgb.r), \(rgb.g), \(rgb.b))"
-	// 	}
-	// }
+	match color {
+		Red -> {
+			"red"
+		}
+		Green -> {
+			"green"
+		}
+		Blue -> {
+			"blue"
+		}
+		// Custom(rgb) -> {
+		// 	"custom(\(rgb.r), \(rgb.g), \(rgb.b))"
+		// }
+	}
 }
 
-@compDebug(getColorText(Color.Red))
+@compDebug(getColorText(Color.Green))
 // @compDebug(getColorText(Color.Custom {
 // 	r = 1
 // 	g = 2

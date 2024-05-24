@@ -532,8 +532,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			// 	utilities.unreachable();
 			// }
 			continue;
-		} else if (node.kind == "field") {
-			
 		}
 		
 		if (context.compilerStage == CompilerStage.findAliases) {
@@ -1015,7 +1013,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								kind: "enumCase",
 								originLocation: enumeratorNode.location,
 								parent: newEnum,
-								name: `${symbolName}.${enumeratorNode.name}`,
+								name: enumeratorNode.name,
 								ID: nextID,
 							},
 							valueAST: null,
@@ -1029,20 +1027,74 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				addToScopeList(newEnum);
 				break;
 			}
-			case "while": {
-				while (true) {
-					const condition = build(context, node.condition, null, null, false, false, "no")[0];
+			case "match": {
+				const expression = unwrapScopeObject(build(context, [node.expression], null, null, false, false, "no")[0]);
+				let matchName = "";
+				if (expression.kind == "enumCase") {
+					matchName = expression.name;
+				}
+				
+				let expectedResultType: ScopeObjectType | null = null;
+				let expectedResultLocation: SourceLocation | null = null;
+				
+				for (let i = 0; i < node.codeBlock.length; i++) {
+					const caseNode = node.codeBlock[i];
+					if (caseNode.kind != "matchCase") {
+						throw utilities.TODO();
+					}
 					
-					if (condition.kind == "bool") {
-						if (condition.value) {
-							build(context, node.codeBlock, null, null, resultAtRet, true, "no")[0];
-						} else {
-							break;
-						}
+					const caseResult = build(context, caseNode.codeBlock, null, null, false, false, "no")[0];
+					const caseResultType = getTypeOf(context, caseResult);
+					if (expectedResultType && expectedResultLocation) {
+						expectType(context, expectedResultType, caseResultType,
+							new CompileError(`different match type expected $expectedTypeName but got type $actualTypeName`)
+								.indicator(caseNode.location, "different type here")
+								.indicator(expectedResultLocation, "other type here")
+						);
 					} else {
-						utilities.TODO();
+						expectedResultType = caseResultType;
+						expectedResultLocation = caseNode.location;
+					}
+					
+					if (expression.kind != "complexValue") {
+						if (caseNode.identifier == matchName) {
+							addToScopeList(caseResult);
+						}
 					}
 				}
+				
+				if (!expectedResultType || !expectedResultLocation) {
+					throw new CompileError("empty match statement")
+						.indicator(node.location, "here")
+				}
+				
+				if (expression.kind == "complexValue") {
+					addToScopeList({
+						kind: "complexValue",
+						originLocation: node.location,
+						type: expectedResultType,
+					});
+				} else {
+					debugger;
+				}
+				
+				break;
+			}
+			case "while": {
+				utilities.TODO();
+				// while (true) {
+				// 	const condition = build(context, node.condition, null, null, false, false, "no")[0];
+					
+				// 	if (condition.kind == "bool") {
+				// 		if (condition.value) {
+				// 			build(context, node.codeBlock, null, null, resultAtRet, true, "no")[0];
+				// 		} else {
+				// 			break;
+				// 		}
+				// 	} else {
+				// 		utilities.TODO();
+				// 	}
+				// }
 				break;
 			}
 			case "if": {
@@ -1120,8 +1172,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			
-			case "structInstance": {
-				const templateType = cast_ScopeObjectType(unwrapScopeObject(build(context, [node.templateStruct.value], {
+			case "newInstance": {
+				const templateType = cast_ScopeObjectType(unwrapScopeObject(build(context, [node.template.value], {
 					codeGenText: [],
 					compileTime: context.options.compileTime,
 				}, null, false, false, "no")[0]));

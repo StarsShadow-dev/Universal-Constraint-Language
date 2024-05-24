@@ -99,6 +99,14 @@ export type ASTnode = genericASTnode & {
 	kind: "enum",
 	codeBlock: ASTnode[],
 } | genericASTnode & {
+	kind: "match",
+	expression: ASTnode, // TODO: name
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "matchCase",
+	identifier: string,
+	codeBlock: ASTnode[],
+} | genericASTnode & {
 	kind: "while",
 	condition: ASTnode[],
 	codeBlock: ASTnode[],
@@ -117,8 +125,8 @@ export type ASTnode = genericASTnode & {
 	name: string,
 	type: ASTnode & { kind: "typeUse" },
 } | genericASTnode & {
-	kind: "structInstance",
-	templateStruct: ASTnode & { kind: "typeUse" },
+	kind: "newInstance",
+	template: ASTnode & { kind: "typeUse" },
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "typeUse",
@@ -256,8 +264,12 @@ ScopeObject_struct |
 ScopeObject_enum |
 GenericScopeObject & {
 	kind: "structInstance",
-	template: ScopeObjectType,
+	template: ScopeObject_struct,
 	fields: ScopeObject_alias[],
+} | GenericScopeObject & {
+	kind: "enumInstance",
+	template: ScopeObject_enum,
+	caseName: string,
 };
 
 export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {
