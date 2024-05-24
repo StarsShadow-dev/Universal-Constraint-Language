@@ -1,7 +1,7 @@
 import path from "path";
 
 import utilities from "./utilities";
-import { FileContext, compileFile } from "./compiler";
+import { CompilerStage, FileContext, compileFile } from "./compiler";
 import { CompileError } from "./report";
 import { getAlias, getNextSymbolName } from "./builder";
 import { BuilderContext } from "./compiler";
@@ -245,6 +245,9 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			const filePath = fc.string(true);
 			fc.done();
 			
+			const oldCompilerStage = context.compilerStage;
+			context.compilerStage = CompilerStage.findAliases;
+			
 			let newContext: FileContext;
 			try {
 				newContext = compileFile(context, path.join(path.dirname(context.file.path), filePath), null);
@@ -256,6 +259,8 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 					throw error;
 				}
 			}
+			
+			context.compilerStage = oldCompilerStage;
 			
 			return getStruct(context, newContext.scope.levels[0] as ScopeObject_alias[], false);
 		}

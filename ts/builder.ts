@@ -2,7 +2,7 @@ import utilities from "./utilities";
 import codeGen from "./codeGen";
 import { Indicator, CompileError } from "./report";
 import { builtinScopeLevel, builtinCall, getComplexValueFromString } from "./builtin";
-import { BuilderContext, BuilderOptions } from "./compiler";
+import { BuilderContext, BuilderOptions, CompilerStage } from "./compiler";
 import {
 	SourceLocation,
 	ASTnode,
@@ -196,16 +196,16 @@ export function callFunction(
 			if (comptime) {
 				toBeAnalyzedHere = true;
 			} else {
-				if (context.inCheckMode) {
-					toBeAnalyzedHere = false;
-				} else {
+				// if (context.inCheckMode) {
+				// 	toBeAnalyzedHere = false;
+				// } else {
 					if (functionToCall.toBeGenerated) {
 						toBeAnalyzedHere = true;
 						functionToCall.toBeGenerated = false;
 					} else {
 						toBeAnalyzedHere = false;
 					}
-				}
+				// }
 			}
 		}
 		
@@ -295,7 +295,6 @@ export function callFunction(
 				result = build(context, functionToCall.AST, {
 					compileTime: comptime,
 					codeGenText: text,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, {
 					location: functionToCall.originLocation,
 					msg: `function ${functionToCall.symbolName}`,
@@ -319,7 +318,7 @@ export function callFunction(
 				const unwrappedResult = unwrapScopeObject(result);
 				
 				if (functionToCall.returnType) {
-					if (comptime || context.inCheckMode) {
+					if (comptime) {
 						expectType(context, functionToCall.returnType, getTypeOf(context, unwrappedResult),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(location, "call here")
@@ -473,33 +472,44 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
-			const newAlias: ScopeObject_alias = {
-				kind: "alias",
-				originLocation: node.location,
-				isAfield: false,
-				name: node.name,
-				symbolName: node.name,
-				value: null,
-				valueAST: node.value,
-			}
-			
 			function buildValue() {
 				if (node.kind != "definition") {
 					throw utilities.unreachable();
 				}
-				newAlias.value = unwrapScopeObject(build(context, [node.value], {
+				return unwrapScopeObject(build(context, [node.value], {
 					codeGenText: null,
 					compileTime: context.options.compileTime,
-					disableDependencyAccess: true,
 				}, null, false, false, "no")[0]);
 			}
 			
-			if (getLevel == "allowShadowing") {
-				buildValue();
-				context.file.scope.levels[context.file.scope.currentLevel].push(newAlias);
+			if (context.file.scope.currentLevel == 0 && context.compilerStage > CompilerStage.findAliases) {
+				const alias = getAlias(context, node.name, true);
+				if (!alias) {
+					throw utilities.unreachable();
+				}
+				alias.value = buildValue();
 			} else {
-				addAlias(context, context.file.scope.currentLevel, newAlias);
-				buildValue();
+				const newAlias: ScopeObject_alias = {
+					kind: "alias",
+					originLocation: node.location,
+					isAfield: false,
+					name: node.name,
+					symbolName: node.name,
+					value: null,
+					valueAST: node.value,
+				}
+				
+				if (getLevel == "allowShadowing") {
+					if (context.compilerStage > CompilerStage.findAliases) {
+						newAlias.value = buildValue();
+					}
+					context.file.scope.levels[context.file.scope.currentLevel].push(newAlias);
+				} else {
+					addAlias(context, context.file.scope.currentLevel, newAlias);
+					if (context.compilerStage > CompilerStage.findAliases) {
+						newAlias.value = buildValue();
+					}
+				}
 			}
 		}
 	}
@@ -514,7 +524,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			// 	const value = unwrapScopeObject(build(context, [node.value], {
 			// 		codeGenText: valueText,
 			// 		compileTime: context.options.compileTime,
-			// 		disableDependencyAccess: context.options.disableDependencyAccess,
 			// 	}, null, false, false, "no")[0]);
 				
 			// 	if (!value) {
@@ -530,7 +539,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			
 		}
 		
-		if (getLevel != "no" && context.options.disableDependencyAccess) {
+		if (context.compilerStage == CompilerStage.findAliases) {
 			continue;
 		}
 		
@@ -577,7 +586,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const functionToCall_ = build(context, node.left, {
 					compileTime: context.options.compileTime,
 					codeGenText: leftText,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, "no")
 				if (!functionToCall_[0]) {
 					utilities.TODO();
@@ -590,7 +598,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, "no");
 				
 				if (functionToCall.kind == "function") {
@@ -606,11 +613,16 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "builtinCall": {
+				if (context.compilerStage != CompilerStage.evaluateAll) {
+					if (node.name == "compDebug" || node.name == "compAssert") {
+						continue;
+					}
+				}
+				
 				const argumentText: string[] = [];
 				const callArguments = build(context, node.callArguments, {
 					compileTime: context.options.compileTime,
 					codeGenText: argumentText,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, "no");
 				
 				const result = builtinCall(context, node, callArguments, argumentText);
@@ -625,7 +637,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const left = unwrapScopeObject(build(context, node.left, {
 						compileTime: context.options.compileTime,
 						codeGenText: leftText,
-						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, "no")[0]);
 					
 					if (node.right[0].kind != "identifier") {
@@ -639,7 +650,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							const alias = left.members[i];
 							if (alias.kind == "alias") {
 								if (alias.name == node.right[0].name) {
-									if (!alias.isAfield && alias.value) {
+									if (!alias.isAfield) {
 										addToScopeList(alias);
 										addedAlias = true;
 										break;
@@ -747,13 +758,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const left = unwrapScopeObject(build(context, node.left, {
 						compileTime: context.options.compileTime,
 						codeGenText: leftText,
-						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, "no")[0]);
 					const rightText = getCGText();
 					const _right = build(context, node.right, {
 						compileTime: context.options.compileTime,
 						codeGenText: rightText,
-						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, false, false, "no")[0];
 					let right: ScopeObject;
 					if (_right.kind == "alias" && _right.isAfield) {
@@ -886,7 +895,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						const argumentType = cast_ScopeObjectType(build(context, [argument.type.value], {
 							codeGenText: null,
 							compileTime: true,
-							disableDependencyAccess: context.options.disableDependencyAccess,
 						}, null, false, false, "no")[0]);
 						
 						functionArguments.push({
@@ -922,7 +930,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				addToScopeList(fn);
 				
-				if (context.inCheckMode) {
+				if (context.compilerStage == CompilerStage.evaluateAll) {
 					callFunction(context, fn, null, "builtin", false, null, null, null, true);
 				}
 				break;
@@ -936,7 +944,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						const argumentType = cast_ScopeObjectType(build(context, [argument.type.value], {
 							codeGenText: null,
 							compileTime: true,
-							disableDependencyAccess: context.options.disableDependencyAccess,
 						}, null, false, false, "no")[0]);
 						
 						fields.push({
@@ -954,7 +961,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const members = build(context, node.codeBlock, {
 					codeGenText: null,
 					compileTime: context.options.compileTime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, true, "yes") as ScopeObject_alias[];
 				
 				const struct: ScopeObject = {
@@ -990,20 +996,17 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const _condition = build(context, node.condition, {
 					codeGenText: conditionText,
 					compileTime: context.options.compileTime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, "no")[0];
 				
-				if (context.inCheckMode) {
+				if (context.compilerStage == CompilerStage.evaluateAliasDependencies) {
 					build(context, node.trueCodeBlock, {
 						codeGenText: null,
 						compileTime: context.options.compileTime,
-						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, resultAtRet, true, "no");
 					if (node.falseCodeBlock) {
 						build(context, node.falseCodeBlock, {
 							codeGenText: null,
 							compileTime: context.options.compileTime,
-							disableDependencyAccess: context.options.disableDependencyAccess,
 						}, null, resultAtRet, true, "no");
 					}
 					break;
@@ -1039,13 +1042,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					build(context, node.trueCodeBlock, {
 						codeGenText: trueText,
 						compileTime: context.options.compileTime,
-						disableDependencyAccess: context.options.disableDependencyAccess,
 					}, null, resultAtRet, true, "no");
 					if (node.falseCodeBlock) {
 						build(context, node.falseCodeBlock, {
 							codeGenText: falseText,
 							compileTime: context.options.compileTime,
-							disableDependencyAccess: context.options.disableDependencyAccess,
 						}, null, resultAtRet, true, "no");
 					}
 					if (doCodeGen(context)) codeGen.if(context.options.codeGenText, context, conditionText, trueText, falseText);
@@ -1061,7 +1062,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				build(context, node.codeBlock, {
 					codeGenText: text,
 					compileTime: context.options.compileTime || node.comptime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, resultAtRet, true, "no");
 				break;
 			}
@@ -1070,7 +1070,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const templateType = cast_ScopeObjectType(build(context, [node.templateStruct.value], {
 					codeGenText: [],
 					compileTime: context.options.compileTime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, false, "no")[0]);
 				
 				if (templateType.value.kind != "struct") {
@@ -1083,7 +1082,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const fieldValues = build(context, node.codeBlock, {
 					codeGenText: fieldText,
 					compileTime: context.options.compileTime,
-					disableDependencyAccess: context.options.disableDependencyAccess,
 				}, null, false, true, "allowShadowing") as ScopeObject_alias[];
 				
 				let fieldNames: string[] = [];

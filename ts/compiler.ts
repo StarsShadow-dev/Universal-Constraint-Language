@@ -19,6 +19,13 @@ import {
 	unwrapScopeObject,
 } from "./types";
 
+export enum CompilerStage {
+	findAliases = 0,
+	evaluateAliasDependencies = 1,
+	evaluateAll = 2,
+	export = 3,
+}
+
 export type IdeOptions = {
 	mode: "compileFile",
 }
@@ -46,8 +53,6 @@ export type ScopeInformation = {
 export type BuilderOptions = {
 	compileTime: boolean;
 	codeGenText: CodeGenText;
-	disableDependencyAccess: boolean;
-	// getStruct: boolean,
 };
 
 export type FileContext = {
@@ -66,7 +71,7 @@ export type BuilderContext = {
 	file: FileContext,
 	errors: CompileError[],
 	
-	inCheckMode: boolean,
+	compilerStage: CompilerStage,
 };
 
 // file is null!
@@ -77,7 +82,6 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 		options: {
 			compileTime: true,
 			codeGenText: [],
-			disableDependencyAccess: false,
 		},
 		nextSymbolName: 0,
 		exports: [],
@@ -85,15 +89,14 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 		file: null as any,
 		errors: [],
 		
-		inCheckMode: false,
+		compilerStage: CompilerStage.findAliases,
 	};
 }
 
-// filePath -> FileContext
-let filesToCompile: any = {};
+let filesToCompile: FileContext[] = [];
 
 export function resetFilesToCompile() {
-	filesToCompile = {};
+	filesToCompile = [];
 }
 
 function checkScopeLevel(context: BuilderContext, level: ScopeObject_alias[]) {
@@ -109,7 +112,6 @@ function checkScopeLevel(context: BuilderContext, level: ScopeObject_alias[]) {
 			const scopeList = build(context, [valueAST], {
 				codeGenText: null,
 				compileTime: true,
-				disableDependencyAccess: false,
 			}, null, false, false, "yes");
 		}
 	}
@@ -118,33 +120,45 @@ function checkScopeLevel(context: BuilderContext, level: ScopeObject_alias[]) {
 export function compile(context: BuilderContext, onTokens: null | ((tokens: Token[]) => void)) {
 	let mainFile: FileContext;
 	try {
+		context.compilerStage = CompilerStage.findAliases;
 		mainFile = compileFile(context, context.compilerOptions.filePath, onTokens);
 		
-		for (const key in filesToCompile) {
-			context.file = filesToCompile[key];
-			context.file.scope.levels[0] = [];
-			const scopeList = build(context, filesToCompile[key].AST, {
+		context.compilerStage = CompilerStage.evaluateAliasDependencies;
+		for (let i = 0; i < filesToCompile.length; i++) {
+			context.file = filesToCompile[i];
+			// context.file.scope.levels[0] = [];
+			const scopeList = build(context, filesToCompile[i].AST, {
 				codeGenText: null,
 				compileTime: true,
-				disableDependencyAccess: false,
+			}, null, false, false, "yes");
+			context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
+		}
+		
+		context.compilerStage = CompilerStage.evaluateAll;
+		for (let i = 0; i < filesToCompile.length; i++) {
+			context.file = filesToCompile[i];
+			// context.file.scope.levels[0] = [];
+			const scopeList = build(context, filesToCompile[i].AST, {
+				codeGenText: null,
+				compileTime: true,
 			}, null, false, false, "yes");
 			context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
 		}
 		
 		// context.file = mainFile;
 		
-		const checkStart = Date.now();
-		if (context.compilerOptions.check) {
-			context.inCheckMode = true;
-			for (const key in filesToCompile) {
-				context.file = filesToCompile[key];
-				context.file.scope.currentLevel = 0;
-				checkScopeLevel(context, context.file.scope.levels[0]);
-			}
-			context.inCheckMode = false;
-		}
-		logger.addTime("checking", Date.now() - checkStart);
+		// TODO
+		// const checkStart = Date.now();
+		// if (context.compilerOptions.check) {
+		// 	for (const key in filesToCompile) {
+		// 		context.file = filesToCompile[key];
+		// 		context.file.scope.currentLevel = 0;
+		// 		checkScopeLevel(context, context.file.scope.levels[0]);
+		// 	}
+		// }
+		// logger.addTime("checking", Date.now() - checkStart);
 		
+		context.compilerStage = CompilerStage.export;
 		const exportStart = Date.now();
 		codeGen.start(context);
 		for (let i = 0; i < context.exports.length; i++) {
@@ -169,8 +183,10 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 export function compileFile(context: BuilderContext, filePath: string, onTokens: null | ((tokens: Token[]) => void)): FileContext {
 	// if the file has already been compiled, there is no point compiling it again
 	// (this also lets two files import each other)
-	if (filesToCompile[filePath]) {
-		return filesToCompile[filePath];
+	for (let i = 0; i < filesToCompile.length; i++) {
+		if (filePath == filesToCompile[i].path) {
+			return filesToCompile[i];
+		}
 	}
 	
 	const oldFile = context.file;
@@ -186,7 +202,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 		AST: [],
 	};
 	context.file = newFile;
-	filesToCompile[filePath] = newFile;
+	filesToCompile.push(newFile);
 	
 	const text = utilities.readFile(filePath);
 	// console.log("text:", text);
@@ -211,7 +227,6 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	const scopeList = build(context, newFile.AST, {
 		codeGenText: null,
 		compileTime: true,
-		disableDependencyAccess: true,
 	}, null, false, false, "yes");
 	context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
 	
