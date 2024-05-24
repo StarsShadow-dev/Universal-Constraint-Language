@@ -317,21 +317,13 @@ export function callFunction(
 			if (result) {
 				const unwrappedResult = unwrapScopeObject(result);
 				
-				if (functionToCall.returnType) {
-					if (comptime) {
-						expectType(context, functionToCall.returnType, getTypeOf(context, unwrappedResult),
-							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-								.indicator(location, "call here")
-								.indicator(functionToCall.originLocation, "function defined here")
-						);
-					} else {
-						result = {
-							kind: "complexValue",
-							originLocation: location,
-							type: functionToCall.returnType,
-						};
-					}
-				}
+				expectType(context, functionToCall.returnType, getTypeOf(context, unwrappedResult),
+					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+						.indicator(location, "call here")
+						.indicator(functionToCall.originLocation, "function defined here")
+				);
+				
+				result = unwrappedResult;
 			} else {
 				if (!gotError) {
 					throw new CompileError(`function did not return`)
