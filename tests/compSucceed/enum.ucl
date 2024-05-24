@@ -1,0 +1,25 @@
+// compSucceed
+
+Color = enum {
+	Red
+	Green
+	Blue
+}
+
+getColorText = fn(color: Color): String {
+	match color {
+		Red -> {
+			"it is red"
+		}
+		Green -> {
+			"it is green"
+		}
+		Blue -> {
+			"it is blue"
+		}
+	}
+}
+
+@compAssert(getColorText(Color.Red) == "it is red")
+@compAssert(getColorText(Color.Green) == "it is green")
+@compAssert(getColorText(Color.Blue) == "it is blue")

@@ -1074,8 +1074,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						originLocation: node.location,
 						type: expectedResultType,
 					});
-				} else {
-					debugger;
 				}
 				
 				break;
