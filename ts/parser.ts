@@ -387,6 +387,20 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
+				else if (token.text == "enum") {
+					const openingBracket = forward(context);
+					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+					}
+					const codeBlock = parse(context, ParserMode.normal, "}");
+					
+					AST.push({
+						kind: "enum",
+						location: token.location,
+						codeBlock: codeBlock,
+					});
+				}
+				
 				else if (token.text == "fn") {
 					parseFunction(context, AST, token.location, false);
 				}

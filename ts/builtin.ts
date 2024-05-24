@@ -23,23 +23,13 @@ export let builtinScopeLevel: ScopeObject_alias[] = [];
 
 export let onCodeGen: any = {};
 
-const typeTypeStruct: ScopeObject_struct = {
+const typeType: ScopeObject_struct = {
 	kind: "struct",
 	originLocation: "builtin",
 	toBeChecked: false,
 	name: "builtin:Type",
 	fields: [],
 	members: [],
-};
-
-let typeType: ScopeObjectType = {
-	kind: "alias",
-	originLocation: "builtin",
-	isAfield: false,
-	name: "Type",
-	symbolName: "",
-	value: typeTypeStruct,
-	valueAST: null,
 };
 
 function addType(name: string) {
@@ -107,7 +97,15 @@ export function getComplexValueFromString(context: BuilderContext, name: string)
 export function setUpBuiltin(disableFileSystem: boolean) {
 	fileSystemDisabled = disableFileSystem;
 	if (builtinScopeLevel.length == 0) {
-		builtinScopeLevel.push(typeType);
+		builtinScopeLevel.push({
+			kind: "alias",
+			originLocation: "builtin",
+			isAfield: false,
+			name: "Type",
+			symbolName: "",
+			value: typeType,
+			valueAST: null,
+		});
 		addType("Bool");
 		addType("Number");
 		addType("String");

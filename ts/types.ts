@@ -96,6 +96,9 @@ export type ASTnode = genericASTnode & {
 	fields: ASTnode[],
 	codeBlock: ASTnode[],
 } | genericASTnode & {
+	kind: "enum",
+	codeBlock: ASTnode[],
+} | genericASTnode & {
 	kind: "while",
 	condition: ASTnode[],
 	codeBlock: ASTnode[],
@@ -139,32 +142,53 @@ export type ScopeObject_alias = GenericScopeObject & {
 	valueAST: ASTnode | null,
 };
 
-export type ScopeObjectType = ScopeObject_alias & {
-	value: ScopeObject_function | ScopeObject_struct,
-};
-export function isScopeObjectType(scopeObject: ScopeObject): scopeObject is ScopeObjectType {
-	if (scopeObject.kind != "alias") {
+export type ScopeObjectType = ScopeObject_function |
+ScopeObject_struct |
+ScopeObject_enum |
+(ScopeObject_alias);
+export function is_ScopeObjectType(scopeObject: ScopeObject): scopeObject is ScopeObjectType {
+	if (
+		scopeObject.kind == "function" ||
+		scopeObject.kind == "struct" ||
+		scopeObject.kind == "enum" ||
+		(scopeObject.kind == "alias")
+	) {
+		return true;
+	} else {
 		return false;
 	}
-	
-	if (scopeObject.value) {
-		if (scopeObject.value.kind != "function" && scopeObject.value.kind != "struct") {
-			return false;
-		}
-	}
-	
-	return true;
 }
 export function cast_ScopeObjectType(scopeObject: ScopeObject | null): ScopeObjectType {
-	if (!scopeObject || !isScopeObjectType(scopeObject)) {
+	// if (scopeObject && scopeObject.kind == "alias") {
+	// 	scopeObject = unwrapScopeObject(scopeObject);
+	// }
+	
+	if (!scopeObject || !is_ScopeObjectType(scopeObject)) {
 		throw utilities.unreachable();
 	}
 	
 	return scopeObject;
 }
+export function ScopeObjectType_getName(type: ScopeObjectType): string {
+	if (type.kind == "alias") {
+		const newtype = unwrapScopeObject(type);
+		
+		if (!newtype || !is_ScopeObjectType(newtype)) {
+			throw utilities.unreachable();
+		}
+		
+		type = newtype;
+	}
+	
+	if (type.kind == "alias") {
+		throw utilities.unreachable();
+	}
+	return type.name;
+}
 
 export type ScopeObject_function = GenericScopeObject & {
 	kind: "function",
+	name: string,
 	forceInline: boolean,
 	external: boolean,
 	toBeGenerated: boolean,
@@ -185,6 +209,20 @@ export type ScopeObject_struct = GenericScopeObject & {
 	toBeChecked: boolean,
 	fields: ScopeObject_argument[],
 	members: ScopeObject_alias[],
+};
+
+export type ScopeObject_enumCase = GenericScopeObject & {
+	kind: "enumCase",
+	parent: ScopeObject_enum,
+	name: string,
+	ID: number,
+};
+
+export type ScopeObject_enum = GenericScopeObject & {
+	kind: "enum",
+	name: string,
+	toBeChecked: boolean,
+	enumerators: (ScopeObject_alias & { value: ScopeObject_enumCase })[],
 };
 
 export type ScopeObject_argument = GenericScopeObject & {
@@ -208,15 +246,17 @@ export type ScopeObject = GenericScopeObject & {
 } | GenericScopeObject & {
 	kind: "string",
 	value: string,
-} | 
+} |
+ScopeObject_enumCase |
 ScopeObject_complexValue |
 ScopeObject_alias |
 ScopeObject_function | 
 ScopeObject_argument | 
 ScopeObject_struct |
+ScopeObject_enum |
 GenericScopeObject & {
 	kind: "structInstance",
-	templateStruct: ScopeObjectType,
+	template: ScopeObjectType,
 	fields: ScopeObject_alias[],
 };
 
@@ -230,8 +270,4 @@ export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject 
 	}
 	
 	return scopeObject;	
-}
-
-export function getTypeName(type: ScopeObjectType): string {
-	return type.name;
 }

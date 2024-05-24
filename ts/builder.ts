@@ -10,12 +10,13 @@ import {
 	unwrapScopeObject,
 	CodeGenText,
 	getCGText,
-	getTypeName,
+	ScopeObjectType_getName,
 	ScopeObjectType,
 	cast_ScopeObjectType,
 	ScopeObject_alias,
 	ScopeObject_argument,
 	ScopeObject_function,
+	ScopeObject_enumCase,
 } from "./types";
 
 function doCodeGen(context: BuilderContext): boolean {
@@ -27,7 +28,7 @@ export function getNextSymbolName(context: BuilderContext) {
 }
 
 export function getTypeText(type: ScopeObjectType) {
-	return `'${getTypeName(type)}'`;
+	return `'${ScopeObjectType_getName(type)}'`;
 }
 
 export function getNameText(scopeObject: ScopeObject): string | null {
@@ -39,6 +40,8 @@ export function getNameText(scopeObject: ScopeObject): string | null {
 		return `${object.value}`;
 	} else if (object.kind == "string") {
 		return `"${object.value}"`;
+	} else if (object.kind == "enumCase") {
+		return `"${object.name}"`;
 	} else if (object.kind == "complexValue") {
 		return null;
 	} else if (object.kind == "structInstance") {
@@ -60,7 +63,9 @@ function getTypeOf(context: BuilderContext, scopeObject: ScopeObject): ScopeObje
 	} else if (scopeObject.kind == "complexValue") {
 		return scopeObject.type;
 	} else if (scopeObject.kind == "structInstance") {
-		return scopeObject.templateStruct;
+		return scopeObject.template;
+	} else if (scopeObject.kind == "enumCase") {
+		return scopeObject.parent;
 	} else {
 		throw utilities.TODO();
 	}
@@ -72,14 +77,14 @@ function expectType(
 	actualType: ScopeObjectType,
 	compileError: CompileError
 ) {
-	if (getTypeName(expectedType) == "builtin:Any") {
+	if (ScopeObjectType_getName(expectedType) == "builtin:Any") {
 		return;
 	}
 	
-	if (getTypeName(expectedType) != getTypeName(actualType)) {
+	if (ScopeObjectType_getName(expectedType) != ScopeObjectType_getName(actualType)) {
 		compileError.msg = compileError.msg
-			.replace("$expectedTypeName", getTypeName(expectedType))
-			.replace("$actualTypeName", getTypeName(actualType));
+			.replace("$expectedTypeName", ScopeObjectType_getName(expectedType))
+			.replace("$actualTypeName", ScopeObjectType_getName(actualType));
 		throw compileError;
 	}
 }
@@ -659,9 +664,25 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 					}
 					
+					else if (left.kind == "enum") {
+						for (let i = 0; i < left.enumerators.length; i++) {
+							const enumerator = left.enumerators[i];
+							if (enumerator.name == node.right[0].name) {
+								addToScopeList(enumerator);
+								addedAlias = true;
+								break;
+							}
+						}
+						
+						if (!addedAlias) {
+							throw new CompileError(`no member named '${node.right[0].name}'`)
+								.indicator(node.right[0].location, "here");
+						}
+					}
+					
 					else if (left.kind == "structInstance" || left.kind == "complexValue") {
 						const typeUse = getTypeOf(context, left);
-						if (typeUse.value.kind != "struct") {
+						if (typeUse.kind != "struct") {
 							throw utilities.unreachable();
 						}
 						
@@ -694,8 +715,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								}
 							}
 						} else if (left.kind == "complexValue") {
-							for (let i = 0; i < typeUse.value.fields.length; i++) {
-								const field = typeUse.value.fields[i];
+							for (let i = 0; i < typeUse.fields.length; i++) {
+								const field = typeUse.fields[i];
 								if (field.name == node.right[0].name) {
 									addToScopeList({
 										kind: "complexValue",
@@ -713,8 +734,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						//
 						
 						if (!addedAlias) {
-							for (let i = 0; i < typeUse.value.members.length; i++) {
-								const alias = typeUse.value.members[i];
+							for (let i = 0; i < typeUse.members.length; i++) {
+								const alias = typeUse.members[i];
 								if (alias.kind == "alias") {
 									if (alias.isAfield) continue;
 									if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
@@ -905,6 +926,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				const fn: ScopeObject_function = {
 					kind: "function",
+					name: `${getNextSymbolName(context)}`,
 					forceInline: node.forceInline,
 					external: false,
 					toBeGenerated: true,
@@ -965,6 +987,46 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				};
 				
 				addToScopeList(struct);
+				break;
+			}
+			case "enum": {
+				let nextID = 0;
+				const symbolName = `${getNextSymbolName(context)}`;
+				
+				const newEnum: ScopeObject = {
+					kind: "enum",
+					originLocation: node.location,
+					name: symbolName,
+					toBeChecked: true,
+					enumerators: [],
+				};
+				
+				for (let i = 0; i < node.codeBlock.length; i++) {
+					const enumeratorNode = node.codeBlock[i];
+					
+					if (enumeratorNode.kind == "identifier") {
+						newEnum.enumerators.push({
+							kind: "alias",
+							originLocation: enumeratorNode.location,
+							isAfield: false,
+							name: enumeratorNode.name,
+							symbolName: `${symbolName}.${enumeratorNode.name}`,
+							value: {
+								kind: "enumCase",
+								originLocation: enumeratorNode.location,
+								parent: newEnum,
+								name: `${symbolName}.${enumeratorNode.name}`,
+								ID: nextID,
+							},
+							valueAST: null,
+						});
+						nextID++;
+					} else {
+						utilities.TODO();
+					}
+				}
+				
+				addToScopeList(newEnum);
 				break;
 			}
 			case "while": {
@@ -1059,16 +1121,14 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			
 			case "structInstance": {
-				const templateType = cast_ScopeObjectType(build(context, [node.templateStruct.value], {
+				const templateType = cast_ScopeObjectType(unwrapScopeObject(build(context, [node.templateStruct.value], {
 					codeGenText: [],
 					compileTime: context.options.compileTime,
-				}, null, false, false, "no")[0]);
+				}, null, false, false, "no")[0]));
 				
-				if (templateType.value.kind != "struct") {
+				if (templateType.kind != "struct") {
 					throw utilities.TODO();
 				}
-				
-				const templateStruct = templateType.value;
 				
 				const fieldText = getCGText();
 				const fieldValues = build(context, node.codeBlock, {
@@ -1083,8 +1143,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const fieldValue = fieldValues[a];
 					fieldNames.push(fieldValue.name);
 					let fieldShouldExist = false;
-					for (let e = 0; e < templateStruct.fields.length; e++) {
-						const field = templateStruct.fields[e];
+					for (let e = 0; e < templateType.fields.length; e++) {
+						const field = templateType.fields[e];
 						if (fieldValue.value && fieldValue.name == field.name) {
 							expectType(context, field.type, getTypeOf(context, unwrapScopeObject(fieldValue.value)),
 								new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
@@ -1102,8 +1162,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				// loop over all of the templates fields, to make sure that there are not any missing fields
-				for (let e = 0; e < templateStruct.members.length; e++) {
-					const member = templateStruct.members[e];
+				for (let e = 0; e < templateType.members.length; e++) {
+					const member = templateType.members[e];
 					if (member.isAfield) {
 						if (!fieldNames.includes(member.name)) {
 							throw new CompileError(`struct instance is missing field '${member.name}'`)
@@ -1116,7 +1176,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const struct: ScopeObject = {
 					kind: "structInstance",
 					originLocation: node.location,
-					templateStruct: templateType,
+					template: templateType,
 					fields: fieldValues,
 				};
 				
