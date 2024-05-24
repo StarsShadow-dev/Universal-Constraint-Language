@@ -1032,6 +1032,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				let matchName = "";
 				if (expression.kind == "enumCase") {
 					matchName = expression.name;
+				} else if (expression.kind == "complexValue") {
+					// pass
+				} else {
+					throw new CompileError("unexpected value in match expression")
+						.indicator(node.location, "match here")
 				}
 				
 				let expectedResultType: ScopeObjectType | null = null;
