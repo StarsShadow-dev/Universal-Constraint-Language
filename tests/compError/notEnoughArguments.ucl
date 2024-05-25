@@ -1,0 +1,8 @@
+// compError
+// error: not enough arguments passed to function 'test'
+// tests/compError/notEnoughArguments.ucl:8 -> function call here
+
+test = fn(a: Number, b: String, c: Type): Number {
+	0
+}
+test(1, "2")
