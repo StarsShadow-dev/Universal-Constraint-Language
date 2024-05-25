@@ -117,7 +117,8 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 			
 			if (nextOperator.text == "=") {
 				if (left.kind != "identifier") {
-					throw utilities.TODO();
+					throw new CompileError("left side of assignment must be an identifier")
+						.indicator(left.location, "left side here");
 				}
 				return {
 					kind: "definition",
