@@ -12,6 +12,9 @@ Color = enum {
 }
 
 getCustomColorText = fn(rgb: Color.Custom): String {
+	// @compAssert(rgb.r == 1)
+	// @compAssert(rgb.g == 2)
+	// @compAssert(rgb.b == 3)
 	"a custom color!"
 }
 
@@ -27,7 +30,6 @@ getColorText = fn(color: Color): String {
 			"it is blue"
 		}
 		Custom(rgb) -> {
-			// @compDebug(rgb)
 			getCustomColorText(rgb)
 		}
 	}
@@ -38,6 +40,6 @@ getColorText = fn(color: Color): String {
 @compAssert(getColorText(Color.Blue) == "it is blue")
 @compAssert(getColorText(Color.Custom {
 	r = 1
-	b = 2
-	g = 3
+	g = 2
+	b = 3
 }) == "a custom color!")

@@ -193,7 +193,11 @@ export function callFunction(
 	if (!callArguments && comptime) utilities.unreachable();
 	
 	if (functionToCall.kind == "function") {
-		if (functionToCall.hadError) return undefined as any;
+		if (functionToCall.hadError) return {
+			kind: "complexValue",
+			originLocation: location,
+			type: functionToCall.returnType,
+		};
 		
 		if (callArguments) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
@@ -410,11 +414,10 @@ export function callFunction(
 			}
 		}
 		
-		// if (!result) throw utilities.unreachable();
-		return result as ScopeObject;
+		if (!result) throw utilities.unreachable();
+		return result;
 	} else {
-		utilities.unreachable();
-		return {} as ScopeObject;
+		throw utilities.unreachable();
 	}
 }
 
@@ -716,7 +719,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					
 					else if (left.kind == "structInstance" || left.kind == "complexValue") {
-						const typeUse = getTypeOf(context, left);
+						let typeUse = unwrapScopeObject(getTypeOf(context, left));
+						if (typeUse.kind == "enumCase") {
+							if (!typeUse.types[0]) {
+								throw utilities.unreachable();
+							}
+							typeUse = typeUse.types[0];
+						}
 						if (typeUse.kind != "struct") {
 							throw utilities.unreachable();
 						}
