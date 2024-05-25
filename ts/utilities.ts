@@ -8,6 +8,7 @@ import { CompileError } from "./report";
 const utilities = {
 	unreachable(): never {
 		debugger;
+		console.trace();
 		console.error("unreachable code reached");
 		exit(1);
 	},
@@ -21,6 +22,7 @@ const utilities = {
 	
 	TODO(): never {
 		debugger;
+		console.trace();
 		console.error("TODO reached");
 		exit(1);
 	},
