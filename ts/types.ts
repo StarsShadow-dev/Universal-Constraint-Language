@@ -226,7 +226,6 @@ export type ScopeObject_function = GenericScopeObject & GenericScopeObjectType &
 	toBeChecked: boolean,
 	hadError: boolean,
 	indentation: number,
-	symbolName: string,
 	functionArguments: (ScopeObject & { kind: "argument" })[],
 	returnType: ScopeObjectType,
 	comptimeReturn: boolean,

@@ -148,7 +148,7 @@ export default {
 						utilities.unreachable();
 					}
 				}
-				callFunction(context, onCodeGen["fn"], [getString(fn.symbolName), getString(argDest.join("")), getString(codeBlockText.join(""))], "builtin", true, null, dest, null);
+				callFunction(context, onCodeGen["fn"], [getString(fn.id), getString(argDest.join("")), getString(codeBlockText.join(""))], "builtin", true, null, dest, null);
 			}
 		}
 	},
@@ -174,7 +174,7 @@ export default {
 					], "builtin", true, null, argDest, null);
 				}
 				callFunction(context, onCodeGen["call"], [
-					getString(fn.symbolName),
+					getString(fn.id),
 					getBool(fn.external),
 					getString(argDest.join(""))
 				], "builtin", true, null, dest, null);

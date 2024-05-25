@@ -207,12 +207,12 @@ export function callFunction(
 		
 		if (callArguments) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
-				throw new CompileError(`too many arguments passed to function '${functionToCall.symbolName}'`)
+				throw new CompileError(`too many arguments passed to function '${functionToCall.id}'`)
 					.indicator(location, "function call here");
 			}
 			
 			if (callArguments.length < functionToCall.functionArguments.length) {
-				throw new CompileError(`not enough arguments passed to function '${functionToCall.symbolName}'`)
+				throw new CompileError(`not enough arguments passed to function '${functionToCall.id}'`)
 					.indicator(location, "function call here");
 			}
 		}
@@ -329,7 +329,7 @@ export function callFunction(
 					codeGenText: text,
 				}, {
 					location: functionToCall.originLocation,
-					msg: `function ${functionToCall.symbolName}`,
+					msg: `function ${functionToCall.id}`,
 				}, false, true, "no")[0];
 			} catch (error) {
 				if (error instanceof CompileError) {
@@ -1017,7 +1017,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					hadError: false,
 					indentation: 0,
 					originLocation: node.location,
-					symbolName: `${getNextSymbolName(context)}`,
 					functionArguments: functionArguments,
 					returnType: returnType,
 					comptimeReturn: node.comptimeReturn,

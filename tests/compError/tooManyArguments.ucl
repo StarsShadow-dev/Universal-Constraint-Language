@@ -1,0 +1,8 @@
+// compError
+// error: too many arguments passed to function 'test'
+// tests/compError/tooManyArguments.ucl:8 -> function call here
+
+test = fn(a: String, b: Number): String {
+	"a string"
+}
+test("1", 2, Number)

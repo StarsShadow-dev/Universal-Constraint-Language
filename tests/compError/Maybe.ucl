@@ -10,7 +10,6 @@ Maybe = fn(T: Type): Type {
 }
 
 test = fn(): Maybe(Number) {
-	// Maybe(String).none
 	Maybe(String).some {
 		value = "a string"
 	}

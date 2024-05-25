@@ -9,7 +9,6 @@ Maybe = fn(T: Type): Type {
 }
 
 test = fn(): Maybe(String) {
-	// Maybe(String).none
 	Maybe(String).some {
 		value = "a string"
 	}
