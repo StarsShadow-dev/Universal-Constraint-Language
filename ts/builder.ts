@@ -513,10 +513,24 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				if (node.kind != "definition") {
 					throw utilities.unreachable();
 				}
-				return unwrapScopeObject(build(context, [node.value], {
+				
+				const value = unwrapScopeObject(build(context, [node.value], {
 					codeGenText: null,
 					compileTime: context.options.compileTime,
 				}, null, false, false, "no")[0]);
+				
+				if (value && is_ScopeObjectType(value)) {
+					if (value.kind == "alias") {
+						throw utilities.unreachable();
+					}
+					
+					if (!value.preIdType) {
+						value.id = `${node.name}`;
+						// valueType.preIdType = ;
+					}
+				}
+				
+				return value;
 			}
 			
 			if (

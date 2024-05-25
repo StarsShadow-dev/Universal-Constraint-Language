@@ -1,9 +1,8 @@
 Maybe = fn(T: Type): Type {
-	self = enum {
+	enum {
 		none
 		some = struct(value: T) {}
 	}
-	self
 }
 // @compDebug(Maybe(String))
 
