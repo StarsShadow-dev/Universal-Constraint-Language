@@ -1,0 +1,5 @@
+// compError
+// error: call expression requires function
+// tests/compError/callString.ucl:5 -> here
+
+"a string"(1, 2, 3)

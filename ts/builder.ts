@@ -681,7 +681,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							.indicator(node.location, "here");
 					}
 				} else {
-					utilities.TODO();
+					throw new CompileError(`call expression requires function`)
+						.indicator(node.location, "here");
 				}
 				break;
 			}
