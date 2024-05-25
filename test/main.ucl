@@ -9,6 +9,10 @@ Color = enum {
 	) {}
 }
 
+getCustomColorText = fn(rgb: Color.Custom): String {
+	"custom(\(rgb.r), \(rgb.g), \(rgb.b))"
+}
+
 getColorText = fn(color: Color): String {
 	match color {
 		Red -> {
@@ -21,8 +25,8 @@ getColorText = fn(color: Color): String {
 			"blue"
 		}
 		Custom(rgb) -> {
-			@compDebug(rgb)
-			"custom(\(rgb.r), \(rgb.g), \(rgb.b))"
+			// @compDebug(rgb)
+			getCustomColorText(rgb)
 		}
 	}
 }

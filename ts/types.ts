@@ -182,6 +182,17 @@ export function ScopeObjectType_getName(type: ScopeObjectType): string {
 	if (type.kind == "alias") {
 		const newtype = unwrapScopeObject(type);
 		
+		if (newtype.kind == "enumCase") {
+			if (!type.value || type.value.kind != "enumCase") {
+				throw utilities.unreachable();
+			}
+			const type0 = type.value.types[0];
+			if (!type || type0.kind != "struct") {
+				throw utilities.unreachable();
+			}
+			return type0.name;
+		}
+		
 		if (!newtype || !is_ScopeObjectType(newtype)) {
 			throw utilities.unreachable();
 		}
