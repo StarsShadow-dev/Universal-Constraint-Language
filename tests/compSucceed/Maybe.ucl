@@ -1,0 +1,17 @@
+// compSucceed
+
+Maybe = fn(T: Type): Type {
+	self = enum {
+		none
+		some = struct(value: T) {}
+	}
+	self
+}
+
+test = fn(): Maybe(String) {
+	// Maybe(String).none
+	Maybe(String).some {
+		value = "a string"
+	}
+}
+@compAssert(test().value == "a string")
