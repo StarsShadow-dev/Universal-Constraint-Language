@@ -62,7 +62,7 @@ function testFile(filePath: string) {
 	try {
 		compile(context, (tokens) => {
 			if (!tokens[0] || tokens[0].type != TokenType.comment) {
-				console.log(`unable to test file '${filePath}'`);
+				console.log(`unable to test file '${filePath}' (no top comment)`);
 				utilities.unreachable();
 			}
 			

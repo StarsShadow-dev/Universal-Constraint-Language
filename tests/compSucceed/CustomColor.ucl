@@ -1,0 +1,43 @@
+// compSucceed
+
+Color = enum {
+	Red
+	Green
+	Blue
+	Custom = struct (
+		r: Number,
+		g: Number,
+		b: Number
+	) {}
+}
+
+getCustomColorText = fn(rgb: Color.Custom): String {
+	"a custom color!"
+}
+
+getColorText = fn(color: Color): String {
+	match color {
+		Red -> {
+			"it is red"
+		}
+		Green -> {
+			"it is green"
+		}
+		Blue -> {
+			"it is blue"
+		}
+		Custom(rgb) -> {
+			// @compDebug(rgb)
+			getCustomColorText(rgb)
+		}
+	}
+}
+
+@compAssert(getColorText(Color.Red) == "it is red")
+@compAssert(getColorText(Color.Green) == "it is green")
+@compAssert(getColorText(Color.Blue) == "it is blue")
+@compAssert(getColorText(Color.Custom {
+	r = 1
+	b = 2
+	g = 3
+}) == "a custom color!")
