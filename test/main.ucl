@@ -2,7 +2,11 @@ Color = enum {
 	Red
 	Green
 	Blue
-	// Custom(r: Number, g: Number, b: Number)
+	Custom = struct (
+		r: Number,
+		g: Number,
+		b: Number
+	) {}
 }
 
 getColorText = fn(color: Color): String {
@@ -16,15 +20,18 @@ getColorText = fn(color: Color): String {
 		Blue -> {
 			"blue"
 		}
-		// Custom(r, g, b) -> {
-		// 	"custom(\(r), \(g), \(b))"
-		// }
+		Custom(rgb) -> {
+			@compDebug(rgb)
+			"custom(\(rgb.r), \(rgb.g), \(rgb.b))"
+		}
 	}
 }
 
+@compDebug(getColorText(Color.Red))
+@compDebug(getColorText(Color.Green))
 @compDebug(getColorText(Color.Blue))
-// @compDebug(getColorText(Color.Custom {
-// 	r = 1
-// 	g = 2
-// 	b = 3
-// }))
+@compDebug(getColorText(Color.Custom {
+	r = 1
+	g = 2
+	b = 3
+}))

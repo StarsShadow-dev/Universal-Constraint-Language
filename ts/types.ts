@@ -65,7 +65,7 @@ export type ASTnode = genericASTnode & {
 	name: string,
 } | genericASTnode & {
 	kind: "call",
-	left: ASTnode[],
+	left: ASTnode,
 	callArguments: ASTnode[],
 } | genericASTnode & {
 	kind: "builtinCall",
@@ -104,7 +104,8 @@ export type ASTnode = genericASTnode & {
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "matchCase",
-	identifier: string,
+	name: string,
+	types: ASTnode[],
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "while",
@@ -217,13 +218,16 @@ export type ScopeObject_struct = GenericScopeObject & {
 	toBeChecked: boolean,
 	fields: ScopeObject_argument[],
 	members: ScopeObject_alias[],
+	// conformsTo: ScopeObjectType[],
 };
 
+// TODO: rm this? move to structInstance?
 export type ScopeObject_enumCase = GenericScopeObject & {
 	kind: "enumCase",
 	parent: ScopeObject_enum,
 	name: string,
 	ID: number,
+	types: ScopeObjectType[],
 };
 
 export type ScopeObject_enum = GenericScopeObject & {
@@ -264,12 +268,15 @@ ScopeObject_struct |
 ScopeObject_enum |
 GenericScopeObject & {
 	kind: "structInstance",
+	caseName: string | null,
+	caseParent: ScopeObject_enum | null,
 	template: ScopeObject_struct,
 	fields: ScopeObject_alias[],
 } | GenericScopeObject & {
 	kind: "enumInstance",
 	template: ScopeObject_enum,
 	caseName: string,
+	fields: ScopeObject[],
 };
 
 export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {

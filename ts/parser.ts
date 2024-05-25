@@ -446,7 +446,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				} else {
 					if (token.text == "->") {
 						const identifier = AST.pop();
-						if (!identifier || identifier.kind != "identifier") {
+						if (!identifier || (identifier.kind != "identifier" && identifier.kind != "call")) {
 							throw utilities.TODO();
 						}
 						
@@ -456,10 +456,24 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						}
 						const codeBlock = parse(context, ParserMode.normal, "}");
 						
+						let name = "";
+						let types: ASTnode[] = [];
+						
+						if (identifier.kind == "identifier") {
+							name = identifier.name;
+						} else {
+							if (identifier.left.kind != "identifier") {
+								throw utilities.TODO();
+							}
+							name = identifier.left.name;
+							types = identifier.callArguments;
+						}
+						
 						AST.push({
 							kind: "matchCase",
 							location: identifier.location,
-							identifier: identifier.name,
+							name: name,
+							types: types,
 							codeBlock: codeBlock,
 						});
 					} else {
@@ -517,7 +531,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				AST.push({
 					kind: "call",
 					location: location,
-					left: [left],
+					left: left,
 					callArguments: callArguments,
 				});
 			} else {

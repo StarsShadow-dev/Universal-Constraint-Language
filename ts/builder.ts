@@ -17,6 +17,8 @@ import {
 	ScopeObject_argument,
 	ScopeObject_function,
 	ScopeObject_enumCase,
+	is_ScopeObjectType,
+	ScopeObject_enum,
 } from "./types";
 
 function doCodeGen(context: BuilderContext): boolean {
@@ -79,6 +81,21 @@ function expectType(
 ) {
 	if (ScopeObjectType_getName(expectedType) == "builtin:Any") {
 		return;
+	}
+	
+	const unwrappedExpectedType = unwrapScopeObject(expectedType);
+	if (unwrappedExpectedType.kind == "enum") {
+		for (let i = 0; i < unwrappedExpectedType.enumerators.length; i++) {
+			const enumerator = unwrappedExpectedType.enumerators[i];
+			if (enumerator.value.types.length == 0) continue;
+			if (
+				ScopeObjectType_getName(enumerator.value.types[0])
+				==
+				ScopeObjectType_getName(actualType)
+			) {
+				return;
+			}
+		}
 	}
 	
 	if (ScopeObjectType_getName(expectedType) != ScopeObjectType_getName(actualType)) {
@@ -578,32 +595,52 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			case "call": {
 				const leftText = getCGText();
-				const functionToCall_ = build(context, node.left, {
+				const left_ = build(context, [node.left], {
 					compileTime: context.options.compileTime,
 					codeGenText: leftText,
 				}, null, false, false, "no")
-				if (!functionToCall_[0]) {
-					utilities.TODO();
+				if (!left_[0]) {
+					utilities.unreachable();
 				}
-				const functionToCall = unwrapScopeObject(functionToCall_[0]);
-				const argumentText = getCGText();
-				if (functionToCall_.length > 1) {
-					argumentText.push(leftText.join(""));
-				}
-				const callArguments = build(context, node.callArguments, {
-					compileTime: context.options.compileTime,
-					codeGenText: argumentText,
-				}, null, false, false, "no");
+				const left = unwrapScopeObject(left_[0]);
 				
-				if (functionToCall.kind == "function") {
-					for (let i = 1; i < functionToCall_.length; i++) {
-						callArguments.unshift(functionToCall_[i]);
+				if (left.kind == "enumCase") {
+					const fields = build(context, node.callArguments, {
+						compileTime: context.options.compileTime,
+						codeGenText: null,
+					}, null, false, false, "no");
+					
+					// TODO: checking
+					
+					addToScopeList({
+						kind: "enumInstance",
+						originLocation: node.location,
+						template: left.parent,
+						caseName: left.name,
+						fields: fields,
+					});
+				} else if (left.kind == "function") {
+					const argumentText = getCGText();
+					if (left_.length > 1) {
+						argumentText.push(leftText.join(""));
 					}
-					const result = callFunction(context, functionToCall, callArguments, node.location, context.options.compileTime, context.options.codeGenText, null, argumentText);
-					addToScopeList(result);
+					const callArguments = build(context, node.callArguments, {
+						compileTime: context.options.compileTime,
+						codeGenText: argumentText,
+					}, null, false, false, "no");
+					
+					if (left.kind == "function") {
+						for (let i = 1; i < left_.length; i++) {
+							callArguments.unshift(left_[i]);
+						}
+						const result = callFunction(context, left, callArguments, node.location, context.options.compileTime, context.options.codeGenText, null, argumentText);
+						addToScopeList(result);
+					} else {
+						throw new CompileError(`attempting a function call on something other than a function`)
+							.indicator(node.location, "here");
+					}
 				} else {
-					throw new CompileError(`attempting a function call on something other than a function`)
-						.indicator(node.location, "here");
+					utilities.TODO();
 				}
 				break;
 			}
@@ -1002,19 +1039,52 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				for (let i = 0; i < node.codeBlock.length; i++) {
 					const enumeratorNode = node.codeBlock[i];
 					
-					if (enumeratorNode.kind == "identifier") {
+					if (enumeratorNode.kind == "identifier" || enumeratorNode.kind == "definition") {
+						let name: string;
+						let types: ScopeObjectType[] = [];
+						if (enumeratorNode.kind == "identifier") {
+							name = enumeratorNode.name;
+						// } else if (enumeratorNode.kind == "call") {
+							// if (enumeratorNode.left.kind != "identifier") {
+							// 	throw utilities.TODO();
+							// }
+							
+							// const _types = build(context, enumeratorNode.callArguments, null, null, false, false, "no");
+							// for (let i = 0; i < _types.length; i++) {
+							// 	const _type = _types[i];
+							// 	if (!is_ScopeObjectType(_type)) {
+							// 		throw utilities.TODO();
+							// 	}
+							// 	types.push(_type);
+							// }
+							
+							// name = enumeratorNode.left.name;
+						} else if (enumeratorNode.kind == "definition") {
+							const definitionType = build(context, [enumeratorNode.value], null, null, false, false, "no")[0];
+							if (!is_ScopeObjectType(definitionType)) {
+								throw utilities.TODO();
+							}
+							
+							types.push(definitionType);
+							
+							name = enumeratorNode.name;
+						} else {
+							throw utilities.unreachable();
+						}
+						
 						newEnum.enumerators.push({
 							kind: "alias",
 							originLocation: enumeratorNode.location,
 							isAfield: false,
-							name: enumeratorNode.name,
-							symbolName: `${symbolName}.${enumeratorNode.name}`,
+							name: name,
+							symbolName: `${symbolName}.${name}`,
 							value: {
 								kind: "enumCase",
 								originLocation: enumeratorNode.location,
 								parent: newEnum,
-								name: enumeratorNode.name,
+								name: name,
 								ID: nextID,
+								types: types,
 							},
 							valueAST: null,
 						});
@@ -1030,10 +1100,23 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			case "match": {
 				const expression = unwrapScopeObject(build(context, [node.expression], null, null, false, false, "no")[0]);
 				let matchName = "";
+				let expressionType: ScopeObject_enum;
 				if (expression.kind == "enumCase") {
 					matchName = expression.name;
+					expressionType = expression.parent;
 				} else if (expression.kind == "complexValue") {
-					// pass
+					const _expressionType = unwrapScopeObject(expression.type);
+					if (_expressionType.kind != "enum") {
+						throw utilities.TODO();
+					}
+					
+					expressionType = _expressionType;
+				} else if (expression.kind == "structInstance") {
+					if (!expression.caseName || !expression.caseParent) {
+						throw utilities.TODO();
+					}
+					matchName = expression.caseName;
+					expressionType = expression.caseParent;
 				} else {
 					throw new CompileError("unexpected value in match expression")
 						.indicator(node.location, "match here")
@@ -1046,6 +1129,70 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					const caseNode = node.codeBlock[i];
 					if (caseNode.kind != "matchCase") {
 						throw utilities.TODO();
+					}
+					
+					let enumCase: ScopeObject_enumCase | null = null;
+					for (let e = 0; e < expressionType.enumerators.length; e++) {
+						const enumerator = expressionType.enumerators[e];
+						if (enumerator.name == caseNode.name) {
+							enumCase = enumerator.value;
+						}
+					}
+					
+					if (!enumCase) {
+						throw utilities.TODO();
+					}
+					
+					if (enumCase.types.length > 1) {
+						throw utilities.TODO();
+					}
+					
+					for (let i = 0; i < caseNode.types.length; i++) {
+						const typeNode = caseNode.types[i];
+						
+						if (typeNode.kind != "identifier") {
+							throw utilities.TODO();
+						}
+						
+						if (expression.kind == "enumCase") {
+							addAlias(context, context.file.scope.currentLevel + 1, {
+								kind: "alias",
+								originLocation: typeNode.location,
+								isAfield: false,
+								name: typeNode.name,
+								symbolName: typeNode.name,
+								value: {
+									kind: "complexValue",
+									originLocation: typeNode.location,
+									type: enumCase.types[i],
+								},
+								valueAST: null,
+							});
+						} else if (expression.kind == "structInstance") {
+							addAlias(context, context.file.scope.currentLevel + 1, {
+								kind: "alias",
+								originLocation: typeNode.location,
+								isAfield: false,
+								name: typeNode.name,
+								symbolName: typeNode.name,
+								value: expression,
+								valueAST: null,
+							});
+						} else {
+							addAlias(context, context.file.scope.currentLevel + 1, {
+								kind: "alias",
+								originLocation: typeNode.location,
+								isAfield: false,
+								name: typeNode.name,
+								symbolName: typeNode.name,
+								value: {
+									kind: "complexValue",
+									originLocation: typeNode.location,
+									type: enumCase.types[i],
+								},
+								valueAST: null,
+							});
+						}
 					}
 					
 					const caseResult = build(context, caseNode.codeBlock, null, null, false, false, "no")[0];
@@ -1062,7 +1209,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					
 					if (expression.kind != "complexValue") {
-						if (caseNode.identifier == matchName) {
+						if (caseNode.name == matchName) {
 							addToScopeList(caseResult);
 						}
 					}
@@ -1176,10 +1323,21 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			
 			case "newInstance": {
-				const templateType = cast_ScopeObjectType(unwrapScopeObject(build(context, [node.template.value], {
+				let caseName: string | null = null;
+				let caseParent: ScopeObject_enum | null = null;
+				let _templateType = unwrapScopeObject(build(context, [node.template.value], {
 					codeGenText: [],
 					compileTime: context.options.compileTime,
-				}, null, false, false, "no")[0]));
+				}, null, false, false, "no")[0]);
+				if (_templateType.kind == "enumCase") {
+					if (_templateType.types.length == 0) {
+						utilities.unreachable();
+					}
+					caseName = _templateType.name;
+					caseParent = _templateType.parent;
+					_templateType = _templateType.types[0];
+				}
+				const templateType = cast_ScopeObjectType(_templateType);
 				
 				if (templateType.kind != "struct") {
 					throw utilities.TODO();
@@ -1231,6 +1389,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const struct: ScopeObject = {
 					kind: "structInstance",
 					originLocation: node.location,
+					caseName: caseName,
+					caseParent: caseParent,
 					template: templateType,
 					fields: fieldValues,
 				};
