@@ -192,10 +192,10 @@ export function ScopeObjectType_getId(type: ScopeObjectType): string {
 				throw utilities.unreachable();
 			}
 			const type0 = type.value.types[0];
-			if (!type || type0.kind != "struct") {
+			if (!type) {
 				throw utilities.unreachable();
 			}
-			return type0.id;
+			return ScopeObjectType_getId(type0);
 		}
 		
 		if (!newtype || !is_ScopeObjectType(newtype)) {
