@@ -142,6 +142,11 @@ type GenericScopeObject = {
 	originLocation: SourceLocation,
 };
 
+type GenericScopeObjectType = {
+	id: string,
+	preIdType: ScopeObjectType | null,
+};
+
 export type ScopeObject_alias = GenericScopeObject & {
 	kind: "alias",
 	isAfield: boolean,
@@ -178,7 +183,7 @@ export function cast_ScopeObjectType(scopeObject: ScopeObject | null): ScopeObje
 	
 	return scopeObject;
 }
-export function ScopeObjectType_getName(type: ScopeObjectType): string {
+export function ScopeObjectType_getId(type: ScopeObjectType): string {
 	if (type.kind == "alias") {
 		const newtype = unwrapScopeObject(type);
 		
@@ -190,7 +195,7 @@ export function ScopeObjectType_getName(type: ScopeObjectType): string {
 			if (!type || type0.kind != "struct") {
 				throw utilities.unreachable();
 			}
-			return type0.name;
+			return type0.id;
 		}
 		
 		if (!newtype || !is_ScopeObjectType(newtype)) {
@@ -203,12 +208,18 @@ export function ScopeObjectType_getName(type: ScopeObjectType): string {
 	if (type.kind == "alias") {
 		throw utilities.unreachable();
 	}
-	return type.name;
+	
+	let id = "";
+	if (type.preIdType) {
+		id += ScopeObjectType_getId(type.preIdType);
+	}
+	id += type.id;
+	
+	return id;
 }
 
-export type ScopeObject_function = GenericScopeObject & {
+export type ScopeObject_function = GenericScopeObject & GenericScopeObjectType & {
 	kind: "function",
-	name: string,
 	forceInline: boolean,
 	external: boolean,
 	toBeGenerated: boolean,
@@ -223,9 +234,8 @@ export type ScopeObject_function = GenericScopeObject & {
 	visible: ScopeObject_alias[],
 };
 
-export type ScopeObject_struct = GenericScopeObject & {
+export type ScopeObject_struct = GenericScopeObject & GenericScopeObjectType & {
 	kind: "struct",
-	name: string,
 	toBeChecked: boolean,
 	fields: ScopeObject_argument[],
 	members: ScopeObject_alias[],
@@ -237,13 +247,12 @@ export type ScopeObject_enumCase = GenericScopeObject & {
 	kind: "enumCase",
 	parent: ScopeObject_enum,
 	name: string,
-	ID: number,
+	number: number,
 	types: ScopeObjectType[],
 };
 
-export type ScopeObject_enum = GenericScopeObject & {
+export type ScopeObject_enum = GenericScopeObject & GenericScopeObjectType & {
 	kind: "enum",
-	name: string,
 	toBeChecked: boolean,
 	enumerators: (ScopeObject_alias & { value: ScopeObject_enumCase })[],
 };

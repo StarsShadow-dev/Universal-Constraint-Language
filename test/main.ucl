@@ -1,41 +1,16 @@
-Color = enum {
-	Red
-	Green
-	Blue
-	Custom = struct (
-		r: Number,
-		g: Number,
-		b: Number
-	) {}
+Maybe = fn(T: Type): Type {
+	self = enum {
+		none
+		some = struct(value: T) {}
+	}
+	self
 }
+// @compDebug(Maybe(String))
 
-getCustomColorText = fn(rgb: Color.Custom): String {
-	"custom(\(rgb.r), \(rgb.g), \(rgb.b))"
-}
-
-getColorText = fn(color: Color): String {
-	match color {
-		Red -> {
-			"red"
-		}
-		Green -> {
-			"green"
-		}
-		Blue -> {
-			"blue"
-		}
-		Custom(rgb) -> {
-			// @compDebug(rgb)
-			getCustomColorText(rgb)
-		}
+main = fn(): Maybe(String) {
+	// Maybe(String).none
+	Maybe(String).some {
+		value = "a string!!!"
 	}
 }
-
-@compDebug(getColorText(Color.Red))
-@compDebug(getColorText(Color.Green))
-@compDebug(getColorText(Color.Blue))
-@compDebug(getColorText(Color.Custom {
-	r = 1
-	g = 2
-	b = 3
-}))
+@compDebug(main())

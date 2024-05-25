@@ -10,7 +10,7 @@ import {
 	unwrapScopeObject,
 	CodeGenText,
 	getCGText,
-	ScopeObjectType_getName,
+	ScopeObjectType_getId,
 	ScopeObjectType,
 	cast_ScopeObjectType,
 	ScopeObject_alias,
@@ -30,7 +30,7 @@ export function getNextSymbolName(context: BuilderContext) {
 }
 
 export function getTypeText(type: ScopeObjectType) {
-	return `'${ScopeObjectType_getName(type)}'`;
+	return `'${ScopeObjectType_getId(type)}'`;
 }
 
 export function getNameText(scopeObject: ScopeObject): string | null {
@@ -48,6 +48,8 @@ export function getNameText(scopeObject: ScopeObject): string | null {
 		return null;
 	} else if (object.kind == "structInstance") {
 		return "TODO: getNameText structInstance";
+	} else if (object.kind == "struct") {
+		return object.id;
 	} else {
 		throw utilities.TODO();
 	}
@@ -68,6 +70,10 @@ function getTypeOf(context: BuilderContext, scopeObject: ScopeObject): ScopeObje
 		return scopeObject.template;
 	} else if (scopeObject.kind == "enumCase") {
 		return scopeObject.parent;
+	} else if (scopeObject.kind == "struct") {
+		return cast_ScopeObjectType(getAlias(context, "Type"));
+	} else if (scopeObject.kind == "enum") {
+		return cast_ScopeObjectType(getAlias(context, "Type"));
 	} else {
 		throw utilities.TODO();
 	}
@@ -79,7 +85,7 @@ function expectType(
 	actualType: ScopeObjectType,
 	compileError: CompileError
 ) {
-	if (ScopeObjectType_getName(expectedType) == "builtin:Any") {
+	if (ScopeObjectType_getId(expectedType) == "builtin:Any") {
 		return;
 	}
 	
@@ -89,19 +95,19 @@ function expectType(
 			const enumerator = unwrappedExpectedType.enumerators[i];
 			if (enumerator.value.types.length == 0) continue;
 			if (
-				ScopeObjectType_getName(enumerator.value.types[0])
+				ScopeObjectType_getId(enumerator.value.types[0])
 				==
-				ScopeObjectType_getName(actualType)
+				ScopeObjectType_getId(actualType)
 			) {
 				return;
 			}
 		}
 	}
 	
-	if (ScopeObjectType_getName(expectedType) != ScopeObjectType_getName(actualType)) {
+	if (ScopeObjectType_getId(expectedType) != ScopeObjectType_getId(actualType)) {
 		compileError.msg = compileError.msg
-			.replace("$expectedTypeName", ScopeObjectType_getName(expectedType))
-			.replace("$actualTypeName", ScopeObjectType_getName(actualType));
+			.replace("$expectedTypeName", ScopeObjectType_getId(expectedType))
+			.replace("$actualTypeName", ScopeObjectType_getId(actualType));
 		throw compileError;
 	}
 }
@@ -343,6 +349,20 @@ export function callFunction(
 			if (result) {
 				const unwrappedResult = unwrapScopeObject(result);
 				
+				if (is_ScopeObjectType(unwrappedResult)) {
+					if (unwrappedResult.kind == "alias") {
+						throw utilities.unreachable();
+					}
+					if (!unwrappedResult.preIdType) {
+						unwrappedResult.id = `(${argumentNameText})`;
+						unwrappedResult.preIdType = functionToCall;
+					}
+				}
+				
+				// if (unwrappedResult.kind == "enum" || unwrappedResult.kind == "struct") {
+				// 	unwrappedResult.id = `${functionToCall.symbolName}(${argumentNameText})`;
+				// }
+				
 				expectType(context, functionToCall.returnType, getTypeOf(context, unwrappedResult),
 					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 						.indicator(location, "call here")
@@ -499,7 +519,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}, null, false, false, "no")[0]);
 			}
 			
-			if (context.file.scope.currentLevel == 0 && context.compilerStage > CompilerStage.findAliases) {
+			if (
+				!context.file.scope.function &&
+				context.file.scope.currentLevel == 0 &&
+				context.compilerStage > CompilerStage.findAliases
+			) {
 				const alias = getAlias(context, node.name, true);
 				if (!alias) {
 					throw utilities.unreachable();
@@ -970,7 +994,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				const fn: ScopeObject_function = {
 					kind: "function",
-					name: `${getNextSymbolName(context)}`,
+					id: `${getNextSymbolName(context)}`,
+					preIdType: null,
 					forceInline: node.forceInline,
 					external: false,
 					toBeGenerated: true,
@@ -1024,7 +1049,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const struct: ScopeObject = {
 					kind: "struct",
 					originLocation: node.location,
-					name: `${getNextSymbolName(context)}`,
+					id: `${getNextSymbolName(context)}`,
+					preIdType: null,
 					toBeChecked: true,
 					fields: fields,
 					members: members,
@@ -1034,13 +1060,14 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				break;
 			}
 			case "enum": {
-				let nextID = 0;
+				let nextNumber = 0;
 				const symbolName = `${getNextSymbolName(context)}`;
 				
 				const newEnum: ScopeObject = {
 					kind: "enum",
 					originLocation: node.location,
-					name: symbolName,
+					id: symbolName,
+					preIdType: null,
 					toBeChecked: true,
 					enumerators: [],
 				};
@@ -1074,6 +1101,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								throw utilities.TODO();
 							}
 							
+							if (definitionType.kind != "alias") {
+								if (!definitionType.preIdType) {
+									definitionType.id = `.${enumeratorNode.name}`;
+									definitionType.preIdType = newEnum;
+								}
+							}
+							
 							types.push(definitionType);
 							
 							name = enumeratorNode.name;
@@ -1092,12 +1126,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								originLocation: enumeratorNode.location,
 								parent: newEnum,
 								name: name,
-								ID: nextID,
+								number: nextNumber,
 								types: types,
 							},
 							valueAST: null,
 						});
-						nextID++;
+						nextNumber++;
 					} else {
 						utilities.TODO();
 					}

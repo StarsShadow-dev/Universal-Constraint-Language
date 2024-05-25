@@ -26,8 +26,9 @@ export let onCodeGen: any = {};
 const typeType: ScopeObject_struct = {
 	kind: "struct",
 	originLocation: "builtin",
+	id: "builtin:Type",
+	preIdType: null,
 	toBeChecked: false,
-	name: "builtin:Type",
 	fields: [],
 	members: [],
 };
@@ -42,8 +43,9 @@ function addType(name: string) {
 		value: {
 			kind: "struct",
 			originLocation: "builtin",
+			id: "builtin:" + name,
+			preIdType: null,
 			toBeChecked: false,
-			name: "builtin:" + name,
 			fields: [],
 			members: [],
 		},
@@ -79,8 +81,9 @@ export function getStruct(context: BuilderContext, members: ScopeObject_alias[],
 	return {
 		kind: "struct",
 		originLocation: "builtin",
+		id: `${getNextSymbolName(context)}`,
+		preIdType: null,
 		toBeChecked: toBeChecked,
-		name: `${getNextSymbolName(context)}`,
 		fields: [],
 		members: members,
 	};
