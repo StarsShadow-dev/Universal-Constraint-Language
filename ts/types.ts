@@ -2,6 +2,7 @@
 // general
 //
 
+import { BuilderContext } from "./compiler";
 import utilities from "./utilities";
 
 export type SourceLocation = {
@@ -229,11 +230,12 @@ export type ScopeObject_function = GenericScopeObject & GenericScopeObjectType &
 	toBeChecked: boolean,
 	hadError: boolean,
 	indentation: number,
-	functionArguments: (ScopeObject & { kind: "argument" })[],
+	functionArguments: ScopeObject_argument[],
 	returnType: ScopeObjectType,
 	comptimeReturn: boolean,
 	AST: ASTnode[],
 	visible: ScopeObject_alias[],
+	implementationOverride: ((context: BuilderContext, args: ScopeObject[]) => ScopeObject) | null,
 };
 
 export type ScopeObject_struct = GenericScopeObject & GenericScopeObjectType & {

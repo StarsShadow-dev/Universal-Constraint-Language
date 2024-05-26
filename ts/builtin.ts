@@ -3,7 +3,7 @@ import path from "path";
 import utilities from "./utilities";
 import { CompilerStage, FileContext, compileFile } from "./compiler";
 import { CompileError } from "./report";
-import { getAlias, getNextSymbolName } from "./builder";
+import { callFunction, getAlias, getNextSymbolName } from "./builder";
 import { BuilderContext } from "./compiler";
 import {
 	ASTnode,
@@ -11,6 +11,7 @@ import {
 	ScopeObjectType,
 	ScopeObjectType_getId,
 	ScopeObject_alias,
+	ScopeObject_argument,
 	ScopeObject_complexValue,
 	ScopeObject_function,
 	ScopeObject_struct,
@@ -103,6 +104,37 @@ export function getStruct(context: BuilderContext, members: ScopeObject_alias[],
 		toBeChecked: toBeChecked,
 		fields: [],
 		members: members,
+	};
+}
+
+export function getFunction(
+	context: BuilderContext,
+	functionArguments: ScopeObject_argument[],
+	returnType: ScopeObjectType,
+	implementation: ((context: BuilderContext, args: ScopeObject[]) => ScopeObject) | null,
+	id?: string
+): ScopeObject_function {
+	if (!id) {
+		id = `${getNextSymbolName(context)}`
+	}
+	
+	return {
+		kind: "function",
+		originLocation: "builtin",
+		id: id,
+		preIdType: null,
+		forceInline: false, // TODO: forceInline?
+		external: false,
+		toBeGenerated: true,
+		toBeChecked: false,
+		hadError: false,
+		indentation: 0,
+		functionArguments: functionArguments,
+		returnType: returnType,
+		comptimeReturn: false, // TODO: comptimeReturn?
+		AST: [],
+		visible: [],
+		implementationOverride: implementation,
 	};
 }
 
@@ -252,9 +284,60 @@ class FC {
 }
 
 export function type_List(context: BuilderContext, T: ScopeObjectType): ScopeObjectType {
-	return getStruct(context, [
+	let listType = getStruct(context, [
 		getInAlias("T", T),
 	], false, `List(${ScopeObjectType_getId(T)})`);
+	
+	listType.members.push(getInAlias("map", getFunction(context, [
+		{
+			kind: "argument",
+			originLocation: "builtin",
+			comptime: false,
+			name: "self",
+			type: listType,
+		},
+		{
+			kind: "argument",
+			originLocation: "builtin",
+			comptime: false,
+			name: "callBack",
+			type: getFunction(context, [
+				{
+					kind: "argument",
+					originLocation: "builtin",
+					comptime: false,
+					name: "value",
+					type: T,
+				},
+			], cast_ScopeObjectType(getAlias(context, "Any")), null),
+		},
+	], cast_ScopeObjectType(getAlias(context, "Any")), (context: BuilderContext, args: ScopeObject[]) => {
+		const list = unwrapScopeObject(args[0]);
+		if (list.kind != "list") {
+			throw utilities.unreachable();
+		}
+		const callBack = unwrapScopeObject(args[1]);
+		if (callBack.kind != "function") {
+			throw utilities.unreachable();
+		}
+		
+		let newListElements: ScopeObject[] = [];
+		for (let i = 0; i < list.elements.length; i++) {
+			const element = list.elements[i];
+			
+			const result = callFunction(context, callBack, [element], "builtin", context.options.compileTime, null, null, null);
+			newListElements.push(result);
+		}
+		
+		return {
+			kind: "list",
+			originLocation: "builtin",
+			type: callBack.returnType,
+			elements: newListElements,
+		};
+	})))
+	
+	return listType;
 }
 
 export function builtinCall(context: BuilderContext, node: ASTnode, callArguments: ScopeObject[], argumentText: string[]): ScopeObject | undefined {

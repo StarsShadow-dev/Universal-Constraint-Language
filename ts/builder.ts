@@ -42,6 +42,13 @@ export function getNameText(scopeObject: ScopeObject): string | null {
 		return `${object.value}`;
 	} else if (object.kind == "string") {
 		return `"${object.value}"`;
+	} else if (object.kind == "list") {
+		let text = "";
+		for (let i = 0; i < object.elements.length; i++) {
+			const element = object.elements[i];
+			text += getNameText(element);
+		}
+		return text;
 	} else if (object.kind == "enumCase") {
 		return `"${object.name}"`;
 	} else if (object.kind == "complexValue") {
@@ -50,6 +57,8 @@ export function getNameText(scopeObject: ScopeObject): string | null {
 		return "TODO: getNameText structInstance";
 	} else if (object.kind == "struct") {
 		return object.id;
+	} else if (object.kind == "function") {
+		return `${object.id}`;
 	} else {
 		throw utilities.TODO();
 	}
@@ -85,7 +94,8 @@ function expectType(
 	context: BuilderContext,
 	expectedType: ScopeObjectType,
 	actualType: ScopeObjectType,
-	compileError: CompileError
+	compileError: CompileError,
+	location: SourceLocation,
 ) {
 	if (ScopeObjectType_getId(expectedType) == "builtin:Any") {
 		return;
@@ -106,11 +116,38 @@ function expectType(
 		}
 	}
 	
-	if (ScopeObjectType_getId(expectedType) != ScopeObjectType_getId(actualType)) {
-		compileError.msg = compileError.msg
-			.replace("$expectedTypeName", ScopeObjectType_getId(expectedType))
-			.replace("$actualTypeName", ScopeObjectType_getId(actualType));
-		throw compileError;
+	if (expectedType.kind == "function" && actualType.kind == "function") {
+		if (expectedType.functionArguments.length < actualType.functionArguments.length) {
+			throw new CompileError(`too many arguments for function`)
+				.indicator(location, "here");
+		}
+		
+		if (expectedType.functionArguments.length > actualType.functionArguments.length) {
+			throw new CompileError(`not enough arguments for function`)
+				.indicator(location, "here");
+		}
+		
+		for (let i = 0; i < expectedType.functionArguments.length; i++) {
+			const expectedArgument = expectedType.functionArguments[i];
+			const actualArgument = actualType.functionArguments[i];
+			
+			expectType(context, expectedArgument.type, actualArgument.type,
+				new CompileError(`expected type $expectedTypeName but got type $actualTypeName`),
+				location
+			);
+		}
+		
+		expectType(context, expectedType.returnType, actualType.returnType,
+			new CompileError(`expected type $expectedTypeName but got type $actualTypeName`),
+			location
+		);
+	} else {
+		if (ScopeObjectType_getId(expectedType) != ScopeObjectType_getId(actualType)) {
+			compileError.msg = compileError.msg
+				.replace("$expectedTypeName", ScopeObjectType_getId(expectedType))
+				.replace("$actualTypeName", ScopeObjectType_getId(actualType));
+			throw compileError;
+		}
 	}
 }
 
@@ -289,7 +326,8 @@ export function callFunction(
 						expectType(context, argument.type, getTypeOf(context, callArgument),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(callArgument.originLocation, "argument here")
-								.indicator(argument.originLocation, "argument defined here")
+								.indicator(argument.originLocation, "argument defined here"),
+							location
 						);
 						
 						addAlias(context, context.file.scope.currentLevel + 1, {
@@ -325,23 +363,31 @@ export function callFunction(
 			let gotError = false;
 			
 			const text = getCGText();
-			try {
-				result = build(context, functionToCall.AST, {
-					compileTime: comptime,
-					codeGenText: text,
-				}, {
-					location: functionToCall.originLocation,
-					msg: `function ${functionToCall.id}`,
-				}, false, true, "no")[0];
-			} catch (error) {
-				if (error instanceof CompileError) {
-					context.errors.push(error);
-					gotError = true;
-					functionToCall.toBeGenerated = false;
-					functionToCall.toBeChecked = false;
-					functionToCall.hadError = true;
-				} else {
-					throw error;
+			if (functionToCall.implementationOverride) {
+				if (!callArguments) {
+					throw utilities.unreachable();
+				}
+				
+				result = functionToCall.implementationOverride(context, callArguments)
+			} else {
+				try {
+					result = build(context, functionToCall.AST, {
+						compileTime: comptime,
+						codeGenText: text,
+					}, {
+						location: functionToCall.originLocation,
+						msg: `function ${functionToCall.id}`,
+					}, false, true, "no")[0];
+				} catch (error) {
+					if (error instanceof CompileError) {
+						context.errors.push(error);
+						gotError = true;
+						functionToCall.toBeGenerated = false;
+						functionToCall.toBeChecked = false;
+						functionToCall.hadError = true;
+					} else {
+						throw error;
+					}
 				}
 			}
 			
@@ -368,7 +414,8 @@ export function callFunction(
 				expectType(context, functionToCall.returnType, getTypeOf(context, unwrappedResult),
 					new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 						.indicator(location, "call here")
-						.indicator(functionToCall.originLocation, "function defined here")
+						.indicator(functionToCall.originLocation, "function defined here"),
+					functionToCall.returnType.originLocation
 				);
 				
 				result = unwrappedResult;
@@ -413,7 +460,8 @@ export function callFunction(
 						expectType(context, argument.type, getTypeOf(context, callArgument),
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 								.indicator(callArgument.originLocation, "argument here")
-								.indicator(argument.originLocation, "argument defined here")
+								.indicator(argument.originLocation, "argument defined here"),
+							argument.originLocation
 						);
 					} else {
 						utilities.unreachable();
@@ -646,7 +694,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					if (type) {
 						expectType(context, type, elementType,
 							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
-								.indicator(element.originLocation, "element here")
+								.indicator(element.originLocation, "element here"),
+							element.originLocation
 						);
 					} else {
 						type = elementType;
@@ -788,7 +837,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 					}
 					
-					else if (left.kind == "structInstance" || left.kind == "complexValue") {
+					else if (left.kind == "structInstance" || left.kind == "list" || left.kind == "complexValue") {
 						let typeUse = unwrapScopeObject(getTypeOf(context, left));
 						if (typeUse.kind == "enumCase") {
 							if (!typeUse.types[0]) {
@@ -850,9 +899,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						if (!addedAlias) {
 							for (let i = 0; i < typeUse.members.length; i++) {
 								const alias = typeUse.members[i];
-								if (alias.kind == "alias") {
-									if (alias.isAfield) continue;
-									if (alias.value && alias.value.kind == "function" && alias.name == node.right[0].name) {
+								if (alias.isAfield) continue;
+								if (alias.name == node.right[0].name) {
+									if (alias.value && alias.value.kind == "function") {
 										addToScopeList(alias);
 										addToScopeList(left);
 										addedAlias = true;
@@ -860,9 +909,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 											context.options.codeGenText.push(leftText.join(""));
 										}
 										break;
+									} else {
+										throw utilities.TODO();
 									}
-								} else {
-									utilities.unreachable();
 								}
 							}
 						} else {
@@ -1040,6 +1089,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				const fn: ScopeObject_function = {
 					kind: "function",
+					originLocation: node.location,
 					id: `${getNextSymbolName(context)}`,
 					preIdType: null,
 					forceInline: node.forceInline,
@@ -1048,12 +1098,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					toBeChecked: true,
 					hadError: false,
 					indentation: 0,
-					originLocation: node.location,
 					functionArguments: functionArguments,
 					returnType: returnType,
 					comptimeReturn: node.comptimeReturn,
 					AST: node.codeBlock,
 					visible: visible,
+					implementationOverride: null,
 				};
 				
 				addToScopeList(fn);
@@ -1289,7 +1339,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						expectType(context, expectedResultType, caseResultType,
 							new CompileError(`different match type expected $expectedTypeName but got type $actualTypeName`)
 								.indicator(caseNode.location, "different type here")
-								.indicator(expectedResultLocation, "other type here")
+								.indicator(expectedResultLocation, "other type here"),
+							caseNode.location
 						);
 					} else {
 						expectedResultType = caseResultType;
@@ -1450,7 +1501,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							expectType(context, field.type, getTypeOf(context, unwrapScopeObject(fieldValue.value)),
 								new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
 									.indicator(fieldValue.originLocation, "field defined here")
-									.indicator(field.originLocation, "field originally defined here")
+									.indicator(field.originLocation, "field originally defined here"),
+								fieldValue.originLocation
 							);
 							fieldShouldExist = true;
 							break;
