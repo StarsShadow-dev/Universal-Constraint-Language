@@ -437,7 +437,17 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				if (token.text == endAt) {
 					return AST;
 				}
-				throw new CompileError("unexpected separator").indicator(token.location, "here");
+				if (token.text == "[") {
+					const elements = parse(context, ParserMode.comma, "]")
+					
+					AST.push({
+						kind: "list",
+						location: token.location,
+						elements: elements,
+					});
+				} else {
+					throw new CompileError("unexpected separator").indicator(token.location, "here");
+				}
 				break;
 			}
 			case TokenType.operator: {

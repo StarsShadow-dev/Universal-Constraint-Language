@@ -9,11 +9,13 @@ import {
 	ASTnode,
 	ScopeObject,
 	ScopeObjectType,
+	ScopeObjectType_getId,
 	ScopeObject_alias,
 	ScopeObject_complexValue,
 	ScopeObject_function,
 	ScopeObject_struct,
 	cast_ScopeObjectType,
+	is_ScopeObjectType,
 	unwrapScopeObject,
 } from "./types";
 
@@ -77,11 +79,26 @@ export function getString(value: string): ScopeObject {
 	};
 }
 
-export function getStruct(context: BuilderContext, members: ScopeObject_alias[], toBeChecked: boolean): ScopeObject_struct {
+export function getInAlias(name: string, value: ScopeObject): ScopeObject_alias {
+	return {
+		kind: "alias",
+		originLocation: "builtin",
+		isAfield: false,
+		name: name,
+		symbolName: "",
+		value: value,
+		valueAST: null,
+	};
+}
+
+export function getStruct(context: BuilderContext, members: ScopeObject_alias[], toBeChecked: boolean, id?: string): ScopeObject_struct {
+	if (!id) {
+		id = `${getNextSymbolName(context)}`
+	}
 	return {
 		kind: "struct",
 		originLocation: "builtin",
-		id: `${getNextSymbolName(context)}`,
+		id: id,
 		preIdType: null,
 		toBeChecked: toBeChecked,
 		fields: [],
@@ -203,6 +220,16 @@ class FC {
 		}
 	}
 	
+	public type(): ScopeObjectType {
+		const type = this.forward();
+		
+		if (!is_ScopeObjectType(type)) {
+			throw utilities.TODO();
+		}
+		
+		return type;
+	}
+	
 	public next(): ScopeObject {
 		const scopeObject = this.scopeObjects[this.i];
 		return scopeObject;
@@ -222,6 +249,12 @@ class FC {
 				.indicator(node.location, "expected no more arguments");
 		}
 	}
+}
+
+export function type_List(context: BuilderContext, T: ScopeObjectType): ScopeObjectType {
+	return getStruct(context, [
+		getInAlias("T", T),
+	], false, `List(${ScopeObjectType_getId(T)})`);
 }
 
 export function builtinCall(context: BuilderContext, node: ASTnode, callArguments: ScopeObject[], argumentText: string[]): ScopeObject | undefined {
@@ -264,6 +297,13 @@ export function builtinCall(context: BuilderContext, node: ASTnode, callArgument
 			context.compilerStage = oldCompilerStage;
 			
 			return getStruct(context, newContext.scope.levels[0] as ScopeObject_alias[], false);
+		}
+		
+		else if (node.name == "List") {
+			const type = fc.type();
+			fc.done();
+			
+			return type_List(context, type);
 		}
 		
 		else {

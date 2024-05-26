@@ -64,6 +64,9 @@ export type ASTnode = genericASTnode & {
 	kind: "identifier",
 	name: string,
 } | genericASTnode & {
+	kind: "list",
+	elements: ASTnode[],
+} | genericASTnode & {
 	kind: "call",
 	left: ASTnode,
 	callArguments: ASTnode[],
@@ -277,6 +280,10 @@ export type ScopeObject = GenericScopeObject & {
 } | GenericScopeObject & {
 	kind: "string",
 	value: string,
+} | GenericScopeObject & {
+	kind: "list",
+	type: ScopeObjectType,
+	elements: ScopeObject[],
 } |
 ScopeObject_enumCase |
 ScopeObject_complexValue |

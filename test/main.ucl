@@ -1,15 +1,8 @@
-Maybe = fn(T: Type): Type {
-	enum {
-		none
-		some = struct(value: T) {}
-	}
-}
-// @compDebug(Maybe(String))
+@compDebug(@List(String).T)
+@compDebug([1, 2])
 
-main = fn(): Maybe(String) {
-	// Maybe(String).none
-	Maybe(String).some {
-		value = "a string!!!"
-	}
+test = fn(): @List(String) {
+	["hello", "world"]
 }
-@compDebug(main())
+@compDebug(test())
+// @compDebug(test()[0])

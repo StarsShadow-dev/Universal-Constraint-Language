@@ -1,7 +1,7 @@
 import utilities from "./utilities";
 import codeGen from "./codeGen";
 import { Indicator, CompileError } from "./report";
-import { builtinScopeLevel, builtinCall, getComplexValueFromString } from "./builtin";
+import { builtinScopeLevel, builtinCall, getComplexValueFromString, type_List } from "./builtin";
 import { BuilderContext, BuilderOptions, CompilerStage } from "./compiler";
 import {
 	SourceLocation,
@@ -62,6 +62,8 @@ function getTypeOf(context: BuilderContext, scopeObject: ScopeObject): ScopeObje
 		return cast_ScopeObjectType(getAlias(context, "Number"));
 	} else if (scopeObject.kind == "string") {
 		return cast_ScopeObjectType(getAlias(context, "String"));
+	} else if (scopeObject.kind == "list") {
+		return type_List(context, scopeObject.type);
 	} else if (scopeObject.kind == "function") {
 		return cast_ScopeObjectType(scopeObject);
 	} else if (scopeObject.kind == "complexValue") {
@@ -632,6 +634,35 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				} else {
 					throw new CompileError(`alias '${node.name}' does not exist`).indicator(node.location, "here");
 				}
+				break;
+			}
+			case "list": {
+				let type: ScopeObject | null = null;
+				const elements = build(context, node.elements, null, null, false, false, "no");
+				
+				for (let i = 0; i < elements.length; i++) {
+					const element = elements[i];
+					const elementType = getTypeOf(context, element);
+					if (type) {
+						expectType(context, type, elementType,
+							new CompileError(`expected type $expectedTypeName but got type $actualTypeName`)
+								.indicator(element.originLocation, "element here")
+						);
+					} else {
+						type = elementType;
+					}
+				}
+				
+				if (!type) {
+					throw utilities.unreachable();
+				}
+				
+				addToScopeList({
+					kind: "list",
+					originLocation: node.location,
+					type: type,
+					elements: elements,
+				});
 				break;
 			}
 			case "call": {
@@ -1443,7 +1474,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 				}
 				
-				const struct: ScopeObject = {
+				const structInstance: ScopeObject = {
 					kind: "structInstance",
 					originLocation: node.location,
 					caseName: caseName,
@@ -1452,10 +1483,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					fields: fieldValues,
 				};
 				
-				addToScopeList(struct);
+				addToScopeList(structInstance);
 				
 				if (doCodeGen(context)) {
-					codeGen.struct(context.options.codeGenText, context, struct, fieldText);
+					codeGen.struct(context.options.codeGenText, context, structInstance, fieldText);
 				}
 				
 				break;
