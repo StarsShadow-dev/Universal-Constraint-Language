@@ -1,13 +1,13 @@
 // @compDebug(@List(String).T)
 // @compDebug([1, 2])
 
-test = fn(): @List(String) {
-	["start", "hello", "world", "end"]
-}
-// @compDebug(test())
+// test = fn(): @List(String) {
+// 	["start", "hello", "world", "end"]
+// }
+// ishello = fn(string: String): Bool {
+// 	string == "hello"
+// }
 
-ishello = fn(string: String): Bool {
-	string == "hello"
-}
+// @compDebug(test().map(ishello))
 
-@compDebug(test().map(ishello))
+@compDebug(String != Number)

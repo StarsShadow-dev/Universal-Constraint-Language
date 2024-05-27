@@ -985,6 +985,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								originLocation: node.location,
 								value: left.value == right.value,
 							});
+						} else if (left.kind == "struct" && right.kind == "struct") {
+							addToScopeList({
+								kind: "bool",
+								originLocation: node.location,
+								value: ScopeObjectType_getId(left) == ScopeObjectType_getId(right),
+							});
 						} else {
 							utilities.TODO();
 						}
@@ -1000,6 +1006,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 								kind: "bool",
 								originLocation: node.location,
 								value: left.value != right.value,
+							});
+						} else if (left.kind == "struct" && right.kind == "struct") {
+							addToScopeList({
+								kind: "bool",
+								originLocation: node.location,
+								value: ScopeObjectType_getId(left) != ScopeObjectType_getId(right),
 							});
 						} else {
 							utilities.TODO();
