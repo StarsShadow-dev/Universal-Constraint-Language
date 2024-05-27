@@ -285,7 +285,7 @@ class FC {
 
 export function type_List(context: BuilderContext, T: ScopeObjectType): ScopeObjectType {
 	let listType = getStruct(context, [
-		getInAlias("T", T),
+		getInAlias("T", unwrapScopeObject(T)),
 	], false, `List(${ScopeObjectType_getId(T)})`);
 	
 	listType.members.push(getInAlias("map", getFunction(context, [
