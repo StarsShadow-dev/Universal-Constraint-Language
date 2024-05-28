@@ -1,0 +1,3 @@
+// compSucceed
+
+Test = struct(next: Test) {}
