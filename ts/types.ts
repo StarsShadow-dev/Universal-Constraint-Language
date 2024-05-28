@@ -5,14 +5,14 @@
 import { BuilderContext } from "./compiler";
 import utilities from "./utilities";
 
-export type SourceLocation = {
+export type SourceLocation = "builtin" | {
 	path: string,
 	line: number,
 	startColumn: number,
 	endColumn: number,
-} | "builtin"
+};
 
-export type CodeGenText = string[] | null
+export type CodeGenText = string[] | null;
 
 export function getCGText(): string[] {
 	return [];
@@ -93,7 +93,6 @@ export type ASTnode = genericASTnode & {
 	forceInline: boolean,
 	functionArguments: ASTnode[],
 	returnType: ASTnode & { kind: "typeUse" },
-	comptimeReturn: boolean,
 	codeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "struct",
@@ -162,15 +161,21 @@ export type ScopeObject_alias = GenericScopeObject & {
 
 export type ScopeObjectType = ScopeObject_function |
 ScopeObject_struct |
+ScopeObject_typeHole |
 ScopeObject_enum |
-(ScopeObject_alias);
+ScopeObject_alias;
 export function is_ScopeObjectType(scopeObject: ScopeObject): scopeObject is ScopeObjectType {
 	if (
 		scopeObject.kind == "function" ||
 		scopeObject.kind == "struct" ||
+		scopeObject.kind == "typeHole" ||
 		scopeObject.kind == "enum" ||
-		(scopeObject.kind == "alias")
+		scopeObject.kind == "alias"
 	) {
+		if (scopeObject.kind == "alias") {
+			return scopeObject.value != null &&
+			(is_ScopeObjectType(scopeObject.value) || scopeObject.value.kind == "enumCase");
+		}
 		return true;
 	} else {
 		return false;
@@ -225,6 +230,7 @@ export function ScopeObjectType_getId(type: ScopeObjectType): string {
 export type ScopeObject_function = GenericScopeObject & GenericScopeObjectType & {
 	kind: "function",
 	forceInline: boolean,
+	forceComptime: boolean,
 	external: boolean,
 	toBeGenerated: boolean,
 	toBeChecked: boolean,
@@ -232,7 +238,6 @@ export type ScopeObject_function = GenericScopeObject & GenericScopeObjectType &
 	indentation: number,
 	functionArguments: ScopeObject_argument[],
 	returnType: ScopeObjectType,
-	comptimeReturn: boolean,
 	AST: ASTnode[],
 	visible: ScopeObject_alias[],
 	implementationOverride: ((context: BuilderContext, args: ScopeObject[]) => ScopeObject) | null,
@@ -244,6 +249,10 @@ export type ScopeObject_struct = GenericScopeObject & GenericScopeObjectType & {
 	fields: ScopeObject_argument[],
 	members: ScopeObject_alias[],
 	// conformsTo: ScopeObjectType[],
+};
+
+export type ScopeObject_typeHole = GenericScopeObject & GenericScopeObjectType & {
+	kind: "typeHole",
 };
 
 // TODO: rm this? move to structInstance?
@@ -293,6 +302,7 @@ ScopeObject_alias |
 ScopeObject_function | 
 ScopeObject_argument | 
 ScopeObject_struct |
+ScopeObject_typeHole |
 ScopeObject_enum |
 GenericScopeObject & {
 	kind: "structInstance",

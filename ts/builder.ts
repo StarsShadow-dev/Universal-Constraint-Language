@@ -1,7 +1,7 @@
 import utilities from "./utilities";
 import codeGen from "./codeGen";
 import { Indicator, CompileError } from "./report";
-import { builtinScopeLevel, builtinCall, getComplexValueFromString, type_List } from "./builtin";
+import { builtinScopeLevel, builtinCall, getComplexValueFromString, type_List, getStruct } from "./builtin";
 import { BuilderContext, BuilderOptions, CompilerStage } from "./compiler";
 import {
 	SourceLocation,
@@ -25,8 +25,8 @@ function doCodeGen(context: BuilderContext): boolean {
 	return !context.options.compileTime;
 }
 
-export function getNextSymbolName(context: BuilderContext) {
-	return `${context.nextSymbolName++}:${context.file.path}`;
+export function getNextId(context: BuilderContext) {
+	return `${context.nextId++}:${context.file.path}`;
 }
 
 export function getTypeText(type: ScopeObjectType) {
@@ -238,11 +238,35 @@ export function callFunction(
 	if (!callArguments && comptime) utilities.unreachable();
 	
 	if (functionToCall.kind == "function") {
-		if (functionToCall.hadError) return {
-			kind: "complexValue",
-			originLocation: location,
-			type: functionToCall.returnType,
-		};
+		let argumentNameText = "";
+		if (callArguments) {
+			let nameTextList = [];
+			for (let i = 0; i < callArguments.length; i++) {
+				const arg = callArguments[i];
+				const text = getNameText(arg);
+				if (text) {
+					nameTextList.push(text);
+				}
+			}
+			argumentNameText = nameTextList.join(", ");
+		}
+		
+		if (functionToCall.hadError || context.disableDependencyEvaluation) {
+			if (ScopeObjectType_getId(functionToCall.returnType) == "builtin:Type") {
+				return {
+					kind: "typeHole",
+					originLocation: location,
+					id: `(${argumentNameText})`,
+					preIdType: functionToCall,
+				};
+			} else {
+				return {
+					kind: "complexValue",
+					originLocation: location,
+					type: functionToCall.returnType,
+				};
+			}
+		}
 		
 		if (callArguments) {
 			if (callArguments.length > functionToCall.functionArguments.length) {
@@ -256,7 +280,7 @@ export function callFunction(
 			}
 		}
 		
-		if (functionToCall.returnType && functionToCall.comptimeReturn) {
+		if (functionToCall.returnType && functionToCall.forceComptime) {
 			comptime = true;
 		}
 		
@@ -283,19 +307,6 @@ export function callFunction(
 		let result: ScopeObject | undefined;
 		
 		if (toBeAnalyzedHere) {
-			let argumentNameText = "";
-			if (callArguments) {
-				let nameTextList = [];
-				for (let i = 0; i < callArguments.length; i++) {
-					const arg = callArguments[i];
-					const text = getNameText(arg);
-					if (text) {
-						nameTextList.push(text);
-					}
-				}
-				argumentNameText = nameTextList.join(", ");
-			}
-			
 			const oldScope = context.file.scope;
 			const oldGeneratingFunction = oldScope.generatingFunction;
 			context.file.scope = {
@@ -340,11 +351,16 @@ export function callFunction(
 							valueAST: null,
 						});
 					} else {
-						let value: ScopeObject = {
-							kind: "complexValue",
-							originLocation: argument.originLocation,
-							type: argument.type,
-						};
+						let value: ScopeObject;
+						if (ScopeObjectType_getId(argument.type) == "builtin:Type") {
+							value = getStruct(context, [], false, `typeArg:${getNextId(context)}`);
+						} else {
+							value = {
+								kind: "complexValue",
+								originLocation: argument.originLocation,
+								type: argument.type,
+							};
+						}
 						addAlias(context, context.file.scope.currentLevel + 1, {
 							kind: "alias",
 							originLocation: argument.originLocation,
@@ -559,28 +575,48 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
-			function buildValue() {
+			function buildValue(alias: ScopeObject_alias) {
 				if (node.kind != "definition") {
 					throw utilities.unreachable();
 				}
 				
-				const value = unwrapScopeObject(build(context, [node.value], {
+				// exists pass
+				if (!context.disableDependencyEvaluation) {
+					context.disableDependencyEvaluation = true;
+					alias.value = unwrapScopeObject(build(context, [node.value], {
+						codeGenText: null,
+						compileTime: context.options.compileTime,
+					}, null, false, false, "no")[0]);
+					context.disableDependencyEvaluation = false;
+				}
+				
+				// dependency pass
+				if (context.compilerStage >= CompilerStage.evaluateAliasDependencies) {
+					const oldCompilerStage = context.compilerStage;
+					context.compilerStage = CompilerStage.evaluateAliasDependencies;
+					alias.value = unwrapScopeObject(build(context, [node.value], {
+						codeGenText: null,
+						compileTime: context.options.compileTime,
+					}, null, false, false, "no")[0]);
+					context.compilerStage = oldCompilerStage;
+				}
+				
+				// get value pass
+				alias.value = unwrapScopeObject(build(context, [node.value], {
 					codeGenText: null,
 					compileTime: context.options.compileTime,
 				}, null, false, false, "no")[0]);
 				
-				if (value && is_ScopeObjectType(value)) {
-					if (value.kind == "alias") {
+				if (alias.value && is_ScopeObjectType(alias.value)) {
+					if (alias.value.kind == "alias") {
 						throw utilities.unreachable();
 					}
 					
-					if (!value.preIdType) {
-						value.id = `${node.name}`;
+					if (!alias.value.preIdType) {
+						alias.value.id = `${node.name}`;
 						// valueType.preIdType = ;
 					}
 				}
-				
-				return value;
 			}
 			
 			if (
@@ -592,7 +628,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				if (!alias) {
 					throw utilities.unreachable();
 				}
-				alias.value = buildValue();
+				buildValue(alias);
 			} else {
 				const newAlias: ScopeObject_alias = {
 					kind: "alias",
@@ -606,13 +642,13 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				
 				if (getLevel == "allowShadowing") {
 					if (context.compilerStage > CompilerStage.findAliases) {
-						newAlias.value = buildValue();
+						buildValue(newAlias);
 					}
 					context.file.scope.levels[context.file.scope.currentLevel].push(newAlias);
 				} else {
 					addAlias(context, context.file.scope.currentLevel, newAlias);
 					if (context.compilerStage > CompilerStage.findAliases) {
-						newAlias.value = buildValue();
+						buildValue(newAlias);
 					}
 				}
 			}
@@ -623,22 +659,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[index];
 		
 		if (node.kind == "definition") {
-			// const alias = getAlias(context, node.name, true);
-			// if (alias) {
-			// 	const valueText = getCGText();
-			// 	const value = unwrapScopeObject(build(context, [node.value], {
-			// 		codeGenText: valueText,
-			// 		compileTime: context.options.compileTime,
-			// 	}, null, false, false, "no")[0]);
-				
-			// 	if (!value) {
-			// 		throw new CompileError(`no value for definition`).indicator(node.location, "here");
-			// 	}
-				
-			// 	alias.value = value;
-			// } else {
-			// 	utilities.unreachable();
-			// }
 			continue;
 		}
 		
@@ -1073,7 +1093,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			
 			case "function": {
+				let forceComptime = false;
 				let returnType = cast_ScopeObjectType(build(context, [node.returnType.value], null, null, false, false, "no")[0]);
+				if (ScopeObjectType_getId(returnType) == "builtin:Type") {
+					forceComptime = true;
+				}
 				
 				let functionArguments: ScopeObject_argument[] = [];
 				for (let i = 0; i < node.functionArguments.length; i++) {
@@ -1084,6 +1108,9 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							codeGenText: null,
 							compileTime: true,
 						}, null, false, false, "no")[0]);
+						if (ScopeObjectType_getId(argumentType) == "builtin:Type") {
+							forceComptime = true;
+						}
 						
 						functionArguments.push({
 							kind: "argument",
@@ -1102,9 +1129,10 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				const fn: ScopeObject_function = {
 					kind: "function",
 					originLocation: node.location,
-					id: `${getNextSymbolName(context)}`,
+					id: `${getNextId(context)}`,
 					preIdType: null,
 					forceInline: node.forceInline,
+					forceComptime: forceComptime,
 					external: false,
 					toBeGenerated: true,
 					toBeChecked: true,
@@ -1112,7 +1140,6 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					indentation: 0,
 					functionArguments: functionArguments,
 					returnType: returnType,
-					comptimeReturn: node.comptimeReturn,
 					AST: node.codeBlock,
 					visible: visible,
 					implementationOverride: null,
@@ -1127,36 +1154,41 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			case "struct": {
 				let fields: ScopeObject_argument[] = [];
-				for (let i = 0; i < node.fields.length; i++) {
-					const argument = node.fields[i];
-					
-					if (argument.kind == "argument") {
-						const argumentType = cast_ScopeObjectType(build(context, [argument.type.value], {
-							codeGenText: null,
-							compileTime: true,
-						}, null, false, false, "no")[0]);
+				if (!context.disableDependencyEvaluation) {
+					for (let i = 0; i < node.fields.length; i++) {
+						const argument = node.fields[i];
 						
-						fields.push({
-							kind: "argument",
-							originLocation: argument.location,
-							comptime: argument.comptime,
-							name: argument.name,
-							type: argumentType,
-						});	
-					} else {
-						utilities.unreachable();
+						if (argument.kind == "argument") {
+							const argumentType = cast_ScopeObjectType(build(context, [argument.type.value], {
+								codeGenText: null,
+								compileTime: true,
+							}, null, false, false, "no")[0]);
+							
+							fields.push({
+								kind: "argument",
+								originLocation: argument.location,
+								comptime: argument.comptime,
+								name: argument.name,
+								type: argumentType,
+							});	
+						} else {
+							utilities.unreachable();
+						}
 					}
 				}
 				
-				const members = build(context, node.codeBlock, {
-					codeGenText: null,
-					compileTime: context.options.compileTime,
-				}, null, false, true, "yes") as ScopeObject_alias[];
+				let members: ScopeObject_alias[] = [];
+				if (!context.disableDependencyEvaluation) {
+					members = build(context, node.codeBlock, {
+						codeGenText: null,
+						compileTime: context.options.compileTime,
+					}, null, false, true, "yes") as ScopeObject_alias[];
+				}
 				
 				const struct: ScopeObject = {
 					kind: "struct",
 					originLocation: node.location,
-					id: `${getNextSymbolName(context)}`,
+					id: `${getNextId(context)}`,
 					preIdType: null,
 					toBeChecked: true,
 					fields: fields,
@@ -1168,7 +1200,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 			}
 			case "enum": {
 				let nextNumber = 0;
-				const symbolName = `${getNextSymbolName(context)}`;
+				const symbolName = `${getNextId(context)}`;
 				
 				const newEnum: ScopeObject = {
 					kind: "enum",
@@ -1345,7 +1377,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 						}
 					}
 					
-					const caseResult = build(context, caseNode.codeBlock, null, null, false, false, "no")[0];
+					const caseResult = unwrapScopeObject(build(context, caseNode.codeBlock, null, null, false, false, "no")[0]);
 					const caseResultType = getTypeOf(context, caseResult);
 					if (expectedResultType && expectedResultLocation) {
 						expectType(context, expectedResultType, caseResultType,

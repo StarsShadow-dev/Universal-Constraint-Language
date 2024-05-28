@@ -18,6 +18,7 @@ export enum ParserMode {
 	singleNoContinue,
 	singleNoOperatorContinue,
 	singleNoEqualsOperatorContinue,
+	singleNoNewInstanceContinue,
 	comma,
 }
 
@@ -245,7 +246,6 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 		forceInline: forceInline,
 		functionArguments: functionArguments,
 		returnType: returnType,
-		comptimeReturn: comptimeReturn,
 		codeBlock: codeBlock,
 	});
 }
@@ -403,7 +403,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "match") {
-					const expression = parse(context, ParserMode.singleNoContinue, "}")[0];
+					const expression = parse(context, ParserMode.singleNoNewInstanceContinue, "}")[0];
 					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
@@ -562,6 +562,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (mode == ParserMode.singleNoEqualsOperatorContinue) {
+			return AST;
+		}
+		
+		if (mode == ParserMode.singleNoNewInstanceContinue) {
 			return AST;
 		}
 		

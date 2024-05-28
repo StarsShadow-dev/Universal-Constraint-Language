@@ -65,13 +65,14 @@ export type BuilderContext = {
 	compilerOptions: CompilerOptions,
 	topCodeGenText: string[];
 	options: BuilderOptions;
-	nextSymbolName: number;
+	nextId: number;
 	exports: ScopeObject[];
 	inIndentation: boolean,
 	file: FileContext,
 	errors: CompileError[],
 	
 	compilerStage: CompilerStage,
+	disableDependencyEvaluation: boolean,
 };
 
 // file is null!
@@ -83,13 +84,14 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 			compileTime: true,
 			codeGenText: [],
 		},
-		nextSymbolName: 0,
+		nextId: 0,
 		exports: [],
 		inIndentation: true,
 		file: null as any,
 		errors: [],
 		
 		compilerStage: CompilerStage.findAliases,
+		disableDependencyEvaluation: false,
 	};
 }
 

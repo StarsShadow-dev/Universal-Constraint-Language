@@ -1,16 +1,32 @@
 // compSucceed
 
 Maybe = fn(T: Type): Type {
-	self = enum {
-		none
-		some = struct(value: T) {}
+	enum {
+		None
+		Some = struct(value: T) {}
 	}
-	self
 }
 
-test = fn(): Maybe(String) {
-	Maybe(String).some {
+maybeStringToString = fn(maybeString: Maybe(String)): String {
+	match maybeString {
+		None -> {
+			"None"
+		}
+		Some(some) -> {
+			some.value
+		}
+	}
+}
+
+test1 = fn(): Maybe(String) {
+	Maybe(String).None
+}
+
+test2 = fn(): Maybe(String) {
+	Maybe(String).Some {
 		value = "a string"
 	}
 }
-@compAssert(test().value == "a string")
+
+@compAssert(maybeStringToString(test1()) == "None")
+@compAssert(maybeStringToString(test2()) == "a string")

@@ -3,7 +3,7 @@ import path from "path";
 import utilities from "./utilities";
 import { CompilerStage, FileContext, compileFile } from "./compiler";
 import { CompileError } from "./report";
-import { callFunction, getAlias, getNextSymbolName } from "./builder";
+import { callFunction, getAlias, getNextId } from "./builder";
 import { BuilderContext } from "./compiler";
 import {
 	ASTnode,
@@ -19,6 +19,7 @@ import {
 	is_ScopeObjectType,
 	unwrapScopeObject,
 } from "./types";
+import * as byteCode from "./byteCode";
 
 let fileSystemDisabled = false;
 
@@ -94,7 +95,7 @@ export function getInAlias(name: string, value: ScopeObject): ScopeObject_alias 
 
 export function getStruct(context: BuilderContext, members: ScopeObject_alias[], toBeChecked: boolean, id?: string): ScopeObject_struct {
 	if (!id) {
-		id = `${getNextSymbolName(context)}`
+		id = `${getNextId(context)}`
 	}
 	return {
 		kind: "struct",
@@ -115,7 +116,7 @@ export function getFunction(
 	id?: string
 ): ScopeObject_function {
 	if (!id) {
-		id = `${getNextSymbolName(context)}`
+		id = `${getNextId(context)}`
 	}
 	
 	return {
@@ -123,7 +124,8 @@ export function getFunction(
 		originLocation: "builtin",
 		id: id,
 		preIdType: null,
-		forceInline: false, // TODO: forceInline?
+		forceInline: false, // TODO: forceInline and forceComptime?
+		forceComptime: false,
 		external: false,
 		toBeGenerated: true,
 		toBeChecked: false,
@@ -131,7 +133,6 @@ export function getFunction(
 		indentation: 0,
 		functionArguments: functionArguments,
 		returnType: returnType,
-		comptimeReturn: false, // TODO: comptimeReturn?
 		AST: [],
 		visible: [],
 		implementationOverride: implementation,
@@ -335,7 +336,7 @@ export function type_List(context: BuilderContext, T: ScopeObjectType): ScopeObj
 			type: callBack.returnType,
 			elements: newListElements,
 		};
-	})))
+	})));
 	
 	return listType;
 }
