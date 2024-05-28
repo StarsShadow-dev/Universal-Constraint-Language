@@ -1,0 +1,7 @@
+// compError
+// error: function argument without a type
+// tests/compError/argumentWithoutType.ucl:5 -> here
+
+f = fn(x): Number {
+	x
+}
