@@ -36,6 +36,8 @@ export enum TokenType {
 	builtinIndicator,
 	selfReference,
 	singleQuote,
+	
+	endOfFile,
 }
 
 export type Token = {

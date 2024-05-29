@@ -76,10 +76,16 @@ function forward(context: ParserContext): Token {
 	const token = context.tokens[context.i];
 	
 	if (!token) {
-		throw new CompileError("unexpected end of file").indicator(context.tokens[context.i-1].location, "last token here");
+		const endToken = context.tokens[context.i-1];
+		return {
+			type: TokenType.endOfFile,
+			text: "[end of file]",
+			location: endToken.location,
+		};
 	}
 	
 	context.i++
+	
 	return token;
 }
 
