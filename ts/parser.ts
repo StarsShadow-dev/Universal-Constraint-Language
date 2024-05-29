@@ -337,18 +337,19 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					} else if (token.text == "if") {
 						let falseCodeBlock: ASTnode[] | null = null;
 						
-						if (context.tokens[context.i]) {
-							const elseToken = next(context);
-							if (elseToken.type == TokenType.word && elseToken.text == "else") {
-								forward(context);
-								const elseOpeningBracket = forward(context);
-								if (elseOpeningBracket.type != TokenType.separator || elseOpeningBracket.text != "{") {
-									throw new CompileError("expected openingBracket for else code block")
-										.indicator(elseOpeningBracket.location, "here");
-								}
-								falseCodeBlock = parse(context, ParserMode.normal, "}");
-							}
+						const elseToken = forward(context);
+						if (elseToken.type != TokenType.word || elseToken.text != "else") {
+							throw new CompileError("expected 'else'")
+								.indicator(elseToken.location, "here")
+								.indicator(token.location, "for this if expression");
 						}
+						
+						const elseOpeningBracket = forward(context);
+						if (elseOpeningBracket.type != TokenType.separator || elseOpeningBracket.text != "{") {
+							throw new CompileError("expected openingBracket for else code block")
+								.indicator(elseOpeningBracket.location, "here");
+						}
+						falseCodeBlock = parse(context, ParserMode.normal, "}");
 						
 						AST.push({
 							kind: "if",

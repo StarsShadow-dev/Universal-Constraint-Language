@@ -3,6 +3,7 @@
 //
 
 import { BuilderContext } from "./compiler";
+import { CompileError } from "./report";
 import utilities from "./utilities";
 
 export type SourceLocation = "builtin" | {
@@ -118,7 +119,7 @@ export type ASTnode = genericASTnode & {
 	kind: "if",
 	condition: ASTnode[],
 	trueCodeBlock: ASTnode[],
-	falseCodeBlock: ASTnode[] | null,
+	falseCodeBlock: ASTnode[],
 } | genericASTnode & {
 	kind: "codeBlock",
 	comptime: boolean,
@@ -317,9 +318,13 @@ GenericScopeObject & {
 	fields: ScopeObject[],
 };
 
-export function unwrapScopeObject(scopeObject: ScopeObject | null): ScopeObject {
+export function unwrapScopeObject(scopeObject: ScopeObject | null, error?: CompileError): ScopeObject {
 	if (!scopeObject) {
-		throw utilities.unreachable();
+		if (error != undefined) {
+			throw error;
+		} else {
+			throw utilities.TODO();
+		}
 	}
 	
 	if (scopeObject.kind == "alias" && scopeObject.value) {

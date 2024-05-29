@@ -1,2 +1,9 @@
-MyList = struct(next: MyList) {}
-@compDebug(MyList)
+f = fn(n: Number): Number {
+	if (n < 2) {
+		n
+	} else {
+		f(n - 1) + f(n - 2)
+	}
+}
+
+@compDebug(f(10))

@@ -1457,43 +1457,67 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				const condition = unwrapScopeObject(_condition);
 				
+				function typeCheck(trueType: ScopeObjectType, falseType: ScopeObjectType) {
+					expectType(context, trueType, falseType,
+						new CompileError(`if got type $expectedTypeName in the true case, but got type $actualTypeName in the false case`)
+							.indicator(node.location, "here"),
+							node.location
+					);
+				}
+				
 				// If the condition is known at compile time
 				if (condition.kind == "bool") {
 					if (context.file.scope.generatingFunction) {
 						context.file.scope.generatingFunction.indentation--;
 					}
+					
 					if (condition.value) {
-						build(context, node.trueCodeBlock, null, null, resultAtRet, true, "no");
+						const trueResult = unwrapScopeObject(
+							build(context, node.trueCodeBlock, null, null, resultAtRet, true, "no")[0]
+						);
+						
+						addToScopeList(trueResult);
 					} else {
-						if (node.falseCodeBlock) {
-							build(context, node.falseCodeBlock, null, null, resultAtRet, true, "no");
-						}
+						const falseResult = unwrapScopeObject(
+							build(context, node.falseCodeBlock, null, null, resultAtRet, true, "no")[0]
+						);
+						
+						addToScopeList(falseResult);
 					}
+					
 					if (context.file.scope.generatingFunction) {
 						context.file.scope.generatingFunction.indentation++;
 					}
 				}
 				
-				// If the condition is not known at compile time, build both code blocks
+				// If the condition is not known at compile time
 				else if (condition.kind == "complexValue") {
 					const trueText = getCGText();
 					const falseText = getCGText();
-					build(context, node.trueCodeBlock, {
+					
+					const trueResult = unwrapScopeObject(build(context, node.trueCodeBlock, {
 						codeGenText: trueText,
 						compileTime: context.options.compileTime,
-					}, null, resultAtRet, true, "no");
-					if (node.falseCodeBlock) {
-						build(context, node.falseCodeBlock, {
-							codeGenText: falseText,
-							compileTime: context.options.compileTime,
-						}, null, resultAtRet, true, "no");
-					}
+					}, null, resultAtRet, true, "no")[0]);
+					const trueType = getTypeOf(context, trueResult);
+					
+					const falseResult = unwrapScopeObject(build(context, node.falseCodeBlock, {
+						codeGenText: falseText,
+						compileTime: context.options.compileTime,
+					}, null, resultAtRet, true, "no")[0]);
+					const falseType = getTypeOf(context, falseResult);
+					
+					typeCheck(trueType, falseType);
+					// trueResult and falseResult should be the same now
+					addToScopeList(trueResult);
+					
 					if (doCodeGen(context)) codeGen.if(context.options.codeGenText, context, conditionText, trueText, falseText);
 				}
 				
 				else {
 					utilities.TODO();
-				}	
+				}
+				
 				break;
 			}
 			case "codeBlock": {
