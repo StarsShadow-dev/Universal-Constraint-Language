@@ -1,0 +1,12 @@
+// compError
+// error: field 'c' should not exist
+// tests/compError/extraField.ucl:11 -> field here
+// tests/compError/extraField.ucl:6 -> the template type does not contain a field named 'c'
+
+test = struct(a: Number, b: Number) {}
+
+test {
+	a = 1
+	b = 2
+	c = 3
+}

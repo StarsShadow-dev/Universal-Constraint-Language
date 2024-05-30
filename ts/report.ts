@@ -3,7 +3,7 @@ import { CompilerOptions } from "./compiler";
 import { SourceLocation } from "./types";
 
 const lineNumberPadding = 4;
-const indicatorTextWindowSize = 2;
+const indicatorTextWindowSize = 1;
 
 export type Indicator = {
 	location: SourceLocation,

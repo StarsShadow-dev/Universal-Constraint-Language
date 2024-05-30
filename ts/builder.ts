@@ -1578,7 +1578,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					if (!fieldShouldExist) {
 						throw new CompileError(`field '${fieldValue.name}' should not exist`)
-							.indicator(fieldValue.originLocation, "field here");
+							.indicator(fieldValue.originLocation, "field here")
+							.indicator(templateType.originLocation, `the template type does not contain a field named '${fieldValue.name}'`);
 					}
 				}
 				
