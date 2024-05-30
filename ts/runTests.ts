@@ -53,7 +53,6 @@ function testFile(filePath: string) {
 	
 	const options: CompilerOptions = {
 		filePath: filePath,
-		check: true,
 		fancyErrors: false,
 	};
 	

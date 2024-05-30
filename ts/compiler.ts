@@ -32,7 +32,6 @@ export type IdeOptions = {
 
 export type CompilerOptions = {
 	filePath: string,
-	check: boolean,
 	fancyErrors: boolean,
 	
 	outputPath?: string,
@@ -101,24 +100,6 @@ export function resetFilesToCompile() {
 	filesToCompile = [];
 }
 
-function checkScopeLevel(context: BuilderContext, level: ScopeObject_alias[]) {
-	for (let i = 0; i < level.length; i++) {
-		const alias = level[i];
-		if (alias.isAfield) {
-			continue;
-		}
-		
-		if (alias.valueAST) {
-			const valueAST = alias.valueAST;
-			alias.valueAST = null;
-			const scopeList = build(context, [valueAST], {
-				codeGenText: null,
-				compileTime: true,
-			}, null, false, false, "yes");
-		}
-	}
-}
-
 export function compile(context: BuilderContext, onTokens: null | ((tokens: Token[]) => void)) {
 	let mainFile: FileContext;
 	try {
@@ -148,17 +129,6 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 		}
 		
 		// context.file = mainFile;
-		
-		// TODO
-		// const checkStart = Date.now();
-		// if (context.compilerOptions.check) {
-		// 	for (const key in filesToCompile) {
-		// 		context.file = filesToCompile[key];
-		// 		context.file.scope.currentLevel = 0;
-		// 		checkScopeLevel(context, context.file.scope.levels[0]);
-		// 	}
-		// }
-		// logger.addTime("checking", Date.now() - checkStart);
 		
 		context.compilerStage = CompilerStage.export;
 		const exportStart = Date.now();

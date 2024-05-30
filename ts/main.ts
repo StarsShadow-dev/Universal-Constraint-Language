@@ -14,7 +14,6 @@ function next(): string {
 
 const options: CompilerOptions = {
 	filePath: next(),
-	check: true,
 	fancyErrors: true,
 };
 
@@ -32,8 +31,6 @@ while (i < process.argv.length) {
 		} else {
 			utilities.TODO();
 		}
-	} else if (arg == "-noCheck") {
-		options.check = false;
 	} else if (arg == "-noFancyErrors") {
 		options.fancyErrors = false;
 	} else {

@@ -85,7 +85,7 @@ export type ASTnode = genericASTnode & {
 	right: ASTnode[],
 } | genericASTnode & {
 	kind: "definition",
-	name: string,
+	left: ASTnode,
 	value: ASTnode,
 } | genericASTnode & {
 	kind: "field",

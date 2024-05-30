@@ -1,9 +1,3 @@
-f = fn(n: Number): Number {
-	if (n < 2) {
-		n
-	} else {
-		f(n - 1) + f(n - 2)
-	}
+main = fn(): String {
+	"Hello, World!"
 }
-
-@compDebug(f(10))

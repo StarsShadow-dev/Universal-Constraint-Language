@@ -575,6 +575,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 		const node = AST[i];
 		
 		if (node.kind == "definition") {
+			if (node.left.kind != "identifier") {
+				throw utilities.TODO();
+			}
+			const definitionName = node.left.name;
+			
 			function buildValue(alias: ScopeObject_alias) {
 				if (node.kind != "definition") {
 					throw utilities.unreachable();
@@ -613,7 +618,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					}
 					
 					if (!alias.value.preIdType) {
-						alias.value.id = `${node.name}`;
+						alias.value.id = `${definitionName}`;
 						// valueType.preIdType = ;
 					}
 				}
@@ -624,7 +629,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				context.file.scope.currentLevel == 0 &&
 				context.compilerStage > CompilerStage.findAliases
 			) {
-				const alias = getAlias(context, node.name, true);
+				const alias = getAlias(context, definitionName, true);
 				if (!alias) {
 					throw utilities.unreachable();
 				}
@@ -634,8 +639,8 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 					kind: "alias",
 					originLocation: node.location,
 					isAfield: false,
-					name: node.name,
-					symbolName: node.name,
+					name: definitionName,
+					symbolName: definitionName,
 					value: null,
 					valueAST: node.value,
 				}
@@ -1235,6 +1240,11 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							
 							// name = enumeratorNode.left.name;
 						} else if (enumeratorNode.kind == "definition") {
+							if (enumeratorNode.left.kind != "identifier") {
+								throw utilities.TODO();
+							}
+							const definitionName = enumeratorNode.left.name;
+							
 							const definitionType = build(context, [enumeratorNode.value], null, null, false, false, "no")[0];
 							if (!is_ScopeObjectType(definitionType)) {
 								throw utilities.TODO();
@@ -1242,14 +1252,14 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 							
 							if (definitionType.kind != "alias") {
 								if (!definitionType.preIdType) {
-									definitionType.id = `.${enumeratorNode.name}`;
+									definitionType.id = `.${definitionName}`;
 									definitionType.preIdType = newEnum;
 								}
 							}
 							
 							types.push(definitionType);
 							
-							name = enumeratorNode.name;
+							name = definitionName;
 						} else {
 							throw utilities.unreachable();
 						}

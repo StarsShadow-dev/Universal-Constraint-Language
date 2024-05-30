@@ -134,7 +134,7 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 				return {
 					kind: "definition",
 					location: nextOperator.location,
-					name: left.name,
+					left: left,
 					value: right,
 				}
 			} else {
