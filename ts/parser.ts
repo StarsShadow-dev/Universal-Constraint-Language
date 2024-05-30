@@ -598,7 +598,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				AST.push({
 					kind: "newInstance",
-					location: next(context).location,
+					location: left.location,
 					template: {
 						kind: "typeUse",
 						location: left.location,

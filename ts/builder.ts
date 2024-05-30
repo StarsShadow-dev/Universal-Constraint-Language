@@ -1583,14 +1583,12 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				// loop over all of the templates fields, to make sure that there are not any missing fields
-				for (let e = 0; e < templateType.members.length; e++) {
-					const member = templateType.members[e];
-					if (member.isAfield) {
-						if (!fieldNames.includes(member.name)) {
-							throw new CompileError(`struct instance is missing field '${member.name}'`)
-								.indicator(node.location, "struct instance here")
-								.indicator(member.originLocation, "field originally defined here");
-						}
+				for (let e = 0; e < templateType.fields.length; e++) {
+					const field = templateType.fields[e];
+					if (!fieldNames.includes(field.name)) {
+						throw new CompileError(`struct instance is missing field '${field.name}'`)
+							.indicator(node.location, "struct instance here")
+							.indicator(field.originLocation, "field originally defined here");
 					}
 				}
 				
