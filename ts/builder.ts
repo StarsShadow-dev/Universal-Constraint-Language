@@ -1399,7 +1399,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				if (!expectedResultType || !expectedResultLocation) {
-					throw new CompileError("empty match statement")
+					throw new CompileError("empty match expression")
 						.indicator(node.location, "here")
 				}
 				
@@ -1452,7 +1452,7 @@ export function _build(context: BuilderContext, AST: ASTnode[], resultAtRet: boo
 				}
 				
 				if (!_condition) {
-					throw new CompileError("if statement is missing a condition")
+					throw new CompileError("if expression is missing a condition")
 						.indicator(node.location, "here");
 				}
 				const condition = unwrapScopeObject(_condition);

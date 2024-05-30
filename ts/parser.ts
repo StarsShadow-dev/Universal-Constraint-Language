@@ -72,6 +72,10 @@ function getOperatorPrecedence(operatorText: string): number {
 	}
 }
 
+function more(context: ParserContext): boolean {
+	return context.tokens[context.i] != undefined;
+}
+
 function forward(context: ParserContext): Token {
 	const token = context.tokens[context.i];
 	
@@ -259,6 +263,16 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): ASTnode[] {
 	let AST: ASTnode[] = [];
 	
+	function earlyReturn() {
+		if (endAt && more(context) && next(context).type == TokenType.separator && next(context).text != ",") {
+			if (next(context).text == endAt) {
+				forward(context);
+			} else {
+				utilities.TODO();
+			}
+		}
+	}
+	
 	while (context.i < context.tokens.length) {
 		let token = forward(context);
 		
@@ -319,12 +333,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 					}
 					
-					const condition = parse(context, ParserMode.single, null);
-					
-					const closingParentheses = forward(context);
-					if (closingParentheses.type != TokenType.separator || closingParentheses.text != ")") {
-						throw new CompileError("expected closingParentheses").indicator(closingParentheses.location, "here");
-					}
+					const condition = parse(context, ParserMode.single, ")");
 					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
@@ -410,7 +419,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "match") {
-					const expression = parse(context, ParserMode.singleNoNewInstanceContinue, "}")[0];
+					const expression = parse(context, ParserMode.singleNoNewInstanceContinue, null)[0];
 					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
@@ -537,6 +546,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (mode == ParserMode.singleNoContinue) {
+			earlyReturn();
 			return AST;
 		}
 		
@@ -558,21 +568,25 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (mode == ParserMode.singleNoOperatorContinue) {
+			earlyReturn();
 			return AST;
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenType.operator) {
 			if (mode == ParserMode.singleNoEqualsOperatorContinue && next(context).text == "=") {
+				earlyReturn();
 				return AST;
 			}
 			continue;
 		}
 		
 		if (mode == ParserMode.singleNoEqualsOperatorContinue) {
+			earlyReturn();
 			return AST;
 		}
 		
 		if (mode == ParserMode.singleNoNewInstanceContinue) {
+			earlyReturn();
 			return AST;
 		}
 		
@@ -598,6 +612,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (mode == ParserMode.single) {
+			earlyReturn();
 			return AST;
 		}
 		
