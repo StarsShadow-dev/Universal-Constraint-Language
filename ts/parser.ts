@@ -1,9 +1,10 @@
 import utilities from "./utilities";
 import {
-	TokenType,
+	TokenKind,
 	Token,
-	ASTnode,
+	OpCode,
 	SourceLocation,
+	OpCode_argument,
 } from "./types";
 import { CompileError } from "./report";
 
@@ -82,7 +83,7 @@ function forward(context: ParserContext): Token {
 	if (!token) {
 		const endToken = context.tokens[context.i-1];
 		return {
-			type: TokenType.endOfFile,
+			type: TokenKind.endOfFile,
 			text: "[end of file]",
 			location: endToken.location,
 		};
@@ -103,18 +104,18 @@ function next(context: ParserContext): Token {
 	return token;
 }
 
-function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: number): ASTnode {
+function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: number): OpCode {
 	if (!context.tokens[context.i]) {
 		return left;
 	}
 	
 	const nextOperator = context.tokens[context.i];
 	
-	if (nextOperator.type == TokenType.operator) {
+	if (nextOperator.type == TokenKind.operator) {
 		const nextPrecedence = getOperatorPrecedence(nextOperator.text);
 		
 		if (nextPrecedence > lastPrecedence) {
-			let right: ASTnode;
+			let right: OpCode;
 			context.i++;
 			let mode;
 			if (nextOperator.text == "=") {
@@ -132,9 +133,9 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 						.indicator(left.location, "left side here");
 				}
 				return {
-					kind: "definition",
+					kind: "alias",
 					location: nextOperator.location,
-					left: left,
+					name: left.name,
 					value: right,
 				}
 			} else {
@@ -152,28 +153,23 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 	return left;
 }
 
-function parseType(context: ParserContext): ASTnode & { kind: "typeUse" } | null {
-	let type: ASTnode & { kind: "typeUse" } | null = null;
+function parseType(context: ParserContext): OpCode | null {
+	let type: OpCode | null = null;
 	
 	const colon = next(context);
-	if (colon.type == TokenType.separator && colon.text == ":") {
+	if (colon.type == TokenKind.separator && colon.text == ":") {
 		forward(context);
 		
-		const node = parse(context, ParserMode.singleNoEqualsOperatorContinue, null)[0];
-		type = {
-			kind: "typeUse",
-			location: node.location,
-			value: node,
-		}
+		type = parse(context, ParserMode.singleNoEqualsOperatorContinue, null)[0];
 	}
 	
 	return type;
 }
 
-function parseFunctionArguments(context: ParserContext): ASTnode[] {
-	let AST: ASTnode[] = [];
+function parseFunctionArguments(context: ParserContext): OpCode_argument[] {
+	let AST: OpCode_argument[] = [];
 	
-	if (next(context).type == TokenType.separator && next(context).text == ")") {
+	if (next(context).type == TokenKind.separator && next(context).text == ")") {
 		forward(context);
 		return AST;
 	}
@@ -181,7 +177,7 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 	while (context.i < context.tokens.length) {
 		let comptime = false;
 		if (
-			next(context).type == TokenType.word &&
+			next(context).type == TokenKind.word &&
 			next(context).text == "comptime"
 		) {
 			comptime = true;
@@ -189,7 +185,7 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 		}
 		
 		const name = forward(context);
-		if (name.type != TokenType.word) {
+		if (name.type != TokenKind.word) {
 			throw new CompileError("expected name in function arguments").indicator(name.location, "here");
 		}
 		
@@ -209,9 +205,9 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 		
 		const end = forward(context);
 		
-		if (end.type == TokenType.separator && end.text == ")") {
+		if (end.type == TokenKind.separator && end.text == ")") {
 			return AST;
-		} else if (end.type == TokenType.separator && end.text == ",") {
+		} else if (end.type == TokenKind.separator && end.text == ",") {
 			continue;
 		} else {
 			throw new CompileError("expected a comma in function arguments").indicator(end.location, "here");
@@ -221,9 +217,9 @@ function parseFunctionArguments(context: ParserContext): ASTnode[] {
 	return AST;
 }
 
-function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceLocation, forceInline: boolean) {
+function parseFunction(context: ParserContext, AST: OpCode[], location: SourceLocation, forceInline: boolean) {
 	const openingParentheses = forward(context);
-	if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+	if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 		throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 	}
 	
@@ -231,7 +227,7 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 	
 	let comptimeReturn = false;
 	if (
-		next(context).type == TokenType.word &&
+		next(context).type == TokenKind.word &&
 		next(context).text == "comptime"
 	) {
 		comptimeReturn = true;
@@ -244,7 +240,7 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 	}
 	
 	const openingBracket = forward(context);
-	if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+	if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 		throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 	}
 	
@@ -260,11 +256,11 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 	});
 }
 
-export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): ASTnode[] {
-	let AST: ASTnode[] = [];
+export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): OpCode[] {
+	let OpCodes: OpCode[] = [];
 	
 	function earlyReturn() {
-		if (endAt && more(context) && next(context).type == TokenType.separator && next(context).text != ",") {
+		if (endAt && more(context) && next(context).type == TokenKind.separator && next(context).text != ",") {
 			if (next(context).text == endAt) {
 				forward(context);
 			} else {
@@ -277,12 +273,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		let token = forward(context);
 		
 		switch (token.type) {
-			case TokenType.comment: {
+			case TokenKind.comment: {
 				continue;
 			}
 			
-			case TokenType.number: {
-				AST.push({
+			case TokenKind.number: {
+				OpCodes.push({
 					kind: "number",
 					location: token.location,
 					value: Number(token.text),
@@ -290,8 +286,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				break;
 			}
 			
-			case TokenType.string: {
-				AST.push({
+			case TokenKind.string: {
+				OpCodes.push({
 					kind: "string",
 					location: token.location,
 					value: token.text,
@@ -299,9 +295,9 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				break;
 			}
 			
-			case TokenType.word: {
+			case TokenKind.word: {
 				if (token.text == "true" || token.text == "false") {
-					AST.push({
+					OpCodes.push({
 						kind: "bool",
 						location: token.location,
 						value: token.text == "true",
@@ -310,7 +306,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				else if (token.text == "field") {
 					const name = forward(context);
-					if (name.type != TokenType.word) {
+					if (name.type != TokenKind.word) {
 						throw new CompileError("expected name").indicator(name.location, "here");
 					}
 					
@@ -319,7 +315,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("a field must have a type").indicator(name.location, "here");
 					}
 					
-					AST.push({
+					OpCodes.push({
 						kind: "field",
 						location: token.location,
 						name: name.text,
@@ -329,44 +325,44 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				else if (token.text == "while" || token.text == "if") {
 					const openingParentheses = forward(context);
-					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+					if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 					}
 					
 					const condition = parse(context, ParserMode.single, ")");
 					
 					const openingBracket = forward(context);
-					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
 					
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
 					if (token.text == "while") {
-						AST.push({
+						OpCodes.push({
 							kind: "while",
 							location: token.location,
 							condition: condition,
 							codeBlock: codeBlock,
 						});	
 					} else if (token.text == "if") {
-						let falseCodeBlock: ASTnode[] | null = null;
+						let falseCodeBlock: OpCode[] | null = null;
 						
 						const elseToken = forward(context);
-						if (elseToken.type != TokenType.word || elseToken.text != "else") {
+						if (elseToken.type != TokenKind.word || elseToken.text != "else") {
 							throw new CompileError("expected 'else'")
 								.indicator(elseToken.location, "here")
 								.indicator(token.location, "for this if expression");
 						}
 						
 						const elseOpeningBracket = forward(context);
-						if (elseOpeningBracket.type != TokenType.separator || elseOpeningBracket.text != "{") {
+						if (elseOpeningBracket.type != TokenKind.separator || elseOpeningBracket.text != "{") {
 							throw new CompileError("expected openingBracket for else code block")
 								.indicator(elseOpeningBracket.location, "here");
 						}
 						falseCodeBlock = parse(context, ParserMode.normal, "}");
 						
-						AST.push({
+						OpCodes.push({
 							kind: "if",
 							location: token.location,
 							condition: condition,
@@ -379,24 +375,24 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				else if (token.text == "inline") {
 					if (next(context).text == "fn") {
 						const fnToken = forward(context);
-						parseFunction(context, AST, fnToken.location, true);
+						parseFunction(context, OpCodes, fnToken.location, true);
 					}
 				}
 				
 				else if (token.text == "struct") {
 					const openingParentheses = forward(context);
-					if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+					if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 					}
 					const fields = parseFunctionArguments(context);
 					
 					const openingBracket = forward(context);
-					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
-					AST.push({
+					OpCodes.push({
 						kind: "struct",
 						location: token.location,
 						fields: fields,
@@ -406,12 +402,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				else if (token.text == "enum") {
 					const openingBracket = forward(context);
-					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
-					AST.push({
+					OpCodes.push({
 						kind: "enum",
 						location: token.location,
 						codeBlock: codeBlock,
@@ -422,12 +418,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					const expression = parse(context, ParserMode.singleNoNewInstanceContinue, null)[0];
 					
 					const openingBracket = forward(context);
-					if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
-					AST.push({
+					OpCodes.push({
 						kind: "match",
 						location: token.location,
 						expression: expression,
@@ -436,11 +432,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "fn") {
-					parseFunction(context, AST, token.location, false);
+					parseFunction(context, OpCodes, token.location, false);
 				}
 				
 				else {
-					AST.push({
+					OpCodes.push({
 						kind: "identifier",
 						location: token.location,
 						name: token.text,
@@ -449,14 +445,14 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				break;
 			}
 			
-			case TokenType.separator: {
+			case TokenKind.separator: {
 				if (token.text == endAt) {
-					return AST;
+					return OpCodes;
 				}
 				if (token.text == "[") {
 					const elements = parse(context, ParserMode.comma, "]")
 					
-					AST.push({
+					OpCodes.push({
 						kind: "list",
 						location: token.location,
 						elements: elements,
@@ -466,25 +462,25 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				break;
 			}
-			case TokenType.operator: {
-				const left = AST[AST.length-1];
+			case TokenKind.operator: {
+				const left = OpCodes[OpCodes.length-1];
 				if (left == undefined) {
 					utilities.TODO();
 				} else {
 					if (token.text == "->") {
-						const identifier = AST.pop();
+						const identifier = OpCodes.pop();
 						if (!identifier || (identifier.kind != "identifier" && identifier.kind != "call")) {
 							throw utilities.TODO();
 						}
 						
 						const openingBracket = forward(context);
-						if (openingBracket.type != TokenType.separator || openingBracket.text != "{") {
+						if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 							throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 						}
 						const codeBlock = parse(context, ParserMode.normal, "}");
 						
 						let name = "";
-						let types: ASTnode[] = [];
+						let types: OpCode[] = [];
 						
 						if (identifier.kind == "identifier") {
 							name = identifier.name;
@@ -496,7 +492,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 							types = identifier.callArguments;
 						}
 						
-						AST.push({
+						OpCodes.push({
 							kind: "matchCase",
 							location: identifier.location,
 							name: name,
@@ -505,27 +501,27 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						});
 					} else {
 						context.i--;
-						AST.pop();
-						AST.push(parseOperators(context, left, 0));
+						OpCodes.pop();
+						OpCodes.push(parseOperators(context, left, 0));
 					}
 				}
 				break;
 			}
 			
-			case TokenType.builtinIndicator: {
+			case TokenKind.builtinIndicator: {
 				const name = forward(context);
-				if (name.type != TokenType.word) {
+				if (name.type != TokenKind.word) {
 					throw new CompileError("expected name").indicator(name.location, "here");
 				}
 				
 				const openingParentheses = forward(context);
-				if (openingParentheses.type != TokenType.separator || openingParentheses.text != "(") {
+				if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 					throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 				}
 				
 				const callArguments = parse(context, ParserMode.comma, ")");
 				
-				AST.push({
+				OpCodes.push({
 					kind: "builtinCall",
 					location: name.location,
 					name: name.text,
@@ -534,7 +530,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				break;
 			}
 			
-			case TokenType.singleQuote: {
+			case TokenKind.singleQuote: {
 				utilities.unreachable();
 				break;
 			}
@@ -547,16 +543,16 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.singleNoContinue) {
 			earlyReturn();
-			return AST;
+			return OpCodes;
 		}
 		
-		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "(") {
-			const left = AST.pop();
+		if (context.tokens[context.i] && next(context).type == TokenKind.separator && next(context).text == "(") {
+			const left = OpCodes.pop();
 			if (left != undefined) {
 				const location = forward(context).location;
 				const callArguments = parse(context, ParserMode.comma, ")");
 				
-				AST.push({
+				OpCodes.push({
 					kind: "call",
 					location: location,
 					left: left,
@@ -569,41 +565,37 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.singleNoOperatorContinue) {
 			earlyReturn();
-			return AST;
+			return OpCodes;
 		}
 		
-		if (context.tokens[context.i] && next(context).type == TokenType.operator) {
+		if (context.tokens[context.i] && next(context).type == TokenKind.operator) {
 			if (mode == ParserMode.singleNoEqualsOperatorContinue && next(context).text == "=") {
 				earlyReturn();
-				return AST;
+				return OpCodes;
 			}
 			continue;
 		}
 		
 		if (mode == ParserMode.singleNoEqualsOperatorContinue) {
 			earlyReturn();
-			return AST;
+			return OpCodes;
 		}
 		
 		if (mode == ParserMode.singleNoNewInstanceContinue) {
 			earlyReturn();
-			return AST;
+			return OpCodes;
 		}
 		
-		if (context.tokens[context.i] && next(context).type == TokenType.separator && next(context).text == "{") {
-			const left = AST.pop();
+		if (context.tokens[context.i] && next(context).type == TokenKind.separator && next(context).text == "{") {
+			const left = OpCodes.pop();
 			if (left) {
 				forward(context);
 				const codeBlock = parse(context, ParserMode.normal, "}");
 				
-				AST.push({
+				OpCodes.push({
 					kind: "newInstance",
 					location: left.location,
-					template: {
-						kind: "typeUse",
-						location: left.location,
-						value: left,
-					},
+					template: left,
 					codeBlock: codeBlock,
 				});
 			} else {
@@ -613,17 +605,17 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.single) {
 			earlyReturn();
-			return AST;
+			return OpCodes;
 		}
 		
 		if (endAt != null) {
 			const nextToken = next(context);
 			
-			if (nextToken.type == TokenType.separator) {
+			if (nextToken.type == TokenKind.separator) {
 				if (nextToken.text == ")" || nextToken.text == "}" || nextToken.text == "]") {
 					if (endAt == nextToken.text) {
 						context.i++;
-						return AST;
+						return OpCodes;
 					} else {
 						throw new CompileError("unexpected separator")
 							.indicator(nextToken.location, `expected '${endAt} but got '${nextToken.text}'`);
@@ -634,11 +626,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.comma) {
 			const comma = forward(context);
-			if (comma.type != TokenType.separator || comma.text != ",") {
+			if (comma.type != TokenKind.separator || comma.text != ",") {
 				throw new CompileError("expected a comma").indicator(comma.location, "here");
 			}
 		}
 	}
 	
-	return AST;
+	return OpCodes;
 }

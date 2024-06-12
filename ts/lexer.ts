@@ -1,4 +1,4 @@
-import { TokenType, Token } from "./types";
+import { TokenKind, Token } from "./types";
 
 function wordStart(text: string, i: number): boolean {
 	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_';
@@ -82,7 +82,7 @@ export function lex(filePath: string, text: string): Token[] {
 			if (
 				tokens.length > 0 &&
 				tokens[tokens.length - 1] &&
-				tokens[tokens.length - 1].type == TokenType.comment
+				tokens[tokens.length - 1].type == TokenKind.comment
 			) {
 				const lastComment = tokens[tokens.length - 1];
 				if (lastComment.location != "builtin" && lastComment.endLine && lastComment.endLine + 1 == line) {
@@ -93,7 +93,7 @@ export function lex(filePath: string, text: string): Token[] {
 			}
 			
 			tokens.push({
-				type: TokenType.comment,
+				type: TokenKind.comment,
 				text: str,
 				location: {
 					path: filePath,
@@ -107,7 +107,7 @@ export function lex(filePath: string, text: string): Token[] {
 		
 		else if (text[i] == "'") {
 			tokens.push({
-				type: TokenType.singleQuote,
+				type: TokenKind.singleQuote,
 				text: text[i],
 				location: {
 					path: filePath,
@@ -135,7 +135,7 @@ export function lex(filePath: string, text: string): Token[] {
 			i--;
 			
 			tokens.push({
-				type: TokenType.number,
+				type: TokenKind.number,
 				text: str,
 				location: {
 					path: filePath,
@@ -149,7 +149,7 @@ export function lex(filePath: string, text: string): Token[] {
 		else if (twoCharacterOperator(text, i)) {
 			i++;
 			tokens.push({
-				type: TokenType.operator,
+				type: TokenKind.operator,
 				text: text[i-1] + text[i],
 				location: {
 					path: filePath,
@@ -162,7 +162,7 @@ export function lex(filePath: string, text: string): Token[] {
 		
 		else if (oneCharacterOperator(text, i)) {
 			tokens.push({
-				type: TokenType.operator,
+				type: TokenKind.operator,
 				text: text[i],
 				location: {
 					path: filePath,
@@ -175,7 +175,7 @@ export function lex(filePath: string, text: string): Token[] {
 		
 		else if (separator(text, i)) {
 			tokens.push({
-				type: TokenType.separator,
+				type: TokenKind.separator,
 				text: text[i],
 				location: {
 					path: filePath,
@@ -188,7 +188,7 @@ export function lex(filePath: string, text: string): Token[] {
 		
 		else if (text[i] == "@") {
 			tokens.push({
-				type: TokenType.builtinIndicator,
+				type: TokenKind.builtinIndicator,
 				text: text[i],
 				location: {
 					path: filePath,
@@ -213,7 +213,7 @@ export function lex(filePath: string, text: string): Token[] {
 			i--;
 			
 			tokens.push({
-				type: TokenType.word,
+				type: TokenKind.word,
 				text: str,
 				location: {
 					path: filePath,
@@ -250,7 +250,7 @@ export function lex(filePath: string, text: string): Token[] {
 			}
 			
 			tokens.push({
-				type: TokenType.string,
+				type: TokenKind.string,
 				text: str,
 				location: {
 					path: filePath,

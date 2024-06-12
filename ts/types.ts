@@ -1,11 +1,3 @@
-//
-// general
-//
-
-import { BuilderContext } from "./compiler";
-import { CompileError } from "./report";
-import utilities from "./utilities";
-
 export type SourceLocation = "builtin" | {
 	path: string,
 	line: number,
@@ -13,17 +5,11 @@ export type SourceLocation = "builtin" | {
 	endColumn: number,
 };
 
-export type CodeGenText = string[] | null;
-
 export function getCGText(): string[] {
 	return [];
 }
 
-//
-// tokens
-//
-
-export enum TokenType {
+export enum TokenKind {
 	comment,
 	
 	number,
@@ -38,300 +24,112 @@ export enum TokenType {
 	singleQuote,
 	
 	endOfFile,
-}
+};
 
 export type Token = {
-	type: TokenType,
+	type: TokenKind,
 	text: string,
 	location: SourceLocation,
 	endLine?: number,
-}
+};
 
 //
-// AST
+// OpCode
 //
 
-type genericASTnode = {
+type genericOpCode = {
 	location: SourceLocation,
-}
+};
 
-export type ASTnode = genericASTnode & {
+export type OpCode_argument = genericOpCode & {
+	kind: "argument",
+	comptime: boolean,
+	name: string,
+	type: OpCode,
+};
+
+export type OpCode_function = genericOpCode & {
+	kind: "function",
+	forceInline: boolean,
+	functionArguments: OpCode_argument[],
+	returnType: OpCode,
+	codeBlock: OpCode[],
+};
+
+export type OpCode_alias = genericOpCode & {
+	kind: "alias",
+	name: string,
+	value: OpCode,
+};
+
+export type OpCode =
+genericOpCode & {
 	kind: "bool",
 	value: boolean,
-} | genericASTnode & {
+} | genericOpCode & {
 	kind: "number",
 	value: number,
-} | genericASTnode & {
+} | genericOpCode & {
 	kind: "string",
 	value: string,
-} | genericASTnode & {
+} | genericOpCode & {
 	kind: "identifier",
 	name: string,
-} | genericASTnode & {
+} | genericOpCode & {
 	kind: "list",
-	elements: ASTnode[],
-} | genericASTnode & {
+	elements: OpCode[],
+} | genericOpCode & {
 	kind: "call",
-	left: ASTnode,
-	callArguments: ASTnode[],
-} | genericASTnode & {
+	left: OpCode,
+	callArguments: OpCode[],
+} | genericOpCode & {
 	kind: "builtinCall",
 	name: string,
-	callArguments: ASTnode[],
-} | genericASTnode & {
+	callArguments: OpCode[],
+} | genericOpCode & {
 	kind: "operator",
 	operatorText: string,
-	left: ASTnode[],
-	right: ASTnode[],
-} | genericASTnode & {
-	kind: "definition",
-	left: ASTnode,
-	value: ASTnode,
-} | genericASTnode & {
+	left: OpCode[],
+	right: OpCode[],
+} | genericOpCode & {
 	kind: "field",
 	name: string,
-	type: ASTnode,
-} | genericASTnode & {
-	kind: "function",
-	forceInline: boolean,
-	functionArguments: ASTnode[],
-	returnType: ASTnode & { kind: "typeUse" },
-	codeBlock: ASTnode[],
-} | genericASTnode & {
+	type: OpCode,
+} |
+OpCode_argument |
+OpCode_function |
+genericOpCode & {
 	kind: "struct",
-	fields: ASTnode[],
-	codeBlock: ASTnode[],
-} | genericASTnode & {
+	fields: OpCode[],
+	codeBlock: OpCode[],
+} | genericOpCode & {
 	kind: "enum",
-	codeBlock: ASTnode[],
-} | genericASTnode & {
+	codeBlock: OpCode[],
+} | genericOpCode & {
 	kind: "match",
-	expression: ASTnode, // TODO: name
-	codeBlock: ASTnode[],
-} | genericASTnode & {
+	expression: OpCode, // TODO: name
+	codeBlock: OpCode[],
+} | genericOpCode & {
 	kind: "matchCase",
 	name: string,
-	types: ASTnode[],
-	codeBlock: ASTnode[],
-} | genericASTnode & {
+	types: OpCode[],
+	codeBlock: OpCode[],
+} | genericOpCode & {
 	kind: "while",
-	condition: ASTnode[],
-	codeBlock: ASTnode[],
-} | genericASTnode & {
+	condition: OpCode[],
+	codeBlock: OpCode[],
+} | genericOpCode & {
 	kind: "if",
-	condition: ASTnode[],
-	trueCodeBlock: ASTnode[],
-	falseCodeBlock: ASTnode[],
-} | genericASTnode & {
+	condition: OpCode[],
+	trueCodeBlock: OpCode[],
+	falseCodeBlock: OpCode[],
+} | genericOpCode & {
 	kind: "codeBlock",
 	comptime: boolean,
-	codeBlock: ASTnode[],
-} | genericASTnode & {
-	kind: "argument",
-	comptime: boolean,
-	name: string,
-	type: ASTnode & { kind: "typeUse" },
-} | genericASTnode & {
+	codeBlock: OpCode[],
+} | genericOpCode & {
 	kind: "newInstance",
-	template: ASTnode & { kind: "typeUse" },
-	codeBlock: ASTnode[],
-} | genericASTnode & {
-	kind: "typeUse",
-	value: ASTnode,
-}
-
-//
-// scope
-//
-
-type GenericScopeObject = {
-	originLocation: SourceLocation,
-};
-
-type GenericScopeObjectType = {
-	id: string,
-	preIdType: ScopeObjectType | null,
-};
-
-export type ScopeObject_alias = GenericScopeObject & {
-	kind: "alias",
-	isAfield: boolean,
-	name: string,
-	symbolName: string,
-	value: ScopeObject | null,
-	valueAST: ASTnode | null,
-};
-
-export type ScopeObjectType = ScopeObject_function |
-ScopeObject_struct |
-ScopeObject_typeHole |
-ScopeObject_enum |
-ScopeObject_alias;
-export function is_ScopeObjectType(scopeObject: ScopeObject): scopeObject is ScopeObjectType {
-	if (
-		scopeObject.kind == "function" ||
-		scopeObject.kind == "struct" ||
-		scopeObject.kind == "typeHole" ||
-		scopeObject.kind == "enum" ||
-		scopeObject.kind == "alias"
-	) {
-		if (scopeObject.kind == "alias") {
-			return scopeObject.value != null &&
-			(is_ScopeObjectType(scopeObject.value) || scopeObject.value.kind == "enumCase");
-		}
-		return true;
-	} else {
-		return false;
-	}
-}
-export function cast_ScopeObjectType(scopeObject: ScopeObject | null): ScopeObjectType {
-	// if (scopeObject && scopeObject.kind == "alias") {
-	// 	scopeObject = unwrapScopeObject(scopeObject);
-	// }
-	
-	if (!scopeObject || !is_ScopeObjectType(scopeObject)) {
-		throw utilities.unreachable();
-	}
-	
-	return scopeObject;
-}
-export function ScopeObjectType_getId(type: ScopeObjectType): string {
-	if (type.kind == "alias") {
-		const newtype = unwrapScopeObject(type);
-		
-		if (newtype.kind == "enumCase") {
-			if (!type.value || type.value.kind != "enumCase") {
-				throw utilities.unreachable();
-			}
-			const type0 = type.value.types[0];
-			if (!type) {
-				throw utilities.unreachable();
-			}
-			return ScopeObjectType_getId(type0);
-		}
-		
-		if (!newtype || !is_ScopeObjectType(newtype)) {
-			throw utilities.unreachable();
-		}
-		
-		type = newtype;
-	}
-	
-	if (type.kind == "alias") {
-		throw utilities.unreachable();
-	}
-	
-	let id = "";
-	if (type.preIdType) {
-		id += ScopeObjectType_getId(type.preIdType);
-	}
-	id += type.id;
-	
-	return id;
-}
-
-export type ScopeObject_function = GenericScopeObject & GenericScopeObjectType & {
-	kind: "function",
-	forceInline: boolean,
-	forceComptime: boolean,
-	external: boolean,
-	toBeGenerated: boolean,
-	toBeChecked: boolean,
-	hadError: boolean,
-	indentation: number,
-	functionArguments: ScopeObject_argument[],
-	returnType: ScopeObjectType,
-	AST: ASTnode[],
-	visible: ScopeObject_alias[],
-	implementationOverride: ((context: BuilderContext, args: ScopeObject[]) => ScopeObject) | null,
-};
-
-export type ScopeObject_struct = GenericScopeObject & GenericScopeObjectType & {
-	kind: "struct",
-	toBeChecked: boolean,
-	fields: ScopeObject_argument[],
-	members: ScopeObject_alias[],
-	// conformsTo: ScopeObjectType[],
-};
-
-export type ScopeObject_typeHole = GenericScopeObject & GenericScopeObjectType & {
-	kind: "typeHole",
-};
-
-// TODO: rm this? move to structInstance?
-export type ScopeObject_enumCase = GenericScopeObject & {
-	kind: "enumCase",
-	parent: ScopeObject_enum,
-	name: string,
-	number: number,
-	types: ScopeObjectType[],
-};
-
-export type ScopeObject_enum = GenericScopeObject & GenericScopeObjectType & {
-	kind: "enum",
-	toBeChecked: boolean,
-	enumerators: (ScopeObject_alias & { value: ScopeObject_enumCase })[],
-};
-
-export type ScopeObject_argument = GenericScopeObject & {
-	kind: "argument",
-	comptime: boolean,
-	name: string,
-	type: ScopeObjectType,
-};
-
-export type ScopeObject_complexValue = GenericScopeObject & {
-	kind: "complexValue",
-	type: ScopeObjectType,
-};
-
-export type ScopeObject = GenericScopeObject & {
-	kind: "bool",
-	value: boolean,
-} | GenericScopeObject & {
-	kind: "number",
-	value: number,
-} | GenericScopeObject & {
-	kind: "string",
-	value: string,
-} | GenericScopeObject & {
-	kind: "list",
-	type: ScopeObjectType,
-	elements: ScopeObject[],
+	template: OpCode,
+	codeBlock: OpCode[],
 } |
-ScopeObject_enumCase |
-ScopeObject_complexValue |
-ScopeObject_alias |
-ScopeObject_function | 
-ScopeObject_argument | 
-ScopeObject_struct |
-ScopeObject_typeHole |
-ScopeObject_enum |
-GenericScopeObject & {
-	kind: "structInstance",
-	caseName: string | null,
-	caseParent: ScopeObject_enum | null,
-	template: ScopeObject_struct,
-	fields: ScopeObject_alias[],
-} | GenericScopeObject & {
-	kind: "enumInstance",
-	template: ScopeObject_enum,
-	caseName: string,
-	fields: ScopeObject[],
-};
-
-export function unwrapScopeObject(scopeObject: ScopeObject | null, error?: CompileError): ScopeObject {
-	if (!scopeObject) {
-		if (error != undefined) {
-			throw error;
-		} else {
-			throw utilities.TODO();
-		}
-	}
-	
-	if (scopeObject.kind == "alias" && scopeObject.value) {
-		return scopeObject.value;
-	}
-	
-	return scopeObject;	
-}
+OpCode_alias;

@@ -1,23 +1,19 @@
 import utilities from "./utilities";
 import logger from "./logger";
-import codeGen from "./codeGen";
 import { lex } from "./lexer";
-import { build, callFunction } from "./builder";
 import { CompileError } from "./report";
 import {
 	ParserMode,
 	parse,
 } from './parser';
 import {
-	ASTnode,
-	CodeGenText,
-	ScopeObject,
-	ScopeObject_alias,
-	ScopeObject_function,
+	OpCode,
+	OpCode_alias,
+	OpCode_function,
 	Token,
 	getCGText,
-	unwrapScopeObject,
 } from "./types";
+import { getAlias, build } from "./builder";
 
 export enum CompilerStage {
 	findAliases = 0,
@@ -39,33 +35,29 @@ export type CompilerOptions = {
 }
 
 export type ScopeInformation = {
-	levels: ScopeObject_alias[][];
-	currentLevel: number;
+	levels: OpCode[][],
+	currentLevel: number,
 
-	function: ScopeObject_function | null;
+	function: OpCode_function | null,
 	functionArgumentNameText: string,
-
-	// the function that is being generated
-	generatingFunction: ScopeObject_function | null;
 };
 
 export type BuilderOptions = {
 	compileTime: boolean;
-	codeGenText: CodeGenText;
+	byteCode: null;
 };
 
 export type FileContext = {
-	path: string;
-	scope: ScopeInformation;
-	AST: ASTnode[],
-}
+	path: string,
+	scope: ScopeInformation,
+	opCodes: OpCode[],
+};
 
 export type BuilderContext = {
 	compilerOptions: CompilerOptions,
-	topCodeGenText: string[];
-	options: BuilderOptions;
-	nextId: number;
-	exports: ScopeObject[];
+	topCodeGenText: string[],
+	options: BuilderOptions,
+	nextId: number,
 	inIndentation: boolean,
 	file: FileContext,
 	errors: CompileError[],
@@ -81,10 +73,9 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 		topCodeGenText: getCGText(),
 		options: {
 			compileTime: true,
-			codeGenText: [],
+			byteCode: null,
 		},
 		nextId: 0,
-		exports: [],
 		inIndentation: true,
 		file: null as any,
 		errors: [],
@@ -106,40 +97,10 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 		context.compilerStage = CompilerStage.findAliases;
 		mainFile = compileFile(context, context.compilerOptions.filePath, onTokens);
 		
-		context.compilerStage = CompilerStage.evaluateAliasDependencies;
-		for (let i = 0; i < filesToCompile.length; i++) {
-			context.file = filesToCompile[i];
-			// context.file.scope.levels[0] = [];
-			const scopeList = build(context, filesToCompile[i].AST, {
-				codeGenText: null,
-				compileTime: true,
-			}, null, false, false, "yes");
-			context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
-		}
-		
-		context.compilerStage = CompilerStage.evaluateAll;
-		for (let i = 0; i < filesToCompile.length; i++) {
-			context.file = filesToCompile[i];
-			// context.file.scope.levels[0] = [];
-			const scopeList = build(context, filesToCompile[i].AST, {
-				codeGenText: null,
-				compileTime: true,
-			}, null, false, false, "yes");
-			context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
-		}
-		
-		// context.file = mainFile;
-		
-		context.compilerStage = CompilerStage.export;
-		const exportStart = Date.now();
-		codeGen.start(context);
-		for (let i = 0; i < context.exports.length; i++) {
-			const toExport = context.exports[i];
-			if (toExport.kind == "function") {
-				callFunction(context, toExport, null, "builtin", false, null, null, null);
-			}
-		}
-		logger.addTime("exporting", Date.now() - exportStart);
+		// const main = getAlias(mainFile.opCodes, "main");
+		// if (main) {
+		// 	debugger;
+		// }
 	} catch (error) {
 		if (error instanceof CompileError) {
 			context.errors.push(error);
@@ -169,9 +130,8 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 			currentLevel: -1,
 			function: null,
 			functionArgumentNameText: "",
-			generatingFunction: null,
 		},
-		AST: [],
+		opCodes: [],
 	};
 	context.file = newFile;
 	filesToCompile.push(newFile);
@@ -189,20 +149,14 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	}
 	
 	const parseStart = Date.now();
-	newFile.AST = parse({
+	newFile.opCodes = parse({
 		tokens: tokens,
 		i: 0,
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
-	// console.log(`AST '${filePath}':`, JSON.stringify(newFile.AST, undefined, 4));
+	console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
-	const scopeList = build(context, newFile.AST, {
-		codeGenText: null,
-		compileTime: true,
-	}, null, false, false, "yes");
-	context.file.scope.levels[0] = scopeList as ScopeObject_alias[];
-	
-	// console.log("scopeList:", JSON.stringify(scopeList, undefined, 4));
+	build(context, newFile.opCodes);
 	
 	context.file = oldFile;
 	return newFile;

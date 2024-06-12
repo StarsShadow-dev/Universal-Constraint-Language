@@ -1,3 +1,6 @@
+// MainRetType = String
+
 main = fn(): String {
-	"Hello, World!"
+	// "Hello, World!"
+	13
 }

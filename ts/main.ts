@@ -2,7 +2,6 @@
 
 import utilities from "./utilities";
 import logger from "./logger";
-import { setUpBuiltin } from "./builtin";
 import { CompilerOptions, compile, newBuilderContext } from "./compiler";
 import { printErrors } from "./report";
 
@@ -42,7 +41,6 @@ logger.global("options:", options);
 
 const context = newBuilderContext(options);
 
-setUpBuiltin(false);
 compile(context, null);
 if (context.errors.length == 0) {
 	if (options.outputPath) {
