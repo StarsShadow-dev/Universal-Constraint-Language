@@ -395,6 +395,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					OpCodes.push({
 						kind: "struct",
 						location: token.location,
+						id: `${JSON.stringify(token.location)}`,
 						fields: fields,
 						codeBlock: codeBlock,
 					});
@@ -410,6 +411,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					OpCodes.push({
 						kind: "enum",
 						location: token.location,
+						id: `${JSON.stringify(token.location)}`,
 						codeBlock: codeBlock,
 					});
 				}

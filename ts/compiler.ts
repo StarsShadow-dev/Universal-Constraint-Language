@@ -13,7 +13,7 @@ import {
 	Token,
 	getCGText,
 } from "./types";
-import { getAlias, build } from "./builder";
+import { getAliasFromList, build } from "./builder";
 
 export enum CompilerStage {
 	findAliases = 0,

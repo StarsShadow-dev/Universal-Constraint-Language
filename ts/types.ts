@@ -1,3 +1,5 @@
+import utilities from "./utilities";
+
 export type SourceLocation = "builtin" | {
 	path: string,
 	line: number,
@@ -40,6 +42,36 @@ export type Token = {
 type genericOpCode = {
 	location: SourceLocation,
 };
+
+type genericOpCodeType = genericOpCode & {
+	id: string,
+};
+
+export type OpCodeType = genericOpCodeType & {
+	kind: "struct",
+	fields: OpCode[],
+	codeBlock: OpCode[],
+} | genericOpCodeType & {
+	kind: "enum",
+	codeBlock: OpCode[],
+};
+export function OpCode_isAtype(opCode: OpCode): opCode is OpCodeType {
+	if (opCode.kind == "struct" || opCode.kind == "enum") {
+		return true;
+	} else {
+		return false;
+	}
+}
+export function OpCode_castType(opCode: OpCode): OpCodeType {
+	if (OpCode_isAtype(opCode)) {
+		return opCode;
+	} else {
+		throw utilities.unreachable();
+	}
+}
+export function OpCodeType_getName(opCode: OpCodeType): string {
+	return `'${opCode.id}'`;
+}
 
 export type OpCode_argument = genericOpCode & {
 	kind: "argument",
@@ -96,16 +128,9 @@ genericOpCode & {
 	name: string,
 	type: OpCode,
 } |
+OpCodeType |
 OpCode_argument |
-OpCode_function |
-genericOpCode & {
-	kind: "struct",
-	fields: OpCode[],
-	codeBlock: OpCode[],
-} | genericOpCode & {
-	kind: "enum",
-	codeBlock: OpCode[],
-} | genericOpCode & {
+OpCode_function | genericOpCode & {
 	kind: "match",
 	expression: OpCode, // TODO: name
 	codeBlock: OpCode[],
