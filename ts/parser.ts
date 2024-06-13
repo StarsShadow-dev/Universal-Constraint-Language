@@ -143,8 +143,8 @@ function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: nu
 					kind: "operator",
 					location: nextOperator.location,
 					operatorText: nextOperator.text,
-					left: [left],
-					right: [right],
+					left: left,
+					right: right,
 				}
 			}
 		}

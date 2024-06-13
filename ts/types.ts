@@ -128,8 +128,8 @@ OpCode_builtinCall |
 genericOpCode & {
 	kind: "operator",
 	operatorText: string,
-	left: OpCode[],
-	right: OpCode[],
+	left: OpCode,
+	right: OpCode,
 } | genericOpCode & {
 	kind: "field",
 	name: string,

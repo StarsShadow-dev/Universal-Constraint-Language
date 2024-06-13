@@ -43,7 +43,6 @@ export type CompilerOptions = {
 
 export type ScopeInformation = {
 	levels: OpCode[][],
-	currentLevel: number,
 
 	function: OpCode_function | null,
 	functionArgumentNameText: string,
@@ -124,7 +123,6 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 		path: filePath,
 		scope: {
 			levels: [],
-			currentLevel: -1,
 			function: null,
 			functionArgumentNameText: "",
 		},

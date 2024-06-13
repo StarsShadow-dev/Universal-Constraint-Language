@@ -53,6 +53,10 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 			return castToValue(getAliasFromList(builtinTypes, "String"));
 		}
 		
+		case "struct": {
+			return castToValue(getAliasFromList(builtinTypes, "Type"));
+		}
+		
 		default: {
 			throw utilities.TODO();
 		}
@@ -79,7 +83,6 @@ function expectType(
 
 export function buildBlock(context: BuilderContext, opCodes: OpCode[]): OpCode {
 	context.file.scope.levels.push(opCodes);
-	context.file.scope.currentLevel++;
 	
 	let lastOp: OpCode | null = null;
 	
@@ -108,9 +111,21 @@ export function buildBlock(context: BuilderContext, opCodes: OpCode[]): OpCode {
 	}
 	
 	context.file.scope.levels.pop();
-	context.file.scope.currentLevel--;
 	return lastOp;
 }
+
+// export function buildNewLevel(context: BuilderContext, opCode: OpCode, levels: OpCode[][]): OpCode {
+// 	const oldScope = context.file.scope;
+// 	context.file.scope = {
+// 		levels: levels,
+// 		function: null,
+// 		functionArgumentNameText: "",
+// 	};
+// 	const result = build(context, opCode);
+// 	context.file.scope = oldScope;
+	
+// 	return result;
+// }
 
 export function build(context: BuilderContext, opCode: OpCode): OpCode {
 	switch (opCode.kind) {
@@ -128,8 +143,36 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 			
 			break;
 		}
+		case "struct": {
+			if (opCode.codeBlock.length > 0) {
+				buildBlock(context, opCode.codeBlock);
+			}
+			break;
+		}
+		case "operator": {
+			if (opCode.operatorText == ".") {
+				if (opCode.right.kind != "identifier") {
+					throw utilities.TODO();
+				}
+				
+				const left = build(context, opCode.left);
+				if (left.kind != "struct") {
+					throw utilities.TODO();
+				}
+				const name = opCode.right.name;
+				
+				const alias = getAliasFromList(left.codeBlock, name);
+				if (!alias) {
+					throw utilities.TODO();
+				}
+				
+				const value = build(context, alias.value);
+				return value;
+			}
+			break;
+		}
 		case "alias": {
-			build(context, opCode.value);
+			opCode.value = build(context, opCode.value);
 			
 			break;
 		}
@@ -147,6 +190,7 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 				error.indicator(result.location, "actual type from here");
 			});
 			
+			opCode.returnType = returnType;
 			break;
 		}
 		case "if": {

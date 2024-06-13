@@ -1,5 +1,8 @@
-MainRetType = String
-
-main = fn(): MainRetType {
-	"Hello, World!"
+test = struct() {
+	retType = String
+	inTest = fn(): retType {
+		"Hello, World!"
+	}
 }
+
+main = test.inTest

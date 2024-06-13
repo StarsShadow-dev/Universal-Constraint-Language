@@ -20,6 +20,7 @@ function makePrimitiveTypeAlias(name: string): OpCode_alias {
 }
 
 export const builtinTypes: OpCode_alias[] = [
+	makePrimitiveTypeAlias("Type"),
 	makePrimitiveTypeAlias("Bool"),
 	makePrimitiveTypeAlias("Number"),
 	makePrimitiveTypeAlias("String"),
