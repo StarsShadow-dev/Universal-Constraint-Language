@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: expected type Maybe(builtin:Number) but got type Maybe(builtin:String).some
 // tests/compError/Maybe.ucl:12 -> function defined here

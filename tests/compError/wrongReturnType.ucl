@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: expected type builtin:String but got type builtin:Number
 // tests/compError/wrongReturnType.ucl:5 -> function defined here

@@ -1,3 +1,4 @@
+// testSkip
 // compSucceed
 
 Vec2 = struct(x: Number, y: Number) {

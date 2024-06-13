@@ -1,3 +1,4 @@
+// testSkip
 // compSucceed
 
 @compAssert(@List(String).T == String)

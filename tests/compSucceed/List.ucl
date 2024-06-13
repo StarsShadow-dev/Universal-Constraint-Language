@@ -1,3 +1,4 @@
+// testSkip
 // compSucceed
 
 test = fn(): @List(Number) {

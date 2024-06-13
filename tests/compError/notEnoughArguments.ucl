@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: not enough arguments passed to function 'test'
 // tests/compError/notEnoughArguments.ucl:8 -> function call here

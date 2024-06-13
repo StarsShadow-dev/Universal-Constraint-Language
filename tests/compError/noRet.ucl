@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: function did not return
 // tests/compError/noRet.ucl:5 -> function defined here

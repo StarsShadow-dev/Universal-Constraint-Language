@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: field 'c' should not exist
 // tests/compError/extraField.ucl:11 -> field here

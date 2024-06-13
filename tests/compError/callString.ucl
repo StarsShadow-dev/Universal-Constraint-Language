@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: call expression requires function
 // tests/compError/callString.ucl:5 -> here

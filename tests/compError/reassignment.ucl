@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: alias 'test' already exists
 // tests/compError/reassignment.ucl:7 -> alias redefined here

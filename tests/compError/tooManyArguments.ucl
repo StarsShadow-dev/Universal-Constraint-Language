@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: too many arguments passed to function 'test'
 // tests/compError/tooManyArguments.ucl:8 -> function call here

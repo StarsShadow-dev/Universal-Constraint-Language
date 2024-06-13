@@ -163,7 +163,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
 	buildBlock(context, newFile.opCodes);
-	console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
+	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
 	context.file = oldFile;
 	return newFile;

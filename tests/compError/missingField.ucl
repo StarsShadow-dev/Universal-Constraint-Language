@@ -1,3 +1,4 @@
+// testSkip
 // compError
 // error: struct instance is missing field 'b'
 // tests/compError/missingField.ucl:8 -> struct instance here

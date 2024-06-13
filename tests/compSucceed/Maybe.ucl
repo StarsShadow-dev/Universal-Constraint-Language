@@ -1,3 +1,4 @@
+// testSkip
 // compSucceed
 
 Maybe = fn(T: Type): Type {

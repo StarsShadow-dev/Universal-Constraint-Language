@@ -330,6 +330,9 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					}
 					
 					const condition = parse(context, ParserMode.single, ")")[0];
+					if (!condition) {
+						throw new CompileError("if expression is missing a condition").indicator(token.location, "here");
+					}
 					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {

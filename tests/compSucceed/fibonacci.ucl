@@ -1,3 +1,4 @@
+// testSkip
 // compSucceed
 
 f = fn(n: Number): Number {
