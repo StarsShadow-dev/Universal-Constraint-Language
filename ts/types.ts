@@ -47,6 +47,12 @@ type genericOpCodeType = genericOpCode & {
 	id: string,
 };
 
+export type OpCode_builtinCall = genericOpCode & {
+	kind: "builtinCall",
+	name: string,
+	callArguments: OpCode[],
+};
+
 export type OpCodeType = genericOpCodeType & {
 	kind: "struct",
 	fields: OpCode[],
@@ -117,11 +123,9 @@ genericOpCode & {
 	kind: "call",
 	left: OpCode,
 	callArguments: OpCode[],
-} | genericOpCode & {
-	kind: "builtinCall",
-	name: string,
-	callArguments: OpCode[],
-} | genericOpCode & {
+} |
+OpCode_builtinCall |
+genericOpCode & {
 	kind: "operator",
 	operatorText: string,
 	left: OpCode[],

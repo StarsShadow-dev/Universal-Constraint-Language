@@ -13,26 +13,32 @@ import {
 	Token,
 	getCGText,
 } from "./types";
-import { getAliasFromList, build } from "./builder";
+import { getAliasFromList, buildBlock } from "./builder";
 
+// TODO: rm?
 export enum CompilerStage {
 	findAliases = 0,
 	evaluateAliasDependencies = 1,
 	evaluateAll = 2,
 	export = 3,
-}
+};
 
 export type IdeOptions = {
 	mode: "compileFile",
-}
+};
+
+export type BuilderTransforms = {
+	removeTypes: boolean,
+};
 
 export type CompilerOptions = {
 	filePath: string,
 	fancyErrors: boolean,
+	builderTransforms: BuilderTransforms,
 	
 	outputPath?: string,
 	ideOptions?: IdeOptions,
-}
+};
 
 export type ScopeInformation = {
 	levels: OpCode[][],
@@ -156,7 +162,8 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	logger.addTime("parsing", Date.now() - parseStart);
 	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
-	build(context, newFile.opCodes);
+	buildBlock(context, newFile.opCodes);
+	console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
 	context.file = oldFile;
 	return newFile;

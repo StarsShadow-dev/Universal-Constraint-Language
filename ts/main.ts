@@ -14,6 +14,9 @@ function next(): string {
 const options: CompilerOptions = {
 	filePath: next(),
 	fancyErrors: true,
+	builderTransforms: {
+		removeTypes: true,
+	}
 };
 
 while (i < process.argv.length) {

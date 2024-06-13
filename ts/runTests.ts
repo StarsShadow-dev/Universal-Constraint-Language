@@ -51,6 +51,9 @@ function testFile(filePath: string) {
 	const options: CompilerOptions = {
 		filePath: filePath,
 		fancyErrors: false,
+		builderTransforms: {
+			removeTypes: false,
+		}
 	};
 	
 	const context = newBuilderContext(options);

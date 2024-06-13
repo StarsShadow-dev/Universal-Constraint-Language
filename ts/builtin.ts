@@ -1,4 +1,8 @@
-import { OpCode_alias } from "./types";
+import { build } from "./builder";
+import { BuilderContext } from "./compiler";
+import { CompileError } from "./report";
+import { OpCode_alias, OpCode_builtinCall } from "./types";
+import utilities from "./utilities";
 
 function makePrimitiveTypeAlias(name: string): OpCode_alias {
 	return {
@@ -20,3 +24,22 @@ export const builtinTypes: OpCode_alias[] = [
 	makePrimitiveTypeAlias("Number"),
 	makePrimitiveTypeAlias("String"),
 ];
+
+export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinCall) {
+	let index = 0;
+	function getBool(): boolean {
+		const opCode = build(context, callOpCode.callArguments[0]);
+		if (opCode.kind != "bool") {
+			throw utilities.TODO();
+		}
+		return opCode.value;
+	}
+	
+	if (callOpCode.name == "compAssert") {
+		const ok = getBool();
+		if (!ok) {
+			throw new CompileError(`assert failed`)
+				.indicator(callOpCode.location, "here");
+		}
+	}
+}
