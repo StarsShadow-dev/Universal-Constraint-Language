@@ -91,7 +91,6 @@ export function buildBlock(context: BuilderContext, opCodes: OpCode[]): OpCode {
 	}
 	
 	if (context.compilerOptions.builderTransforms.removeTypes) {
-		debugger;
 		for (let index = 0; index < opCodes.length; index++) {
 			const opCode = opCodes[index];
 			
@@ -121,7 +120,8 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 				throw utilities.TODO();
 			}
 			
-			return build(context, alias.value);
+			const value = build(context, alias.value);
+			return value;
 		}
 		case "builtinCall": {
 			builtinCall(context, opCode);
