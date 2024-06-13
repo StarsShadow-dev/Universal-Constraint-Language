@@ -39,14 +39,22 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 		return alias.value;
 	}
 	
-	if (opCode.kind == "bool") {
-		return castToValue(getAliasFromList(builtinTypes, "Bool"));
-	} else if (opCode.kind == "number") {
-		return castToValue(getAliasFromList(builtinTypes, "Number"));
-	} else if (opCode.kind == "string") {
-		return castToValue(getAliasFromList(builtinTypes, "String"));
-	} else {
-		throw utilities.TODO();
+	switch (opCode.kind) {
+		case "bool": {
+			return castToValue(getAliasFromList(builtinTypes, "Bool"));
+		}
+		
+		case "number": {
+			return castToValue(getAliasFromList(builtinTypes, "Number"));
+		}
+		
+		case "string": {
+			return castToValue(getAliasFromList(builtinTypes, "String"));
+		}
+		
+		default: {
+			throw utilities.TODO();
+		}
 	}
 }
 
@@ -65,20 +73,6 @@ function expectType(
 	}
 }
 
-// To make an OpCode no longer context dependent.
-function resolveOp(context: BuilderContext, opCode: OpCode): OpCode {
-	if (opCode.kind == "identifier") {
-		const alias = getAlias(context, opCode.name);
-		if (!alias) {
-			throw utilities.TODO();
-		}
-		
-		return alias.value;
-	}
-	
-	return opCode;
-}
-
 export function build(context: BuilderContext, opCodes: OpCode[]): OpCode {
 	context.file.scope.levels.push(opCodes);
 	context.file.scope.currentLevel++;
@@ -88,7 +82,60 @@ export function build(context: BuilderContext, opCodes: OpCode[]): OpCode {
 		const opCode = opCodes[index];
 		index++;
 		
-		typeCheck(context, opCode);
+		switch (opCode.kind) {
+			case "identifier": {
+				const alias = getAlias(context, opCode.name);
+				if (!alias) {
+					throw utilities.TODO();
+				}
+				
+				return alias.value;
+			}
+			case "alias": {
+				build(context, [opCode.value]);
+				
+				break;
+			}
+			case "function": {
+				const result = build(context, opCode.codeBlock);
+				const resultType = getTypeOf(context, result);
+				
+				const returnType = build(context, [opCode.returnType]);
+				if (!OpCode_isAtype(returnType)) {
+					throw utilities.unreachable();
+				}
+				
+				expectType(context, returnType, resultType, (error) => {
+					error.indicator(opCode.returnType.location, "expected type defined here");
+					error.indicator(result.location, "actual type from here");
+				});
+				
+				break;
+			}
+			case "if": {
+				const condition = build(context, [opCode.condition]);
+				
+				const trueResult = build(context, opCode.trueCodeBlock);
+				const trueType = getTypeOf(context, trueResult);
+				const falseResult = build(context, opCode.falseCodeBlock);
+				const falseType = getTypeOf(context, falseResult);
+				
+				expectType(context, trueType, falseType, (error) => {
+					error.indicator(trueResult.location, "expected same type as trueCodeBlock");
+					error.indicator(falseResult.location, `but got type ${OpCodeType_getName(falseType)}`);
+				});
+				
+				if (condition.kind == "bool") {
+					if (condition.value) {
+						return trueResult;
+					} else {
+						return falseResult;
+					}
+				}
+				
+				break;
+			}
+		}
 	}
 	
 	const lastOp = opCodes[index-1];
@@ -98,33 +145,5 @@ export function build(context: BuilderContext, opCodes: OpCode[]): OpCode {
 	
 	context.file.scope.levels.pop();
 	context.file.scope.currentLevel--;
-	
-	return resolveOp(context, lastOp);
-}
-
-export function typeCheck(context: BuilderContext, opCode: OpCode) {
-	switch (opCode.kind) {
-		case "alias": {
-			build(context, [opCode.value]);
-			break;
-		}
-		case "function": {
-			const result = build(context, opCode.codeBlock);
-			const resultType = getTypeOf(context, result);
-			
-			const returnType = resolveOp(context, opCode.returnType);
-			if (!OpCode_isAtype(returnType)) {
-				throw utilities.unreachable();
-			}
-			
-			debugger;
-			
-			expectType(context, returnType, resultType, (error) => {
-				error.indicator(opCode.returnType.location, "expected type defined here");
-				error.indicator(result.location, "actual type from here");
-			});
-			
-			break;
-		}
-	}
+	return lastOp;
 }

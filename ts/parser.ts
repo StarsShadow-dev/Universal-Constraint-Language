@@ -329,7 +329,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 					}
 					
-					const condition = parse(context, ParserMode.single, ")");
+					const condition = parse(context, ParserMode.single, ")")[0];
 					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {

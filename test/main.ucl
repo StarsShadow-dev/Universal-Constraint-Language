@@ -2,5 +2,9 @@
 
 main = fn(): String {
 	// "Hello, World!"
-	13
+	if (true) {
+		"1"
+	} else {
+		0
+	}
 }

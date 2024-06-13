@@ -105,6 +105,9 @@ genericOpCode & {
 	kind: "string",
 	value: string,
 } | genericOpCode & {
+	kind: "complexValue",
+	type: OpCodeType,
+} | genericOpCode & {
 	kind: "identifier",
 	name: string,
 } | genericOpCode & {
@@ -141,11 +144,11 @@ OpCode_function | genericOpCode & {
 	codeBlock: OpCode[],
 } | genericOpCode & {
 	kind: "while",
-	condition: OpCode[],
+	condition: OpCode,
 	codeBlock: OpCode[],
 } | genericOpCode & {
 	kind: "if",
-	condition: OpCode[],
+	condition: OpCode,
 	trueCodeBlock: OpCode[],
 	falseCodeBlock: OpCode[],
 } | genericOpCode & {
