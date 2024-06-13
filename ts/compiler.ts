@@ -38,6 +38,7 @@ export type CompilerOptions = {
 	
 	outputPath?: string,
 	ideOptions?: IdeOptions,
+	dumpOpCodes?: boolean,
 };
 
 export type ScopeInformation = {
@@ -46,11 +47,6 @@ export type ScopeInformation = {
 
 	function: OpCode_function | null,
 	functionArgumentNameText: string,
-};
-
-export type BuilderOptions = {
-	compileTime: boolean;
-	byteCode: null;
 };
 
 export type FileContext = {
@@ -62,7 +58,6 @@ export type FileContext = {
 export type BuilderContext = {
 	compilerOptions: CompilerOptions,
 	topCodeGenText: string[],
-	options: BuilderOptions,
 	nextId: number,
 	inIndentation: boolean,
 	file: FileContext,
@@ -77,10 +72,6 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 	return {
 		compilerOptions: compilerOptions,
 		topCodeGenText: getCGText(),
-		options: {
-			compileTime: true,
-			byteCode: null,
-		},
 		nextId: 0,
 		inIndentation: true,
 		file: null as any,
@@ -163,7 +154,9 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
 	buildBlock(context, newFile.opCodes);
-	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
+	if (context.compilerOptions.dumpOpCodes) {
+		console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
+	}
 	
 	context.file = oldFile;
 	return newFile;

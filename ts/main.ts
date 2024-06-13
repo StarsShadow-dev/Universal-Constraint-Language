@@ -35,6 +35,8 @@ while (i < process.argv.length) {
 		}
 	} else if (arg == "-noFancyErrors") {
 		options.fancyErrors = false;
+	} else if (arg == "-d") {
+		options.dumpOpCodes = true;
 	} else {
 		utilities.TODO();
 	}
