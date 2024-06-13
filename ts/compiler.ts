@@ -154,7 +154,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 		i: 0,
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
-	console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
+	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
 	build(context, newFile.opCodes);
 	

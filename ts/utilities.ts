@@ -22,9 +22,10 @@ const utilities = {
 	
 	TODO(): never {
 		debugger;
-		console.trace();
-		console.error("TODO reached");
-		exit(1);
+		// console.trace();
+		// console.error("TODO reached");
+		// exit(1);
+		throw "TODO reached";
 	},
 	
 	byteSize(str: string): number {

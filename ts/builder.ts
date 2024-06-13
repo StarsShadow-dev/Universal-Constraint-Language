@@ -140,7 +140,7 @@ export function build(context: BuilderContext, opCodes: OpCode[]): OpCode {
 	
 	const lastOp = opCodes[index-1];
 	if (!lastOp) {
-		utilities.unreachable();
+		utilities.TODO();
 	}
 	
 	context.file.scope.levels.pop();
