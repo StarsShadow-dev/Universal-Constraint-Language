@@ -1,7 +1,7 @@
 // compError
-// error: expected type 'builtin:String', but got type 'builtin:Number'
-// tests/compError/differentIfTypes.ucl:7 -> expected same type as trueCodeBlock ('builtin:String')
-// tests/compError/differentIfTypes.ucl:9 -> but got type 'builtin:Number'
+// error: expected type builtin:String, but got type builtin:Number
+// tests/compError/differentIfTypes.ucl:7 -> expected same type as trueCodeBlock (builtin:String)
+// tests/compError/differentIfTypes.ucl:9 -> but got type builtin:Number
 
 if (true) {
 	"1"

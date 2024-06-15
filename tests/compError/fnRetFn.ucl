@@ -1,0 +1,11 @@
+// compError
+// error: expected type "\() -> builtin:Number", but got type "\() -> builtin:String"
+//   return type expected type builtin:Number, but got type builtin:String
+// tests/compError/fnRetFn.ucl:7 -> expected type defined here
+// tests/compError/fnRetFn.ucl:8 -> actual type from here
+
+test = fn(string: String) -> \() -> Number {
+	fn() -> String {
+		string
+	}
+}
