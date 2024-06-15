@@ -471,7 +471,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					}
 					
 					const functionArguments = parseFunctionArguments(context);
-					debugger;
 					const returnType = parseType(context, "->");
 					if (!returnType) {
 						throw new CompileError("function type must have a return type").indicator(token.location, "here");

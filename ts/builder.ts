@@ -61,6 +61,16 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 			return castToValue(getAliasFromList(builtinTypes, "Type"));
 		}
 		
+		case "function": {
+			return {
+				kind: "functionType",
+				location: opCode.location,
+				id: `${JSON.stringify(opCode.location)}`,
+				functionArguments: opCode.functionArguments,
+				returnType: opCode.returnType,
+			};
+		}
+		
 		default: {
 			throw utilities.TODO();
 		}
@@ -78,6 +88,20 @@ function expectType(
 	actualType: OpCodeType,
 	callBack: (error: CompileError) => void,
 ) {
+	if (expectedType.kind == "functionType" && actualType.kind == "functionType") {
+		if (!OpCode_isAtype(expectedType.returnType) || !OpCode_isAtype(actualType.returnType)) {
+			throw utilities.TODO();
+		}
+		expectType(context, expectedType.returnType, actualType.returnType, (error) => {
+			error.msg =
+			`expected type \"${OpCodeType_getName(expectedType)}\", but got type \"${OpCodeType_getName(actualType)}\"\n  return type `
+			+ error.msg;
+			
+			callBack(error);
+		});
+		return;
+	}
+	
 	if (expectedType.id != actualType.id) {
 		let error = new CompileError(`expected type ${OpCodeType_getName(expectedType)}, but got type ${OpCodeType_getName(actualType)}`);
 		callBack(error);
@@ -151,6 +175,15 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 			if (opCode.codeBlock.length > 0) {
 				buildBlock(context, opCode.codeBlock);
 			}
+			break;
+		}
+		case "functionType": {
+			const returnType = build(context, opCode.returnType);
+			if (!OpCode_isAtype(returnType)) {
+				throw utilities.TODO();
+			}
+			
+			opCode.returnType = returnType;
 			break;
 		}
 		case "operator": {

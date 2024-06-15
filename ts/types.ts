@@ -88,7 +88,13 @@ export function OpCode_castType(opCode: OpCode): OpCodeType {
 	}
 }
 export function OpCodeType_getName(opCode: OpCodeType): string {
-	return `'${opCode.id}'`;
+	if (opCode.kind == "functionType") {
+		if (!OpCode_isAtype(opCode.returnType)) {
+			throw utilities.unreachable();
+		}
+		return `\\() -> ${OpCodeType_getName(opCode.returnType)}`;
+	}
+	return `${opCode.id}`;
 }
 
 export type OpCode_function = genericOpCode & {
