@@ -43,26 +43,38 @@ type genericOpCode = {
 	location: SourceLocation,
 };
 
-type genericOpCodeType = genericOpCode & {
-	id: string,
-};
-
 export type OpCode_builtinCall = genericOpCode & {
 	kind: "builtinCall",
 	name: string,
 	callArguments: OpCode[],
 };
 
-export type OpCodeType = genericOpCodeType & {
+export type OpCode_argument = genericOpCode & {
+	kind: "argument",
+	comptime: boolean,
+	name: string,
+	type: OpCode,
+};
+
+type genericOpCodeType = genericOpCode & {
+	id: string,
+};
+
+export type OpCodeType =
+genericOpCodeType & {
 	kind: "struct",
 	fields: OpCode[],
 	codeBlock: OpCode[],
 } | genericOpCodeType & {
 	kind: "enum",
 	codeBlock: OpCode[],
+} | genericOpCodeType & {
+	kind: "functionType",
+	functionArguments: OpCode_argument[],
+	returnType: OpCode,
 };
 export function OpCode_isAtype(opCode: OpCode): opCode is OpCodeType {
-	if (opCode.kind == "struct" || opCode.kind == "enum") {
+	if (opCode.kind == "struct" || opCode.kind == "enum" || opCode.kind == "functionType") {
 		return true;
 	} else {
 		return false;
@@ -78,13 +90,6 @@ export function OpCode_castType(opCode: OpCode): OpCodeType {
 export function OpCodeType_getName(opCode: OpCodeType): string {
 	return `'${opCode.id}'`;
 }
-
-export type OpCode_argument = genericOpCode & {
-	kind: "argument",
-	comptime: boolean,
-	name: string,
-	type: OpCode,
-};
 
 export type OpCode_function = genericOpCode & {
 	kind: "function",
@@ -135,8 +140,8 @@ genericOpCode & {
 	name: string,
 	type: OpCode,
 } |
-OpCodeType |
 OpCode_argument |
+OpCodeType |
 OpCode_function | genericOpCode & {
 	kind: "match",
 	expression: OpCode, // TODO: name

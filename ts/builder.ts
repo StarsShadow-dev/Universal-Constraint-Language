@@ -53,6 +53,10 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 			return castToValue(getAliasFromList(builtinTypes, "String"));
 		}
 		
+		case "complexValue": {
+			return opCode.type;
+		}
+		
 		case "struct": {
 			return castToValue(getAliasFromList(builtinTypes, "Type"));
 		}
@@ -132,7 +136,7 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 		case "identifier": {
 			const alias = getAlias(context, opCode.name);
 			if (!alias) {
-				throw utilities.TODO();
+				throw new CompileError(`alias '${opCode.name}' does not exist`).indicator(opCode.location, "here");
 			}
 			
 			const value = build(context, alias.value);
@@ -177,13 +181,36 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 			break;
 		}
 		case "function": {
-			const result = buildBlock(context, opCode.codeBlock);
-			const resultType = getTypeOf(context, result);
-			
 			const returnType = build(context, opCode.returnType);
 			if (!OpCode_isAtype(returnType)) {
 				throw utilities.TODO();
 			}
+			
+			let newLevel: OpCode[] = [];
+			for (let i = 0; i < opCode.functionArguments.length; i++) {
+				const functionArgument = opCode.functionArguments[i];
+				const type = build(context, functionArgument.type);
+				
+				if (!OpCode_isAtype(type)) {
+					throw new CompileError("function argument is not a type").indicator(functionArgument.location, "here");
+				}
+				
+				newLevel.push({
+					kind: "alias",
+					location: functionArgument.location,
+					name: functionArgument.name,
+					value: {
+						kind: "complexValue",
+						location: functionArgument.location,
+						type: type,
+					},
+				})
+			}
+			context.file.scope.levels.push(newLevel);
+			const result = buildBlock(context, opCode.codeBlock);
+			context.file.scope.levels.pop();
+			
+			const resultType = getTypeOf(context, result);
 			
 			expectType(context, returnType, resultType, (error) => {
 				error.indicator(opCode.returnType.location, "expected type defined here");

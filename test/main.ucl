@@ -1,8 +1,29 @@
-test = struct() {
-	retType = String
-	inTest = fn(): retType {
-		"Hello, World!"
-	}
-}
+// test = struct() {
+// 	retType = String
+// 	inTest = fn(): retType {
+// 		"Hello, World!"
+// 	}
+// }
+// main = test.inTest
 
-main = test.inTest
+// test = fn() -> fntype() -> String {
+// 	string = "Hello, World!"
+// 	fn(): String {
+// 		string
+// 	}
+// }
+
+// --------
+
+// test = fn(string: String) -> \() -> String {
+// 	fn() -> String {
+// 		string
+// 	}
+// }
+// main = test("Hello, World!")
+
+// --------
+
+main = fn(string: String) -> String {
+	string2
+}

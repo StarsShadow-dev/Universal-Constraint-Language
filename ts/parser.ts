@@ -153,11 +153,11 @@ function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: nu
 	return left;
 }
 
-function parseType(context: ParserContext): OpCode | null {
+function parseType(context: ParserContext, separatingText: string): OpCode | null {
 	let type: OpCode | null = null;
 	
-	const colon = next(context);
-	if (colon.type == TokenKind.separator && colon.text == ":") {
+	const separator = next(context);
+	if (separator.text == separatingText) {
 		forward(context);
 		
 		type = parse(context, ParserMode.singleNoEqualsOperatorContinue, null)[0];
@@ -189,19 +189,19 @@ function parseFunctionArguments(context: ParserContext): OpCode_argument[] {
 			throw new CompileError("expected name in function arguments").indicator(name.location, "here");
 		}
 		
-		const type = parseType(context);
+		const type = parseType(context, ":");
 		
-		if (type) {
-			AST.push({
-				kind: "argument",
-				location: name.location,
-				comptime: comptime,
-				name: name.text,
-				type: type,
-			});	
-		} else {
+		if (!type) {
 			throw new CompileError("function argument without a type").indicator(name.location, "here");
 		}
+		
+		AST.push({
+			kind: "argument",
+			location: name.location,
+			comptime: comptime,
+			name: name.text,
+			type: type,
+		});	
 		
 		const end = forward(context);
 		
@@ -234,7 +234,7 @@ function parseFunction(context: ParserContext, AST: OpCode[], location: SourceLo
 		forward(context);
 	}
 	
-	const returnType = parseType(context);
+	const returnType = parseType(context, "->");
 	if (!returnType) {
 		throw new CompileError("functions must have a return type").indicator(location, "here");
 	}
@@ -310,7 +310,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected name").indicator(name.location, "here");
 					}
 					
-					const type = parseType(context);
+					const type = parseType(context, ":");
 					if (!type) {
 						throw new CompileError("a field must have a type").indicator(name.location, "here");
 					}
@@ -455,12 +455,34 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					return OpCodes;
 				}
 				if (token.text == "[") {
-					const elements = parse(context, ParserMode.comma, "]")
+					const elements = parse(context, ParserMode.comma, "]");
 					
 					OpCodes.push({
 						kind: "list",
 						location: token.location,
 						elements: elements,
+					});
+				} else if (token.text == "(") {
+					utilities.TODO();
+				} else if (token.text == "\\") {
+					const openingParentheses = forward(context);
+					if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
+						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
+					}
+					
+					const functionArguments = parseFunctionArguments(context);
+					debugger;
+					const returnType = parseType(context, "->");
+					if (!returnType) {
+						throw new CompileError("function type must have a return type").indicator(token.location, "here");
+					}
+					
+					OpCodes.push({
+						kind: "functionType",
+						location: token.location,
+						id: `${JSON.stringify(token.location)}`,
+						functionArguments: functionArguments,
+						returnType: returnType,
 					});
 				} else {
 					throw new CompileError("unexpected separator").indicator(token.location, "here");

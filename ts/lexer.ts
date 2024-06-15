@@ -36,12 +36,13 @@ function separator(text: string, i: number): boolean {
 	return text[i] == '(' ||
 	text[i] == ')' ||
 	text[i] == '{' ||
-	text[i] == '}'  ||
+	text[i] == '}' ||
 	text[i] == '[' ||
 	text[i] == ']' ||
 	text[i] == ':' ||
 	text[i] == ';' ||
-	text[i] == ',';
+	text[i] == ',' ||
+	text[i] == '\\';
 }
 
 export function lex(filePath: string, text: string): Token[] {
