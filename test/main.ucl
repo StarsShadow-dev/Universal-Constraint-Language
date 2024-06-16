@@ -15,9 +15,15 @@
 
 // --------
 
-test = fn(string: String) -> \() -> String {
-	fn() -> String {
-		string
+test = fn(bool: Bool, string: String) -> \() -> String {
+	if (bool) {
+		fn() -> String {
+			string
+		}
+	} else {
+		fn() -> String {
+			"no string for you"
+		}
 	}
 }
-main = test("Hello, World!")
+// main = test("Hello, World!")

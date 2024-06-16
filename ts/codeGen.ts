@@ -18,6 +18,7 @@ export const codeGenList = (context: CodeGenContext, opCodes: OpCode[], newModes
 	for (let index = 0; index < opCodes.length; index++) {
 		elements.push(codeGen(context, opCodes[index]));
 	}
+	const separator = codeGen_separator(context, context.level);
 	context.level--;
 	if (newModes) {
 		for (let i = 0; i < newModes.length; i++) {
@@ -25,7 +26,7 @@ export const codeGenList = (context: CodeGenContext, opCodes: OpCode[], newModes
 		}
 	}
 	
-	return elements.join(codeGen_separator(context, context.level));
+	return elements.join(separator);
 };
 export const codeGen = codeGenJs;
 
@@ -50,8 +51,9 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 			return opCode.name;
 		}
 		case "call": {
-			return codeGenList(context, [opCode.left]) +
-			"(" + codeGenList(context, opCode.callArguments, ["arguments"]) + ")";
+			const left = codeGenList(context, [opCode.left]);
+			const callArguments = codeGenList(context, opCode.callArguments, ["arguments"])
+			return `${left}(${callArguments})`;
 		}
 		case "alias": {
 			return `let ${opCode.name} = ` + codeGenList(context, [opCode.value]);
@@ -62,7 +64,13 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 		case "function": {
 			const functionArguments = codeGenList(context, opCode.functionArguments, ["arguments"]);
 			const codeBlock = codeGenList(context, opCode.codeBlock);
-			return `(${functionArguments}) => ${codeBlock}`;
+			return `(${functionArguments}) => {return ${codeBlock}}`;
+		}
+		case "if": {
+			const condition = codeGen(context, opCode.condition);
+			const trueCodeBlock = codeGenList(context, opCode.trueCodeBlock);
+			const falseCodeBlock = codeGenList(context, opCode.falseCodeBlock);
+			return `(${condition} ? ${trueCodeBlock} : ${falseCodeBlock})`;
 		}
 		
 		default: {

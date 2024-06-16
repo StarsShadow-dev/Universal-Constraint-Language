@@ -272,9 +272,13 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 				} else {
 					return falseResult;
 				}
+			} else {
+				return {
+					kind: "complexValue",
+					location: opCode.location,
+					type: trueType,
+				}
 			}
-			
-			break;
 		}
 	}
 	
