@@ -93,13 +93,14 @@ function testFile(filePath: string) {
 		} else if (mode == "compSucceed") {
 			testSuccess();
 		} else if (mode == "compOut") {
-			const expectedOutput = comments.join("\n");
-			const actualOutput = context.topCodeGenText.join("");
-			if (expectedOutput == actualOutput) {
-				testSuccess();
-			} else {
-				testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
-			}
+			throw "compOut";
+			// const expectedOutput = comments.join("\n");
+			// const actualOutput = context.topCodeGenText.join("");
+			// if (expectedOutput == actualOutput) {
+			// 	testSuccess();
+			// } else {
+			// 	testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+			// }
 		}
 	} else {
 		let errorText = "";

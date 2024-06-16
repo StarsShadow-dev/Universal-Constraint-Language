@@ -16,14 +16,9 @@
 // --------
 
 test = fn(bool: Bool, string: String) -> \() -> String {
-	if (bool) {
-		fn() -> String {
-			string
-		}
-	} else {
-		fn() -> String {
-			"no string for you"
-		}
+	outString = if (bool) { string } else { "no string for you" }
+	fn() -> String {
+		outString
 	}
 }
 // main = test("Hello, World!")

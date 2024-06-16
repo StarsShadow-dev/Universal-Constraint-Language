@@ -48,13 +48,7 @@ const context = newBuilderContext(options);
 
 compile(context, null);
 if (context.errors.length == 0) {
-	if (options.outputPath) {
-		utilities.writeFile(options.outputPath, context.topCodeGenText.join(""));
-	} else {
-		if (!options.ideOptions) {
-			console.log(context.topCodeGenText.join(""));
-		}
-	}
+	
 } else {
 	process.exitCode = 1;
 	printErrors(options, context.errors);

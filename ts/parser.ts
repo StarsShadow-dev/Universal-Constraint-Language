@@ -249,6 +249,7 @@ function parseFunction(context: ParserContext, AST: OpCode[], location: SourceLo
 	AST.push({
 		kind: "function",
 		location: location,
+		doTransformations: true,
 		forceInline: forceInline,
 		functionArguments: functionArguments,
 		returnType: returnType,

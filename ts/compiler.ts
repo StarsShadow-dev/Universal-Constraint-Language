@@ -8,12 +8,10 @@ import {
 } from './parser';
 import {
 	OpCode,
-	OpCode_alias,
 	OpCode_function,
 	Token,
-	getCGText,
 } from "./types";
-import { getAliasFromList, buildBlock } from "./builder";
+import { buildBlock } from "./builder";
 import { codeGenList } from "./codeGen";
 
 // TODO: rm?
@@ -57,28 +55,28 @@ export type FileContext = {
 
 export type BuilderContext = {
 	compilerOptions: CompilerOptions,
-	topCodeGenText: string[],
+	doTransformations: boolean,
 	nextId: number,
-	inIndentation: boolean,
 	file: FileContext,
 	errors: CompileError[],
 	
 	compilerStage: CompilerStage,
 	disableDependencyEvaluation: boolean,
+	returnEarly: boolean,
 };
 
 // file is null!
 export function newBuilderContext(compilerOptions: CompilerOptions): BuilderContext {
 	return {
 		compilerOptions: compilerOptions,
-		topCodeGenText: getCGText(),
+		doTransformations: false,
 		nextId: 0,
-		inIndentation: true,
 		file: null as any,
 		errors: [],
 		
 		compilerStage: CompilerStage.findAliases,
 		disableDependencyEvaluation: false,
+		returnEarly: false,
 	};
 }
 
@@ -160,9 +158,9 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	const js = codeGenList({
 		level: 0,
 		modes: [],
-	}, newFile.opCodes);
+	}, newFile.opCodes).join("\n");
 	if (context.compilerOptions.dumpOpCodes) {
-		console.log(`js '${filePath}':`, js);
+		console.log(`js '${filePath}':\n` + js);
 	}
 	
 	context.file = oldFile;

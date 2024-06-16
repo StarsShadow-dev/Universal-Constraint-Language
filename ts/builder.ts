@@ -71,6 +71,10 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 			};
 		}
 		
+		case "if": {
+			return getTypeOf(context, buildBlock(context, opCode.trueCodeBlock, true));
+		}
+		
 		default: {
 			throw utilities.TODO();
 		}
@@ -109,24 +113,36 @@ function expectType(
 	}
 }
 
-export function buildBlock(context: BuilderContext, opCodes: OpCode[]): OpCode {
+export function buildBlock(context: BuilderContext, opCodes: OpCode[], resolve?: boolean): OpCode {
 	context.file.scope.levels.push(opCodes);
 	
-	let lastOp: OpCode | null = null;
+	const oldAllowTransformations = context.doTransformations;
+	context.doTransformations = true;
+	function end() {
+		context.file.scope.levels.pop();
+		context.doTransformations = oldAllowTransformations;
+	}
 	
+	let lastOp: OpCode | null = null;
 	for (let index = 0; index < opCodes.length;) {
 		const opCode = opCodes[index];
 		index++;
 		
-		lastOp = build(context, opCode);
+		lastOp = build(context, opCode, resolve);
+		if (context.returnEarly) {
+			context.returnEarly = false;
+			end();
+			return lastOp;
+		}
 	}
 	
+	context.doTransformations = false;
 	if (context.compilerOptions.builderTransforms.removeTypes) {
 		for (let index = 0; index < opCodes.length; index++) {
 			const opCode = opCodes[index];
 			
 			if (opCode.kind == "alias") {
-				const value = build(context, opCode.value);
+				const value = build(context, opCode.value, true);
 				if (OpCode_isAtype(value)) {
 					opCodes.splice(index, 1);
 				}
@@ -138,24 +154,11 @@ export function buildBlock(context: BuilderContext, opCodes: OpCode[]): OpCode {
 		throw utilities.TODO();
 	}
 	
-	context.file.scope.levels.pop();
+	end();
 	return lastOp;
 }
 
-// export function buildNewLevel(context: BuilderContext, opCode: OpCode, levels: OpCode[][]): OpCode {
-// 	const oldScope = context.file.scope;
-// 	context.file.scope = {
-// 		levels: levels,
-// 		function: null,
-// 		functionArgumentNameText: "",
-// 	};
-// 	const result = build(context, opCode);
-// 	context.file.scope = oldScope;
-	
-// 	return result;
-// }
-
-export function build(context: BuilderContext, opCode: OpCode): OpCode {
+export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean): OpCode {
 	switch (opCode.kind) {
 		case "identifier": {
 			const alias = getAlias(context, opCode.name);
@@ -251,7 +254,23 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 			});
 			
 			opCode.returnType = returnType;
+			if (opCode.doTransformations) {
+				opCode.doTransformations = false;
+				const last = opCode.codeBlock.pop();
+				if (!last) {
+					throw utilities.TODO();
+				}
+				opCode.codeBlock.push({
+					kind: "return",
+					location: last.location,
+					expression: last,
+				});
+			}
 			break;
+		}
+		case "return": {
+			context.returnEarly = true;
+			return build(context, opCode.expression);
 		}
 		case "if": {
 			const condition = buildBlock(context, [opCode.condition]);
@@ -273,12 +292,16 @@ export function build(context: BuilderContext, opCode: OpCode): OpCode {
 					return falseResult;
 				}
 			} else {
-				return {
-					kind: "complexValue",
-					location: opCode.location,
-					type: trueType,
+				if (resolve) {
+					return {
+						kind: "complexValue",
+						location: opCode.location,
+						type: trueType,
+					}
 				}
 			}
+			
+			break;
 		}
 	}
 	

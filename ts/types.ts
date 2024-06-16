@@ -6,11 +6,6 @@ export type SourceLocation = "builtin" | {
 	startColumn: number,
 	endColumn: number,
 };
-
-export function getCGText(): string[] {
-	return [];
-}
-
 export enum TokenKind {
 	comment,
 	
@@ -99,6 +94,7 @@ export function OpCodeType_getName(opCode: OpCodeType): string {
 
 export type OpCode_function = genericOpCode & {
 	kind: "function",
+	doTransformations: boolean,
 	forceInline: boolean,
 	functionArguments: OpCode_argument[],
 	returnType: OpCode,
@@ -148,9 +144,14 @@ genericOpCode & {
 } |
 OpCode_argument |
 OpCodeType |
-OpCode_function | genericOpCode & {
+OpCode_function |
+genericOpCode & {
+	kind: "return",
+	expression: OpCode,
+} |
+genericOpCode & {
 	kind: "match",
-	expression: OpCode, // TODO: name
+	expression: OpCode,
 	codeBlock: OpCode[],
 } | genericOpCode & {
 	kind: "matchCase",
