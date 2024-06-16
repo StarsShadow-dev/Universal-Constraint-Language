@@ -14,6 +14,7 @@ import {
 	getCGText,
 } from "./types";
 import { getAliasFromList, buildBlock } from "./builder";
+import { codeGenList } from "./codeGen";
 
 // TODO: rm?
 export enum CompilerStage {
@@ -154,6 +155,14 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	buildBlock(context, newFile.opCodes);
 	if (context.compilerOptions.dumpOpCodes) {
 		console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
+	}
+	
+	const js = codeGenList({
+		level: 0,
+		modes: [],
+	}, newFile.opCodes);
+	if (context.compilerOptions.dumpOpCodes) {
+		console.log(`js '${filePath}':`, js);
 	}
 	
 	context.file = oldFile;

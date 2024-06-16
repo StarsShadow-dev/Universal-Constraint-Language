@@ -15,18 +15,9 @@
 
 // --------
 
-// test = fn(string: String) -> \() -> Number {
-// 	fn() -> String {
-// 		string
-// 	}
-// }
-// main = test("Hello, World!")
-
-test = fn(string: String) -> \() -> \() -> Number {
-	fn() -> \() -> String {
-		fn() -> String {
-			string
-		}
+test = fn(string: String) -> \() -> String {
+	fn() -> String {
+		string
 	}
 }
 main = test("Hello, World!")
