@@ -169,6 +169,25 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 			const value = build(context, alias.value);
 			return value;
 		}
+		case "call": {
+			const functionToCall = build(context, opCode.left);
+			
+			if (functionToCall.kind != "function") {
+				throw utilities.TODO();
+			}
+			
+			if (opCode.callArguments.length > functionToCall.functionArguments.length) {
+				throw new CompileError(`too many arguments passed to function`)
+					.indicator(opCode.location, "function call here");
+			}
+			
+			if (opCode.callArguments.length < functionToCall.functionArguments.length) {
+				throw new CompileError(`not enough arguments passed to function`)
+					.indicator(opCode.location, "function call here");
+			}
+			
+			break;
+		}
 		case "builtinCall": {
 			builtinCall(context, opCode);
 			
@@ -269,8 +288,9 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 			break;
 		}
 		case "return": {
+			const value = build(context, opCode.expression);
 			context.returnEarly = true;
-			return build(context, opCode.expression);
+			return value;
 		}
 		case "if": {
 			const condition = buildBlock(context, [opCode.condition]);

@@ -21,4 +21,4 @@ test = fn(bool: Bool, string: String) -> \() -> String {
 		outString
 	}
 }
-// main = test("Hello, World!")
+main = test(true, "Hello, World!", "")

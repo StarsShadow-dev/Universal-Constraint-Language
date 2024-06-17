@@ -31,11 +31,6 @@ export const codeGenList = (context: CodeGenContext, opCodes: OpCode[], newModes
 export const codeGen = codeGenJs;
 
 function codeGenJs_separator(context: CodeGenContext, level: number): string {
-	// if (context.modes.includes("arguments")) {
-	// 	return ", ";
-	// } else {
-		
-	// }
 	let text = "\n";
 	for (let i = 0; i < level - 1; i++) {
 		text += "    ";
@@ -46,6 +41,13 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 	const sep = codeGen_sep(context, context.level);
 	
 	switch (opCode.kind) {
+		case "bool": {
+			if (opCode.value) {
+				return "true";
+			} else {
+				return "false";
+			}
+		}
 		case "string": {
 			// TODO
 			return `"${opCode.value}"`;
@@ -57,6 +59,9 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 			const left = codeGenList(context, [opCode.left]).join(sep);
 			const callArguments = codeGenList(context, opCode.callArguments).join(", ");
 			return `${left}(${callArguments})`;
+		}
+		case "builtinCall": {
+			return ``;
 		}
 		case "argument": {
 			return opCode.name;
