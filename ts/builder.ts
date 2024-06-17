@@ -157,7 +157,8 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 		case "identifier": {
 			const alias = getAlias(context, opCode.name);
 			if (!alias) {
-				throw new CompileError(`alias '${opCode.name}' does not exist`).indicator(opCode.location, "here");
+				throw new CompileError(`alias '${opCode.name}' does not exist`)
+					.indicator(opCode.location, "here");
 			}
 			
 			const value = build(context, alias.value, resolve);
@@ -201,7 +202,8 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				const name = opCode.right.name
 				const alias = getAliasFromList(left.codeBlock, name);
 				if (!alias) {
-					throw utilities.TODO();
+					throw new CompileError(`alias '${name}' does not exist on struct`)
+						.indicator(opCode.right.location, "here");
 				}
 				return alias.value;
 			} else {

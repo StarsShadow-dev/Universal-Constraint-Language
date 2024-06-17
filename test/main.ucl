@@ -39,4 +39,4 @@ test = struct() {
 }
 
 @compAssert(test.a == 1)
-@compAssert(test.b == 1)
+@compAssert(test.nonExistentAlias == 1)
