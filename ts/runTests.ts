@@ -52,7 +52,7 @@ function testFile(filePath: string) {
 		filePath: filePath,
 		fancyErrors: false,
 		builderTransforms: {
-			removeTypes: false,
+			removeTypes: true,
 		}
 	};
 	

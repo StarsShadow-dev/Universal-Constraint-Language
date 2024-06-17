@@ -203,7 +203,6 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				if (!alias) {
 					throw utilities.TODO();
 				}
-				debugger;
 				return alias.value;
 			} else {
 				const right = build(context, opCode.right, resolve);

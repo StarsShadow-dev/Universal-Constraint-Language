@@ -1,4 +1,3 @@
-// testSkip
 // compSucceed
 
 test = struct() {
