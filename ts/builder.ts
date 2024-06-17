@@ -113,7 +113,7 @@ function expectType(
 	}
 }
 
-export function buildBlock(context: BuilderContext, opCodes: OpCode[], resolve?: boolean): OpCode {
+export function buildBlock(context: BuilderContext, opCodes: OpCode[], resolve: boolean): OpCode {
 	context.file.scope.levels.push(opCodes);
 	
 	const oldAllowTransformations = context.doTransformations;
@@ -158,7 +158,7 @@ export function buildBlock(context: BuilderContext, opCodes: OpCode[], resolve?:
 	return lastOp;
 }
 
-export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean): OpCode {
+export function build(context: BuilderContext, opCode: OpCode, resolve: boolean): OpCode {
 	switch (opCode.kind) {
 		case "identifier": {
 			const alias = getAlias(context, opCode.name);
@@ -166,11 +166,11 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 				throw new CompileError(`alias '${opCode.name}' does not exist`).indicator(opCode.location, "here");
 			}
 			
-			const value = build(context, alias.value);
+			const value = build(context, alias.value, resolve);
 			return value;
 		}
 		case "call": {
-			const functionToCall = build(context, opCode.left);
+			const functionToCall = build(context, opCode.left, resolve);
 			
 			if (functionToCall.kind != "function") {
 				throw utilities.TODO();
@@ -195,12 +195,12 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 		}
 		case "struct": {
 			if (opCode.codeBlock.length > 0) {
-				buildBlock(context, opCode.codeBlock);
+				buildBlock(context, opCode.codeBlock, resolve);
 			}
 			break;
 		}
 		case "functionType": {
-			const returnType = build(context, opCode.returnType);
+			const returnType = build(context, opCode.returnType, resolve);
 			if (!OpCode_isAtype(returnType)) {
 				throw utilities.TODO();
 			}
@@ -214,7 +214,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 					throw utilities.TODO();
 				}
 				
-				const left = build(context, opCode.left);
+				const left = build(context, opCode.left, resolve);
 				if (left.kind != "struct") {
 					throw utilities.TODO();
 				}
@@ -225,18 +225,18 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 					throw utilities.TODO();
 				}
 				
-				const value = build(context, alias.value);
+				const value = build(context, alias.value, resolve);
 				return value;
 			}
 			break;
 		}
 		case "alias": {
-			opCode.value = build(context, opCode.value);
+			opCode.value = build(context, opCode.value, false);
 			
 			break;
 		}
 		case "function": {
-			const returnType = build(context, opCode.returnType);
+			const returnType = build(context, opCode.returnType, resolve);
 			if (!OpCode_isAtype(returnType)) {
 				throw utilities.TODO();
 			}
@@ -244,7 +244,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 			let newLevel: OpCode[] = [];
 			for (let i = 0; i < opCode.functionArguments.length; i++) {
 				const functionArgument = opCode.functionArguments[i];
-				const type = build(context, functionArgument.type);
+				const type = build(context, functionArgument.type, resolve);
 				
 				if (!OpCode_isAtype(type)) {
 					throw new CompileError("function argument is not a type").indicator(functionArgument.location, "here");
@@ -262,7 +262,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 				})
 			}
 			context.file.scope.levels.push(newLevel);
-			const result = buildBlock(context, opCode.codeBlock);
+			const result = buildBlock(context, opCode.codeBlock, resolve);
 			context.file.scope.levels.pop();
 			
 			const resultType = getTypeOf(context, result);
@@ -288,16 +288,16 @@ export function build(context: BuilderContext, opCode: OpCode, resolve?: boolean
 			break;
 		}
 		case "return": {
-			const value = build(context, opCode.expression);
+			const value = build(context, opCode.expression, resolve);
 			context.returnEarly = true;
 			return value;
 		}
 		case "if": {
-			const condition = buildBlock(context, [opCode.condition]);
+			const condition = buildBlock(context, [opCode.condition], resolve);
 			
-			const trueResult = buildBlock(context, opCode.trueCodeBlock);
+			const trueResult = buildBlock(context, opCode.trueCodeBlock, resolve);
 			const trueType = getTypeOf(context, trueResult);
-			const falseResult = buildBlock(context, opCode.falseCodeBlock);
+			const falseResult = buildBlock(context, opCode.falseCodeBlock, resolve);
 			const falseType = getTypeOf(context, falseResult);
 			
 			expectType(context, trueType, falseType, (error) => {

@@ -150,17 +150,19 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	logger.addTime("parsing", Date.now() - parseStart);
 	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 	
-	buildBlock(context, newFile.opCodes);
-	if (context.compilerOptions.dumpOpCodes) {
-		console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
-	}
-	
-	const js = codeGenList({
-		level: 0,
-		modes: [],
-	}, newFile.opCodes).join("\n");
-	if (context.compilerOptions.dumpOpCodes) {
-		console.log(`js '${filePath}':\n` + js);
+	if (newFile.opCodes.length > 0) {
+		buildBlock(context, newFile.opCodes, false);
+		if (context.compilerOptions.dumpOpCodes) {
+			console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
+		}
+		
+		const js = codeGenList({
+			level: 0,
+			modes: [],
+		}, newFile.opCodes).join("\n");
+		if (context.compilerOptions.dumpOpCodes) {
+			console.log(`js '${filePath}':\n` + js);
+		}
 	}
 	
 	context.file = oldFile;

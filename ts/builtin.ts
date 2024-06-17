@@ -29,7 +29,7 @@ export const builtinTypes: OpCode_alias[] = [
 export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinCall) {
 	let index = 0;
 	function getBool(): boolean {
-		const opCode = build(context, callOpCode.callArguments[index]);
+		const opCode = build(context, callOpCode.callArguments[index], true);
 		index++;
 		if (opCode.kind != "bool") {
 			throw utilities.TODO();
