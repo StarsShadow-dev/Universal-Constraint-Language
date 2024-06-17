@@ -48,6 +48,9 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 				return "false";
 			}
 		}
+		case "number": {
+			return `${opCode.value}`;
+		}
 		case "string": {
 			// TODO
 			return `"${opCode.value}"`;
@@ -79,6 +82,21 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 			const trueCodeBlock = codeGenList(context, opCode.trueCodeBlock).join(sep);
 			const falseCodeBlock = codeGenList(context, opCode.falseCodeBlock).join(sep);
 			return `(${condition} ? ${trueCodeBlock} : ${falseCodeBlock})`;
+		}
+		case "newInstance": {
+			let textList = [];
+			for (let i = 0; i < opCode.codeBlock.length; i++) {
+				const alias = opCode.codeBlock[i];
+				if (alias.kind != "alias") {
+					throw utilities.unreachable();
+				}
+				
+				const value = codeGen(context, alias.value);
+				
+				textList.push(`"${alias.name}": ${value},`);
+			}
+			
+			return `{${sep}${textList.join(sep)}${codeGen_sep(context, context.level - 1)}}`;
 		}
 		case "alias": {
 			return `let ${opCode.name} = ` + codeGenList(context, [opCode.value]).join(sep);

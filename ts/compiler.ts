@@ -149,7 +149,6 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
 	// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
-	
 	if (newFile.opCodes.length > 0) {
 		buildBlock(context, newFile.opCodes, false);
 		if (context.compilerOptions.dumpOpCodes) {

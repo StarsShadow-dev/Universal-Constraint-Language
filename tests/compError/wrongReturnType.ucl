@@ -1,8 +1,8 @@
-// testSkip
 // compError
-// error: expected type builtin:String but got type builtin:Number
-// tests/compError/wrongReturnType.ucl:5 -> function defined here
+// error: expected type builtin:String, but got type builtin:Number
+// tests/compError/wrongReturnType.ucl:6 -> expected type defined here
+// tests/compError/wrongReturnType.ucl:7 -> actual type from here
 
-test = fn(): String {
+test = fn() -> String {
 	1
 }

@@ -44,23 +44,18 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 		case "bool": {
 			return castToValue(getAliasFromList(builtinTypes, "Bool"));
 		}
-		
 		case "number": {
 			return castToValue(getAliasFromList(builtinTypes, "Number"));
 		}
-		
 		case "string": {
 			return castToValue(getAliasFromList(builtinTypes, "String"));
 		}
-		
 		case "complexValue": {
 			return opCode.type;
 		}
-		
 		case "struct": {
 			return castToValue(getAliasFromList(builtinTypes, "Type"));
 		}
-		
 		case "function": {
 			return {
 				kind: "functionType",
@@ -70,7 +65,6 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 				returnType: opCode.returnType,
 			};
 		}
-		
 		case "if": {
 			return getTypeOf(context, buildBlock(context, opCode.trueCodeBlock, true));
 		}
@@ -173,7 +167,8 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			const functionToCall = build(context, opCode.left, resolve);
 			
 			if (functionToCall.kind != "function") {
-				throw utilities.TODO();
+				throw new CompileError(`call expression requires function`)
+					.indicator(opCode.location, "here");
 			}
 			
 			if (opCode.callArguments.length > functionToCall.functionArguments.length) {
