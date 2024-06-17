@@ -188,6 +188,24 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			
 			break;
 		}
+		case "operator": {
+			const left = build(context, opCode.left, resolve);
+			const right = build(context, opCode.right, resolve);
+			if (opCode.operatorText == "==") {
+				if (left.kind != "complexValue" && right.kind != "complexValue") {
+					if (left.kind == "number" && right.kind == "number") {
+						return {
+							kind: "bool",
+							location: opCode.location,
+							value: left.value == right.value,
+						};
+					} else {
+						throw utilities.TODO();
+					}
+				}
+			}
+			break;
+		}
 		case "struct": {
 			if (opCode.codeBlock.length > 0) {
 				buildBlock(context, opCode.codeBlock, resolve);
