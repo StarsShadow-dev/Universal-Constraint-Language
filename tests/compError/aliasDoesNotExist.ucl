@@ -1,0 +1,5 @@
+// compError
+// error: alias 'nonExistentAlias' does not exist
+// tests/compError/aliasDoesNotExist.ucl:5 -> here
+
+nonExistentAlias
