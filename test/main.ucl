@@ -33,4 +33,10 @@
 
 // --------
 
-@compAssert(2 == 1)
+test = struct() {
+	a = 1
+	b = 2
+}
+
+@compAssert(test.a == 1)
+@compAssert(test.b == 1)

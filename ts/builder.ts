@@ -190,17 +190,34 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 		}
 		case "operator": {
 			const left = build(context, opCode.left, resolve);
-			const right = build(context, opCode.right, resolve);
-			if (opCode.operatorText == "==") {
-				if (left.kind != "complexValue" && right.kind != "complexValue") {
-					if (left.kind == "number" && right.kind == "number") {
-						return {
-							kind: "bool",
-							location: opCode.location,
-							value: left.value == right.value,
-						};
-					} else {
-						throw utilities.TODO();
+			
+			if (opCode.operatorText == ".") {
+				if (left.kind != "struct") {
+					throw utilities.TODO();
+				}
+				if (opCode.right.kind != "identifier") {
+					throw utilities.TODO();
+				}
+				const name = opCode.right.name
+				const alias = getAliasFromList(left.codeBlock, name);
+				if (!alias) {
+					throw utilities.TODO();
+				}
+				debugger;
+				return alias.value;
+			} else {
+				const right = build(context, opCode.right, resolve);
+				if (opCode.operatorText == "==") {
+					if (left.kind != "complexValue" && right.kind != "complexValue") {
+						if (left.kind == "number" && right.kind == "number") {
+							return {
+								kind: "bool",
+								location: opCode.location,
+								value: left.value == right.value,
+							};
+						} else {
+							throw utilities.TODO();
+						}
 					}
 				}
 			}
