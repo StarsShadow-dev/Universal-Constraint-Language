@@ -369,15 +369,16 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					}
 					if (field.name == alias.name) {
 						templateField = field;
+						break;
 					}
 				}
 				if (!templateField) {
-					throw utilities.TODO();
+					throw new CompileError(`field '${alias.name}' should not exist`)
+						.indicator(alias.location, "field here")
+						.indicator(template.location, `the template type does not contain a field named '${alias.name}'`);
 				}
 				// expectType
 			}
-			
-			debugger;
 			
 			for (let f = 0; f < template.fields.length; f++) {
 				const field = template.fields[f];
@@ -389,11 +390,12 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				for (let a = 0; a < opCode.codeBlock.length; a++) {
 					const alias = opCode.codeBlock[a];
 					if (alias.kind != "alias") {
-						throw utilities.TODO();
+						throw utilities.unreachable();
 					}
 					
 					if (field.name == alias.name) {
 						foundField = true;
+						break;
 					}
 				}
 				
