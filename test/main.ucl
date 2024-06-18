@@ -25,18 +25,8 @@
 
 // --------
 
-// Vec2 = struct(x: Number, y: Number) {}
-// test = Vec2 {
-// 	x = 1
-// 	y = 2
-// }
-
-// --------
-
-test = struct() {
-	a = 1
-	b = 2
+Vec2 = struct(x: Number, y: Number) {}
+test = Vec2 {
+	x = 1
+	// y = 2
 }
-
-@compAssert(test.a == 1)
-@compAssert(test.nonExistentAlias == 1)

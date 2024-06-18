@@ -261,11 +261,6 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			}
 			break;
 		}
-		case "alias": {
-			opCode.value = build(context, opCode.value, false);
-			
-			break;
-		}
 		case "function": {
 			const returnType = build(context, opCode.returnType, resolve);
 			if (!OpCode_isAtype(returnType)) {
@@ -351,6 +346,67 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					}
 				}
 			}
+			
+			break;
+		}
+		case "newInstance": {
+			const template = build(context, opCode.template, resolve);
+			if (template.kind != "struct") {
+				throw utilities.TODO();
+			}
+			
+			for (let a = 0; a < opCode.codeBlock.length; a++) {
+				const alias = opCode.codeBlock[a];
+				if (alias.kind != "alias") {
+					throw utilities.TODO();
+				}
+				
+				let templateField = null;
+				for (let f = 0; f < template.fields.length; f++) {
+					const field = template.fields[f];
+					if (field.kind != "argument") {
+						throw utilities.unreachable();
+					}
+					if (field.name == alias.name) {
+						templateField = field;
+					}
+				}
+				if (!templateField) {
+					throw utilities.TODO();
+				}
+				// expectType
+			}
+			
+			debugger;
+			
+			for (let f = 0; f < template.fields.length; f++) {
+				const field = template.fields[f];
+				if (field.kind != "argument") {
+					throw utilities.unreachable();
+				}
+				
+				let foundField = false;
+				for (let a = 0; a < opCode.codeBlock.length; a++) {
+					const alias = opCode.codeBlock[a];
+					if (alias.kind != "alias") {
+						throw utilities.TODO();
+					}
+					
+					if (field.name == alias.name) {
+						foundField = true;
+					}
+				}
+				
+				if (!foundField) {
+					throw new CompileError(`struct instance is missing field '${field.name}'`)
+						.indicator(opCode.location, "struct instance here")
+						.indicator(field.location, "missing field defined here");
+				}
+			}
+			break;
+		}
+		case "alias": {
+			opCode.value = build(context, opCode.value, false);
 			
 			break;
 		}
