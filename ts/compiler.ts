@@ -8,6 +8,7 @@ import {
 } from './parser';
 import {
 	OpCode,
+	OpCode_alias,
 	OpCode_function,
 	Token,
 } from "./types";
@@ -63,6 +64,7 @@ export type BuilderContext = {
 	compilerStage: CompilerStage,
 	disableDependencyEvaluation: boolean,
 	returnEarly: boolean,
+	outOpCodes: OpCode_alias[],
 };
 
 // file is null!
@@ -77,6 +79,7 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 		compilerStage: CompilerStage.findAliases,
 		disableDependencyEvaluation: false,
 		returnEarly: false,
+		outOpCodes: [],
 	};
 }
 
@@ -152,7 +155,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	if (newFile.opCodes.length > 0) {
 		buildBlock(context, newFile.opCodes, false);
 		if (context.compilerOptions.dumpOpCodes) {
-			console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
+			// console.log(`OpCodes '${filePath}':`, JSON.stringify(newFile.opCodes, undefined, 4));
 		}
 		
 		const js = codeGenList({

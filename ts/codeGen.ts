@@ -66,6 +66,34 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 		case "builtinCall": {
 			return ``;
 		}
+		case "operator": {
+			let withParentheses = true;
+			if (opCode.operatorText == ".") {
+				withParentheses = false;
+			}
+			let opText = opCode.operatorText;
+			
+			const left = codeGen(context, opCode.left);
+			const right = codeGen(context, opCode.right);
+			
+			if (withParentheses) {
+				return `(${left} ${opText} ${right})`;
+			} else {
+				return `${left}${opText}${right}`;
+			}
+		}
+		case "struct": {
+			let aliasTextList: string[] = [];
+			for (let i = 0; i < opCode.codeBlock.length; i++) {
+				const alias = opCode.codeBlock[i];
+				if (alias.kind == "alias") {
+					context.level++;
+					aliasTextList.push(alias.name + ": " + codeGenList(context, [alias.value]) + ",");
+					context.level--;
+				}
+			}
+			return `(() => {${sep}return {${codeGen_sep(context, context.level + 1)}${aliasTextList.join(sep)}${sep}}${codeGen_sep(context, context.level - 1)}})()`;
+		}
 		case "argument": {
 			return opCode.name;
 		}
@@ -83,7 +111,7 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 			const falseCodeBlock = codeGenList(context, opCode.falseCodeBlock).join(sep);
 			return `(${condition} ? ${trueCodeBlock} : ${falseCodeBlock})`;
 		}
-		case "newInstance": {
+		case "instance": {
 			let textList = [];
 			for (let i = 0; i < opCode.codeBlock.length; i++) {
 				const alias = opCode.codeBlock[i];

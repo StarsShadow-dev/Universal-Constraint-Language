@@ -58,10 +58,12 @@ type genericOpCodeType = genericOpCode & {
 export type OpCodeType =
 genericOpCodeType & {
 	kind: "struct",
+	doCheck: boolean,
 	fields: OpCode[],
 	codeBlock: OpCode[],
 } | genericOpCodeType & {
 	kind: "enum",
+	doCheck: boolean,
 	codeBlock: OpCode[],
 } | genericOpCodeType & {
 	kind: "functionType",
@@ -169,10 +171,9 @@ genericOpCode & {
 	falseCodeBlock: OpCode[],
 } | genericOpCode & {
 	kind: "codeBlock",
-	comptime: boolean,
 	codeBlock: OpCode[],
 } | genericOpCode & {
-	kind: "newInstance",
+	kind: "instance",
 	template: OpCode,
 	codeBlock: OpCode[],
 } |

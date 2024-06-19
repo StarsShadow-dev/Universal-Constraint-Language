@@ -68,6 +68,13 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 		case "if": {
 			return getTypeOf(context, buildBlock(context, opCode.trueCodeBlock, true));
 		}
+		case "instance": {
+			const template = build(context, opCode.template, true);
+			if (!OpCode_isAtype(template)) {
+				throw utilities.unreachable();
+			}
+			return template;
+		}
 		
 		default: {
 			throw utilities.TODO();
@@ -130,19 +137,19 @@ export function buildBlock(context: BuilderContext, opCodes: OpCode[], resolve: 
 		}
 	}
 	
-	context.doTransformations = false;
-	if (context.compilerOptions.builderTransforms.removeTypes) {
-		for (let index = 0; index < opCodes.length; index++) {
-			const opCode = opCodes[index];
+	// context.doTransformations = false;
+	// if (context.compilerOptions.builderTransforms.removeTypes) {
+	// 	for (let index = 0; index < opCodes.length; index++) {
+	// 		const opCode = opCodes[index];
 			
-			if (opCode.kind == "alias") {
-				const value = build(context, opCode.value, true);
-				if (OpCode_isAtype(value)) {
-					opCodes.splice(index, 1);
-				}
-			}
-		}
-	}
+	// 		if (opCode.kind == "alias") {
+	// 			const value = build(context, opCode.value, true);
+	// 			if (OpCode_isAtype(value)) {
+	// 				opCodes.splice(index, 1);
+	// 			}
+	// 		}
+	// 	}
+	// }
 	
 	if (!lastOp) {
 		throw utilities.TODO();
@@ -162,7 +169,11 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			}
 			
 			const value = build(context, alias.value, resolve);
-			return value;
+			if (resolve) {
+				return value;
+			} else {
+				break;
+			}
 		}
 		case "call": {
 			const functionToCall = build(context, opCode.left, resolve);
@@ -182,6 +193,26 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					.indicator(opCode.location, "function call here");
 			}
 			
+			if (resolve) {
+				let newLevel: OpCode[] = [];
+				for (let i = 0; i < functionToCall.functionArguments.length; i++) {
+					const functionArgument = functionToCall.functionArguments[i];
+					
+					newLevel.push({
+						kind: "alias",
+						location: functionArgument.location,
+						name: functionArgument.name,
+						value: opCode.callArguments[i],
+					})
+				}
+				
+				context.file.scope.levels.push(newLevel);
+				const result = buildBlock(context, functionToCall.codeBlock, resolve);
+				context.file.scope.levels.pop();
+				
+				return result;
+			}
+			
 			break;
 		}
 		case "builtinCall": {
@@ -190,10 +221,10 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			break;
 		}
 		case "operator": {
-			const left = build(context, opCode.left, resolve);
+			const left = build(context, opCode.left, true);
 			
 			if (opCode.operatorText == ".") {
-				if (left.kind != "struct") {
+				if (left.kind != "struct" && left.kind != "instance") {
 					throw utilities.TODO();
 				}
 				if (opCode.right.kind != "identifier") {
@@ -226,7 +257,10 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 		}
 		case "struct": {
 			if (opCode.codeBlock.length > 0) {
-				buildBlock(context, opCode.codeBlock, resolve);
+				if (opCode.doCheck) {
+					opCode.doCheck = false;
+					buildBlock(context, opCode.codeBlock, resolve);
+				}
 			}
 			break;
 		}
@@ -262,7 +296,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			break;
 		}
 		case "function": {
-			const returnType = build(context, opCode.returnType, resolve);
+			const returnType = build(context, opCode.returnType, true);
 			if (!OpCode_isAtype(returnType)) {
 				throw utilities.TODO();
 			}
@@ -270,7 +304,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			let newLevel: OpCode[] = [];
 			for (let i = 0; i < opCode.functionArguments.length; i++) {
 				const functionArgument = opCode.functionArguments[i];
-				const type = build(context, functionArgument.type, resolve);
+				const type = build(context, functionArgument.type, true);
 				
 				if (!OpCode_isAtype(type)) {
 					throw new CompileError("function argument is not a type").indicator(functionArgument.location, "here");
@@ -299,7 +333,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			});
 			
 			opCode.returnType = returnType;
-			if (opCode.doTransformations) {
+			if (opCode.doTransformations && true) {
 				opCode.doTransformations = false;
 				const last = opCode.codeBlock.pop();
 				if (!last) {
@@ -349,8 +383,8 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			
 			break;
 		}
-		case "newInstance": {
-			const template = build(context, opCode.template, resolve);
+		case "instance": {
+			const template = build(context, opCode.template, true);
 			if (template.kind != "struct") {
 				throw utilities.TODO();
 			}
@@ -397,6 +431,9 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 						foundField = true;
 						break;
 					}
+					
+					const value = build(context, alias.value, resolve);
+					alias.value = value;
 				}
 				
 				if (!foundField) {
