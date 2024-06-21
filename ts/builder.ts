@@ -224,7 +224,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			if (opCode.operatorText == ".") {
 				const left = build(context, opCode.left, true);
 				
-				if (left.kind != "struct" && left.kind != "instance") {
+				if (left.kind != "struct" && left.kind != "enum" && left.kind != "instance") {
 					throw utilities.TODO();
 				}
 				if (opCode.right.kind != "identifier") {
@@ -272,28 +272,6 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			}
 			
 			opCode.returnType = returnType;
-			break;
-		}
-		case "operator": {
-			if (opCode.operatorText == ".") {
-				if (opCode.right.kind != "identifier") {
-					throw utilities.TODO();
-				}
-				
-				const left = build(context, opCode.left, resolve);
-				if (left.kind != "struct") {
-					throw utilities.TODO();
-				}
-				const name = opCode.right.name;
-				
-				const alias = getAliasFromList(left.codeBlock, name);
-				if (!alias) {
-					throw utilities.TODO();
-				}
-				
-				const value = build(context, alias.value, resolve);
-				return value;
-			}
 			break;
 		}
 		case "function": {
@@ -388,6 +366,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			const outOpCode: OpCode = {
 				kind: "instance",
 				location: opCode.location,
+				caseTag: null,
 				template: opCode.template,
 				codeBlock: [],
 			};
@@ -396,6 +375,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			if (template.kind != "struct") {
 				throw utilities.TODO();
 			}
+			outOpCode.caseTag = template.caseTag;
 			
 			for (let a = 0; a < opCode.codeBlock.length; a++) {
 				const alias = opCode.codeBlock[a];

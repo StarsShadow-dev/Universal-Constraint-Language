@@ -8,15 +8,12 @@
 
 // --------
 
-test = fn() -> Type {
-	struct(a: Number) {
-		n = 4
-	}
-}
-function = fn() -> test() {
-	test() {
-		a = test().n
-	}
+test = enum {
+	None
+	Some = struct(n: Number) {}
 }
 
-@compAssert(function().a == 4)
+a = test.None {}
+b = test.Some {
+	n = 5
+}

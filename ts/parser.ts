@@ -399,6 +399,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					OpCodes.push({
 						kind: "struct",
 						location: token.location,
+						caseTag: null,
 						doCheck: true,
 						id: `${JSON.stringify(token.location)}`,
 						fields: fields,
@@ -412,6 +413,32 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
 					const codeBlock = parse(context, ParserMode.normal, "}");
+					let nextCaseTag = 0;
+					for (let i = 0; i < codeBlock.length; i++) {
+						const opCode = codeBlock[i];
+						if (opCode.kind == "identifier") {
+							codeBlock[i] = {
+								kind: "alias",
+								location: opCode.location,
+								name: opCode.name,
+								value: {
+									kind: "struct",
+									location: opCode.location,
+									caseTag: nextCaseTag,
+									doCheck: true,
+									id: `${JSON.stringify(opCode.location)}`,
+									fields: [],
+									codeBlock: [],
+								},
+							};
+							nextCaseTag++;
+						} else if (opCode.kind == "alias") {
+							if (opCode.value.kind == "struct") {
+								opCode.value.caseTag = nextCaseTag;
+								nextCaseTag++;
+							}
+						}
+					}
 					
 					OpCodes.push({
 						kind: "enum",
@@ -624,6 +651,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				OpCodes.push({
 					kind: "instance",
 					location: left.location,
+					caseTag: null,
 					template: left,
 					codeBlock: codeBlock,
 				});

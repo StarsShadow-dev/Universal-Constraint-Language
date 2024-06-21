@@ -58,6 +58,7 @@ type genericOpCodeType = genericOpCode & {
 export type OpCodeType =
 genericOpCodeType & {
 	kind: "struct",
+	caseTag: number | null,
 	doCheck: boolean,
 	fields: OpCode[],
 	codeBlock: OpCode[],
@@ -174,6 +175,7 @@ genericOpCode & {
 	codeBlock: OpCode[],
 } | genericOpCode & {
 	kind: "instance",
+	caseTag: number | null,
 	template: OpCode,
 	codeBlock: OpCode[],
 } |

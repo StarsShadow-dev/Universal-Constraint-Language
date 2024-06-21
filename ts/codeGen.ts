@@ -91,11 +91,24 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 				const alias = opCode.codeBlock[i];
 				if (alias.kind == "alias") {
 					context.level++;
-					aliasTextList.push(alias.name + ": " + codeGenList(context, [alias.value]) + ",");
+					aliasTextList.push(codeGen_sep(context, context.level) + alias.name + ": " + codeGenList(context, [alias.value]) + ",");
 					context.level--;
 				}
 			}
-			return `(() => {${sep}return {${codeGen_sep(context, context.level + 1)}${aliasTextList.join(sep)}${sep}}${codeGen_sep(context, context.level - 1)}})()`;
+			
+			return `/*struct*/(() => {${sep}return {${codeGen_sep(context, context.level + 1)}${aliasTextList.join(sep)}${sep}}${codeGen_sep(context, context.level - 1)}})()`;
+		}
+		case "enum": {
+			let aliasTextList: string[] = [];
+			for (let i = 0; i < opCode.codeBlock.length; i++) {
+				const alias = opCode.codeBlock[i];
+				if (alias.kind == "alias") {
+					context.level++;
+					aliasTextList.push(codeGen_sep(context, context.level) + alias.name + ": " + codeGenList(context, [alias.value]) + ",");
+					context.level--;
+				}
+			}
+			return `/*enum*/(() => {${sep}return {${aliasTextList.join(sep)}${sep}}${codeGen_sep(context, context.level - 1)}})()`;
 		}
 		case "argument": {
 			return opCode.name;
@@ -127,7 +140,16 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 				textList.push(`"${alias.name}": ${value},`);
 			}
 			
-			return `{${sep}${textList.join(sep)}${codeGen_sep(context, context.level - 1)}}`;
+			let tag = "";
+			if (opCode.caseTag != null) {
+				tag = `__tag: ${opCode.caseTag},`;
+			}
+			
+			if (textList.length == 0) {
+				return `{${tag}}`;
+			} else {
+				return `{${tag}${sep}${textList.join(sep)}${codeGen_sep(context, context.level - 1)}}`;
+			}
 		}
 		case "alias": {
 			return `let ${opCode.name} = ` + codeGenList(context, [opCode.value]).join(sep);
