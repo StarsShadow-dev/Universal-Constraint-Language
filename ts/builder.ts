@@ -107,6 +107,19 @@ function expectType(
 		return;
 	}
 	
+	if (expectedType.kind == "enum" && actualType.kind == "struct") {
+		for (let i = 0; i < expectedType.codeBlock.length; i++) {
+			const alias = expectedType.codeBlock[i];
+			if (alias.kind != "alias" || alias.value.kind != "struct") {
+				throw utilities.unreachable();
+			}
+			
+			if (alias.value.id == actualType.id) {
+				return;
+			}
+		}
+	}
+	
 	if (expectedType.id != actualType.id) {
 		let error = new CompileError(`expected type ${OpCodeType_getName(expectedType)}, but got type ${OpCodeType_getName(actualType)}`);
 		callBack(error);
@@ -363,19 +376,19 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			break;
 		}
 		case "instance": {
-			const outOpCode: OpCode = {
-				kind: "instance",
-				location: opCode.location,
-				caseTag: null,
-				template: opCode.template,
-				codeBlock: [],
-			};
-			
 			const template = build(context, opCode.template, true);
 			if (template.kind != "struct") {
 				throw utilities.TODO();
 			}
-			outOpCode.caseTag = template.caseTag;
+			opCode.caseTag = template.caseTag;
+			
+			const outOpCode: OpCode = {
+				kind: "instance",
+				location: opCode.location,
+				caseTag: template.caseTag,
+				template: opCode.template,
+				codeBlock: [],
+			};
 			
 			for (let a = 0; a < opCode.codeBlock.length; a++) {
 				const alias = opCode.codeBlock[a];

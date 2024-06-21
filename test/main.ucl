@@ -8,12 +8,15 @@
 
 // --------
 
-test = enum {
+MaybeN = enum {
 	None
 	Some = struct(n: Number) {}
 }
 
-a = test.None {}
-b = test.Some {
-	n = 5
+test = fn() -> MaybeN {
+	MaybeN.Some {
+		n = 5
+	}
 }
+
+a = test()

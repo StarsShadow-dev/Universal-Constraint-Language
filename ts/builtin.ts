@@ -45,5 +45,7 @@ export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinC
 			throw new CompileError(`assert failed`)
 				.indicator(callOpCode.location, "here");
 		}
+	} else if (callOpCode.name == "db") {
+		debugger;
 	}
 }
