@@ -55,6 +55,9 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 			// TODO
 			return `"${opCode.value}"`;
 		}
+		case "complexValue": {
+			return `complexValue`;
+		}
 		case "identifier": {
 			return opCode.name;
 		}

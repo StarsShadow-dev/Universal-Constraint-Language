@@ -176,7 +176,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			}
 		}
 		case "call": {
-			const functionToCall = build(context, opCode.left, resolve);
+			const functionToCall = build(context, opCode.left, true);
 			
 			if (functionToCall.kind != "function") {
 				throw new CompileError(`call expression requires function`)
@@ -221,9 +221,9 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			break;
 		}
 		case "operator": {
-			const left = build(context, opCode.left, true);
-			
 			if (opCode.operatorText == ".") {
+				const left = build(context, opCode.left, true);
+				
 				if (left.kind != "struct" && left.kind != "instance") {
 					throw utilities.TODO();
 				}
@@ -238,6 +238,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				}
 				return alias.value;
 			} else {
+				const left = build(context, opCode.left, resolve);
 				const right = build(context, opCode.right, resolve);
 				if (opCode.operatorText == "==") {
 					if (left.kind != "complexValue" && right.kind != "complexValue") {
@@ -322,7 +323,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				})
 			}
 			context.file.scope.levels.push(newLevel);
-			const result = buildBlock(context, opCode.codeBlock, resolve);
+			const result = buildBlock(context, opCode.codeBlock, true);
 			context.file.scope.levels.pop();
 			
 			const resultType = getTypeOf(context, result);
@@ -384,6 +385,13 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			break;
 		}
 		case "instance": {
+			const outOpCode: OpCode = {
+				kind: "instance",
+				location: opCode.location,
+				template: opCode.template,
+				codeBlock: [],
+			};
+			
 			const template = build(context, opCode.template, true);
 			if (template.kind != "struct") {
 				throw utilities.TODO();
@@ -411,7 +419,15 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 						.indicator(alias.location, "field here")
 						.indicator(template.location, `the template type does not contain a field named '${alias.name}'`);
 				}
-				// expectType
+				
+				const value = build(context, alias.value, resolve);
+				// TODO: expectType
+				outOpCode.codeBlock.push({
+					kind: "alias",
+					location: alias.location,
+					name: alias.name,
+					value: value,
+				});
 			}
 			
 			for (let f = 0; f < template.fields.length; f++) {
@@ -431,9 +447,6 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 						foundField = true;
 						break;
 					}
-					
-					const value = build(context, alias.value, resolve);
-					alias.value = value;
 				}
 				
 				if (!foundField) {
@@ -442,7 +455,8 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 						.indicator(field.location, "missing field defined here");
 				}
 			}
-			break;
+			
+			return outOpCode;
 		}
 		case "alias": {
 			opCode.value = build(context, opCode.value, false);
