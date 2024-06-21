@@ -459,6 +459,13 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			return outOpCode;
 		}
 		case "alias": {
+			const alias = getAlias(context, opCode.name);
+			if (alias && alias != opCode) {
+				throw new CompileError(`alias '${opCode.name}' already exists`)
+					.indicator(opCode.location, "alias redefined here")
+					.indicator(alias.location, "alias originally defined here");
+			}
+			
 			opCode.value = build(context, opCode.value, false);
 			
 			break;
