@@ -1,12 +1,4 @@
-// test = struct() {
-// 	retType = String
-// 	inTest = fn(): retType {
-// 		"Hello, World!"
-// 	}
-// }
-// main = test.inTest
-
-// --------
+// compSucceed
 
 test = fn() -> Type {
 	struct(a: Number) {

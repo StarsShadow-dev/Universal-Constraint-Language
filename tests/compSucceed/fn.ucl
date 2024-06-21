@@ -1,7 +1,6 @@
-// testSkip
 // compSucceed
 
-function = fn(): Number {
+function = fn() -> Number {
 	6
 }
 
