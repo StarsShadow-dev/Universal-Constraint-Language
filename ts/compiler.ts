@@ -157,6 +157,7 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	
 	if (newFile.opCodes.length > 0) {
 		buildBlock(context, newFile.opCodes, false);
+		debugger;
 		
 		const js = codeGenList({
 			level: 0,

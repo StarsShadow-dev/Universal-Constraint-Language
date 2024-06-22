@@ -8,6 +8,7 @@ function makePrimitiveTypeAlias(name: string): OpCode_alias {
 	return {
 		kind: "alias",
 		location: "builtin",
+		disableGeneration: true,
 		name: name,
 		value: {
 			kind: "struct",

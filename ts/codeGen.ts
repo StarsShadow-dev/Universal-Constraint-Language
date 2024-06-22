@@ -17,7 +17,11 @@ export const codeGenList = (context: CodeGenContext, opCodes: OpCode[], newModes
 		context.modes.push(...newModes);
 	}
 	for (let index = 0; index < opCodes.length; index++) {
-		strings.push(codeGen(context, opCodes[index]));
+		const opCode = opCodes[index];
+		if (opCode.kind == "alias" && opCode.disableGeneration) {
+			continue;
+		}
+		strings.push(codeGen(context, opCode));
 	}
 	context.level--;
 	if (newModes) {
@@ -54,9 +58,6 @@ function codeGenJs(context: CodeGenContext, opCode: OpCode): string {
 		case "string": {
 			// TODO
 			return `"${opCode.value}"`;
-		}
-		case "complexValue": {
-			return `complexValue`;
 		}
 		case "identifier": {
 			return opCode.name;

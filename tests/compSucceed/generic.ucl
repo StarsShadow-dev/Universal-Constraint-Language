@@ -1,13 +1,13 @@
 // compSucceed
 
-test = fn() -> Type {
-	struct(a: Number) {
+test = fn(type: Type) -> Type {
+	struct(a: type) {
 		n = 4
 	}
 }
-function = fn() -> test() {
-	test() {
-		a = test().n
+function = fn() -> test(Number) {
+	test(Number) {
+		a = test(Number).n
 	}
 }
 

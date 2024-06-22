@@ -1,0 +1,9 @@
+// compError
+
+Generic = fn(type: Type) -> Type {
+	struct() {}
+}
+
+function = fn() -> Generic(String) {
+	Generic(Number) {}
+}

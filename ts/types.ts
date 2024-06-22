@@ -46,7 +46,6 @@ export type OpCode_builtinCall = genericOpCode & {
 
 export type OpCode_argument = genericOpCode & {
 	kind: "argument",
-	comptime: boolean,
 	name: string,
 	type: OpCode,
 };
@@ -60,7 +59,7 @@ genericOpCodeType & {
 	kind: "struct",
 	caseTag: number | null,
 	doCheck: boolean,
-	fields: OpCode[],
+	fields: OpCode_argument[],
 	codeBlock: OpCode[],
 } | genericOpCodeType & {
 	kind: "enum",
@@ -106,6 +105,7 @@ export type OpCode_function = genericOpCode & {
 
 export type OpCode_alias = genericOpCode & {
 	kind: "alias",
+	disableGeneration: boolean,
 	name: string,
 	value: OpCode,
 };

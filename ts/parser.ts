@@ -135,6 +135,7 @@ function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: nu
 				return {
 					kind: "alias",
 					location: nextOperator.location,
+					disableGeneration: false,
 					name: left.name,
 					value: right,
 				}
@@ -198,7 +199,6 @@ function parseFunctionArguments(context: ParserContext): OpCode_argument[] {
 		AST.push({
 			kind: "argument",
 			location: name.location,
-			comptime: comptime,
 			name: name.text,
 			type: type,
 		});	
@@ -420,6 +420,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 							codeBlock[i] = {
 								kind: "alias",
 								location: opCode.location,
+								disableGeneration: false,
 								name: opCode.name,
 								value: {
 									kind: "struct",

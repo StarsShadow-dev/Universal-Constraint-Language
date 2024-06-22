@@ -8,15 +8,10 @@
 
 // --------
 
-MaybeN = enum {
-	None
-	Some = struct(n: Number) {}
+Generic = fn(type: Type) -> Type {
+	struct() {}
 }
 
-test = fn() -> MaybeN {
-	MaybeN.Some {
-		n = 5
-	}
+function = fn() -> Generic(String) {
+	Generic(Number) {}
 }
-
-a = test()
