@@ -499,14 +499,26 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						elements: elements,
 					});
 				} else if (token.text == "(") {
-					utilities.TODO();
+					const left = OpCodes.pop();
+					if (left == undefined) {
+						throw utilities.TODO();
+					}
+						
+					const callArguments = parse(context, ParserMode.comma, ")");
+					
+					OpCodes.push({
+						kind: "call",
+						location: token.location,
+						left: left,
+						callArguments: callArguments,
+					});
 				} else if (token.text == "\\") {
 					const openingParentheses = forward(context);
 					if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 					}
 					
-					const functionArguments = parseFunctionArguments(context);
+					const functionArguments = parse(context, ParserMode.comma, ")");
 					const returnType = parseType(context, "->");
 					if (!returnType) {
 						throw new CompileError("function type must have a return type").indicator(token.location, "here");
@@ -610,20 +622,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenKind.separator && next(context).text == "(") {
-			const left = OpCodes.pop();
-			if (left != undefined) {
-				const location = forward(context).location;
-				const callArguments = parse(context, ParserMode.comma, ")");
-				
-				OpCodes.push({
-					kind: "call",
-					location: location,
-					left: left,
-					callArguments: callArguments,
-				});
-			} else {
-				utilities.unreachable();
-			}
+			continue;
 		}
 		
 		if (mode == ParserMode.singleNoOperatorContinue) {

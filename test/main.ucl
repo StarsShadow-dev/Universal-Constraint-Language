@@ -18,8 +18,9 @@
 
 // --------
 
-test = struct(a: Number, b: Number) {}
-
-test {
-	a = 1
+test = fn() -> \(Number) -> Number {
+	fn(n: Number) -> Number {
+		n + 1
+	}
 }
+a = test()(1)

@@ -68,7 +68,7 @@ genericOpCodeType & {
 	codeBlock: OpCode[],
 } | genericOpCodeType & {
 	kind: "functionType",
-	functionArguments: OpCode_argument[],
+	functionArguments: OpCode[],
 	returnType: OpCode,
 };
 export function OpCode_isAtype(opCode: OpCode): opCode is OpCodeType {

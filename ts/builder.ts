@@ -31,38 +31,50 @@ export function getAliasFromList(opCodes: OpCode[], name: string): OpCode_alias 
 	return null;
 }
 
-function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
-	function castToValue(alias: OpCode_alias | null): OpCodeType {
-		if (!alias || !OpCode_isAtype(alias.value)) {
-			throw utilities.unreachable();
-		}
-		
-		return alias.value;
+function castAliasToType(alias: OpCode_alias | null): OpCodeType {
+	if (!alias || !OpCode_isAtype(alias.value)) {
+		throw utilities.unreachable();
 	}
 	
+	return alias.value;
+}
+
+function getBuiltinType(name: string): OpCodeType {
+	return castAliasToType(getAliasFromList(builtinTypes, name));
+}
+
+function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 	switch (opCode.kind) {
 		case "bool": {
-			return castToValue(getAliasFromList(builtinTypes, "Bool"));
+			return getBuiltinType("Bool");
 		}
 		case "number": {
-			return castToValue(getAliasFromList(builtinTypes, "Number"));
+			return getBuiltinType("Number");
 		}
 		case "string": {
-			return castToValue(getAliasFromList(builtinTypes, "String"));
+			return getBuiltinType("String");
 		}
 		case "complexValue": {
 			return opCode.type;
 		}
 		case "struct": {
-			return castToValue(getAliasFromList(builtinTypes, "Type"));
+			return getBuiltinType("Type");
 		}
 		case "function": {
+			let functionArguments = opCode.functionArguments.map((_value) => {
+				const value = build(context, _value.type, true);
+				if (!OpCode_isAtype(value)) {
+					throw utilities.unreachable();
+				}
+				return value;
+			});
+			
 			return {
 				kind: "functionType",
 				location: opCode.location,
 				id: `${JSON.stringify(opCode.location)}`,
 				haveSetId: false,
-				functionArguments: opCode.functionArguments,
+				functionArguments: functionArguments,
 				returnType: opCode.returnType,
 			};
 		}
@@ -294,20 +306,54 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			} else {
 				const left = build(context, opCode.left, resolve);
 				const right = build(context, opCode.right, resolve);
+				
+				expectType(context, getTypeOf(context, left), getTypeOf(context, right), (error) => {
+					// TODO
+				});
+				
+				// ret bool
 				if (opCode.operatorText == "==") {
-					if (left.kind != "complexValue" && right.kind != "complexValue") {
+					if (left.kind == "complexValue" || right.kind == "complexValue") {
+					
+					}
+					
+					if (left.kind == "number" && right.kind == "number") {
+						return {
+							kind: "bool",
+							location: opCode.location,
+							value: left.value == right.value,
+						};
+					} else {
+						throw utilities.TODO();
+					}
+				}
+				
+				// ret number
+				else {
+					if (left.kind == "complexValue" || right.kind == "complexValue") {
+						return {
+							kind: "complexValue",
+							location: opCode.location,
+							type: getBuiltinType("Number"),
+						};
+					}
+					
+					if (opCode.operatorText == "+") {
 						if (left.kind == "number" && right.kind == "number") {
 							return {
-								kind: "bool",
+								kind: "number",
 								location: opCode.location,
-								value: left.value == right.value,
+								value: left.value + right.value,
 							};
 						} else {
 							throw utilities.TODO();
 						}
+					} else {
+						throw utilities.TODO();
 					}
 				}
 			}
+			
 			break;
 		}
 		case "struct": {
@@ -389,6 +435,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					},
 				});
 			}
+			
 			context.file.scope.levels.push(newLevel);
 			const result = buildBlock(context, opCode.codeBlock, true);
 			context.file.scope.levels.pop();
