@@ -8,10 +8,18 @@
 
 // --------
 
-Generic = fn(type: Type) -> Type {
-	struct() {}
-}
+// Generic = fn(type: Type) -> Type {
+// 	struct() {}
+// }
 
-function = fn() -> Generic(String) {
-	Generic(Number) {}
+// function = fn() -> Generic(String) {
+// 	Generic(Number) {}
+// }
+
+// --------
+
+test = struct(a: Number, b: Number) {}
+
+test {
+	a = 1
 }

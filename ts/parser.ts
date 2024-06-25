@@ -249,6 +249,8 @@ function parseFunction(context: ParserContext, AST: OpCode[], location: SourceLo
 	AST.push({
 		kind: "function",
 		location: location,
+		id: `${JSON.stringify(location)}`,
+		haveSetId: false,
 		doTransformations: true,
 		forceInline: forceInline,
 		functionArguments: functionArguments,
@@ -399,9 +401,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					OpCodes.push({
 						kind: "struct",
 						location: token.location,
+						id: `${JSON.stringify(token.location)}`,
+						haveSetId: false,
 						caseTag: null,
 						doCheck: true,
-						id: `${JSON.stringify(token.location)}`,
 						fields: fields,
 						codeBlock: codeBlock,
 					});
@@ -425,9 +428,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 								value: {
 									kind: "struct",
 									location: opCode.location,
+									id: `${JSON.stringify(opCode.location)}`,
+									haveSetId: false,
 									caseTag: nextCaseTag,
 									doCheck: true,
-									id: `${JSON.stringify(opCode.location)}`,
 									fields: [],
 									codeBlock: [],
 								},
@@ -444,8 +448,9 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					OpCodes.push({
 						kind: "enum",
 						location: token.location,
-						doCheck: true,
 						id: `${JSON.stringify(token.location)}`,
+						haveSetId: false,
+						doCheck: true,
 						codeBlock: codeBlock,
 					});
 				}
@@ -511,6 +516,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						kind: "functionType",
 						location: token.location,
 						id: `${JSON.stringify(token.location)}`,
+						haveSetId: false,
 						functionArguments: functionArguments,
 						returnType: returnType,
 					});

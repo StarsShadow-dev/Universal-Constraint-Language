@@ -13,9 +13,10 @@ function makePrimitiveTypeAlias(name: string): OpCode_alias {
 		value: {
 			kind: "struct",
 			location: "builtin",
+			id: `builtin:${name}`,
+			haveSetId: false,
 			caseTag: null,
 			doCheck: false,
-			id: `builtin:${name}`,
 			fields: [],
 			codeBlock: [],
 		},

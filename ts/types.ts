@@ -52,6 +52,7 @@ export type OpCode_argument = genericOpCode & {
 
 type genericOpCodeType = genericOpCode & {
 	id: string,
+	haveSetId: boolean,
 };
 
 export type OpCodeType =
@@ -96,6 +97,8 @@ export function OpCodeType_getName(opCode: OpCodeType): string {
 
 export type OpCode_function = genericOpCode & {
 	kind: "function",
+	id: string,
+	haveSetId: boolean,
 	doTransformations: boolean,
 	forceInline: boolean,
 	functionArguments: OpCode_argument[],

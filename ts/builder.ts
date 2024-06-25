@@ -61,6 +61,7 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 				kind: "functionType",
 				location: opCode.location,
 				id: `${JSON.stringify(opCode.location)}`,
+				haveSetId: false,
 				functionArguments: opCode.functionArguments,
 				returnType: opCode.returnType,
 			};
@@ -74,6 +75,32 @@ function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
 				throw utilities.unreachable();
 			}
 			return template;
+		}
+		
+		default: {
+			throw utilities.TODO();
+		}
+	}
+}
+
+function getAsText(opCode: OpCode): string {
+	if (OpCode_isAtype(opCode)) {
+		return opCode.id;
+	}
+	
+	switch (opCode.kind) {
+		case "bool": {
+			if (opCode.value) {
+				return "true";
+			} else {
+				return "false";
+			}
+		}
+		case "number": {
+			return `${opCode.value}`;
+		}
+		case "string": {
+			return opCode.value;
 		}
 		
 		default: {
@@ -210,9 +237,14 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			}
 			
 			if (resolve) {
+				let argumentText = [];
+				
 				let newLevel: OpCode[] = [];
 				for (let i = 0; i < functionToCall.functionArguments.length; i++) {
 					const functionArgument = functionToCall.functionArguments[i];
+					
+					const value = build(context, opCode.callArguments[i], resolve);
+					argumentText.push(getAsText(value));
 					
 					newLevel.push({
 						kind: "alias",
@@ -226,6 +258,11 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				context.file.scope.levels.push(newLevel);
 				const result = buildBlock(context, functionToCall.codeBlock, resolve);
 				context.file.scope.levels.pop();
+				
+				if (OpCode_isAtype(result) && !result.haveSetId) {
+					result.id = `${functionToCall.id}(${argumentText.join(", ")})`;
+					result.haveSetId = true;
+				}
 				
 				return result;
 			}
@@ -274,20 +311,21 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			break;
 		}
 		case "struct": {
+			if (!opCode.doCheck) {
+				return opCode;
+			}
+			
 			const outOpCode: OpCode = {
 				kind: "struct",
 				location: opCode.location,
+				id: opCode.id,
+				haveSetId: false,
 				caseTag: opCode.caseTag,
 				doCheck: false,
-				id: opCode.id,
 				fields: [],
 				codeBlock: [],
 			};
 			
-			if (!opCode.doCheck) {
-				break;
-			}
-			opCode.doCheck = false;
 			for (let i = 0; i < opCode.fields.length; i++) {
 				const field = opCode.fields[i];
 				
@@ -424,7 +462,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				kind: "instance",
 				location: opCode.location,
 				caseTag: template.caseTag,
-				template: opCode.template,
+				template: template,
 				codeBlock: [],
 			};
 			
@@ -499,6 +537,10 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			}
 			
 			opCode.value = build(context, opCode.value, false);
+			if (opCode.value.kind == "function" && !opCode.value.haveSetId) {
+				opCode.value.id = `${opCode.name}`;
+				opCode.value.haveSetId = true;
+			}
 			
 			break;
 		}
