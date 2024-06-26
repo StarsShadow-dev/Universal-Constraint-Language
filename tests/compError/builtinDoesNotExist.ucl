@@ -1,0 +1,5 @@
+// compError
+// error: no builtin named 'veryUniqueBuiltinNameThatWillNeverHaveAnImplementation'
+// tests/compError/builtinDoesNotExist.ucl:5 -> here
+
+@veryUniqueBuiltinNameThatWillNeverHaveAnImplementation()

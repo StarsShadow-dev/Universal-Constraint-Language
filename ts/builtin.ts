@@ -49,5 +49,8 @@ export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinC
 		}
 	} else if (callOpCode.name == "db") {
 		debugger;
+	} else {
+		throw new CompileError(`no builtin named '${callOpCode.name}'`)
+			.indicator(callOpCode.location, "here");
 	}
 }
