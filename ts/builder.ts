@@ -282,9 +282,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			break;
 		}
 		case "builtinCall": {
-			builtinCall(context, opCode);
-			
-			break;
+			return builtinCall(context, opCode);
 		}
 		case "operator": {
 			if (opCode.operatorText == ".") {
