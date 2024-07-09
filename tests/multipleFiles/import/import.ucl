@@ -1,7 +1,7 @@
 main = @import("main.ucl")
 
 Vec2 = struct(x: Number, y: Number) {
-	new = fn(x: Number, y: Number): Vec2 {
+	new = fn(x: Number, y: Number) -> Vec2 {
 		Vec2 {
 			x = x
 			y = y

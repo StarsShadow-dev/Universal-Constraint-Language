@@ -29,7 +29,7 @@ function testSuccess() {
 	succeeded++;
 }
 
-function testFailure(msg: string) {
+function testFailure(msg: any) {
 	console.log(`\n\t${c_red}Test failure:\n${msg}${c_reset}\n`);
 	failed++;
 	
@@ -80,10 +80,8 @@ function testFile(filePath: string) {
 			return;
 		}
 		
-		if (error == "TODO reached") {
-			testFailure(`TODO reached`);
-			return;
-		}
+		testFailure(error);
+		return;
 	}
 	
 	if (context.errors.length == 0) {

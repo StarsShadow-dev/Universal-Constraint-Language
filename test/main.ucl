@@ -34,4 +34,8 @@
 
 file = @import("file.ucl")
 
-@compAssert(file.number == 2)
+main = fn() -> file.Vec2 {
+	file.Vec2.new(1, 2)
+}
+
+@db(main())

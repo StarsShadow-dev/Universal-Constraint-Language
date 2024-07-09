@@ -1,6 +1,6 @@
 import = @import("import.ucl")
 
-main = fn(): import.Vec2 {
+main = fn() -> import.Vec2 {
 	import.Vec2.new(1, 2)
 }
 

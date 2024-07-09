@@ -370,6 +370,8 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				codeBlock: [],
 			};
 			
+			opCode.doCheck = false;
+			
 			for (let i = 0; i < opCode.fields.length; i++) {
 				const field = opCode.fields[i];
 				
@@ -394,6 +396,8 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					value: build(context, alias.value, resolve),
 				});
 			}
+			
+			opCode.doCheck = true;
 			
 			return outOpCode;
 		}
@@ -510,6 +514,10 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				template: template,
 				codeBlock: [],
 			};
+			
+			if (resolve) {
+				opCode.template = template;
+			}
 			
 			for (let a = 0; a < opCode.codeBlock.length; a++) {
 				const alias = opCode.codeBlock[a];

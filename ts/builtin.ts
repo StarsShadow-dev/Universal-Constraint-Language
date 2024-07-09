@@ -33,24 +33,27 @@ export const builtinTypes: OpCode_alias[] = [
 
 export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinCall): OpCode {
 	let index = 0;
-	function getArg(): OpCode {
+	function getArg(resolve: boolean): OpCode {
 		const opCode = callOpCode.callArguments[index];
 		if (opCode == undefined) {
 			throw new CompileError(`not enough arguments for builtin`)
 				.indicator(callOpCode.location, "here");
 		}
 		index++;
-		return build(context, opCode, true);
+		return build(context, opCode, resolve);
+	}
+	function moreArgs(): boolean {
+		return index < callOpCode.callArguments.length;
 	}
 	function getBool(): boolean {
-		const opCode = getArg();
+		const opCode = getArg(true);
 		if (opCode.kind != "bool") {
 			throw utilities.TODO();
 		}
 		return opCode.value;
 	}
 	function getString(): string {
-		const opCode = getArg();
+		const opCode = getArg(true);
 		if (opCode.kind != "string") {
 			throw utilities.TODO();
 		}
@@ -65,8 +68,13 @@ export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinC
 				.indicator(callOpCode.location, "here");
 		}
 	} else if (callOpCode.name == "db") {
+		let argumentList = [];
+		while (moreArgs()) {
+			argumentList.push(getArg(true));
+		}
 		debugger;
 	} else if (callOpCode.name == "import") {
+		debugger;
 		const pathInput = getString();
 		const filePath = path.join(path.dirname(context.file.path), pathInput);
 		
