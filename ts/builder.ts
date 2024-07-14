@@ -2,7 +2,7 @@ import utilities from "./utilities";
 import { CompileError } from "./report";
 import { BuilderContext } from "./compiler";
 import { OpCode, OpCodeType, OpCodeType_getName, OpCode_alias, OpCode_isAtype } from "./types";
-import { builtinCall, builtinTypes } from "./builtin";
+import { builtinCall, builtinTypes, getBuiltinType } from "./builtin";
 
 export function getAlias(context: BuilderContext, name: string): OpCode_alias | null {
 	{
@@ -29,18 +29,6 @@ export function getAliasFromList(opCodes: OpCode[], name: string): OpCode_alias 
 	}
 	
 	return null;
-}
-
-function castAliasToType(alias: OpCode_alias | null): OpCodeType {
-	if (!alias || !OpCode_isAtype(alias.value)) {
-		throw utilities.unreachable();
-	}
-	
-	return alias.value;
-}
-
-function getBuiltinType(name: string): OpCodeType {
-	return castAliasToType(getAliasFromList(builtinTypes, name));
 }
 
 function getTypeOf(context: BuilderContext, opCode: OpCode): OpCodeType {
@@ -227,7 +215,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			if (resolve) {
 				return value;
 			} else {
-				break;
+				return opCode;
 			}
 		}
 		case "call": {
@@ -279,16 +267,16 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				return result;
 			}
 			
-			break;
+			return opCode;
 		}
 		case "builtinCall": {
-			return builtinCall(context, opCode);
+			return builtinCall(context, opCode, resolve);
 		}
 		case "operator": {
 			if (opCode.operatorText == ".") {
 				const left = build(context, opCode.left, true);
 				
-				if (left.kind != "struct" && left.kind != "enum" && left.kind != "instance") {
+				if (left.kind != "struct" && left.kind != "enum") {
 					throw utilities.TODO();
 				}
 				if (opCode.right.kind != "identifier") {
@@ -351,8 +339,6 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					}
 				}
 			}
-			
-			break;
 		}
 		case "struct": {
 			if (!opCode.doCheck) {
@@ -408,9 +394,11 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 			}
 			
 			opCode.returnType = returnType;
-			break;
+			return opCode;
 		}
 		case "function": {
+			debugger;
+			
 			const returnType = build(context, opCode.returnType, true);
 			if (!OpCode_isAtype(returnType)) {
 				throw utilities.TODO();
@@ -462,7 +450,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					expression: last,
 				});
 			}
-			break;
+			return opCode;
 		}
 		case "return": {
 			const value = build(context, opCode.expression, resolve);
@@ -498,7 +486,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				}
 			}
 			
-			break;
+			return opCode;
 		}
 		case "instance": {
 			const template = build(context, opCode.template, true);
@@ -515,9 +503,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				codeBlock: [],
 			};
 			
-			if (resolve) {
-				opCode.template = template;
-			}
+			opCode.template = template;
 			
 			for (let a = 0; a < opCode.codeBlock.length; a++) {
 				const alias = opCode.codeBlock[a];
@@ -533,7 +519,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					}
 					if (field.name == alias.name) {
 						templateField = field;
-						break;
+						return opCode;
 					}
 				}
 				if (!templateField) {
@@ -568,7 +554,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 					
 					if (field.name == alias.name) {
 						foundField = true;
-						break;
+						return opCode;
 					}
 				}
 				
@@ -595,7 +581,7 @@ export function build(context: BuilderContext, opCode: OpCode, resolve: boolean)
 				opCode.value.haveSetId = true;
 			}
 			
-			break;
+			return opCode;
 		}
 	}
 	

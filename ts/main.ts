@@ -42,7 +42,7 @@ while (i < process.argv.length) {
 	}
 }
 
-logger.global("options:", options);
+logger.log("options", options);
 
 const context = newBuilderContext(options);
 

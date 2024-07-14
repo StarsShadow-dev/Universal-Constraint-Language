@@ -35,9 +35,9 @@ export default {
 		times[name] += time;
 	},
 	
-	global(...args: any[]) {
-		// console.log("[global]", ...args);
-		globals.push(args);
+	log(type: string, ...args: any[]) {
+		console.log(`[${type}]`, ...args);
+		// globals.push(args);
 	},
 	
 	//#region printing

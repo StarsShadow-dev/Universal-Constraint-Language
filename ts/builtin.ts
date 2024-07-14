@@ -1,9 +1,9 @@
 import path from "path";
 import { BuilderContext, FileContext, compileFile } from "./compiler";
 import { CompileError } from "./report";
-import { OpCode, OpCode_alias, OpCode_builtinCall } from "./types";
+import { OpCode, OpCodeType, OpCode_alias, OpCode_builtinCall, OpCode_isAtype } from "./types";
 import utilities from "./utilities";
-import { build } from "./builder";
+import { build, getAliasFromList } from "./builder";
 
 function makePrimitiveTypeAlias(name: string): OpCode_alias {
 	return {
@@ -31,7 +31,19 @@ export const builtinTypes: OpCode_alias[] = [
 	makePrimitiveTypeAlias("String"),
 ];
 
-export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinCall): OpCode {
+function castAliasToType(alias: OpCode_alias | null): OpCodeType {
+	if (!alias || !OpCode_isAtype(alias.value)) {
+		throw utilities.unreachable();
+	}
+	
+	return alias.value;
+}
+
+export function getBuiltinType(name: string): OpCodeType {
+	return castAliasToType(getAliasFromList(builtinTypes, name));
+}
+
+export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinCall, resolve: boolean): OpCode {
 	let index = 0;
 	function getArg(resolve: boolean): OpCode {
 		const opCode = callOpCode.callArguments[index];
@@ -74,7 +86,10 @@ export function builtinCall(context: BuilderContext, callOpCode: OpCode_builtinC
 		}
 		debugger;
 	} else if (callOpCode.name == "import") {
-		debugger;
+		if (context.disableImports) {
+			return callOpCode;
+		}
+		
 		const pathInput = getString();
 		const filePath = path.join(path.dirname(context.file.path), pathInput);
 		

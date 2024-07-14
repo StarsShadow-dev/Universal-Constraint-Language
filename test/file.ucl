@@ -1,4 +1,4 @@
-// main = @import("main.ucl")
+main = @import("main.ucl")
 
 Vec2 = struct(x: Number, y: Number) {
 	new = fn(x: Number, y: Number) -> Vec2 {
@@ -8,5 +8,3 @@ Vec2 = struct(x: Number, y: Number) {
 		}
 	}
 }
-
-Vec2.new(1, 2)

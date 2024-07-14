@@ -64,6 +64,7 @@ export type BuilderContext = {
 	compilerStage: CompilerStage,
 	disableDependencyEvaluation: boolean,
 	returnEarly: boolean,
+	disableImports: boolean,
 	outOpCodes: OpCode_alias[],
 };
 
@@ -79,6 +80,7 @@ export function newBuilderContext(compilerOptions: CompilerOptions): BuilderCont
 		compilerStage: CompilerStage.findAliases,
 		disableDependencyEvaluation: false,
 		returnEarly: false,
+		disableImports: false,
 		outOpCodes: [],
 	};
 }
@@ -94,6 +96,20 @@ export function compile(context: BuilderContext, onTokens: null | ((tokens: Toke
 	try {
 		context.compilerStage = CompilerStage.findAliases;
 		mainFile = compileFile(context, context.compilerOptions.filePath, onTokens);
+		
+		for (let i = 0; i < filesToCompile.length; i++) {
+			const file = filesToCompile[i];
+			context.file = file;
+			const js = codeGenList({
+				level: 0,
+				modes: [],
+			}, file.opCodes).join("\n");
+			if (context.compilerOptions.dumpOpCodes) {
+				console.log(`js '${file.path}':\n` + js);
+			}
+		}
+		
+		context.file = mainFile;
 		
 		// const main = getAlias(mainFile.opCodes, "main");
 		// if (main) {
@@ -116,9 +132,12 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	// (this also lets two files import each other)
 	for (let i = 0; i < filesToCompile.length; i++) {
 		if (filePath == filesToCompile[i].path) {
+			logger.log("file", `file ${filePath} has already been compiled`);
 			return filesToCompile[i];
 		}
 	}
+	
+	logger.log("file", `compiling file ${filePath}`);
 	
 	const oldFile = context.file;
 	const newFile: FileContext = {
@@ -156,15 +175,10 @@ export function compileFile(context: BuilderContext, filePath: string, onTokens:
 	}
 	
 	if (newFile.opCodes.length > 0) {
+		context.disableImports = true;
 		buildBlock(context, newFile.opCodes, false);
-		
-		const js = codeGenList({
-			level: 0,
-			modes: [],
-		}, newFile.opCodes).join("\n");
-		if (context.compilerOptions.dumpOpCodes) {
-			console.log(`js '${filePath}':\n` + js);
-		}
+		context.disableImports = false;
+		buildBlock(context, newFile.opCodes, false);
 	}
 	
 	context.file = oldFile;
