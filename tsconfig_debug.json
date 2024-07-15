@@ -1,13 +1,15 @@
 {
 	"compilerOptions": {
-		"target": "ES6",
+		"target": "ES2022",
 		"module": "nodenext",
-		"sourceMap": true,
 		"outDir": "./out",
+		"sourceMap": true,
 		
 		"strict": true,
 		"removeComments": true,
 		"noImplicitAny": true,
-		"pretty": true
-	}
+		"pretty": true,
+		"noFallthroughCasesInSwitch": true
+	},
+	"include": ["ts/**/*"]
 }

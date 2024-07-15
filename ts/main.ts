@@ -2,8 +2,6 @@
 
 import utilities from "./utilities";
 import logger from "./logger";
-import { CompilerOptions, compile, newBuilderContext } from "./compiler";
-import { printErrors } from "./report";
 
 let i = 2;
 
@@ -11,12 +9,22 @@ function next(): string {
 	return process.argv[i++];
 }
 
+export type IdeOptions = {
+	mode: "compileFile",
+};
+
+export type CompilerOptions = {
+	filePath: string,
+	fancyErrors: boolean,
+	
+	outputPath?: string,
+	ideOptions?: IdeOptions,
+	dumpOpCodes?: boolean,
+};
+
 const options: CompilerOptions = {
 	filePath: next(),
 	fancyErrors: true,
-	builderTransforms: {
-		removeTypes: true,
-	}
 };
 
 while (i < process.argv.length) {
@@ -44,15 +52,7 @@ while (i < process.argv.length) {
 
 logger.log("options", options);
 
-const context = newBuilderContext(options);
-
-compile(context, null);
-if (context.errors.length == 0) {
-	
-} else {
-	process.exitCode = 1;
-	printErrors(options, context.errors);
-}
+console.log("testing...")
 
 // logger.printFileAccessLogs();
 // logger.printTimes();

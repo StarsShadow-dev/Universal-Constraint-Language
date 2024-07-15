@@ -1,5 +1,4 @@
 import utilities from "./utilities";
-import { CompilerOptions } from "./compiler";
 import { SourceLocation } from "./types";
 
 const lineNumberPadding = 4;
@@ -103,16 +102,6 @@ export function getIndicator(indicator: Indicator, fancyIndicators: boolean): st
 	}
 	
 	return errorText;
-}
-
-export function printErrors(options: CompilerOptions, errors: CompileError[]) {
-	if (options.ideOptions && options.ideOptions.mode == "compileFile") {
-		console.log(JSON.stringify(errors));
-	} else {
-		for (const error of errors) {
-			console.log(error.getText(true));
-		}
-	}
 }
 
 export class CompileError {

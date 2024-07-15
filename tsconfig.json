@@ -2,12 +2,14 @@
 	"compilerOptions": {
 		"target": "ES2022",
 		"module": "nodenext",
-		"sourceMap": false,
 		"outDir": "./out",
+		"sourceMap": false,
 		
 		"strict": true,
 		"removeComments": true,
 		"noImplicitAny": true,
 		"pretty": true,
-	}
+		"noFallthroughCasesInSwitch": true,
+	},
+	"include": ["ts/**/*"],
 }
