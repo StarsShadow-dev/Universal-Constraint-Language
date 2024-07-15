@@ -10,6 +10,7 @@
 		"noImplicitAny": true,
 		"pretty": true,
 		"noFallthroughCasesInSwitch": true,
+		"noUncheckedIndexedAccess": false,
 	},
 	"include": ["ts/**/*"],
 }

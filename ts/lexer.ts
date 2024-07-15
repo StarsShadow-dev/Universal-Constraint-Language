@@ -1,4 +1,28 @@
-import { TokenKind, Token } from "./types";
+import { SourceLocation } from "./types";
+
+export enum TokenKind {
+	comment,
+	
+	number,
+	string,
+	word,
+	
+	separator,
+	operator,
+	
+	builtinIndicator,
+	selfReference,
+	singleQuote,
+	
+	endOfFile,
+};
+
+export type Token = {
+	type: TokenKind,
+	text: string,
+	location: SourceLocation,
+	endLine?: number,
+};
 
 function wordStart(text: string, i: number): boolean {
 	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_';

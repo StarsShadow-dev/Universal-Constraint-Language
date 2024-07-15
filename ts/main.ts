@@ -2,6 +2,8 @@
 
 import utilities from "./utilities";
 import logger from "./logger";
+import { lex } from "./lexer";
+import { parse, ParserMode } from "./parser";
 
 let i = 2;
 
@@ -19,7 +21,7 @@ export type CompilerOptions = {
 	
 	outputPath?: string,
 	ideOptions?: IdeOptions,
-	dumpOpCodes?: boolean,
+	// dumpOpCodes?: boolean,
 };
 
 const options: CompilerOptions = {
@@ -43,16 +45,30 @@ while (i < process.argv.length) {
 		}
 	} else if (arg == "-noFancyErrors") {
 		options.fancyErrors = false;
-	} else if (arg == "-d") {
-		options.dumpOpCodes = true;
+	// } else if (arg == "-d") {
+	// 	options.dumpOpCodes = true;
 	} else {
 		utilities.TODO();
 	}
 }
+// console.log("options:", options);
 
-logger.log("options", options);
+const text = utilities.readFile(options.filePath);
+// console.log("text:", text);
 
-console.log("testing...")
+const lexStart = Date.now();
+const tokens = lex(options.filePath, text);
+logger.addTime("lexing", Date.now() - lexStart);
+console.log("tokens:", tokens);
+
+const parseStart = Date.now();
+const AST = parse({
+	tokens: tokens,
+	i: 0,
+}, ParserMode.normal, null);
+logger.addTime("parsing", Date.now() - parseStart);
+console.log("AST:", JSON.stringify(AST, null, 2));
+
 
 // logger.printFileAccessLogs();
 // logger.printTimes();

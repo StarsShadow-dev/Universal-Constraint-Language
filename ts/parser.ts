@@ -1,12 +1,122 @@
 import utilities from "./utilities";
 import {
-	TokenKind,
-	Token,
-	OpCode,
 	SourceLocation,
-	OpCode_argument,
 } from "./types";
 import { CompileError } from "./report";
+import { Token, TokenKind } from "./lexer";
+
+type genericASTnode = {
+	location: SourceLocation,
+};
+
+export type ASTnode_builtinCall = genericASTnode & {
+	kind: "builtinCall",
+	name: string,
+	callArguments: ASTnode[],
+};
+
+export type ASTnode_argument = genericASTnode & {
+	kind: "argument",
+	name: string,
+	type: ASTnode,
+};
+
+export type ASTnodeType =
+genericASTnode & {
+	kind: "struct",
+	fields: ASTnode_argument[],
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "enum",
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "functionType",
+	functionArguments: ASTnode[],
+	returnType: ASTnode,
+};
+
+export type ASTnode_function = genericASTnode & {
+	kind: "function",
+	functionArguments: ASTnode_argument[],
+	returnType: ASTnode,
+	codeBlock: ASTnode[],
+};
+
+export type ASTnode_alias = genericASTnode & {
+	kind: "alias",
+	name: string,
+	value: ASTnode,
+};
+
+export type ASTnode =
+genericASTnode & {
+	kind: "bool",
+	value: boolean,
+} | genericASTnode & {
+	kind: "number",
+	value: number,
+} | genericASTnode & {
+	kind: "string",
+	value: string,
+} | genericASTnode & {
+	kind: "complexValue",
+	type: ASTnodeType,
+} | genericASTnode & {
+	kind: "identifier",
+	name: string,
+} | genericASTnode & {
+	kind: "list",
+	elements: ASTnode[],
+} | genericASTnode & {
+	kind: "call",
+	left: ASTnode,
+	callArguments: ASTnode[],
+} |
+ASTnode_builtinCall |
+genericASTnode & {
+	kind: "operator",
+	operatorText: string,
+	left: ASTnode,
+	right: ASTnode,
+} | genericASTnode & {
+	kind: "field",
+	name: string,
+	type: ASTnode,
+} |
+ASTnode_argument |
+ASTnodeType |
+ASTnode_function |
+genericASTnode & {
+	kind: "return",
+	expression: ASTnode,
+} |
+genericASTnode & {
+	kind: "match",
+	expression: ASTnode,
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "matchCase",
+	name: string,
+	types: ASTnode[],
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "while",
+	condition: ASTnode,
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "if",
+	condition: ASTnode,
+	trueCodeBlock: ASTnode[],
+	falseCodeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "codeBlock",
+	codeBlock: ASTnode[],
+} | genericASTnode & {
+	kind: "instance",
+	template: ASTnode,
+	codeBlock: ASTnode[],
+} |
+ASTnode_alias;
 
 export type ParserContext = {
 	tokens: Token[],
@@ -104,7 +214,7 @@ function next(context: ParserContext): Token {
 	return token;
 }
 
-function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: number): OpCode {
+function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: number): ASTnode {
 	if (!context.tokens[context.i]) {
 		return left;
 	}
@@ -115,7 +225,7 @@ function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: nu
 		const nextPrecedence = getOperatorPrecedence(nextOperator.text);
 		
 		if (nextPrecedence > lastPrecedence) {
-			let right: OpCode;
+			let right: ASTnode;
 			context.i++;
 			let mode;
 			if (nextOperator.text == "=") {
@@ -135,7 +245,6 @@ function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: nu
 				return {
 					kind: "alias",
 					location: nextOperator.location,
-					disableGeneration: false,
 					name: left.name,
 					value: right,
 				}
@@ -154,8 +263,8 @@ function parseOperators(context: ParserContext, left: OpCode, lastPrecedence: nu
 	return left;
 }
 
-function parseType(context: ParserContext, separatingText: string): OpCode | null {
-	let type: OpCode | null = null;
+function parseType(context: ParserContext, separatingText: string): ASTnode | null {
+	let type: ASTnode | null = null;
 	
 	const separator = next(context);
 	if (separator.text == separatingText) {
@@ -167,8 +276,8 @@ function parseType(context: ParserContext, separatingText: string): OpCode | nul
 	return type;
 }
 
-function parseFunctionArguments(context: ParserContext): OpCode_argument[] {
-	let AST: OpCode_argument[] = [];
+function parseFunctionArguments(context: ParserContext): ASTnode_argument[] {
+	let AST: ASTnode_argument[] = [];
 	
 	if (next(context).type == TokenKind.separator && next(context).text == ")") {
 		forward(context);
@@ -217,7 +326,7 @@ function parseFunctionArguments(context: ParserContext): OpCode_argument[] {
 	return AST;
 }
 
-function parseFunction(context: ParserContext, AST: OpCode[], location: SourceLocation, forceInline: boolean) {
+function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceLocation, forceInline: boolean) {
 	const openingParentheses = forward(context);
 	if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 		throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
@@ -249,18 +358,14 @@ function parseFunction(context: ParserContext, AST: OpCode[], location: SourceLo
 	AST.push({
 		kind: "function",
 		location: location,
-		id: `${JSON.stringify(location)}`,
-		haveSetId: false,
-		doTransformations: true,
-		forceInline: forceInline,
 		functionArguments: functionArguments,
 		returnType: returnType,
 		codeBlock: codeBlock,
 	});
 }
 
-export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): OpCode[] {
-	let OpCodes: OpCode[] = [];
+export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): ASTnode[] {
+	let ASTnodes: ASTnode[] = [];
 	
 	function earlyReturn() {
 		if (endAt && more(context) && next(context).type == TokenKind.separator && next(context).text != ",") {
@@ -281,7 +386,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenKind.number: {
-				OpCodes.push({
+				ASTnodes.push({
 					kind: "number",
 					location: token.location,
 					value: Number(token.text),
@@ -290,7 +395,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 			
 			case TokenKind.string: {
-				OpCodes.push({
+				ASTnodes.push({
 					kind: "string",
 					location: token.location,
 					value: token.text,
@@ -300,7 +405,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			
 			case TokenKind.word: {
 				if (token.text == "true" || token.text == "false") {
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "bool",
 						location: token.location,
 						value: token.text == "true",
@@ -318,7 +423,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("a field must have a type").indicator(name.location, "here");
 					}
 					
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "field",
 						location: token.location,
 						name: name.text,
@@ -345,14 +450,14 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
 					if (token.text == "while") {
-						OpCodes.push({
+						ASTnodes.push({
 							kind: "while",
 							location: token.location,
 							condition: condition,
 							codeBlock: codeBlock,
 						});	
 					} else if (token.text == "if") {
-						let falseCodeBlock: OpCode[] | null = null;
+						let falseCodeBlock: ASTnode[] | null = null;
 						
 						const elseToken = forward(context);
 						if (elseToken.type != TokenKind.word || elseToken.text != "else") {
@@ -368,7 +473,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						}
 						falseCodeBlock = parse(context, ParserMode.normal, "}");
 						
-						OpCodes.push({
+						ASTnodes.push({
 							kind: "if",
 							location: token.location,
 							condition: condition,
@@ -381,7 +486,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				else if (token.text == "inline") {
 					if (next(context).text == "fn") {
 						const fnToken = forward(context);
-						parseFunction(context, OpCodes, fnToken.location, true);
+						parseFunction(context, ASTnodes, fnToken.location, true);
 					}
 				}
 				
@@ -398,13 +503,9 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					}
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "struct",
 						location: token.location,
-						id: `${JSON.stringify(token.location)}`,
-						haveSetId: false,
-						caseTag: null,
-						doCheck: true,
 						fields: fields,
 						codeBlock: codeBlock,
 					});
@@ -416,41 +517,26 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
 					const codeBlock = parse(context, ParserMode.normal, "}");
-					let nextCaseTag = 0;
 					for (let i = 0; i < codeBlock.length; i++) {
-						const opCode = codeBlock[i];
-						if (opCode.kind == "identifier") {
+						const ASTnode = codeBlock[i];
+						if (ASTnode.kind == "identifier") {
 							codeBlock[i] = {
 								kind: "alias",
-								location: opCode.location,
-								disableGeneration: false,
-								name: opCode.name,
+								location: ASTnode.location,
+								name: ASTnode.name,
 								value: {
 									kind: "struct",
-									location: opCode.location,
-									id: `${JSON.stringify(opCode.location)}`,
-									haveSetId: false,
-									caseTag: nextCaseTag,
-									doCheck: true,
+									location: ASTnode.location,
 									fields: [],
 									codeBlock: [],
 								},
 							};
-							nextCaseTag++;
-						} else if (opCode.kind == "alias") {
-							if (opCode.value.kind == "struct") {
-								opCode.value.caseTag = nextCaseTag;
-								nextCaseTag++;
-							}
 						}
 					}
 					
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "enum",
 						location: token.location,
-						id: `${JSON.stringify(token.location)}`,
-						haveSetId: false,
-						doCheck: true,
 						codeBlock: codeBlock,
 					});
 				}
@@ -464,7 +550,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					}
 					const codeBlock = parse(context, ParserMode.normal, "}");
 					
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "match",
 						location: token.location,
 						expression: expression,
@@ -473,11 +559,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "fn") {
-					parseFunction(context, OpCodes, token.location, false);
+					parseFunction(context, ASTnodes, token.location, false);
 				}
 				
 				else {
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "identifier",
 						location: token.location,
 						name: token.text,
@@ -488,25 +574,25 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			
 			case TokenKind.separator: {
 				if (token.text == endAt) {
-					return OpCodes;
+					return ASTnodes;
 				}
 				if (token.text == "[") {
 					const elements = parse(context, ParserMode.comma, "]");
 					
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "list",
 						location: token.location,
 						elements: elements,
 					});
 				} else if (token.text == "(") {
-					const left = OpCodes.pop();
+					const left = ASTnodes.pop();
 					if (left == undefined) {
 						throw utilities.TODO();
 					}
 						
 					const callArguments = parse(context, ParserMode.comma, ")");
 					
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "call",
 						location: token.location,
 						left: left,
@@ -524,11 +610,9 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("function type must have a return type").indicator(token.location, "here");
 					}
 					
-					OpCodes.push({
+					ASTnodes.push({
 						kind: "functionType",
 						location: token.location,
-						id: `${JSON.stringify(token.location)}`,
-						haveSetId: false,
 						functionArguments: functionArguments,
 						returnType: returnType,
 					});
@@ -538,12 +622,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				break;
 			}
 			case TokenKind.operator: {
-				const left = OpCodes[OpCodes.length-1];
+				const left = ASTnodes[ASTnodes.length-1];
 				if (left == undefined) {
 					utilities.TODO();
 				} else {
 					if (token.text == "->") {
-						const identifier = OpCodes.pop();
+						const identifier = ASTnodes.pop();
 						if (!identifier || (identifier.kind != "identifier" && identifier.kind != "call")) {
 							throw utilities.TODO();
 						}
@@ -555,7 +639,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						const codeBlock = parse(context, ParserMode.normal, "}");
 						
 						let name = "";
-						let types: OpCode[] = [];
+						let types: ASTnode[] = [];
 						
 						if (identifier.kind == "identifier") {
 							name = identifier.name;
@@ -567,7 +651,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 							types = identifier.callArguments;
 						}
 						
-						OpCodes.push({
+						ASTnodes.push({
 							kind: "matchCase",
 							location: identifier.location,
 							name: name,
@@ -576,8 +660,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						});
 					} else {
 						context.i--;
-						OpCodes.pop();
-						OpCodes.push(parseOperators(context, left, 0));
+						ASTnodes.pop();
+						ASTnodes.push(parseOperators(context, left, 0));
 					}
 				}
 				break;
@@ -596,7 +680,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				const callArguments = parse(context, ParserMode.comma, ")");
 				
-				OpCodes.push({
+				ASTnodes.push({
 					kind: "builtinCall",
 					location: name.location,
 					name: name.text,
@@ -618,7 +702,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.singleNoContinue) {
 			earlyReturn();
-			return OpCodes;
+			return ASTnodes;
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenKind.separator && next(context).text == "(") {
@@ -627,37 +711,36 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.singleNoOperatorContinue) {
 			earlyReturn();
-			return OpCodes;
+			return ASTnodes;
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenKind.operator) {
 			if (mode == ParserMode.singleNoEqualsOperatorContinue && next(context).text == "=") {
 				earlyReturn();
-				return OpCodes;
+				return ASTnodes;
 			}
 			continue;
 		}
 		
 		if (mode == ParserMode.singleNoEqualsOperatorContinue) {
 			earlyReturn();
-			return OpCodes;
+			return ASTnodes;
 		}
 		
 		if (mode == ParserMode.singleNoNewInstanceContinue) {
 			earlyReturn();
-			return OpCodes;
+			return ASTnodes;
 		}
 		
 		if (context.tokens[context.i] && next(context).type == TokenKind.separator && next(context).text == "{") {
-			const left = OpCodes.pop();
+			const left = ASTnodes.pop();
 			if (left) {
 				forward(context);
 				const codeBlock = parse(context, ParserMode.normal, "}");
 				
-				OpCodes.push({
+				ASTnodes.push({
 					kind: "instance",
 					location: left.location,
-					caseTag: null,
 					template: left,
 					codeBlock: codeBlock,
 				});
@@ -668,7 +751,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		
 		if (mode == ParserMode.single) {
 			earlyReturn();
-			return OpCodes;
+			return ASTnodes;
 		}
 		
 		if (endAt != null) {
@@ -678,7 +761,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				if (nextToken.text == ")" || nextToken.text == "}" || nextToken.text == "]") {
 					if (endAt == nextToken.text) {
 						context.i++;
-						return OpCodes;
+						return ASTnodes;
 					} else {
 						throw new CompileError("unexpected separator")
 							.indicator(nextToken.location, `expected '${endAt} but got '${nextToken.text}'`);
@@ -695,5 +778,5 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 	}
 	
-	return OpCodes;
+	return ASTnodes;
 }
