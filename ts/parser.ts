@@ -59,9 +59,6 @@ genericASTnode & {
 	kind: "string",
 	value: string,
 } | genericASTnode & {
-	kind: "complexValue",
-	type: ASTnodeType,
-} | genericASTnode & {
 	kind: "identifier",
 	name: string,
 } | genericASTnode & {

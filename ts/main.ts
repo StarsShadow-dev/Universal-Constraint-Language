@@ -4,6 +4,7 @@ import utilities from "./utilities";
 import logger from "./logger";
 import { lex } from "./lexer";
 import { parse, ParserMode } from "./parser";
+import { useAST } from "./ir";
 
 let i = 2;
 
@@ -68,6 +69,9 @@ const AST = parse({
 }, ParserMode.normal, null);
 logger.addTime("parsing", Date.now() - parseStart);
 console.log("AST:", JSON.stringify(AST, null, 2));
+
+const defs = useAST(AST);
+console.log("defs:", JSON.stringify(defs, null, 2));
 
 
 // logger.printFileAccessLogs();
