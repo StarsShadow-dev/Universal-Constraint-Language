@@ -1,8 +1,12 @@
+import { createHash } from "crypto";
+
 import { ASTnode } from "./parser";
 import utilities from "./utilities";
 
+type TreeHash = string;
+
 type topLevelDef = {
-	id: number,
+	hash: TreeHash,
 	ir: IRNode[],
 };
 
@@ -23,6 +27,11 @@ genericIRNode & {
 	kind: "string",
 	value: string,
 };
+
+function hashString(text: string): TreeHash {
+	return createHash("sha256").update(text).digest("hex");
+	// return createHash("sha512").update(text).digest("hex");
+}
 
 function ASTtoIR(ASTnode: ASTnode): IRNode {
 	switch (ASTnode.kind) {
@@ -70,8 +79,9 @@ export function useAST(AST: ASTnode[]): topLevelDef[] {
 			switch (value.kind) {
 				case "function": {
 					const codeBlockIR = getIR(value.codeBlock);
+					const text = JSON.stringify(codeBlockIR);
 					defList.push({
-						id: 0,
+						hash: hashString(text),
 						ir: codeBlockIR,
 					});
 					break;
