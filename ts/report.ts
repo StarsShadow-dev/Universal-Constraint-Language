@@ -10,7 +10,7 @@ export type Indicator = {
 }
 
 // TODO: This can read the same file twice, if there are two indicators in a file.
-export function getIndicator(indicator: Indicator, fancyIndicators: boolean): string {
+export function getIndicatorText(indicator: Indicator, fancyIndicators: boolean): string {
 	let errorText = "";
 	
 	if (!fancyIndicators) {
@@ -128,7 +128,7 @@ export class CompileError {
 			
 			if (indicator.location == "builtin") continue;
 			
-			text += getIndicator(indicator, fancyIndicators);
+			text += getIndicatorText(indicator, fancyIndicators);
 			if (!fancyIndicators && this.indicators[i + 1]) {
 				text += "\n";
 			}

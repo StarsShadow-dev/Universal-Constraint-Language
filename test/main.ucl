@@ -12,3 +12,9 @@ test = fn() -> String {
 }
 
 test()
+
+test2 = fn() -> String {
+	"Bye, World?"
+}
+
+test2()

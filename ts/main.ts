@@ -5,7 +5,17 @@ import utilities from "./utilities";
 import logger from "./logger";
 import { lex } from "./lexer";
 import { parse, ParserMode } from "./parser";
-import { addToDB, DB } from "./db";
+import { addToDB, DB, makeDB } from "./db";
+import { getIndicatorText } from "./report";
+
+function readDB(): DB {
+	const DBtextPath = path.join(path.dirname(options.filePath), "db.json");
+	const DBtext = utilities.readFile(DBtextPath);
+	console.log("DBtext:", DBtext);
+	const db = JSON.parse(DBtext) as DB;
+	console.log("db:", db);
+	return db;
+}
 
 let i = 2;
 
@@ -55,11 +65,7 @@ while (i < process.argv.length) {
 }
 // console.log("options:", options);
 
-const DBtextPath = path.join(path.dirname(options.filePath), "db.json");
-const DBtext = utilities.readFile(DBtextPath);
-console.log("DBtext:", DBtext);
-const db = JSON.parse(DBtext) as DB;
-console.log("db:", db);
+const db = makeDB();
 
 const text = utilities.readFile(options.filePath);
 // console.log("text:", text);
@@ -75,11 +81,15 @@ const AST = parse({
 	i: 0,
 }, ParserMode.normal, null);
 logger.addTime("parsing", Date.now() - parseStart);
-console.log("AST:", JSON.stringify(AST, null, 2));
+// console.log("AST:", JSON.stringify(AST, null, 2));
 
 addToDB(db, AST);
+// console.log("db:", JSON.stringify(db, null, 4));
 
-console.log("db:", JSON.stringify(db, null, 4));
+// logger.printFileAccessLogs();
+// logger.printTimes();
 
-logger.printFileAccessLogs();
-logger.printTimes();
+for (let i = 0; i < db.topLevelEvaluations.length; i++) {
+	const evaluation = db.topLevelEvaluations[i];
+	console.log(getIndicatorText(evaluation, true));
+}

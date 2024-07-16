@@ -4,6 +4,8 @@ import { ASTnode } from "./parser";
 import logger, { LogType } from "./logger";
 import utilities from "./utilities";
 import { evaluate } from "./evaluate";
+import { printASTnode } from "./printAST";
+import { Indicator } from "./report";
 
 type _topLevelDef = {
 	// uuid: string,
@@ -19,7 +21,14 @@ export type topLevelDef_orNull = _topLevelDef & {
 export type DB = {
 	defs: topLevelDef_orNull[],
 	// changeLog
+	topLevelEvaluations: Indicator[],
 };
+export function makeDB(): DB {
+	return {
+		defs: [],
+		topLevelEvaluations: [],
+	};
+}
 
 type Hash = string;
 function hashString(text: string): Hash {
@@ -125,18 +134,12 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				}
 			}
 		} else {
-			const codeBlock = [ASTnode];
+			const location = ASTnode.location;
+			resolveAliases({ db: db }, [ASTnode]);
+			const result = evaluate({ db: db }, ASTnode);
+			const resultText = printASTnode(result);
 			
-			resolveAliases({
-				db: db,
-			}, codeBlock);
-			
-			debugger;
-			const result = evaluate({
-				db: db,
-			}, ASTnode);
-			
-			logger.log(LogType.addToDB, `got not alias, result:`, JSON.stringify(result, null, 4));
+			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
 		}
 	}
 }
