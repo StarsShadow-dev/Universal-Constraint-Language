@@ -1,94 +1,85 @@
-import { createHash } from "crypto";
+// import { ASTnode } from "./parser";
+// import { SourceLocation } from "./types";
+// import utilities from "./utilities";
 
-import { ASTnode } from "./parser";
-import utilities from "./utilities";
+// type genericIRNode = {
+// 	location: SourceLocation,
+// };
 
-type TreeHash = string;
+// export type IRNode = 
+// genericIRNode & {
+// 	kind: "bool",
+// 	value: boolean,
+// } |
+// genericIRNode & {
+// 	kind: "number",
+// 	value: number,
+// } |
+// genericIRNode & {
+// 	kind: "string",
+// 	value: string,
+// } |
+// genericIRNode & {
+// 	kind: "identifier",
+// 	name: string,
+// } |
+// genericIRNode & {
+// 	kind: "call",
+// 	left: IRNode,
+// 	callArguments: IRNode[],
+// };
 
-type topLevelDef = {
-	hash: TreeHash,
-	ir: IRNode[],
-};
-
-type genericIRNode = {
-	// location: SourceLocation,
-};
-
-export type IRNode = 
-genericIRNode & {
-	kind: "bool",
-	value: boolean,
-} |
-genericIRNode & {
-	kind: "number",
-	value: number,
-} |
-genericIRNode & {
-	kind: "string",
-	value: string,
-};
-
-function hashString(text: string): TreeHash {
-	return createHash("sha256").update(text).digest("hex");
-	// return createHash("sha512").update(text).digest("hex");
-}
-
-function ASTtoIR(ASTnode: ASTnode): IRNode {
-	switch (ASTnode.kind) {
-		case "bool": {
-			return {
-				kind: "bool",
-				value: ASTnode.value,
-			};
-		}
-		case "number": {
-			return {
-				kind: "number",
-				value: ASTnode.value,
-			};
-		}
-		case "string": {
-			return {
-				kind: "string",
-				value: ASTnode.value,
-			};
-		}
-	
-		default: {
-			throw utilities.TODO();
-		}
-	}
-}
-
-function getIR(AST: ASTnode[]): IRNode[] {
-	let IRNodes: IRNode[] = [];
-	for (let i = 0; i < AST.length; i++) {
-		IRNodes.push(ASTtoIR(AST[i]));
-	}
-	return IRNodes;
-}
-
-export function useAST(AST: ASTnode[]): topLevelDef[] {
-	let defList: topLevelDef[] = [];
-	
-	for (let i = 0; i < AST.length; i++) {
-		const ASTnode = AST[i];
+// export function ASTtoIR(ASTnode: ASTnode): IRNode {
+// 	switch (ASTnode.kind) {
+// 		case "bool": {
+// 			return {
+// 				kind: "bool",
+// 				location: ASTnode.location,
+// 				value: ASTnode.value,
+// 			};
+// 		}
+// 		case "number": {
+// 			return {
+// 				kind: "number",
+// 				location: ASTnode.location,
+// 				value: ASTnode.value,
+// 			};
+// 		}
+// 		case "string": {
+// 			return {
+// 				kind: "string",
+// 				location: ASTnode.location,
+// 				value: ASTnode.value,
+// 			};
+// 		}
 		
-		if (ASTnode.kind == "alias") {
-			const value = ASTnode.value;
-			switch (value.kind) {
-				case "function": {
-					const codeBlockIR = getIR(value.codeBlock);
-					const text = JSON.stringify(codeBlockIR);
-					defList.push({
-						hash: hashString(text),
-						ir: codeBlockIR,
-					});
-					break;
-				}
-			}
-		}
-	}
+// 		case "identifier": {
+// 			return {
+// 				kind: "identifier",
+// 				location: ASTnode.location,
+// 				name: ASTnode.name,
+// 			};
+// 		}
+		
+// 		case "call": {
+// 			return {
+// 				kind: "call",
+// 				location: ASTnode.location,
+// 				left: ASTtoIR(ASTnode.left),
+// 				callArguments: getIR(ASTnode.callArguments),
+// 			};
+// 		}
 	
-	return defList;
-}
+// 		default: {
+// 			throw utilities.TODO();
+// 		}
+// 	}
+// }
+
+// export function getIR(AST: ASTnode[]): IRNode[] {
+// 	let IRNodes: IRNode[] = [];
+// 	for (let i = 0; i < AST.length; i++) {
+// 		IRNodes.push(ASTtoIR(AST[i]));
+// 	}
+// 	return IRNodes;
+// }

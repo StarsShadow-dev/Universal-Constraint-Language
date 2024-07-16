@@ -17,6 +17,10 @@ const times: any = {};
 
 const globals: any[][] = [];
 
+export enum LogType {
+	addToDB,
+}
+
 export default {
 	readFile(data: ReadFile) {
 		// console.log("readFile", data);
@@ -35,8 +39,8 @@ export default {
 		times[name] += time;
 	},
 	
-	log(type: string, ...args: any[]) {
-		console.log(`[${type}]`, ...args);
+	log(type: LogType, ...args: any[]) {
+		console.log(`[${LogType[type]}]`, ...args);
 		// globals.push(args);
 	},
 	

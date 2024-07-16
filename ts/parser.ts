@@ -1,7 +1,5 @@
 import utilities from "./utilities";
-import {
-	SourceLocation,
-} from "./types";
+import { SourceLocation } from "./types";
 import { CompileError } from "./report";
 import { Token, TokenKind } from "./lexer";
 
@@ -83,10 +81,6 @@ genericASTnode & {
 ASTnode_argument |
 ASTnodeType |
 ASTnode_function |
-genericASTnode & {
-	kind: "return",
-	expression: ASTnode,
-} |
 genericASTnode & {
 	kind: "match",
 	expression: ASTnode,

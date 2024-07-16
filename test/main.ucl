@@ -1,3 +1,14 @@
+// Vec2 = struct(x: Number, y: Number)
+// Vec2.new = fn() -> Vec2 {
+	
+// }
+
+// main = fn() -> String {
+// 	test()
+// }
+
 test = fn() -> String {
 	"Hello, World!"
 }
+
+test()

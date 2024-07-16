@@ -4,7 +4,8 @@ import utilities from "./utilities";
 import logger from "./logger";
 import { lex } from "./lexer";
 import { parse, ParserMode } from "./parser";
-import { useAST } from "./ir";
+import path from "path";
+import { addToDB, DB } from "./db";
 
 let i = 2;
 
@@ -54,13 +55,19 @@ while (i < process.argv.length) {
 }
 // console.log("options:", options);
 
+const DBtextPath = path.join(path.dirname(options.filePath), "db.json");
+const DBtext = utilities.readFile(DBtextPath);
+console.log("DBtext:", DBtext);
+const db = JSON.parse(DBtext) as DB;
+console.log("db:", db);
+
 const text = utilities.readFile(options.filePath);
 // console.log("text:", text);
 
 const lexStart = Date.now();
 const tokens = lex(options.filePath, text);
 logger.addTime("lexing", Date.now() - lexStart);
-console.log("tokens:", tokens);
+// console.log("tokens:", tokens);
 
 const parseStart = Date.now();
 const AST = parse({
@@ -70,9 +77,9 @@ const AST = parse({
 logger.addTime("parsing", Date.now() - parseStart);
 console.log("AST:", JSON.stringify(AST, null, 2));
 
-const defs = useAST(AST);
-console.log("defs:", JSON.stringify(defs, null, 2));
+addToDB(db, AST);
 
+console.log("db:", JSON.stringify(db, null, 4));
 
-// logger.printFileAccessLogs();
-// logger.printTimes();
+logger.printFileAccessLogs();
+logger.printTimes();

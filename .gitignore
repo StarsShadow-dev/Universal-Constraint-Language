@@ -4,3 +4,4 @@ out
 old
 
 test/out
+test/db.json
