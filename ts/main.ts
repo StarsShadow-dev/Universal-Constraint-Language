@@ -1,10 +1,10 @@
 // tsc -p ./tsconfig.json && node out/main.js test/main.ucl
+import path from "path";
 
 import utilities from "./utilities";
 import logger from "./logger";
 import { lex } from "./lexer";
 import { parse, ParserMode } from "./parser";
-import path from "path";
 import { addToDB, DB } from "./db";
 
 let i = 2;

@@ -3,15 +3,21 @@ import crypto from "crypto";
 import { ASTnode } from "./parser";
 import logger, { LogType } from "./logger";
 import utilities from "./utilities";
+import { evaluate } from "./evaluate";
 
-export type topLevelDef = {
+type _topLevelDef = {
 	// uuid: string,
 	name: string,
-	AST: ASTnode[],
+};
+export type topLevelDef = _topLevelDef & {
+	ASTnode: ASTnode,
+};
+export type topLevelDef_orNull = _topLevelDef & {
+	ASTnode: ASTnode | null,
 };
 
 export type DB = {
-	defs: topLevelDef[],
+	defs: topLevelDef_orNull[],
 	// changeLog
 };
 
@@ -33,11 +39,24 @@ function getUUID(): string {
 	return string;
 }
 
-export function getDefFromList(list: topLevelDef[], name: string): topLevelDef | null {
+export function getDefFromList_orNull(list: topLevelDef_orNull[], name: string): topLevelDef_orNull | null {
 	for (let i = 0; i < list.length; i++) {
 		const def = list[i];
 		if (def.name == name) {
-			return def;
+			return def as topLevelDef;
+		}
+	}
+
+	return null;
+}
+export function getDefFromList(list: topLevelDef_orNull[], name: string): topLevelDef | null {
+	for (let i = 0; i < list.length; i++) {
+		const def = list[i];
+		if (def.ASTnode == null) {
+			throw utilities.unreachable();
+		}
+		if (def.name == name) {
+			return def as topLevelDef;
 		}
 	}
 
@@ -45,7 +64,7 @@ export function getDefFromList(list: topLevelDef[], name: string): topLevelDef |
 }
 
 export type ResolveAliasesContext = {
-	defList: topLevelDef[]
+	db: DB,
 };
 
 export function resolveAliases(context: ResolveAliasesContext, AST: ASTnode[]) {
@@ -54,7 +73,7 @@ export function resolveAliases(context: ResolveAliasesContext, AST: ASTnode[]) {
 		switch (ASTnode.kind) {
 			case "identifier": {
 				ASTnode.name;
-				const def = getDefFromList(context.defList, ASTnode.name);
+				const def = getDefFromList(context.db.defs, ASTnode.name);
 				if (!def) {
 					throw utilities.TODO();
 				}
@@ -82,7 +101,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			db.defs.push({
 				// uuid: uuid,
 				name: ASTnode.name,
-				AST: [],
+				ASTnode: null,
 			});
 			logger.log(LogType.addToDB, `added ${ASTnode.name} as ${uuid}`);
 		}
@@ -92,30 +111,32 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 		const ASTnode = AST[i];
 		
 		if (ASTnode.kind == "alias") {
-			const def = getDefFromList(db.defs, ASTnode.name);
+			const def = getDefFromList_orNull(db.defs, ASTnode.name);
 			if (!def) throw utilities.unreachable();
 			const value = ASTnode.value;
 			
 			switch (value.kind) {
 				case "function": {
-					const codeBlock = value.codeBlock;
 					// TODO: resolveAliases()
-					def.AST = codeBlock;
+					def.ASTnode = value;
 					logger.log(LogType.addToDB, `added AST to ${def.name}`);
 					
 					break;
 				}
 			}
 		} else {
-			logger.log(LogType.addToDB, `got not alias`);
-			
 			const codeBlock = [ASTnode];
 			
 			resolveAliases({
-				defList: db.defs,
+				db: db,
 			}, codeBlock);
 			
 			debugger;
+			const result = evaluate({
+				db: db,
+			}, ASTnode);
+			
+			logger.log(LogType.addToDB, `got not alias, result:`, JSON.stringify(result, null, 4));
 		}
 	}
 }
