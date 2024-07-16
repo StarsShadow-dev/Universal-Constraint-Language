@@ -13,8 +13,8 @@ test = fn() -> String {
 
 test()
 
-test2 = fn() -> String {
-	"Bye, World?"
+main = fn() -> String {
+	test()
 }
 
-test2()
+main()
