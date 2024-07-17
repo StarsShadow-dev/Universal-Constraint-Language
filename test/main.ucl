@@ -8,13 +8,8 @@
 // }
 
 test = fn() -> String {
-	"Hello, World!"
+	// "Hello, World!"
+	1
 }
 
 test()
-
-main = fn() -> String {
-	test()
-}
-
-main()

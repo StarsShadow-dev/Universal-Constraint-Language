@@ -19,22 +19,35 @@ export type ASTnode_argument = genericASTnode & {
 	type: ASTnode,
 };
 
+export type genericASTnodeType = genericASTnode & {
+	id: string,
+};
+export function ASTnode_isAtype(node: ASTnode): node is ASTnodeType {
+	if (node.kind == "struct" || node.kind == "enum" || node.kind == "functionType" || node.kind == "error") {
+		return true;
+	}
+	
+	return false;
+}
+
 export type ASTnodeType =
-genericASTnode & {
+genericASTnodeType & {
 	kind: "struct",
 	fields: ASTnode_argument[],
-	codeBlock: ASTnode[],
-} | genericASTnode & {
+} | genericASTnodeType & {
 	kind: "enum",
 	codeBlock: ASTnode[],
-} | genericASTnode & {
+} | genericASTnodeType & {
 	kind: "functionType",
 	functionArguments: ASTnode[],
 	returnType: ASTnode,
+} | genericASTnode & {
+	kind: "error",
 };
 
 export type ASTnode_function = genericASTnode & {
 	kind: "function",
+	hasError: boolean,
 	functionArguments: ASTnode_argument[],
 	returnType: ASTnode,
 	codeBlock: ASTnode[],
@@ -349,6 +362,7 @@ function parseFunction(context: ParserContext, AST: ASTnode[], location: SourceL
 	AST.push({
 		kind: "function",
 		location: location,
+		hasError: false,
 		functionArguments: functionArguments,
 		returnType: returnType,
 		codeBlock: codeBlock,
@@ -488,17 +502,17 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					}
 					const fields = parseFunctionArguments(context);
 					
-					const openingBracket = forward(context);
-					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
-						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
-					}
-					const codeBlock = parse(context, ParserMode.normal, "}");
+					// const openingBracket = forward(context);
+					// if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
+					// 	throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+					// }
+					// const codeBlock = parse(context, ParserMode.normal, "}");
 					
 					ASTnodes.push({
 						kind: "struct",
 						location: token.location,
+						id: JSON.stringify(token.location),
 						fields: fields,
-						codeBlock: codeBlock,
 					});
 				}
 				
@@ -518,8 +532,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 								value: {
 									kind: "struct",
 									location: ASTnode.location,
+									id: JSON.stringify(token.location),
 									fields: [],
-									codeBlock: [],
 								},
 							};
 						}
@@ -528,6 +542,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					ASTnodes.push({
 						kind: "enum",
 						location: token.location,
+						id: JSON.stringify(token.location),
 						codeBlock: codeBlock,
 					});
 				}
@@ -604,6 +619,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					ASTnodes.push({
 						kind: "functionType",
 						location: token.location,
+						id: JSON.stringify(token.location),
 						functionArguments: functionArguments,
 						returnType: returnType,
 					});

@@ -1,17 +1,14 @@
 import utilities from "./utilities";
-import { DB, getDefFromList } from "./db";
-import { ASTnode } from "./parser";
+import { BuilderContext, unAlias } from "./db";
+import { ASTnode, ASTnode_alias } from "./parser";
+import { builtinTypes } from "./builtin";
 
-export type EvaluateContext = {
-	db: DB,
-};
-
-export function evaluate(context: EvaluateContext, node: ASTnode): ASTnode {
+export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 	switch (node.kind) {
 		case "identifier": {
-			const def = getDefFromList(context.db.defs, node.name);
-			if (!def) throw utilities.unreachable();
-			return def.ASTnode;
+			const alias = unAlias(context, node.name);
+			if (!alias) throw utilities.unreachable();
+			return alias;
 		}
 		
 		case "call": {
@@ -23,10 +20,11 @@ export function evaluate(context: EvaluateContext, node: ASTnode): ASTnode {
 			return result;
 		}
 	}
+	
 	return node;
 }
 
-export function evaluateList(context: EvaluateContext, AST: ASTnode[]): ASTnode {
+export function evaluateList(context: BuilderContext, AST: ASTnode[]): ASTnode {
 	let node = null;
 	for (let i = 0; i < AST.length; i++) {
 		node = evaluate(context, AST[i]);

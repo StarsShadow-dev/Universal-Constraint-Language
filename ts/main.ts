@@ -86,10 +86,18 @@ logger.addTime("parsing", Date.now() - parseStart);
 addToDB(db, AST);
 // console.log("db:", JSON.stringify(db, null, 4));
 
+for (let i = 0; i < db.errors.length; i++) {
+	const error = db.errors[i];
+	console.log(error.getText(options.fancyErrors));
+}
+
+if (db.errors.length == 0) {
+	console.log("top level evaluations:")
+	for (let i = 0; i < db.topLevelEvaluations.length; i++) {
+		const evaluation = db.topLevelEvaluations[i];
+		console.log(getIndicatorText(evaluation, options.fancyErrors));
+	}
+}
+
 // logger.printFileAccessLogs();
 // logger.printTimes();
-
-for (let i = 0; i < db.topLevelEvaluations.length; i++) {
-	const evaluation = db.topLevelEvaluations[i];
-	console.log(getIndicatorText(evaluation, true));
-}
