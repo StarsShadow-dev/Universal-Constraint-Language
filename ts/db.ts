@@ -187,6 +187,14 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			return left.returnType;
 		}
 		
+		case "operator": {
+			if (node.operatorText == "+") {
+				return getBuiltinType("Number");
+			} else {
+				throw utilities.TODO();
+			}
+		}
+		
 		case "struct": {
 			return getBuiltinType("Type");
 		}

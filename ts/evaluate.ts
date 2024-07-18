@@ -19,6 +19,32 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			const result = evaluateList(context, left.codeBlock);
 			return result;
 		}
+		
+		case "operator": {
+			const op = node.operatorText;
+			if (op == "+" || op == "-") {
+				if (node.left.kind != "number" || node.right.kind != "number") {
+					throw utilities.unreachable();
+				}
+				const left = node.left.value;
+				const right = node.right.value;
+				
+				let result: number;
+				if (op == "+") {
+					result = left + right;
+				} else if (op == "-") {
+					result = left - right;
+				} else {
+					throw utilities.unreachable();
+				}
+				
+				return {
+					kind: "number",
+					location: node.location,
+					value: result,
+				};
+			}
+		}
 	}
 	
 	return node;

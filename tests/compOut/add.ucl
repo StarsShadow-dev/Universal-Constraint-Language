@@ -1,0 +1,4 @@
+// compOut
+// tests/compOut/add.ucl:4 -> 3
+
+1 + 2
