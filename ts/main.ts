@@ -1,4 +1,7 @@
-// tsc -p ./tsconfig.json && node out/main.js test/main.ucl
+// run with `tsc -p ./tsconfig.json && node out/main.js test/main.ucl`
+
+// lexer -> parser -> DB -> evaluate/printAST
+
 import path from "path";
 
 import utilities from "./utilities";
