@@ -87,7 +87,7 @@ for (let i = 0; i < db.errors.length; i++) {
 }
 
 if (db.errors.length == 0) {
-	console.log("top level evaluations:")
+	console.log("top level evaluations:");
 	for (let i = 0; i < db.topLevelEvaluations.length; i++) {
 		const evaluation = db.topLevelEvaluations[i];
 		console.log(getIndicatorText(evaluation, options.fancyErrors));
