@@ -98,6 +98,19 @@ function testFile(filePath: string) {
 				} else {
 					testFailure(output);
 				}
+			} else if (mode == "compOut") {
+				let actualOutput = "";
+				for (let i = 0; i < db.topLevelEvaluations.length; i++) {
+					const evaluation = db.topLevelEvaluations[i];
+					actualOutput += getIndicatorText(evaluation, options.fancyErrors);
+				}
+				
+				const expectedOutput = comments.join("\n");
+				if (expectedOutput == actualOutput) {
+					testSuccess();
+				} else {
+					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+				}
 			}
 		} else {
 			let errorText = "";
@@ -116,6 +129,8 @@ function testFile(filePath: string) {
 				} else {
 					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
 				}
+			} else if (mode == "compOut") {
+				testFailure(`compilation failed, output = ${errorText}`);
 			}
 		}
 	} catch (error) {
@@ -139,7 +154,7 @@ function testDir(dirPath: string) {
 
 testDir("./tests/compSucceed");
 // testDir("./tests/compError");
-// testDir("./tests/compOut");
+testDir("./tests/compOut");
 // testDir("./tests/js");
 
 console.log(`total: ${total}`);
