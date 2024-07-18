@@ -188,7 +188,25 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		}
 		
 		case "operator": {
-			if (node.operatorText == "+") {
+			const op = node.operatorText;
+			
+			if (op == "+" || op == "-") {
+				const left = build(context, node.left);
+				const right = build(context, node.right);
+				if (left.kind == "error" || right.kind == "error") {
+					return {
+						kind: "error",
+						location: node.location,
+					};
+				}
+				
+				expectType(context, getBuiltinType("Number"), left, (error) => {
+					error.indicator(node.left.location, `on left of '${op}' operator`);
+				});
+				expectType(context, getBuiltinType("Number"), right, (error) => {
+					error.indicator(node.right.location, `on right of '${op}' operator`);
+				});
+				
 				return getBuiltinType("Number");
 			} else {
 				throw utilities.TODO();

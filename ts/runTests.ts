@@ -84,7 +84,7 @@ function testFile(filePath: string) {
 		if (db.errors.length == 0) {
 			if (mode == "compError") {
 				const expectedOutput = comments.join("\n");
-				testFailure(`expected error output = ${expectedOutput}\nactual output is success`);
+				testFailure(`expected error output = ${expectedOutput}\n\nactual output is success`);
 			} else if (mode == "compSucceed") {
 				let output = "";
 				for (let i = 0; i < db.topLevelEvaluations.length; i++) {
@@ -102,6 +102,9 @@ function testFile(filePath: string) {
 				let actualOutput = "";
 				for (let i = 0; i < db.topLevelEvaluations.length; i++) {
 					const evaluation = db.topLevelEvaluations[i];
+					if (actualOutput != "") {
+						actualOutput += "\n";
+					}
 					actualOutput += getIndicatorText(evaluation, options.fancyErrors);
 				}
 				
@@ -109,13 +112,16 @@ function testFile(filePath: string) {
 				if (expectedOutput == actualOutput) {
 					testSuccess();
 				} else {
-					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+					testFailure(`-- expectedOutput\n${expectedOutput}\n-- actualOutput\n${actualOutput}`);
 				}
 			}
 		} else {
 			let errorText = "";
 			for (let i = 0; i < db.errors.length; i++) {
 				const error = db.errors[i];
+				if (errorText != "") {
+					errorText += "\n";
+				}
 				errorText += error.getText(false);
 			}
 			
@@ -127,7 +133,7 @@ function testFile(filePath: string) {
 				if (expectedOutput == actualOutput) {
 					testSuccess();
 				} else {
-					testFailure(`expectedOutput = ${expectedOutput}\nactualOutput = ${actualOutput}`);
+					testFailure(`-- expectedOutput\n${expectedOutput}\n-- actualOutput\n${actualOutput}`);
 				}
 			} else if (mode == "compOut") {
 				testFailure(`compilation failed, output = ${errorText}`);
@@ -153,7 +159,7 @@ function testDir(dirPath: string) {
 }
 
 testDir("./tests/compSucceed");
-// testDir("./tests/compError");
+testDir("./tests/compError");
 testDir("./tests/compOut");
 // testDir("./tests/js");
 

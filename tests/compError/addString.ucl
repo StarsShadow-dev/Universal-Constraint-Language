@@ -1,0 +1,8 @@
+// compError
+// error: expected type builtin:Number, but got type builtin:String
+// tests/compError/addString.ucl:7 -> on right of '+' operator
+// error: expected type builtin:Number, but got type builtin:String
+// tests/compError/addString.ucl:8 -> on left of '+' operator
+
+1 + ""
+"" + 2
