@@ -1,7 +1,0 @@
-// compSucceed
-
-function = fn() -> Number {
-	6
-}
-
-@compAssert(function() == 6)

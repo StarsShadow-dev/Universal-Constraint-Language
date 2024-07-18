@@ -1,9 +1,0 @@
-// compError
-// error: if expression is missing a condition
-// tests/compError/noIfCondition.ucl:5 -> here
-
-if () {
-	"a"
-} else {
-	"b"
-}

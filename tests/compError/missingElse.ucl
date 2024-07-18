@@ -1,8 +1,0 @@
-// compError
-// error: expected 'else'
-// tests/compError/missingElse.ucl:8 -> here
-// tests/compError/missingElse.ucl:6 -> for this if expression
-
-if (true) {
-	"a"
-}

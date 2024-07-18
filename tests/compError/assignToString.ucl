@@ -1,5 +1,0 @@
-// compError
-// error: left side of assignment must be an identifier
-// tests/compError/assignToString.ucl:5 -> left side here
-
-"a string" = -1

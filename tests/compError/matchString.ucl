@@ -1,6 +1,0 @@
-// testSkip
-// compError
-// error: unexpected value in match expression
-// tests/compError/matchString.ucl:5 -> match here
-
-match "color" {}

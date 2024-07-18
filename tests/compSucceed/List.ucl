@@ -1,6 +1,0 @@
-// testSkip
-// compSucceed
-
-test = fn(): @List(Number) {
-	[1, 2, 3]
-}

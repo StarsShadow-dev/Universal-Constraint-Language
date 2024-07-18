@@ -1,7 +1,0 @@
-// testSkip
-// compSucceed
-
-@compAssert(@List(String).T == String)
-@compAssert(@List(Number).T == Number)
-
-@compAssert(@List(String).T != @List(String))
