@@ -7,6 +7,7 @@ import { lex } from "./lexer";
 import { parse, ParserMode } from "./parser";
 import { addToDB, DB, makeDB } from "./db";
 import { getIndicatorText } from "./report";
+import { CompilerOptions } from "./compiler";
 
 function readDB(): DB {
 	const DBtextPath = path.join(path.dirname(options.filePath), "db.json");
@@ -25,15 +26,6 @@ function next(): string {
 
 export type IdeOptions = {
 	mode: "compileFile",
-};
-
-export type CompilerOptions = {
-	filePath: string,
-	fancyErrors: boolean,
-	
-	outputPath?: string,
-	ideOptions?: IdeOptions,
-	// dumpOpCodes?: boolean,
 };
 
 const options: CompilerOptions = {
