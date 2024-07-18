@@ -8,19 +8,14 @@ import { printASTnode } from "./printAST";
 import { CompileError, Indicator } from "./report";
 import { builtinTypes, getBuiltinType } from "./builtin";
 
-type _topLevelDef = {
+export type topLevelDef = {
 	// uuid: string,
 	name: string,
-};
-export type topLevelDef = _topLevelDef & {
 	value: ASTnode,
-};
-export type topLevelDef_orNull = _topLevelDef & {
-	value: ASTnode | null,
 };
 
 export type DB = {
-	defs: topLevelDef_orNull[],
+	defs: topLevelDef[],
 	// changeLog
 	topLevelEvaluations: Indicator[],
 	errors: CompileError[],
@@ -51,17 +46,7 @@ function getUUID(): string {
 	return string;
 }
 
-export function getDefFromList_orNull(list: topLevelDef_orNull[], name: string): topLevelDef_orNull | null {
-	for (let i = 0; i < list.length; i++) {
-		const def = list[i];
-		if (def.name == name) {
-			return def as topLevelDef;
-		}
-	}
-
-	return null;
-}
-export function getDefFromList(list: topLevelDef_orNull[], name: string): topLevelDef | null {
+export function getDefFromList(list: topLevelDef[], name: string): topLevelDef | null {
 	for (let i = 0; i < list.length; i++) {
 		const def = list[i];
 		if (def.value == null) {
@@ -297,8 +282,9 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 		
 		try {
 			if (ASTnode.kind == "alias") {
-				const def = getDefFromList_orNull(db.defs, ASTnode.name);
+				const def = getDefFromList(db.defs, ASTnode.name);
 				if (!def) throw utilities.unreachable();
+				
 				const value = ASTnode.value;
 				buildList({ db: db, levels: [] }, [value]);
 				if (ASTnode_isAtype(value)) {

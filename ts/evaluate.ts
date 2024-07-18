@@ -1,7 +1,6 @@
 import utilities from "./utilities";
 import { BuilderContext, unAlias } from "./db";
-import { ASTnode, ASTnode_alias } from "./parser";
-import { builtinTypes } from "./builtin";
+import { ASTnode } from "./parser";
 
 export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 	switch (node.kind) {
