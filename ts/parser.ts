@@ -23,11 +23,15 @@ export type genericASTnodeType = genericASTnode & {
 	id: string,
 };
 export function ASTnode_isAtype(node: ASTnode): node is ASTnodeType {
-	if (node.kind == "struct" || node.kind == "enum" || node.kind == "functionType" || node.kind == "error") {
+	if (node.kind == "struct" || node.kind == "enum" || node.kind == "functionType") {
 		return true;
 	}
 	
 	return false;
+}
+
+export type ASTnode_error = genericASTnode & {
+	kind: "error",
 }
 
 export type ASTnodeType =
@@ -41,8 +45,6 @@ genericASTnodeType & {
 	kind: "functionType",
 	functionArguments: ASTnode[],
 	returnType: ASTnode,
-} | genericASTnode & {
-	kind: "error",
 };
 
 export type ASTnode_function = genericASTnode & {
@@ -120,7 +122,8 @@ genericASTnode & {
 	template: ASTnode,
 	codeBlock: ASTnode[],
 } |
-ASTnode_alias;
+ASTnode_alias |
+ASTnode_error;
 
 export type ParserContext = {
 	tokens: Token[],

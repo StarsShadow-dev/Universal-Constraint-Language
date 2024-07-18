@@ -1,4 +1,4 @@
-import { ASTnode } from "./parser";
+import { ASTnode, ASTnode_isAtype } from "./parser";
 import utilities from "./utilities";
 
 export function printAST(AST: ASTnode[]): string {
@@ -9,20 +9,26 @@ export function printAST(AST: ASTnode[]): string {
 	return text;
 }
 
-export function printASTnode(ASTnode: ASTnode): string {
-	switch (ASTnode.kind) {
+export function printASTnode(node: ASTnode): string {
+	switch (node.kind) {
 		case "bool": {
-			if (ASTnode.value) {
+			if (node.value) {
 				return "true";
 			} else {
 				return "false";
 			}
 		}
 		case "number": {
-			return `${ASTnode.value}`;
+			return `${node.value}`;
 		}
 		case "string": {
-			return `"${ASTnode.value}"`;
+			return `"${node.value}"`;
+		}
+		case "identifier": {
+			return node.name;
+		}
+		case "instance": {
+			return `${printASTnode(node.template)} {}`;
 		}
 	}
 	throw utilities.TODO();

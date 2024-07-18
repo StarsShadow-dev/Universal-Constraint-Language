@@ -3,13 +3,10 @@
 	
 // }
 
-// main = fn() -> String {
-// 	test()
-// }
+Test = struct() // struct(next: Test)
 
-test = fn() -> String {
-	// "Hello, World!"
-	1
+main = fn() -> Test {
+	Test {}
 }
 
-test()
+main()

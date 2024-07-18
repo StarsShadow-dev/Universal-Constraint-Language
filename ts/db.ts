@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import { ASTnode, ASTnode_alias, ASTnode_isAtype, ASTnodeType } from "./parser";
+import { ASTnode, ASTnode_alias, ASTnode_error, ASTnode_isAtype, ASTnodeType } from "./parser";
 import logger, { LogType } from "./logger";
 import utilities from "./utilities";
 import { evaluate } from "./evaluate";
@@ -118,10 +118,6 @@ function expectType(
 	actualType: ASTnodeType,
 	callBack: (error: CompileError) => void,
 ) {
-	if (expectedType.kind == "error" || actualType.kind == "error") {
-		return;
-	}
-	
 	// if (expectedType.kind == "functionType" && actualType.kind == "functionType") {
 	// 	if (!OpCode_isAtype(expectedType.returnType) || !OpCode_isAtype(actualType.returnType)) {
 	// 		throw utilities.TODO();
@@ -156,7 +152,7 @@ function expectType(
 	}
 }
 
-export function build(context: BuilderContext, node: ASTnode): ASTnodeType {
+export function build(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
 	switch (node.kind) {
 		case "bool": {
 			return getBuiltinType("Bool");
@@ -209,6 +205,9 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType {
 			}
 			
 			const actualResultType = buildList(context, node.codeBlock);
+			if (!ASTnode_isAtype(actualResultType)) {
+				throw utilities.TODO();
+			}
 			
 			expectType(context, expectedReturnType, actualResultType, (error) => {
 				error.indicator(node.returnType.location, "expected type from here");
@@ -231,12 +230,17 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType {
 				returnType: expectedReturnType,
 			};
 		}
+		
+		case "instance": {
+			const template = build(context, node.template);
+			return template;
+		}
 	}
 	
 	throw utilities.unreachable();
 }
 
-export function buildList(context: BuilderContext, AST: ASTnode[]): ASTnodeType {
+export function buildList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
 	let node = null;
 	for (let i = 0; i < AST.length; i++) {
 		node = build(context, AST[i]);
@@ -271,6 +275,9 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				if (!def) throw utilities.unreachable();
 				const value = ASTnode.value;
 				buildList({ db: db, levels: [] }, [value]);
+				if (ASTnode_isAtype(value)) {
+					value.id = def.name;
+				}
 				def.value = value;
 			} else {
 				logger.log(LogType.addToDB, `found top level evaluation`);
