@@ -290,7 +290,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				}, ASTnode);
 				const resultText = printASTnode(result);
 				
-				db.topLevelEvaluations.push({ location: location, msg: `-> ${resultText}` });
+				db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
 			}
 		} catch (error) {
 			if (error instanceof CompileError) {
