@@ -1,12 +1,18 @@
 import crypto from "crypto";
 
-import { ASTnode, ASTnode_alias, ASTnode_error, ASTnode_isAtype, ASTnodeType } from "./parser";
-import logger, { LogType } from "./logger";
 import utilities from "./utilities";
+import logger, { LogType } from "./logger";
 import { evaluate } from "./evaluate";
 import { printASTnode } from "./printAST";
 import { CompileError, Indicator } from "./report";
 import { evaluateBuiltin, builtinTypes, getBuiltinType } from "./builtin";
+import {
+	ASTnode,
+	ASTnodeType,
+	ASTnode_alias,
+	ASTnode_error,
+	ASTnode_isAtype,
+} from "./parser";
 
 export type topLevelDef = {
 	// uuid: string,

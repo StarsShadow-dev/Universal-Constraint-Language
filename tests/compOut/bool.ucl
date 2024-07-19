@@ -1,0 +1,6 @@
+// compOut
+// tests/compOut/bool.ucl:5 -> true
+// tests/compOut/bool.ucl:6 -> false
+
+true
+false

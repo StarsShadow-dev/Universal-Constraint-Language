@@ -1,8 +1,13 @@
+import utilities from "./utilities";
 import { BuilderContext } from "./db";
 import { evaluate } from "./evaluate";
-import { ASTnode, ASTnode_alias, ASTnode_builtinCall, ASTnodeType } from "./parser";
 import { CompileError } from "./report";
-import utilities from "./utilities";
+import {
+	ASTnode,
+	ASTnodeType,
+	ASTnode_alias,
+	ASTnode_builtinCall,
+} from "./parser";
 
 function makeBuiltinType(name: string): (ASTnode_alias & { value: {kind: "struct"} }) {
 	return {
