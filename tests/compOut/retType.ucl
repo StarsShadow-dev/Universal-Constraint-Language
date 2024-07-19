@@ -1,0 +1,14 @@
+// compOut
+// tests/compOut/retType.ucl:13 -> String
+// tests/compOut/retType.ucl:14 -> "Hello, World"
+
+getType = fn() -> Type {
+	String
+}
+
+test = fn() -> getType() {
+	"Hello, World"
+}
+
+getType()
+test()

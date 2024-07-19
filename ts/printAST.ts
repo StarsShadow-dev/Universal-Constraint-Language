@@ -52,6 +52,10 @@ export function printASTnode(node: ASTnode): string {
 			return `@${node.name}(${argText})`;
 		}
 		case "struct": {
+			if (node.id.startsWith("builtin:")) {
+				return node.id.split(":")[1];
+			}
+			
 			let argText = "";
 			for (let i = 0; i < node.fields.length; i++) {
 				const argNode = node.fields[i];
