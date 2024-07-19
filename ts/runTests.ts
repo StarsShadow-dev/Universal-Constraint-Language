@@ -2,10 +2,10 @@ import * as fs from "fs";
 import path from "path";
 
 import utilities from "./utilities";
+import logger from "./logger";
 import { CompilerOptions } from "./compiler";
 import { addToDB, makeDB } from "./db";
 import { lex, TokenKind } from "./lexer";
-import logger from "./logger";
 import { getIndicatorText } from "./report";
 import { parse, ParserMode } from "./parser";
 

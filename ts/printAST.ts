@@ -1,5 +1,5 @@
-import { ASTnode, ASTnode_isAtype } from "./parser";
 import utilities from "./utilities";
+import { ASTnode } from "./parser";
 
 export function printAST(AST: ASTnode[]): string {
 	let text = "";
@@ -26,6 +26,42 @@ export function printASTnode(node: ASTnode): string {
 		}
 		case "identifier": {
 			return node.name;
+		}
+		case "call": {
+			let argText = "";
+			for (let i = 0; i < node.callArguments.length; i++) {
+				const argNode = node.callArguments[i];
+				const comma = argText == "";
+				argText += printASTnode(argNode);
+				if (comma) {
+					argText += ", ";
+				}
+			}
+			return `${printASTnode(node.left)}(${argText})`;
+		}
+		case "builtinCall": {
+			let argText = "";
+			for (let i = 0; i < node.callArguments.length; i++) {
+				const argNode = node.callArguments[i];
+				const comma = argText == "";
+				argText += printASTnode(argNode);
+				if (comma) {
+					argText += ", ";
+				}
+			}
+			return `@${node.name}(${argText})`;
+		}
+		case "struct": {
+			let argText = "";
+			for (let i = 0; i < node.fields.length; i++) {
+				const argNode = node.fields[i];
+				const comma = argText == "";
+				argText += printASTnode(argNode);
+				if (comma) {
+					argText += ", ";
+				}
+			}
+			return `struct(${argText})`;
 		}
 		case "instance": {
 			return `${printASTnode(node.template)} {}`;

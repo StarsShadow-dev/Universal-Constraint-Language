@@ -38,6 +38,11 @@ export type ASTnodeType =
 genericASTnodeType & {
 	kind: "struct",
 	fields: ASTnode_argument[],
+	data?: {
+		kind: "number",
+		min: number,
+		max: number,
+	},
 } | genericASTnodeType & {
 	kind: "enum",
 	codeBlock: ASTnode[],

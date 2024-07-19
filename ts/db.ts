@@ -6,7 +6,7 @@ import utilities from "./utilities";
 import { evaluate } from "./evaluate";
 import { printASTnode } from "./printAST";
 import { CompileError, Indicator } from "./report";
-import { builtinTypes, getBuiltinType } from "./builtin";
+import { evaluateBuiltin, builtinTypes, getBuiltinType } from "./builtin";
 
 export type topLevelDef = {
 	// uuid: string,
@@ -155,11 +155,7 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 				throw utilities.TODO();
 			}
 			
-			if (ASTnode_isAtype(def)) {
-				return def;
-			} else {
-				return build(context, def);
-			}
+			return build(context, def);
 		}
 		
 		case "call": {
@@ -170,6 +166,10 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			}
 			
 			return left.returnType;
+		}
+		
+		case "builtinCall": {
+			return build(context, evaluateBuiltin(context, node));
 		}
 		
 		case "operator": {
@@ -210,7 +210,7 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 				};
 			}
 			
-			const expectedReturnType = build(context, node.returnType);
+			const expectedReturnType = evaluate(context, node.returnType);
 			if (!ASTnode_isAtype(expectedReturnType)) {
 				throw utilities.TODO();
 			}

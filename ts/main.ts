@@ -27,10 +27,6 @@ function next(): string {
 	return process.argv[i++];
 }
 
-export type IdeOptions = {
-	mode: "compileFile",
-};
-
 const options: CompilerOptions = {
 	filePath: next(),
 	fancyErrors: true,

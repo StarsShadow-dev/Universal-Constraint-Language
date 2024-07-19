@@ -3,10 +3,52 @@
 	
 // }
 
-Test = struct() // struct(next: Test)
+// Test = struct() // struct(next: Test)
 
-main = fn() -> Test {
-	Test {}
+// Number = @Number(0, 10)
+
+// main = fn() -> Number {
+// 	11
+// }
+
+// main()
+
+// @Number(0, 10)
+
+// ----------
+
+// RetType = effect Type
+
+// main = fn<RetType>() -> RetType {
+// 	1
+// }
+
+// Number = @Number(0, 10)
+
+// with RetType as Number {
+// 	main()
+// }
+
+// ----------
+
+// Number = effect Type
+
+// main = fn() -> Number {
+// 	1
+// }
+
+// with Number as @Number(0, 10) {
+// 	main()
+// }
+
+// ----------
+
+getType = fn() -> Type {
+	Number
+}
+
+main = fn() -> getType() {
+	100
 }
 
 main()

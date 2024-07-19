@@ -1,4 +1,6 @@
-import { IdeOptions } from "./main";
+export type IdeOptions = {
+	mode: "compileFile",
+};
 
 export type CompilerOptions = {
 	filePath: string,

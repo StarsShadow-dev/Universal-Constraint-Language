@@ -1,4 +1,7 @@
-import { ASTnode_alias, ASTnodeType } from "./parser";
+import { BuilderContext } from "./db";
+import { evaluate } from "./evaluate";
+import { ASTnode, ASTnode_alias, ASTnode_builtinCall, ASTnodeType } from "./parser";
+import { CompileError } from "./report";
 import utilities from "./utilities";
 
 function makeBuiltinType(name: string): (ASTnode_alias & { value: {kind: "struct"} }) {
@@ -31,4 +34,59 @@ export function getBuiltinType(name: string): ASTnodeType {
 	}
 	
 	throw utilities.unreachable();
+}
+
+export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_builtinCall): ASTnode {
+	let index = 0;
+	function getArg(): ASTnode {
+		const node = builtinCall.callArguments[index];
+		if (node == undefined) {
+			throw new CompileError(`not enough arguments for builtin`)
+				.indicator(builtinCall.location, "here");
+		}
+		index++;
+		return evaluate(context, node);
+	}
+	function moreArgs(): boolean {
+		return index < builtinCall.callArguments.length;
+	}
+	function getBool(): boolean {
+		const opCode = getArg();
+		if (opCode.kind != "bool") {
+			throw utilities.TODO();
+		}
+		return opCode.value;
+	}
+	function getString(): string {
+		const opCode = getArg();
+		if (opCode.kind != "string") {
+			throw utilities.TODO();
+		}
+		return opCode.value;
+	}
+	function getNumber(): number {
+		const opCode = getArg();
+		if (opCode.kind != "number") {
+			throw utilities.TODO();
+		}
+		return opCode.value;
+	}
+	
+	if (builtinCall.name == "Number") {
+		const min = getNumber();
+		const max = getNumber();
+		return {
+			kind: "struct",
+			location: builtinCall.location,
+			id:  JSON.stringify(builtinCall.location),
+			fields: [],
+			data: {
+				kind: "number",
+				min: min,
+				max: max,
+			}
+		};
+	} else {
+		throw utilities.unreachable();
+	}
 }

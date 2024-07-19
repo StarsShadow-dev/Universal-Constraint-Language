@@ -1,6 +1,7 @@
 import utilities from "./utilities";
 import { BuilderContext, unAlias } from "./db";
 import { ASTnode } from "./parser";
+import { evaluateBuiltin } from "./builtin";
 
 export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 	switch (node.kind) {
@@ -17,6 +18,10 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			}
 			const result = evaluateList(context, left.codeBlock);
 			return result;
+		}
+		
+		case "builtinCall": {
+			return evaluateBuiltin(context, node);
 		}
 		
 		case "operator": {
