@@ -29,6 +29,7 @@ export const builtinTypes: (ASTnode_alias & { value: {kind: "struct"} })[] = [
 	makeBuiltinType("Number"),
 	makeBuiltinType("String"),
 	makeBuiltinType("Effect"),
+	makeBuiltinType("Function"),
 ];
 
 export function getBuiltinType(name: string): ASTnodeType {
@@ -40,6 +41,10 @@ export function getBuiltinType(name: string): ASTnodeType {
 	}
 	
 	throw utilities.unreachable();
+}
+
+export function isBuiltinType(type: ASTnodeType, name: string): boolean {
+	return type.id.split(":")[1] == name;
 }
 
 export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_builtinCall): ASTnode {

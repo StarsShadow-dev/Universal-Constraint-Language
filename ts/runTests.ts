@@ -90,7 +90,7 @@ function testFile(filePath: string) {
 				for (let i = 0; i < db.topLevelEvaluations.length; i++) {
 					const evaluation = db.topLevelEvaluations[i];
 					if (evaluation.msg != "true") {
-						output += getIndicatorText(evaluation, options.fancyErrors);
+						output += getIndicatorText(evaluation, options.fancyErrors, false);
 					}
 				}
 				if (output.length == 0) {
@@ -105,7 +105,7 @@ function testFile(filePath: string) {
 					if (actualOutput != "") {
 						actualOutput += "\n";
 					}
-					actualOutput += getIndicatorText(evaluation, options.fancyErrors);
+					actualOutput += getIndicatorText(evaluation, options.fancyErrors, false);
 				}
 				
 				const expectedOutput = comments.join("\n");

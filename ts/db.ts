@@ -5,12 +5,13 @@ import logger, { LogType } from "./logger";
 import { evaluate } from "./evaluate";
 import { printASTnode } from "./printAST";
 import { CompileError, Indicator } from "./report";
-import { evaluateBuiltin, builtinTypes, getBuiltinType } from "./builtin";
+import { evaluateBuiltin, builtinTypes, getBuiltinType, isBuiltinType } from "./builtin";
 import {
 	ASTnode,
 	ASTnodeType,
 	ASTnode_alias,
 	ASTnode_error,
+	ASTnode_error_new,
 	ASTnode_isAtype,
 } from "./parser";
 
@@ -107,8 +108,11 @@ function expectType(
 	context: BuilderContext,
 	expectedType: ASTnodeType,
 	actualType: ASTnodeType,
-	callBack: (error: CompileError) => void,
-) {
+): CompileError | null {
+	if (isBuiltinType(expectedType, "Function") && actualType.kind == "functionType") {
+		return null;
+	}
+	
 	// if (expectedType.kind == "functionType" && actualType.kind == "functionType") {
 	// 	if (!OpCode_isAtype(expectedType.returnType) || !OpCode_isAtype(actualType.returnType)) {
 	// 		throw utilities.TODO();
@@ -137,10 +141,12 @@ function expectType(
 	// }
 	
 	if (expectedType.id != actualType.id) {
-		let error = new CompileError(`expected type ${expectedType.id}, but got type ${actualType.id}`);
-		callBack(error);
-		throw error;
+		const expectedTypeText = printASTnode({level: 0}, expectedType);
+		const actualTypeText = printASTnode({level: 0}, actualType);
+		return new CompileError(`expected type ${expectedTypeText}, but got type ${actualTypeText}`);
 	}
+	
+	return null;
 }
 
 export function build(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
@@ -165,13 +171,17 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		}
 		
 		case "call": {
-			const left = build(context, node.left);
-			if (left.kind == "error") return left;
-			if (left.kind != "functionType" || !ASTnode_isAtype(left.returnType)) {
+			const left = evaluate(context, node.left);
+			if (left.kind != "function") {
+				throw utilities.TODO();
+			}
+			const leftType = build(context, left);
+			if (leftType.kind == "error") return leftType;
+			if (leftType.kind != "functionType" || !ASTnode_isAtype(leftType.returnType)) {
 				throw utilities.unreachable();
 			}
 			
-			return left.returnType;
+			return leftType.returnType;
 		}
 		
 		case "builtinCall": {
@@ -183,20 +193,28 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			
 			if (op == "+" || op == "-") {
 				const left = build(context, node.left);
+				if (left.kind == "error") {
+					return left;
+				}
 				const right = build(context, node.right);
-				if (left.kind == "error" || right.kind == "error") {
-					return {
-						kind: "error",
-						location: node.location,
-					};
+				if (right.kind == "error") {
+					return right;
 				}
 				
-				expectType(context, getBuiltinType("Number"), left, (error) => {
-					error.indicator(node.left.location, `on left of '${op}' operator`);
-				});
-				expectType(context, getBuiltinType("Number"), right, (error) => {
-					error.indicator(node.right.location, `on right of '${op}' operator`);
-				});
+				{
+					let error = expectType(context, getBuiltinType("Number"), left);
+					if (error) {
+						error.indicator(node.left.location, `on left of '${op}' operator`);
+						return ASTnode_error_new(node.location, error);
+					}
+				}
+				{
+					let error = expectType(context, getBuiltinType("Number"), right);
+					if (error) {
+						error.indicator(node.right.location, `on right of '${op}' operator`);
+						return ASTnode_error_new(node.location, error);
+					}
+				}
 				
 				return getBuiltinType("Number");
 			} else {
@@ -208,36 +226,40 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			return getBuiltinType("Type");
 		}
 		
+		case "functionType": {
+			return node;
+		}
+		
 		case "function": {
-			if (node.hasError) {
-				return {
-					kind: "error",
-					location: node.location,
-				};
-			}
-			
 			const expectedReturnType = evaluate(context, node.returnType);
 			if (!ASTnode_isAtype(expectedReturnType)) {
 				throw utilities.TODO();
 			}
 			
 			const actualResultType = buildList(context, node.codeBlock);
-			if (!ASTnode_isAtype(actualResultType)) {
-				throw utilities.TODO();
+			if (actualResultType.kind == "error") {
+				return actualResultType;
 			}
 			
-			expectType(context, expectedReturnType, actualResultType, (error) => {
-				error.indicator(node.returnType.location, "expected type from here");
-				node.hasError = true;
-			});
+			{
+				let error = expectType(context, expectedReturnType, actualResultType);
+				if (error) {
+					error.indicator(node.returnType.location, "expected type from here");
+					return ASTnode_error_new(node.location, error);
+				}
+			}
 			
-			let functionArguments = node.functionArguments.map((_value) => {
-				const value = build(context, _value.type);
+			let functionArguments = [];
+			for (let i = 0; i < node.functionArguments.length; i++) {
+				const value = build(context, node.functionArguments[i].type)
+				if (value.kind == "error") {
+					return value;
+				}
 				if (!ASTnode_isAtype(value)) {
 					throw utilities.TODO();
 				}
-				return value;
-			});
+				functionArguments.push(value);
+			}
 			
 			return {
 				kind: "functionType",
@@ -251,20 +273,6 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		case "instance": {
 			const template = build(context, node.template);
 			return template;
-		}
-		
-		case "effect": {
-			const type = build(context, node.type);
-			if (type.kind == "error") {
-				return {
-					kind: "error",
-					location: node.location,
-				};
-			}
-			expectType(context, getBuiltinType("Type"), type, (error) => {
-				error.indicator(type.location, `an effect must have a type`);
-			});
-			return getBuiltinType("Effect");
 		}
 	}
 	
@@ -300,36 +308,38 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
 		
-		try {
-			if (ASTnode.kind == "alias") {
-				const def = getDefFromList(db.defs, ASTnode.name);
-				if (!def) throw utilities.unreachable();
-				
-				const value = ASTnode.value;
-				buildList({ db: db, levels: [] }, [value]);
-				if (ASTnode_isAtype(value)) {
-					value.id = def.name;
-				}
-				def.value = value;
-			} else {
-				logger.log(LogType.addToDB, `found top level evaluation`);
-				
-				const location = ASTnode.location;
-				buildList({ db: db, levels: [] }, [ASTnode]);
-				const result = evaluate({
-					db: db,
-					levels: [],
-				}, ASTnode);
-				const resultText = printASTnode(result);
-				
-				db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
+		if (ASTnode.kind == "alias") {
+			const def = getDefFromList(db.defs, ASTnode.name);
+			if (!def) throw utilities.unreachable();
+			
+			const value = ASTnode.value;
+			const error = buildList({ db: db, levels: [] }, [value]);
+			if (error.kind == "error" && error.compileError) {
+				db.errors.push(error.compileError);
+				break; // ?
 			}
-		} catch (error) {
-			if (error instanceof CompileError) {
-				db.errors.push(error);
-			} else {
-				throw error;
+			
+			if (ASTnode_isAtype(value)) {
+				value.id = def.name;
 			}
+			def.value = value;
+		} else {
+			logger.log(LogType.addToDB, `found top level evaluation`);
+			
+			const location = ASTnode.location;
+			const error = buildList({ db: db, levels: [] }, [ASTnode]);
+			if (error.kind == "error") {
+				if (!error.compileError) break;
+				db.errors.push(error.compileError);
+				continue;
+			}
+			const result = evaluate({
+				db: db,
+				levels: [],
+			}, ASTnode);
+			const resultText = printASTnode({level: 0}, result);
+			
+			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
 		}
 	}
 }

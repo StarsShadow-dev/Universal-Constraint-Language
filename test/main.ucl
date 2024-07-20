@@ -65,12 +65,24 @@
 
 
 
-genericFn = fn(names: [String] function: Function) -> Function {
-	...
+// genericFn = fn(names: [String] function: Function) -> Function {
+// 	...
+// }
+// map = genericFn <| ["In", "Out"] <| fn(input: [In], callBack: (In) -> Out) -> [Out] {
+// 	...
+// }
+// map(Number, String)([1, 2, 3], fn(input: Number) -> String {
+// 	Number.toString(input)
+// })
+
+// ----------
+
+getFunction = fn() -> Function {
+	fn() -> String {
+		"Hello, World!"
+	}
 }
-map = genericFn <| ["In", "Out"] <| fn(input: [In], callBack: (In) -> Out) -> [Out] {
-	...
-}
-map(Number, String)([1, 2, 3], fn(input: Number) -> String {
-	Number.toString(input)
-})
+
+getFunction
+getFunction()
+getFunction()()

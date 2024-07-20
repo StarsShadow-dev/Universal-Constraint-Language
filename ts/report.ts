@@ -10,7 +10,7 @@ export type Indicator = {
 }
 
 // TODO: This can read the same file twice, if there are two indicators in a file.
-export function getIndicatorText(indicator: Indicator, fancyIndicators: boolean): string {
+export function getIndicatorText(indicator: Indicator, fancyIndicators: boolean, startAtNextLine: boolean): string {
 	let errorText = "";
 	
 	if (!fancyIndicators) {
@@ -85,7 +85,18 @@ export function getIndicatorText(indicator: Indicator, fancyIndicators: boolean)
 				for (let index = 0; index < indicator.location.endColumn - indicator.location.startColumn + 1; index++) {
 					errorText += "^";
 				}
-				errorText += ` ${indicator.msg}\n`;
+				let endText = "";
+				if (startAtNextLine) {
+					endText += "\n";
+				} else {
+					endText += " ";
+				}
+				endText += `${indicator.msg}`;
+				if (startAtNextLine) {
+					endText = endText.replaceAll("\n", "\n ");
+				}
+				errorText += endText;
+				break;
 			} else if (
 				line > indicator.location.line - indicatorTextWindowSize - 1 &&
 				line < indicator.location.line + indicatorTextWindowSize + 1
@@ -128,7 +139,7 @@ export class CompileError {
 			
 			if (indicator.location == "builtin") continue;
 			
-			text += getIndicatorText(indicator, fancyIndicators);
+			text += getIndicatorText(indicator, fancyIndicators, false);
 			if (!fancyIndicators && this.indicators[i + 1]) {
 				text += "\n";
 			}

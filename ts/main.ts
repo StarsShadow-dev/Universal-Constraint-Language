@@ -75,7 +75,7 @@ try {
 		i: 0,
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
-	console.log("AST:", JSON.stringify(AST, null, 2));
+	// console.log("AST:", JSON.stringify(AST, null, 2));
 	
 	addToDB(db, AST);
 } catch (error) {
@@ -97,7 +97,8 @@ if (db.errors.length == 0) {
 	console.log("top level evaluations:");
 	for (let i = 0; i < db.topLevelEvaluations.length; i++) {
 		const evaluation = db.topLevelEvaluations[i];
-		console.log(getIndicatorText(evaluation, options.fancyErrors));
+		let indicatorText = getIndicatorText(evaluation, options.fancyErrors, evaluation.msg.includes("\n"));
+		console.log(indicatorText);
 	}
 }
 
