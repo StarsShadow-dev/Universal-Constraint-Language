@@ -45,3 +45,32 @@
 
 // ----------
 
+// map = fn<In, Out>(input: [In], callBack: (In) -> Out) -> [Out] {
+// 	...
+// }
+// map<Number, String>([1, 2, 3], fn(input: Number) -> String {
+// 	Number.toString(input)
+// })
+
+
+
+// map = fn(In: Type, Out: Type) -> Function {
+// 	fn(input: [In], callBack: (In) -> Out) -> [Out] {
+// 		...
+// 	}
+// }
+// map(Number, String)([1, 2, 3], fn(input: Number) -> String {
+// 	Number.toString(input)
+// })
+
+
+
+genericFn = fn(names: [String] function: Function) -> Function {
+	...
+}
+map = genericFn <| ["In", "Out"] <| fn(input: [In], callBack: (In) -> Out) -> [Out] {
+	...
+}
+map(Number, String)([1, 2, 3], fn(input: Number) -> String {
+	Number.toString(input)
+})

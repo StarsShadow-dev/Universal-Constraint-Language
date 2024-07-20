@@ -1,12 +1,17 @@
 import utilities from "./utilities";
 import { ASTnode } from "./parser";
 
-export function printAST(AST: ASTnode[]): string {
-	let text = "";
-	for (let i = 0; i < AST.length; i++) {
-		text += printASTnode(AST[i]);
+function getArgText(args: ASTnode[]): string {
+	let argText = "";
+	for (let i = 0; i < args.length; i++) {
+		const argNode = args[i];
+		const comma = argText == "";
+		argText += printASTnode(argNode);
+		if (comma) {
+			argText += ", ";
+		}
 	}
-	return text;
+	return argText;
 }
 
 export function printASTnode(node: ASTnode): string {
@@ -28,27 +33,11 @@ export function printASTnode(node: ASTnode): string {
 			return node.name;
 		}
 		case "call": {
-			let argText = "";
-			for (let i = 0; i < node.callArguments.length; i++) {
-				const argNode = node.callArguments[i];
-				const comma = argText == "";
-				argText += printASTnode(argNode);
-				if (comma) {
-					argText += ", ";
-				}
-			}
+			const argText = getArgText(node.callArguments);
 			return `${printASTnode(node.left)}(${argText})`;
 		}
 		case "builtinCall": {
-			let argText = "";
-			for (let i = 0; i < node.callArguments.length; i++) {
-				const argNode = node.callArguments[i];
-				const comma = argText == "";
-				argText += printASTnode(argNode);
-				if (comma) {
-					argText += ", ";
-				}
-			}
+			const argText = getArgText(node.callArguments);
 			return `@${node.name}(${argText})`;
 		}
 		case "struct": {
@@ -56,15 +45,7 @@ export function printASTnode(node: ASTnode): string {
 				return node.id.split(":")[1];
 			}
 			
-			let argText = "";
-			for (let i = 0; i < node.fields.length; i++) {
-				const argNode = node.fields[i];
-				const comma = argText == "";
-				argText += printASTnode(argNode);
-				if (comma) {
-					argText += ", ";
-				}
-			}
+			const argText = getArgText(node.fields);
 			return `struct(${argText})`;
 		}
 		case "instance": {
@@ -75,4 +56,12 @@ export function printASTnode(node: ASTnode): string {
 		}
 	}
 	throw utilities.TODO();
+}
+
+export function printAST(AST: ASTnode[]): string {
+	let text = "";
+	for (let i = 0; i < AST.length; i++) {
+		text += printASTnode(AST[i]);
+	}
+	return text;
 }
