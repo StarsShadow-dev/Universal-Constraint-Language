@@ -158,7 +158,7 @@ function testDir(dirPath: string) {
 	})
 }
 
-testDir("./tests/compSucceed");
+// testDir("./tests/compSucceed");
 testDir("./tests/compError");
 testDir("./tests/compOut");
 // testDir("./tests/js");

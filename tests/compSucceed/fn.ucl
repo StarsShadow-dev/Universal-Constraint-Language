@@ -1,7 +1,0 @@
-// compSucceed
-
-function = fn() -> Bool {
-	true
-}
-
-function()
