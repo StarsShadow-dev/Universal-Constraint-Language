@@ -19,11 +19,9 @@
 
 // RetType = effect Type
 
-// main = fn<RetType>() -> RetType {
+// main = fn() -> RetType {
 // 	1
 // }
-
-// Number = @Number(0, 10)
 
 // with RetType as Number {
 // 	main()
@@ -33,22 +31,17 @@
 
 // Number = effect Type
 
-// main = fn() -> Number {
-// 	1
+// add = fn(x1: Number, y2: Number, x1: Number, y2: Number) -> (Number, Number) {
+// 	(x1 + x2, y1 + y2)
 // }
 
-// with Number as @Number(0, 10) {
-// 	main()
+// with Number as @Number(0, 10, overflow) {
+// 	add(10, 10, 1, 1)
+// }
+
+// with Number as @Number(0, 10, clamp) {
+// 	add(10, 10, 1, 1)
 // }
 
 // ----------
 
-getType = fn() -> Type {
-	Number
-}
-
-main = fn() -> getType() {
-	100
-}
-
-main()

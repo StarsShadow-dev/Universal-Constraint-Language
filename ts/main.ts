@@ -9,7 +9,7 @@ import logger from "./logger";
 import { lex } from "./lexer";
 import { parse, ParserMode } from "./parser";
 import { addToDB, DB, makeDB } from "./db";
-import { getIndicatorText } from "./report";
+import { CompileError, getIndicatorText } from "./report";
 import { CompilerOptions } from "./compiler";
 
 function readDB(): DB {
@@ -61,20 +61,31 @@ const db = makeDB();
 const text = utilities.readFile(options.filePath);
 // console.log("text:", text);
 
-const lexStart = Date.now();
-const tokens = lex(options.filePath, text);
-logger.addTime("lexing", Date.now() - lexStart);
-// console.log("tokens:", tokens);
+let tokens;
+let AST;
+try {
+	const lexStart = Date.now();
+	tokens = lex(options.filePath, text);
+	logger.addTime("lexing", Date.now() - lexStart);
+	// console.log("tokens:", tokens);
 
-const parseStart = Date.now();
-const AST = parse({
-	tokens: tokens,
-	i: 0,
-}, ParserMode.normal, null);
-logger.addTime("parsing", Date.now() - parseStart);
-// console.log("AST:", JSON.stringify(AST, null, 2));
+	const parseStart = Date.now();
+	AST = parse({
+		tokens: tokens,
+		i: 0,
+	}, ParserMode.normal, null);
+	logger.addTime("parsing", Date.now() - parseStart);
+	console.log("AST:", JSON.stringify(AST, null, 2));
+	
+	addToDB(db, AST);
+} catch (error) {
+	if (error instanceof CompileError) {
+		db.errors.push(error);
+	} else {
+		throw error;
+	}
+}
 
-addToDB(db, AST);
 // console.log("db:", JSON.stringify(db, null, 4));
 
 for (let i = 0; i < db.errors.length; i++) {

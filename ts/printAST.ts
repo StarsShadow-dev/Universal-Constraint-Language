@@ -70,6 +70,9 @@ export function printASTnode(node: ASTnode): string {
 		case "instance": {
 			return `${printASTnode(node.template)} {}`;
 		}
+		case "effect": {
+			return `effect ${printASTnode(node.type)}`;
+		}
 	}
 	throw utilities.TODO();
 }

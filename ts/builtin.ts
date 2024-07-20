@@ -28,6 +28,7 @@ export const builtinTypes: (ASTnode_alias & { value: {kind: "struct"} })[] = [
 	makeBuiltinType("Bool"),
 	makeBuiltinType("Number"),
 	makeBuiltinType("String"),
+	makeBuiltinType("Effect"),
 ];
 
 export function getBuiltinType(name: string): ASTnodeType {

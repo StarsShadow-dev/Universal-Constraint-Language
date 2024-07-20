@@ -47,6 +47,8 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 					location: node.location,
 					value: result,
 				};
+			} else {
+				throw utilities.TODO();
 			}
 		}
 	}

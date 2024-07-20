@@ -127,7 +127,11 @@ genericASTnode & {
 	template: ASTnode,
 	codeBlock: ASTnode[],
 } |
-ASTnode_alias |
+ASTnode_alias
+| genericASTnode & {
+	kind: "effect",
+	type: ASTnode,
+} |
 ASTnode_error;
 
 export type ParserContext = {
@@ -574,6 +578,19 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				
 				else if (token.text == "fn") {
 					parseFunction(context, ASTnodes, token.location, false);
+				}
+				
+				else if (token.text == "effect") {
+					const type = parse(context, ParserMode.singleNoEqualsOperatorContinue, null)[0];
+					if (!type) {
+						throw new CompileError("an effect must have a type").indicator(token.location, "here");
+					}
+					
+					ASTnodes.push({
+						kind: "effect",
+						location: token.location,
+						type: type,
+					});
 				}
 				
 				else {

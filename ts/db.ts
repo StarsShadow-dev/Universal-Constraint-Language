@@ -252,6 +252,20 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			const template = build(context, node.template);
 			return template;
 		}
+		
+		case "effect": {
+			const type = build(context, node.type);
+			if (type.kind == "error") {
+				return {
+					kind: "error",
+					location: node.location,
+				};
+			}
+			expectType(context, getBuiltinType("Type"), type, (error) => {
+				error.indicator(type.location, `an effect must have a type`);
+			});
+			return getBuiltinType("Effect");
+		}
 	}
 	
 	throw utilities.unreachable();
