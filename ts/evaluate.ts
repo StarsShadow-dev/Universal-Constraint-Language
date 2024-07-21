@@ -3,7 +3,7 @@ import { BuilderContext, unAlias } from "./db";
 import { ASTnode } from "./parser";
 import { evaluateBuiltin } from "./builtin";
 
-export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
+export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 	switch (node.kind) {
 		case "identifier": {
 			const alias = unAlias(context, node.name);
@@ -12,11 +12,26 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 		}
 		
 		case "call": {
-			const left = evaluate(context, node.left);
+			const left = evaluate(context, [node.left]);
 			if (left.kind != "function") {
 				throw utilities.TODO();
 			}
-			const result = evaluateList(context, left.codeBlock);
+			
+			debugger;
+			context.levels.push([]);
+			for (let i = 0; i < node.callArguments.length; i++) {
+				const arg = left.functionArguments[i];
+				const argValue = node.callArguments[i];
+				context.levels[context.levels.length-1].push({
+					kind: "alias",
+					location: arg.location,
+					name: arg.name,
+					value: argValue,
+				});
+			}
+			const result = evaluate(context, left.codeBlock);
+			context.levels.pop();
+			
 			return result;
 		}
 		
@@ -51,19 +66,33 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 				throw utilities.TODO();
 			}
 		}
+		
+		case "function": {
+			evaluate(context, node.codeBlock);
+		}
 	}
 	
 	return node;
 }
 
-export function evaluateList(context: BuilderContext, AST: ASTnode[]): ASTnode {
-	let node = null;
+export function evaluate(context: BuilderContext, AST: ASTnode[]): ASTnode {
+	let outNode = null;
 	for (let i = 0; i < AST.length; i++) {
-		node = evaluate(context, AST[i]);
+		const ASTnode = AST[i];
+		outNode = evaluateNode(context, AST[i]);
+		if (ASTnode.kind == "identifier") {
+			const value = unAlias(context, ASTnode.name);
+			if (!value) {
+				throw utilities.unreachable();
+			}
+			if (value.kind != "_selfType") {
+				AST[i] = value;
+			}
+		}
 	}
 	
-	if (!node) {
+	if (!outNode) {
 		throw utilities.unreachable();
 	}
-	return node;
+	return outNode;
 }

@@ -1,6 +1,6 @@
 import utilities from "./utilities";
 import { BuilderContext } from "./db";
-import { evaluate } from "./evaluate";
+import { evaluateNode } from "./evaluate";
 import { CompileError } from "./report";
 import {
 	ASTnode,
@@ -56,7 +56,7 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 				.indicator(builtinCall.location, "here");
 		}
 		index++;
-		return evaluate(context, node);
+		return evaluateNode(context, node);
 	}
 	function moreArgs(): boolean {
 		return index < builtinCall.callArguments.length;

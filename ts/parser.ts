@@ -34,7 +34,7 @@ export type ASTnode_error = genericASTnode & {
 	kind: "error",
 	compileError: CompileError | null,
 };
-export function ASTnode_error_new(location: SourceLocation, error: CompileError): ASTnode_error {
+export function ASTnode_error_new(location: SourceLocation, error: CompileError | null): ASTnode_error {
 	return {
 		kind: "error",
 		location: location,
@@ -139,6 +139,10 @@ ASTnode_alias
 | genericASTnode & {
 	kind: "effect",
 	type: ASTnode,
+}
+| genericASTnode & {
+	kind: "_selfType",
+	type: ASTnodeType,
 };
 
 export type ParserContext = {

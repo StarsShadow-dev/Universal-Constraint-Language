@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 import utilities from "./utilities";
 import logger, { LogType } from "./logger";
-import { evaluate } from "./evaluate";
+import { evaluate, evaluateNode } from "./evaluate";
 import { printASTnode } from "./printAST";
 import { CompileError, Indicator } from "./report";
 import { evaluateBuiltin, builtinTypes, getBuiltinType, isBuiltinType } from "./builtin";
@@ -72,6 +72,26 @@ export type BuilderContext = {
 	levels: ASTnode_alias[][],
 };
 
+export function getAlias(context: BuilderContext, name: string): ASTnode_alias | null {
+	for (let i = 0; i < context.levels.length; i++) {
+		for (let j = 0; j < context.levels[i].length; j++) {
+			const alias = context.levels[i][j];
+			if (alias.name == name) {
+				return alias;
+			}
+		}
+	}
+	
+	for (let i = 0; i < builtinTypes.length; i++) {
+		const alias = builtinTypes[i];
+		if (alias.name == name) {
+			return alias;
+		}
+	}
+	
+	return null;
+}
+
 export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 	{
 		const alias = getDefFromList(context.db.defs, name);
@@ -80,23 +100,14 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 		}
 	}
 	
-	for (let i = 0; i < context.levels.length; i++) {
-		for (let j = 0; j < context.levels[i].length; j++) {
-			const alias = context.levels[i][j];
-			if (alias.name == name) {
-				return alias.value;
-			}
-		}
-	}
-	
-	for (let i = 0; i < builtinTypes.length; i++) {
-		const alias = builtinTypes[i];
-		if (alias.name == name) {
+	{
+		const alias = getAlias(context, name);
+		if (alias) {
 			return alias.value;
+		} else {
+			return null;
 		}
 	}
-	
-	return null;
 }
 
 /**
@@ -171,7 +182,7 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		}
 		
 		case "call": {
-			const left = evaluate(context, node.left);
+			const left = evaluate(context, [node.left]);
 			if (left.kind != "function") {
 				throw utilities.TODO();
 			}
@@ -231,13 +242,40 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		}
 		
 		case "function": {
-			const expectedReturnType = evaluate(context, node.returnType);
+			context.levels.push([]);
+			function end() {
+				context.levels.pop();
+			}
+			
+			let functionArguments = [];
+			for (let i = 0; i < node.functionArguments.length; i++) {
+				const functionArgument = node.functionArguments[i];
+				const argumentType = evaluateNode(context, functionArgument.type)
+				if (!ASTnode_isAtype(argumentType)) {
+					end();
+					return ASTnode_error_new(node.location, null);
+				}
+				functionArguments.push(argumentType);
+				context.levels[context.levels.length-1].push({
+					kind: "alias",
+					location: functionArgument.location,
+					name: functionArgument.name,
+					value: {
+						kind: "_selfType",
+						location: functionArgument.location,
+						type: argumentType,
+					},
+				});
+			}
+			
+			const expectedReturnType = evaluateNode(context, node.returnType);
 			if (!ASTnode_isAtype(expectedReturnType)) {
 				throw utilities.TODO();
 			}
 			
 			const actualResultType = buildList(context, node.codeBlock);
 			if (actualResultType.kind == "error") {
+				end();
 				return actualResultType;
 			}
 			
@@ -245,20 +283,9 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 				let error = expectType(context, expectedReturnType, actualResultType);
 				if (error) {
 					error.indicator(node.returnType.location, "expected type from here");
+					end();
 					return ASTnode_error_new(node.location, error);
 				}
-			}
-			
-			let functionArguments = [];
-			for (let i = 0; i < node.functionArguments.length; i++) {
-				const value = build(context, node.functionArguments[i].type)
-				if (value.kind == "error") {
-					return value;
-				}
-				if (!ASTnode_isAtype(value)) {
-					throw utilities.TODO();
-				}
-				functionArguments.push(value);
 			}
 			
 			return {
@@ -274,19 +301,33 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			const template = build(context, node.template);
 			return template;
 		}
+		
+		case "_selfType": {
+			return node.type;
+		}
 	}
 	
 	throw utilities.unreachable();
 }
 
 export function buildList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
-	let node = null;
+	let outNode = null;
 	for (let i = 0; i < AST.length; i++) {
-		node = build(context, AST[i]);
+		const ASTnode = AST[i];
+		outNode = build(context, ASTnode);
+		// if (ASTnode.kind == "identifier") {
+		// 	const value = unAlias(context, ASTnode.name);
+		// 	if (!value) {
+		// 		throw utilities.unreachable();
+		// 	}
+		// 	if (value.kind != "_selfType") {
+		// 		AST[i] = value;
+		// 	}
+		// }
 	}
 	
-	if (!node) throw utilities.unreachable();
-	return node;
+	if (!outNode) throw utilities.unreachable();
+	return outNode;
 }
 
 export function addToDB(db: DB, AST: ASTnode[]) {
@@ -333,7 +374,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				db.errors.push(error.compileError);
 				continue;
 			}
-			const result = evaluate({
+			const result = evaluateNode({
 				db: db,
 				levels: [],
 			}, ASTnode);
