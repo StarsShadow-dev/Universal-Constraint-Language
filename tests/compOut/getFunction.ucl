@@ -1,20 +1,25 @@
 // compOut
-// tests/compOut/getFunction.ucl:18 -> fn() -> Function {
+// tests/compOut/getFunction.ucl:23 -> fn(output: String) -> Function {
+// 	a = output
 // 	fn() -> String {
-// 		"Hello, World!"
+// 		b = a
+// 		b
 // 	}
 // }
-// tests/compOut/getFunction.ucl:19 -> fn() -> String {
-// 	"Hello, World!"
+// tests/compOut/getFunction.ucl:24 -> fn() -> String {
+// 	b = "Hello, World!"
+// 	b
 // }
-// tests/compOut/getFunction.ucl:20 -> "Hello, World!"
+// tests/compOut/getFunction.ucl:25 -> "Hello, World!"
 
-getFunction = fn() -> Function {
+getFunction = fn(output: String) -> Function {
+	a = output
 	fn() -> String {
-		"Hello, World!"
+		b = a
+		b
 	}
 }
 
 getFunction
-getFunction()
-getFunction()()
+getFunction("Hello, World!")
+getFunction("Hello, World!")()

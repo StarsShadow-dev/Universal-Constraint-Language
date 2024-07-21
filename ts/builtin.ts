@@ -1,6 +1,6 @@
 import utilities from "./utilities";
 import { BuilderContext } from "./db";
-import { evaluateNode } from "./evaluate";
+import { evaluate } from "./evaluate";
 import { CompileError } from "./report";
 import {
 	ASTnode,
@@ -9,21 +9,22 @@ import {
 	ASTnode_builtinCall,
 } from "./parser";
 
-function makeBuiltinType(name: string): (ASTnode_alias & { value: {kind: "struct"} }) {
+function makeBuiltinType(name: string): (ASTnode_alias & { value: [{kind: "struct"}] }) {
 	return {
 		kind: "alias",
 		location: "builtin",
+		unalias: false,
 		name: name,
-		value: {
+		value: [{
 			kind: "struct",
 			location: "builtin",
 			id:  "builtin:" + name,
 			fields: [],
-		},
+		}],
 	};
 }
 
-export const builtinTypes: (ASTnode_alias & { value: {kind: "struct"} })[] = [
+export const builtinTypes: (ASTnode_alias & { value: [{kind: "struct"}] })[] = [
 	makeBuiltinType("Type"),
 	makeBuiltinType("Bool"),
 	makeBuiltinType("Number"),
@@ -36,7 +37,7 @@ export function getBuiltinType(name: string): ASTnodeType {
 	for (let i = 0; i < builtinTypes.length; i++) {
 		const alias = builtinTypes[i];
 		if (alias.name == name) {
-			return alias.value;
+			return alias.value[0];
 		}
 	}
 	
@@ -56,7 +57,7 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 				.indicator(builtinCall.location, "here");
 		}
 		index++;
-		return evaluateNode(context, node);
+		return evaluate(context, [node]);
 	}
 	function moreArgs(): boolean {
 		return index < builtinCall.callArguments.length;

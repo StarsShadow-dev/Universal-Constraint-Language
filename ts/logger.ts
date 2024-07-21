@@ -19,6 +19,8 @@ const globals: any[][] = [];
 
 export enum LogType {
 	addToDB,
+	build,
+	evaluate,
 }
 
 export default {

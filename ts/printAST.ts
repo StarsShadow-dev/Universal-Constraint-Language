@@ -58,17 +58,22 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			return `\(${argText}) -> ${returnType}`;
 		}
 		case "function": {
-			// TODO
+			let argText = "";
+			for (let i = 0; i < node.functionArguments.length; i++) {
+				const arg = node.functionArguments[i];
+				argText += `${arg.name}: ${printASTnode(context, arg.type)}`;
+			}
 			const returnType = printASTnode(context, node.returnType);
 			const codeBlock = printAST(context, node.codeBlock);
-			return `fn() -> ${returnType} {${codeBlock}}`;
+			return `fn(${argText}) -> ${returnType} {${codeBlock}}`;
 		}
 		case "instance": {
 			// TODO
 			return `${printASTnode(context, node.template)} {}`;
 		}
-		case "effect": {
-			return `effect ${printASTnode(context, node.type)}`;
+		case "alias": {
+			const value = printASTnode(context, node.value[0]);
+			return `${node.name} = ${value}`;
 		}
 	}
 	throw utilities.TODO();

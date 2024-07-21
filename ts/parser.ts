@@ -70,8 +70,9 @@ export type ASTnode_function = genericASTnode & {
 
 export type ASTnode_alias = genericASTnode & {
 	kind: "alias",
+	unalias: boolean,
 	name: string,
-	value: ASTnode,
+	value: [ASTnode],
 };
 
 export type ASTnode =
@@ -272,8 +273,9 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 				return {
 					kind: "alias",
 					location: nextOperator.location,
+					unalias: false,
 					name: left.name,
-					value: right,
+					value: [right],
 				}
 			} else {
 				return {
@@ -551,13 +553,14 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 							codeBlock[i] = {
 								kind: "alias",
 								location: ASTnode.location,
+								unalias: false,
 								name: ASTnode.name,
-								value: {
+								value: [{
 									kind: "struct",
 									location: ASTnode.location,
 									id: JSON.stringify(token.location),
 									fields: [],
-								},
+								}],
 							};
 						}
 					}
