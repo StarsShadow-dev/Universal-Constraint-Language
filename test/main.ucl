@@ -77,10 +77,12 @@
 
 // ----------
 
-genericFn = fn(F: Function) -> Function {
-	F
-}
+// genericFn = fn(F: Function) -> Function {
+// 	F
+// }
 
-genericFn(fn() -> String {
+@getError(fn() -> Number {
 	"testing"
 })
+
+@getError(1)

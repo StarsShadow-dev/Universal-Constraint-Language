@@ -1,5 +1,5 @@
 import utilities from "./utilities";
-import { BuilderContext } from "./db";
+import { build, BuilderContext } from "./db";
 import { evaluate } from "./evaluate";
 import { CompileError } from "./report";
 import {
@@ -96,7 +96,30 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 				kind: "number",
 				min: min,
 				max: max,
+			},
+		};
+	} else if (builtinCall.name == "getError") {
+		const node = builtinCall.callArguments[index];
+		if (node == undefined) {
+			throw new CompileError(`not enough arguments for builtin`)
+				.indicator(builtinCall.location, "here");
+		}
+		index++;
+		const input = build(context, node);
+		
+		let output = "";
+		if (input.kind == "error") {
+			if (input.compileError) {
+				output = input.compileError.msg;
+			} else {
+				throw utilities.unreachable();
 			}
+		}
+		
+		return {
+			kind: "string",
+			location: builtinCall.location,
+			value: output,
 		};
 	} else {
 		throw utilities.unreachable();
