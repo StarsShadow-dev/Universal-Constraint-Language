@@ -42,7 +42,7 @@ export default {
 	},
 	
 	log(type: LogType, ...args: any[]) {
-		console.log(`[${LogType[type]}]`, ...args);
+		// console.log(`[${LogType[type]}]`, ...args);
 		// globals.push(args);
 	},
 	

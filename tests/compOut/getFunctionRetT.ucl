@@ -1,14 +1,14 @@
 // compOut
-// tests/compOut/getFunctionRetT.ucl:21 -> fn() -> String {
+// line:21 -> fn() -> String {
 // 	b = "Hello, World!"
 // 	b
 // }
-// tests/compOut/getFunctionRetT.ucl:22 -> "Hello, World!"
-// tests/compOut/getFunctionRetT.ucl:23 -> fn() -> Number {
+// line:22 -> "Hello, World!"
+// line:23 -> fn() -> Number {
 // 	b = 81
 // 	b
 // }
-// tests/compOut/getFunctionRetT.ucl:24 -> 81
+// line:24 -> 81
 
 getFunction = fn(T: Type, output: String) -> Function {
 	a = output

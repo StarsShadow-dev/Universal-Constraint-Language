@@ -1,6 +1,6 @@
 // compOut
-// tests/compOut/add.ucl:5 -> 3
-// tests/compOut/add.ucl:6 -> -1
+// line:5 -> 3
+// line:6 -> -1
 
 1 + 2
 1 + -2

@@ -1,5 +1,5 @@
 // compOut
-// tests/compOut/string.ucl:5 -> "Hello, World!"
+// line:5 -> "Hello, World!"
 
 string = "Hello, World!"
 string

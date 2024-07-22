@@ -10,12 +10,16 @@ export type Indicator = {
 }
 
 // TODO: This can read the same file twice, if there are two indicators in a file.
-export function getIndicatorText(indicator: Indicator, fancyIndicators: boolean, startAtNextLine: boolean): string {
+export function getIndicatorText(indicator: Indicator, printPath: boolean, fancyIndicators: boolean, startAtNextLine: boolean): string {
 	let errorText = "";
 	
 	if (!fancyIndicators) {
 		if (indicator.location != "builtin") {
-			errorText += `${indicator.location.path}:${indicator.location.line} -> ${indicator.msg}`;
+			if (printPath) {
+				errorText += `${indicator.location.path}:${indicator.location.line} -> ${indicator.msg}`;
+			} else {
+				errorText += `line:${indicator.location.line} -> ${indicator.msg}`;
+			}
 			return errorText;
 		} else {
 			errorText += `builtin -> ${indicator.msg}`;
@@ -27,7 +31,11 @@ export function getIndicatorText(indicator: Indicator, fancyIndicators: boolean,
 		const text = utilities.readFile(indicator.location.path);
 		// console.log("compileError location:", location);
 		
-		errorText += `at ${indicator.location.path}:${indicator.location.line}\n`;
+		if (printPath) {
+			errorText += `at ${indicator.location.path}:${indicator.location.line}\n`;
+		} else {
+			errorText += `${indicator.location.line}\n`;
+		}
 		
 		let i = 0;
 		let line = 1;
@@ -132,14 +140,14 @@ export class CompileError {
 		return this;
 	}
 	
-	public getText(fancyIndicators: boolean): string {
+	public getText(printPath: boolean, fancyIndicators: boolean): string {
 		let text = `error: ${this.msg}\n`;
 		for (let i = 0; i < this.indicators.length; i++) {
 			const indicator = this.indicators[i];
 			
 			if (indicator.location == "builtin") continue;
 			
-			text += getIndicatorText(indicator, fancyIndicators, false);
+			text += getIndicatorText(indicator, printPath, fancyIndicators, false);
 			if (!fancyIndicators && this.indicators[i + 1]) {
 				text += "\n";
 			}

@@ -30,6 +30,7 @@ function next(): string {
 const options: CompilerOptions = {
 	filePath: next(),
 	fancyErrors: true,
+	includeLogs: [],
 };
 
 while (i < process.argv.length) {
@@ -90,14 +91,14 @@ try {
 
 for (let i = 0; i < db.errors.length; i++) {
 	const error = db.errors[i];
-	console.log(error.getText(options.fancyErrors));
+	console.log(error.getText(true, options.fancyErrors));
 }
 
 if (db.errors.length == 0) {
 	console.log("top level evaluations:");
 	for (let i = 0; i < db.topLevelEvaluations.length; i++) {
 		const evaluation = db.topLevelEvaluations[i];
-		let indicatorText = getIndicatorText(evaluation, options.fancyErrors, evaluation.msg.includes("\n"));
+		let indicatorText = getIndicatorText(evaluation, true, options.fancyErrors, evaluation.msg.includes("\n"));
 		console.log(indicatorText);
 	}
 }

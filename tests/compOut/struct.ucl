@@ -1,5 +1,5 @@
 // compOut
-// tests/compOut/struct.ucl:6 -> Test {}
+// line:6 -> Test {}
 
 Test = struct()
 

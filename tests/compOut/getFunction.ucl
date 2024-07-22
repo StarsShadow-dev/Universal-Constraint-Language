@@ -1,16 +1,16 @@
 // compOut
-// tests/compOut/getFunction.ucl:23 -> fn(output: String) -> Function {
+// line:23 -> fn(output: String) -> Function {
 // 	a = output
 // 	fn() -> String {
 // 		b = a
 // 		b
 // 	}
 // }
-// tests/compOut/getFunction.ucl:24 -> fn() -> String {
+// line:24 -> fn() -> String {
 // 	b = "Hello, World!"
 // 	b
 // }
-// tests/compOut/getFunction.ucl:25 -> "Hello, World!"
+// line:25 -> "Hello, World!"
 
 getFunction = fn(output: String) -> Function {
 	a = output

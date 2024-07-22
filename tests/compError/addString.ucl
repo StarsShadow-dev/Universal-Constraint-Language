@@ -1,8 +1,8 @@
 // compError
 // error: expected type Number, but got type String
-// tests/compError/addString.ucl:7 -> on right of '+' operator
+// line:7 -> on right of '+' operator
 // error: expected type Number, but got type String
-// tests/compError/addString.ucl:8 -> on left of '+' operator
+// line:8 -> on left of '+' operator
 
 1 + ""
 "" + 2

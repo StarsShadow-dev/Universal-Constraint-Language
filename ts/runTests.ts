@@ -48,6 +48,7 @@ function testFile(filePath: string) {
 	const options: CompilerOptions = {
 		filePath: filePath,
 		fancyErrors: false,
+		includeLogs: [],
 	};
 	
 	try {
@@ -90,7 +91,7 @@ function testFile(filePath: string) {
 				for (let i = 0; i < db.topLevelEvaluations.length; i++) {
 					const evaluation = db.topLevelEvaluations[i];
 					if (evaluation.msg != "true") {
-						output += getIndicatorText(evaluation, options.fancyErrors, false);
+						output += getIndicatorText(evaluation, false, options.fancyErrors, false);
 					}
 				}
 				if (output.length == 0) {
@@ -105,7 +106,7 @@ function testFile(filePath: string) {
 					if (actualOutput != "") {
 						actualOutput += "\n";
 					}
-					actualOutput += getIndicatorText(evaluation, options.fancyErrors, false);
+					actualOutput += getIndicatorText(evaluation, false, options.fancyErrors, false);
 				}
 				
 				const expectedOutput = comments.join("\n");
@@ -122,7 +123,7 @@ function testFile(filePath: string) {
 				if (errorText != "") {
 					errorText += "\n";
 				}
-				errorText += error.getText(false);
+				errorText += error.getText(false, false);
 			}
 			
 			if (mode == "compSucceed") {

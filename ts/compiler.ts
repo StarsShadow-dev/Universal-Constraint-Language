@@ -5,6 +5,7 @@ export type IdeOptions = {
 export type CompilerOptions = {
 	filePath: string,
 	fancyErrors: boolean,
+	includeLogs: string[],
 	
 	outputPath?: string,
 	ideOptions?: IdeOptions,
