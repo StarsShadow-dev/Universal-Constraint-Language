@@ -9,22 +9,22 @@ import {
 	ASTnode_builtinCall,
 } from "./parser";
 
-function makeBuiltinType(name: string): (ASTnode_alias & { value: [{kind: "struct"}] }) {
+function makeBuiltinType(name: string): (ASTnode_alias & { value: {kind: "struct"} }) {
 	return {
 		kind: "alias",
 		location: "builtin",
 		unalias: false,
 		name: name,
-		value: [{
+		value: {
 			kind: "struct",
 			location: "builtin",
 			id:  "builtin:" + name,
 			fields: [],
-		}],
+		},
 	};
 }
 
-export const builtinTypes: (ASTnode_alias & { value: [{kind: "struct"}] })[] = [
+export const builtinTypes: (ASTnode_alias & { value: {kind: "struct"} })[] = [
 	makeBuiltinType("Type"),
 	makeBuiltinType("Bool"),
 	makeBuiltinType("Number"),
@@ -37,7 +37,7 @@ export function getBuiltinType(name: string): ASTnodeType {
 	for (let i = 0; i < builtinTypes.length; i++) {
 		const alias = builtinTypes[i];
 		if (alias.name == name) {
-			return alias.value[0];
+			return alias.value;
 		}
 	}
 	
@@ -57,7 +57,7 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 				.indicator(builtinCall.location, "here");
 		}
 		index++;
-		return evaluate(context, [node]);
+		return evaluate(context, [node])[0];
 	}
 	function moreArgs(): boolean {
 		return index < builtinCall.callArguments.length;

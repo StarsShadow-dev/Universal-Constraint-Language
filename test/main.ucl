@@ -77,14 +77,13 @@
 
 // ----------
 
-getFunction = fn(output: String) -> Function {
-	a = output
-	fn() -> String {
-		b = a
-		b
+getFunction = fn(T: Type, output: String) -> Function {
+	fn() -> T {
+		output
 	}
 }
 
-getFunction
-getFunction("Hello, World!")
-getFunction("Hello, World!")()
+getFunction(String, "Hello, World!")
+getFunction(String, "Hello, World!")()
+getFunction(Number, 81)
+getFunction(Number, 81)()

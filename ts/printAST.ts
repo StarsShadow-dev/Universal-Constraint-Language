@@ -72,7 +72,7 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			return `${printASTnode(context, node.template)} {}`;
 		}
 		case "alias": {
-			const value = printASTnode(context, node.value[0]);
+			const value = printASTnode(context, node.value);
 			return `${node.name} = ${value}`;
 		}
 	}

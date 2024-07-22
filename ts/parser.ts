@@ -23,25 +23,12 @@ export type genericASTnodeType = genericASTnode & {
 	id: string,
 };
 export function ASTnode_isAtype(node: ASTnode): node is ASTnodeType {
-	if (node.kind == "struct" || node.kind == "enum" || node.kind == "functionType") {
+	if (node.kind == "struct" || node.kind == "enum" || node.kind == "functionType" || node.kind == "_selfType") {
 		return true;
 	}
 	
 	return false;
 }
-
-export type ASTnode_error = genericASTnode & {
-	kind: "error",
-	compileError: CompileError | null,
-};
-export function ASTnode_error_new(location: SourceLocation, error: CompileError | null): ASTnode_error {
-	return {
-		kind: "error",
-		location: location,
-		compileError: error,
-	}
-}
-
 export type ASTnodeType =
 genericASTnodeType & {
 	kind: "struct",
@@ -58,7 +45,24 @@ genericASTnodeType & {
 	kind: "functionType",
 	functionArguments: ASTnode[],
 	returnType: ASTnode,
+} | ASTnode_selfType;
+
+export type ASTnode_selfType = genericASTnodeType & {
+	kind: "_selfType",
+	type: ASTnodeType,
 };
+
+export type ASTnode_error = genericASTnode & {
+	kind: "error",
+	compileError: CompileError | null,
+};
+export function ASTnode_error_new(location: SourceLocation, error: CompileError | null): ASTnode_error {
+	return {
+		kind: "error",
+		location: location,
+		compileError: error,
+	}
+}
 
 export type ASTnode_function = genericASTnode & {
 	kind: "function",
@@ -72,7 +76,7 @@ export type ASTnode_alias = genericASTnode & {
 	kind: "alias",
 	unalias: boolean,
 	name: string,
-	value: [ASTnode],
+	value: ASTnode,
 };
 
 export type ASTnode =
@@ -140,10 +144,6 @@ ASTnode_alias
 | genericASTnode & {
 	kind: "effect",
 	type: ASTnode,
-}
-| genericASTnode & {
-	kind: "_selfType",
-	type: ASTnodeType,
 };
 
 export type ParserContext = {
@@ -275,7 +275,7 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 					location: nextOperator.location,
 					unalias: false,
 					name: left.name,
-					value: [right],
+					value: right,
 				}
 			} else {
 				return {
@@ -555,12 +555,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 								location: ASTnode.location,
 								unalias: false,
 								name: ASTnode.name,
-								value: [{
+								value: {
 									kind: "struct",
 									location: ASTnode.location,
 									id: JSON.stringify(token.location),
 									fields: [],
-								}],
+								},
 							};
 						}
 					}
