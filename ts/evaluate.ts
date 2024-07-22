@@ -83,30 +83,42 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 		}
 		
 		case "function": {
+			debugger;
+			
 			let functionArguments: ASTnode_argument[] = [];
 			for (let i = 0; i < node.functionArguments.length; i++) {
 				const functionArgument = node.functionArguments[i];
+				
+				// const oldResolve = context.resolve;
+				// context.resolve = true;
 				const argumentType = evaluateNode(context, functionArgument.type);
-				if (!ASTnode_isAtype(argumentType)) {
-					throw utilities.unreachable();
-				}
+				// context.resolve = oldResolve;
+				
 				functionArguments.push({
 					kind: "argument",
 					location: functionArgument.location,
 					name: functionArgument.name,
 					type: argumentType,
 				});
+				
+				let value: ASTnode = {
+					kind: "unknowable",
+					location: functionArgument.location,
+				};
+				if (ASTnode_isAtype(argumentType)) {
+					value = {
+						kind: "_selfType",
+						location: functionArgument.location,
+						id: "TODO?",
+						type: argumentType,
+					};
+				}
 				context.levels[context.levels.length-1].push({
 					kind: "alias",
 					location: functionArgument.location,
 					unalias: false,
 					name: functionArgument.name,
-					value: {
-						kind: "_selfType",
-						location: functionArgument.location,
-						id: "TODO?",
-						type: argumentType,
-					},
+					value: value,
 				});
 			}
 			
@@ -129,7 +141,7 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 				codeBlock: codeBlock,
 			};
 			
-			logger.log(LogType.evaluate, "newFunction", printASTnode({level: 0}, newFunction));
+			// logger.log(LogType.evaluate, "newFunction", printASTnode({level: 0}, newFunction));
 			
 			return newFunction;
 		}

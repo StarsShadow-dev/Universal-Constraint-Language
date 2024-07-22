@@ -144,6 +144,9 @@ ASTnode_alias
 | genericASTnode & {
 	kind: "effect",
 	type: ASTnode,
+}
+| genericASTnode & {
+	kind: "unknowable",
 };
 
 export type ParserContext = {

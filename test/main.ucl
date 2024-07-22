@@ -77,13 +77,13 @@
 
 // ----------
 
-getFunction = fn(T: Type, output: String) -> Function {
-	fn() -> T {
-		output
+makeIdentity = fn(T: Type) -> Function {
+	fn(x: T) -> T {
+		x
 	}
 }
 
-getFunction(String, "Hello, World!")
-getFunction(String, "Hello, World!")()
-getFunction(Number, 81)
-getFunction(Number, 81)()
+makeIdentity(String)
+makeIdentity(String)("Hello, World!")
+makeIdentity(Number)
+makeIdentity(Number)(81)

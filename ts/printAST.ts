@@ -75,6 +75,9 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			const value = printASTnode(context, node.value);
 			return `${node.name} = ${value}`;
 		}
+		case "_selfType": {
+			return `___selfType___`;
+		}
 	}
 	throw utilities.TODO();
 }

@@ -1,0 +1,20 @@
+// compOut
+// tests/compOut/makeIdentity.ucl:17 -> fn(x: String) -> String {
+// 	x
+// }
+// tests/compOut/makeIdentity.ucl:18 -> "Hello, World!"
+// tests/compOut/makeIdentity.ucl:19 -> fn(x: Number) -> Number {
+// 	x
+// }
+// tests/compOut/makeIdentity.ucl:20 -> 81
+
+makeIdentity = fn(T: Type) -> Function {
+	fn(x: T) -> T {
+		x
+	}
+}
+
+makeIdentity(String)
+makeIdentity(String)("Hello, World!")
+makeIdentity(Number)
+makeIdentity(Number)(81)
