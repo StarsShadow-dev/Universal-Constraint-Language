@@ -191,7 +191,10 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		case "identifier": {
 			const def = unAlias(context, node.name);
 			if (!def) {
-				throw utilities.TODO();
+				return ASTnode_error_new(node.location,
+					new CompileError(`alias '${node.name}' does not exist`)
+						.indicator(node.location, `here`)
+				);
 			}
 			
 			return build(context, def);
