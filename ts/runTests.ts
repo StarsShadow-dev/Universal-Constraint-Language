@@ -6,7 +6,7 @@ import logger from "./logger";
 import { CompilerOptions } from "./compiler";
 import { addToDB, makeDB } from "./db";
 import { lex, TokenKind } from "./lexer";
-import { getIndicatorText } from "./report";
+import { CompileError, getIndicatorText } from "./report";
 import { parse, ParserMode } from "./parser";
 
 const c_green = "\x1B[32m";
@@ -28,7 +28,7 @@ function testSuccess() {
 	succeeded++;
 }
 
-function testFailure(msg: any) {
+function testFailure(msg: string) {
 	console.log(`\n\t${c_red}Test failure:\n${msg}${c_reset}\n`);
 	failed++;
 	
@@ -51,9 +51,9 @@ function testFile(filePath: string) {
 		includeLogs: [],
 	};
 	
+	const db = makeDB();
+	
 	try {
-		const db = makeDB();
-
 		const text = utilities.readFile(options.filePath);
 
 		const lexStart = Date.now();
@@ -81,73 +81,75 @@ function testFile(filePath: string) {
 		logger.addTime("parsing", Date.now() - parseStart);
 
 		addToDB(db, AST);
-
-		if (db.errors.length == 0) {
-			if (mode == "compError") {
-				const expectedOutput = comments.join("\n");
-				testFailure(`expected error output = ${expectedOutput}\n\nactual output is success`);
-			} else if (mode == "compSucceed") {
-				let output = "";
-				for (let i = 0; i < db.topLevelEvaluations.length; i++) {
-					const evaluation = db.topLevelEvaluations[i];
-					if (evaluation.msg != "true") {
-						output += getIndicatorText(evaluation, false, options.fancyErrors, false);
-					}
-				}
-				if (output.length == 0) {
-					testSuccess();
-				} else {
-					testFailure(output);
-				}
-			} else if (mode == "compOut") {
-				let actualOutput = "";
-				for (let i = 0; i < db.topLevelEvaluations.length; i++) {
-					const evaluation = db.topLevelEvaluations[i];
-					if (actualOutput != "") {
-						actualOutput += "\n";
-					}
-					actualOutput += getIndicatorText(evaluation, false, options.fancyErrors, false);
-				}
-				
-				const expectedOutput = comments.join("\n");
-				if (expectedOutput == actualOutput) {
-					testSuccess();
-				} else {
-					testFailure(`-- expectedOutput\n${expectedOutput}\n-- actualOutput\n${actualOutput}`);
-				}
-			}
-		} else {
-			let errorText = "";
-			for (let i = 0; i < db.errors.length; i++) {
-				const error = db.errors[i];
-				if (errorText != "") {
-					errorText += "\n";
-				}
-				errorText += error.getText(false, false);
-			}
-			
-			if (mode == "compSucceed") {
-				testFailure(`compilation failed, output = ${errorText}`);
-			} else if (mode == "compError") {
-				const expectedOutput = comments.join("\n");
-				const actualOutput = errorText;
-				if (expectedOutput == actualOutput) {
-					testSuccess();
-				} else {
-					testFailure(`-- expectedOutput\n${expectedOutput}\n-- actualOutput\n${actualOutput}`);
-				}
-			} else if (mode == "compOut") {
-				testFailure(`compilation failed, output = ${errorText}`);
-			}
-		}
 	} catch (error) {
 		if (error == "__testSkip__") {
 			testSkip();
 			return;
+		} else if (error instanceof CompileError) {
+			db.errors.push(error);
+		} else {
+			testFailure(`error: ${error}`);
+			return;
+		}
+	}
+	
+	if (db.errors.length == 0) {
+		if (mode == "compError") {
+			const expectedOutput = comments.join("\n");
+			testFailure(`expected error output = ${expectedOutput}\n\nactual output is success`);
+		} else if (mode == "compSucceed") {
+			let output = "";
+			for (let i = 0; i < db.topLevelEvaluations.length; i++) {
+				const evaluation = db.topLevelEvaluations[i];
+				if (evaluation.msg != "true") {
+					output += getIndicatorText(evaluation, false, options.fancyErrors, false);
+				}
+			}
+			if (output.length == 0) {
+				testSuccess();
+			} else {
+				testFailure(output);
+			}
+		} else if (mode == "compOut") {
+			let actualOutput = "";
+			for (let i = 0; i < db.topLevelEvaluations.length; i++) {
+				const evaluation = db.topLevelEvaluations[i];
+				if (actualOutput != "") {
+					actualOutput += "\n";
+				}
+				actualOutput += getIndicatorText(evaluation, false, options.fancyErrors, false);
+			}
+			
+			const expectedOutput = comments.join("\n");
+			if (expectedOutput == actualOutput) {
+				testSuccess();
+			} else {
+				testFailure(`-- expectedOutput\n${expectedOutput}\n-- actualOutput\n${actualOutput}`);
+			}
+		}
+	} else {
+		let errorText = "";
+		for (let i = 0; i < db.errors.length; i++) {
+			const error = db.errors[i];
+			if (errorText != "") {
+				errorText += "\n";
+			}
+			errorText += error.getText(false, false);
 		}
 		
-		testFailure(error);
-		return;
+		if (mode == "compSucceed") {
+			testFailure(`compilation failed, output = ${errorText}`);
+		} else if (mode == "compError") {
+			const expectedOutput = comments.join("\n");
+			const actualOutput = errorText;
+			if (expectedOutput == actualOutput) {
+				testSuccess();
+			} else {
+				testFailure(`-- expectedOutput\n${expectedOutput}\n-- actualOutput\n${actualOutput}`);
+			}
+		} else if (mode == "compOut") {
+			testFailure(`compilation failed, output = ${errorText}`);
+		}
 	}
 }
 
