@@ -30,7 +30,7 @@ function next(): string {
 const options: CompilerOptions = {
 	filePath: next(),
 	fancyErrors: true,
-	includeLogs: [],
+	includeLogs: [], // TODO
 };
 
 while (i < process.argv.length) {

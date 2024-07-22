@@ -77,13 +77,10 @@
 
 // ----------
 
-makeIdentity = fn(T: Type) -> Function {
-	fn(x: T) -> T {
-		x
-	}
+genericFn = fn(F: Function) -> Function {
+	F
 }
 
-makeIdentity(String)
-makeIdentity(String)("Hello, World!")
-makeIdentity(Number)
-makeIdentity(Number)(81)
+genericFn(fn() -> String {
+	"testing"
+})
