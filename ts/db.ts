@@ -322,6 +322,35 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			};
 		}
 		
+		case "if": {
+			const condition = build(context, node.condition);
+			if (condition.kind == "error") {
+				return condition;
+			}
+			
+			const trueType = buildList(context, node.trueCodeBlock);
+			if (trueType.kind == "error") {
+				return trueType;
+			}
+			const falseType = buildList(context, node.falseCodeBlock);
+			if (falseType.kind == "error") {
+				return falseType;
+			}
+			
+			{
+				const error = expectType(context, trueType, falseType);
+				if (error) {
+					const trueLocation = node.trueCodeBlock[node.trueCodeBlock.length-1].location;
+					const falseLocation = node.falseCodeBlock[node.falseCodeBlock.length-1].location;
+					error.indicator(trueLocation, `expected same type as trueCodeBlock (${printASTnode({level:0}, trueType)})`);
+					error.indicator(falseLocation, `but got type ${printASTnode({level:0}, falseType)}`);
+					return ASTnode_error_new(node.location, error);
+				}
+			}
+			
+			return trueType;
+		}
+		
 		case "instance": {
 			const template = build(context, node.template);
 			return template;

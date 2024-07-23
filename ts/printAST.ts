@@ -67,6 +67,12 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			const codeBlock = printAST(context, node.codeBlock);
 			return `fn(${argText}) -> ${returnType} {${codeBlock}}`;
 		}
+		case "if": {
+			const condition = printASTnode(context, node.condition);
+			const trueCodeBlock = printAST(context, node.trueCodeBlock);
+			const falseCodeBlock = printAST(context, node.falseCodeBlock);
+			return `if (${condition}) {${trueCodeBlock}} else {${falseCodeBlock}}`;
+		}
 		case "instance": {
 			// TODO
 			return `${printASTnode(context, node.template)} {}`;

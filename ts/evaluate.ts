@@ -146,6 +146,23 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 			return newFunction;
 		}
 		
+		case "if": {
+			const condition = evaluateNode(context, node.condition);
+			if (condition.kind != "bool") {
+				throw utilities.unreachable();
+			}
+			
+			if (condition.value) {
+				const resultList = evaluate(context, node.trueCodeBlock);
+				const result = resultList[resultList.length-1];
+				return result;
+			} else {
+				const resultList = evaluate(context, node.falseCodeBlock);
+				const result = resultList[resultList.length-1];
+				return result;
+			}
+		}
+		
 		case "alias": {
 			const value = evaluateNode(context, node.value);
 			
