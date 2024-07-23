@@ -1,0 +1,9 @@
+// compError
+// error: if expression is missing a condition
+// line:5 -> here
+
+if () {
+	"a"
+} else {
+	"b"
+}
