@@ -129,7 +129,7 @@ export class CompileError {
 	
 	constructor(msg: string) {
 		this.msg = msg;
-		this.indicators = []
+		this.indicators = [];
 	}
 	
 	public indicator(location: SourceLocation, msg: string): CompileError {

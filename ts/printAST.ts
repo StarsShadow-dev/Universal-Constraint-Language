@@ -36,13 +36,14 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 		case "identifier": {
 			return node.name;
 		}
-		case "call": {
-			const argText = getArgText(context, node.callArguments);
-			return `${printASTnode(context, node.left)}(${argText})`;
-		}
-		case "builtinCall": {
-			const argText = getArgText(context, node.callArguments);
-			return `@${node.name}(${argText})`;
+		// case "call": {
+		// 	const argText = getArgText(context, node.arg);
+		// 	return `${printASTnode(context, node.left)}(${argText})`;
+		// }
+		case "operator": {
+			const left = printASTnode(context, node.left);
+			const right = printASTnode(context, node.right);
+			return `(${left} ${node.operatorText} ${right})`;
 		}
 		case "struct": {
 			if (node.id.startsWith("builtin:")) {
@@ -52,27 +53,24 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			const argText = getArgText(context, node.fields);
 			return `struct(${argText})`;
 		}
-		case "functionType": {
-			const argText = getArgText(context, node.functionArguments);
-			const returnType = printASTnode(context, node.returnType);
-			return `\(${argText}) -> ${returnType}`;
-		}
+		// case "functionType": {
+		// 	const argText = getArgText(context, node.functionArguments);
+		// 	const returnType = printASTnode(context, node.returnType);
+		// 	return `\(${argText}) -> ${returnType}`;
+		// }
 		case "function": {
-			let argText = "";
-			for (let i = 0; i < node.functionArguments.length; i++) {
-				const arg = node.functionArguments[i];
-				argText += `${arg.name}: ${printASTnode(context, arg.type)}`;
+			let type = "";
+			if (node.arg.type) {
+				type = `: ${printASTnode(context, node.arg.type)}`;
 			}
-			const returnType = printASTnode(context, node.returnType);
-			const codeBlock = printAST(context, node.codeBlock);
-			return `fn(${argText}) -> ${returnType} {${codeBlock}}`;
+			return `@${node.arg.name}${type} ${printASTnode(context, node.body)}`;
 		}
-		case "if": {
-			const condition = printASTnode(context, node.condition);
-			const trueCodeBlock = printAST(context, node.trueCodeBlock);
-			const falseCodeBlock = printAST(context, node.falseCodeBlock);
-			return `if (${condition}) {${trueCodeBlock}} else {${falseCodeBlock}}`;
-		}
+		// case "if": {
+		// 	const condition = printASTnode(context, node.condition);
+		// 	const trueCodeBlock = printAST(context, node.trueBody);
+		// 	const falseCodeBlock = printAST(context, node.falseBody);
+		// 	return `if (${condition}) {${trueCodeBlock}} else {${falseCodeBlock}}`;
+		// }
 		case "instance": {
 			// TODO
 			return `${printASTnode(context, node.template)} {}`;

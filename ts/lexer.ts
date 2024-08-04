@@ -9,11 +9,7 @@ export enum TokenKind {
 	
 	separator,
 	operator,
-	
-	builtinIndicator,
-	selfReference,
 	singleQuote,
-	
 	endOfFile,
 };
 
@@ -66,6 +62,7 @@ function separator(text: string, i: number): boolean {
 	text[i] == ':' ||
 	text[i] == ';' ||
 	text[i] == ',' ||
+	text[i] == '@' ||
 	text[i] == '\\';
 }
 
@@ -201,19 +198,6 @@ export function lex(filePath: string, text: string): Token[] {
 		else if (separator(text, i)) {
 			tokens.push({
 				type: TokenKind.separator,
-				text: text[i],
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn,
-				},
-			});
-		}
-		
-		else if (text[i] == "@") {
-			tokens.push({
-				type: TokenKind.builtinIndicator,
 				text: text[i],
 				location: {
 					path: filePath,

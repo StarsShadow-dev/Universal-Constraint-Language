@@ -74,9 +74,10 @@ try {
 	AST = parse({
 		tokens: tokens,
 		i: 0,
+		indentationOutMin: 0,
 	}, ParserMode.normal, null);
 	logger.addTime("parsing", Date.now() - parseStart);
-	// console.log("AST:", JSON.stringify(AST, null, 2));
+	console.log("AST:", JSON.stringify(AST, null, 2));
 	
 	addToDB(db, AST);
 } catch (error) {

@@ -77,6 +77,7 @@ function testFile(filePath: string) {
 		const AST = parse({
 			tokens: tokens,
 			i: 0,
+			indentationOutMin: 0,
 		}, ParserMode.normal, null);
 		logger.addTime("parsing", Date.now() - parseStart);
 

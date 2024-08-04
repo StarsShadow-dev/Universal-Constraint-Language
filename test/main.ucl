@@ -81,8 +81,29 @@
 // 	F
 // }
 
-if (false) {
-	1
-} else {
-	"2"
-}
+// if (false) {
+// 	1
+// } else {
+// 	"2"
+// }
+
+// map(Number, String)([1, 2, 3], @in Number.toString(in))
+
+// fib = @n
+// 	if n < 2 then
+// 		n
+// 	else
+// 		fib(n - 1) + fib(n - 2)
+
+
+// genericFn = @names: [String] @function: Function (...) // -> Function
+// map = genericFn ["In", "Out"] (@input: [In] @callBack: \(In) -> Out (...)) // -> [Out]
+// map (Number, String) [1, 2, 3] (@input Number.toString(input))
+
+// I = @x: Number {
+// 	let y = x
+// 	y
+// }
+
+add1 = @x: Number x + 1
+add1 2

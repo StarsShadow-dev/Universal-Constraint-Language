@@ -1,29 +1,29 @@
 import utilities from "./utilities";
 import { BuilderContext, getAlias, unAlias } from "./db";
 import { ASTnode, ASTnode_argument, ASTnode_function, ASTnode_isAtype } from "./parser";
-import { evaluateBuiltin } from "./builtin";
+import { evaluateBuiltin, getBuiltinType } from "./builtin";
 import logger, { LogType } from "./logger";
 import { printASTnode } from "./printAST";
 
-export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
+export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 	switch (node.kind) {
 		case "identifier": {
 			const value = unAlias(context, node.name);
 			if (!value) throw utilities.unreachable();
 			
 			if (context.resolve) {
-				return evaluateNode(context, value);
+				return evaluate(context, value);
 			} else {
 				const alias = getAlias(context, node.name);
 				if (alias && alias.unalias) {
-					return evaluateNode(context, value);
+					return evaluate(context, value);
 				}
 				return node;
 			}
 		}
 		
 		case "call": {
-			const functionToCall = evaluate(context, [node.left])[0];
+			const functionToCall = evaluateList(context, [node.left])[0];
 			if (functionToCall.kind != "function") {
 				throw utilities.TODO();
 			}
@@ -31,19 +31,16 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 			const oldSetUnalias = context.setUnalias;
 			context.levels.push([]);
 			context.setUnalias = true;
-			for (let i = 0; i < node.callArguments.length; i++) {
-				const arg = functionToCall.functionArguments[i];
-				const argValue = node.callArguments[i];
-				context.levels[context.levels.length-1].push({
-					kind: "alias",
-					location: arg.location,
-					unalias: true,
-					name: arg.name,
-					value: argValue,
-				});
-			}
-			const resultList = evaluate(context, functionToCall.codeBlock);
-			const result = resultList[resultList.length-1];
+			const arg = functionToCall.arg;
+			const argValue = node.arg;
+			context.levels[context.levels.length-1].push({
+				kind: "alias",
+				location: arg.location,
+				unalias: true,
+				name: arg.name,
+				value: argValue,
+			});
+			const result = evaluate(context, functionToCall.body);
 			context.levels.pop();
 			context.setUnalias = oldSetUnalias;
 			
@@ -57,17 +54,26 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 		case "operator": {
 			const op = node.operatorText;
 			if (op == "+" || op == "-") {
-				if (node.left.kind != "number" || node.right.kind != "number") {
-					throw utilities.unreachable();
+				const left = evaluate(context, node.left);
+				const right = evaluate(context, node.right);
+				debugger;
+				if (left.kind != "number" || right.kind != "number") {
+					return node;
+					// return {
+					// 	kind: "_selfType",
+					// 	location: node.location,
+					// 	id: "TODO?",
+					// 	type: getBuiltinType("Number"),
+					// };
 				}
-				const left = node.left.value;
-				const right = node.right.value;
+				const left_v = left.value;
+				const right_v = right.value;
 				
 				let result: number;
 				if (op == "+") {
-					result = left + right;
+					result = left_v + right_v;
 				} else if (op == "-") {
-					result = left - right;
+					result = left_v - right_v;
 				} else {
 					throw utilities.unreachable();
 				}
@@ -83,52 +89,38 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 		}
 		
 		case "function": {
-			debugger;
+			const arg = node.arg;
 			
-			let functionArguments: ASTnode_argument[] = [];
-			for (let i = 0; i < node.functionArguments.length; i++) {
-				const functionArgument = node.functionArguments[i];
-				
-				// const oldResolve = context.resolve;
-				// context.resolve = true;
-				const argumentType = evaluateNode(context, functionArgument.type);
-				// context.resolve = oldResolve;
-				
-				functionArguments.push({
-					kind: "argument",
-					location: functionArgument.location,
-					name: functionArgument.name,
+			// const oldResolve = context.resolve;
+			// context.resolve = true;
+			const argumentType = evaluate(context, arg.type);
+			// context.resolve = oldResolve;
+			
+			let value: ASTnode = {
+				kind: "unknowable",
+				location: arg.location,
+			};
+			if (ASTnode_isAtype(argumentType)) {
+				value = {
+					kind: "_selfType",
+					location: arg.location,
+					id: "TODO?",
 					type: argumentType,
-				});
-				
-				let value: ASTnode = {
-					kind: "unknowable",
-					location: functionArgument.location,
 				};
-				if (ASTnode_isAtype(argumentType)) {
-					value = {
-						kind: "_selfType",
-						location: functionArgument.location,
-						id: "TODO?",
-						type: argumentType,
-					};
-				}
-				context.levels[context.levels.length-1].push({
-					kind: "alias",
-					location: functionArgument.location,
-					unalias: false,
-					name: functionArgument.name,
-					value: value,
-				});
 			}
-			
-			const returnType = evaluateNode(context, node.returnType);
+			context.levels[context.levels.length-1].push({
+				kind: "alias",
+				location: arg.location,
+				unalias: false,
+				name: arg.name,
+				value: value,
+			});
 			
 			const oldSetUnalias = context.setUnalias;
 			const oldResolve = context.resolve;
 			context.setUnalias = false;
 			context.resolve = false;
-			const codeBlock = evaluate(context, node.codeBlock);
+			const codeBlock = evaluate(context, node.body);
 			context.setUnalias = oldSetUnalias;
 			context.resolve = oldResolve;
 			
@@ -136,35 +128,32 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 				kind: "function",
 				location: node.location,
 				hasError: false,
-				functionArguments: functionArguments,
-				returnType: returnType,
-				codeBlock: codeBlock,
+				arg: arg,
+				body: codeBlock,
 			};
 			
-			// logger.log(LogType.evaluate, "newFunction", printASTnode({level: 0}, newFunction));
+			logger.log(LogType.evaluate, "newFunction", printASTnode({level: 0}, newFunction));
 			
 			return newFunction;
 		}
 		
 		case "if": {
-			const condition = evaluateNode(context, node.condition);
+			const condition = evaluate(context, node.condition);
 			if (condition.kind != "bool") {
 				throw utilities.unreachable();
 			}
 			
 			if (condition.value) {
-				const resultList = evaluate(context, node.trueCodeBlock);
-				const result = resultList[resultList.length-1];
+				const result = evaluate(context, node.trueBody);
 				return result;
 			} else {
-				const resultList = evaluate(context, node.falseCodeBlock);
-				const result = resultList[resultList.length-1];
+				const result = evaluate(context, node.falseBody);
 				return result;
 			}
 		}
 		
 		case "alias": {
-			const value = evaluateNode(context, node.value);
+			const value = evaluate(context, node.value);
 			
 			return {
 				kind: "alias",
@@ -179,13 +168,13 @@ export function evaluateNode(context: BuilderContext, node: ASTnode): ASTnode {
 	return node;
 }
 
-export function evaluate(context: BuilderContext, AST: ASTnode[]): ASTnode[] {
+export function evaluateList(context: BuilderContext, AST: ASTnode[]): ASTnode[] {
 	context.levels.push([]);
 	
 	let output = [];
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
-		const result = evaluateNode(context, ASTnode);
+		const result = evaluate(context, ASTnode);
 		if (result.kind == "alias") {
 			if (context.setUnalias) {
 				result.unalias = true;
