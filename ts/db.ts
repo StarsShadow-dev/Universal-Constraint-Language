@@ -352,11 +352,11 @@ export function buildlevel(context: BuilderContext, AST: ASTnode[]): ASTnodeType
 	let outNode = null;
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
-		if (ASTnode.kind == "alias") {
-			buildlevel(context, [ASTnode.value]);
-			context.levels[context.levels.length-1].push(ASTnode);
-			continue;
-		}
+		// if (ASTnode.kind == "alias") {
+		// 	buildlevel(context, [ASTnode.value]);
+		// 	context.levels[context.levels.length-1].push(ASTnode);
+		// 	continue;
+		// }
 		outNode = build(context, ASTnode);
 		// if (ASTnode.kind == "identifier") {
 		// 	const alias = getAlias(context, ASTnode.name);

@@ -68,7 +68,7 @@ try {
 	const lexStart = Date.now();
 	tokens = lex(options.filePath, text);
 	logger.addTime("lexing", Date.now() - lexStart);
-	// console.log("tokens:", tokens);
+	console.log("tokens:", tokens);
 
 	const parseStart = Date.now();
 	AST = parse({

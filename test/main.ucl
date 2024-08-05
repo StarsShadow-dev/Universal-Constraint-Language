@@ -106,4 +106,6 @@
 // }
 
 add1 = @x: Number x + 1
-add1 2
+add1 (add1 (add1 (add1 (add1 (add1 (add1 (add1 (add1 (add1 0)))))))))
+
+// add1 0 |> add1 |> add1 |> add1 |> add1 |> add1 |> add1 |> add1 |> add1 |> add1

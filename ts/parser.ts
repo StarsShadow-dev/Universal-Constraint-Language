@@ -379,6 +379,23 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 	}
 	
 	while (context.i < context.tokens.length) {
+		if (endAt != null) {
+			const nextToken = next(context);
+			
+			if (nextToken.type == TokenKind.separator) {
+				if (nextToken.text == ")" || nextToken.text == "}" || nextToken.text == "]") {
+					if (endAt == nextToken.text) {
+						context.i++;
+						return ASTnodes;
+					} else {
+						throw new CompileError("unexpected separator")
+							.indicator(nextToken.location, `expected '${endAt} but got '${nextToken.text}'`);
+					}
+				}
+			}
+		}
+		
+		// indentation canceling
 		if (getIndentation(next(context)) < context.indentationOutMin) {
 			return ASTnodes;
 		}
@@ -394,9 +411,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				throw utilities.unreachable();
 			}
 			
-			context.indentationOutMin += getIndentation(left);
+			const oldIndentationOutMin = context.indentationOutMin;
+			context.indentationOutMin = getIndentation(left);
 			const arg = parse(context, ParserMode.singleNoCall, null)[0];
-			context.indentationOutMin -= getIndentation(left);
+			context.indentationOutMin = oldIndentationOutMin;
 			if (arg == undefined) {
 				ASTnodes.push(left); // undo pop
 			} else {
@@ -413,6 +431,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		let token = forward(context);
 		
 		switch (token.type) {
+			case TokenKind.endOfFile: {
+				return ASTnodes;
+			}
+			
 			case TokenKind.comment: {
 				continue;
 			}
@@ -554,19 +576,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					});
 				}
 				
-				else if (token.text == "effect") {
-					const type = parse(context, ParserMode.singleNoEqualsOperatorContinue, null)[0];
-					if (!type) {
-						throw new CompileError("an effect must have a type").indicator(token.location, "here");
-					}
-					
-					ASTnodes.push({
-						kind: "effect",
-						location: token.location,
-						type: type,
-					});
-				}
-				
 				else {
 					ASTnodes.push({
 						kind: "identifier",
@@ -581,7 +590,16 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				if (token.text == endAt) {
 					return ASTnodes;
 				}
-				if (token.text == "[") {
+				if (token.text == "(") {
+					const elements = parse(context, ParserMode.comma, ")");
+					if (elements.length == 0) {
+						throw utilities.unreachable();
+					} else if (elements.length > 1) {
+						throw utilities.TODO();
+					} else {
+						ASTnodes.push(elements[0]);
+					}
+				} else if (token.text == "[") {
 					const elements = parse(context, ParserMode.comma, "]");
 					
 					ASTnodes.push({
@@ -703,10 +721,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			return ASTnodes;
 		}
 		
-		if (context.tokens[context.i] && next(context).type == TokenKind.separator && next(context).text == "(") {
-			continue;
-		}
-		
 		if (mode == ParserMode.singleNoOperatorContinue) {
 			earlyReturn();
 			return ASTnodes;
@@ -752,20 +766,13 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			return ASTnodes;
 		}
 		
-		if (endAt != null) {
-			const nextToken = next(context);
-			
-			if (nextToken.type == TokenKind.separator) {
-				if (nextToken.text == ")" || nextToken.text == "}" || nextToken.text == "]") {
-					if (endAt == nextToken.text) {
-						context.i++;
-						return ASTnodes;
-					} else {
-						throw new CompileError("unexpected separator")
-							.indicator(nextToken.location, `expected '${endAt} but got '${nextToken.text}'`);
-					}
-				}
-			}
+		if (
+			ASTnodes.length > 0 &&
+			more(context) &&
+			next(context).type != TokenKind.operator &&
+			!(next(context).type == TokenKind.separator && next(context).text == ",")
+		) {
+			continue; // continue for fn call at top of loop
 		}
 		
 		if (mode == ParserMode.comma) {

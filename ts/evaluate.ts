@@ -17,13 +17,17 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 				const alias = getAlias(context, node.name);
 				if (alias && alias.unalias) {
 					return evaluate(context, value);
+				} else {
+					return node;
 				}
-				return node;
 			}
 		}
 		
 		case "call": {
+			const oldResolve = context.resolve;
+			context.resolve = true;
 			const functionToCall = evaluateList(context, [node.left])[0];
+			context.resolve = oldResolve;
 			if (functionToCall.kind != "function") {
 				throw utilities.TODO();
 			}
@@ -32,7 +36,7 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			context.levels.push([]);
 			context.setUnalias = true;
 			const arg = functionToCall.arg;
-			const argValue = node.arg;
+			const argValue = evaluate(context, node.arg);
 			context.levels[context.levels.length-1].push({
 				kind: "alias",
 				location: arg.location,
@@ -56,7 +60,6 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			if (op == "+" || op == "-") {
 				const left = evaluate(context, node.left);
 				const right = evaluate(context, node.right);
-				debugger;
 				if (left.kind != "number" || right.kind != "number") {
 					return node;
 					// return {
@@ -175,12 +178,12 @@ export function evaluateList(context: BuilderContext, AST: ASTnode[]): ASTnode[]
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
 		const result = evaluate(context, ASTnode);
-		if (result.kind == "alias") {
-			if (context.setUnalias) {
-				result.unalias = true;
-			}
-			context.levels[context.levels.length-1].push(result);
-		}
+		// if (result.kind == "alias") {
+		// 	if (context.setUnalias) {
+		// 		result.unalias = true;
+		// 	}
+		// 	context.levels[context.levels.length-1].push(result);
+		// }
 		// if (ASTnode.kind == "identifier") {
 		// 	const alias = getAlias(context, ASTnode.name);
 		// 	if (alias) {
