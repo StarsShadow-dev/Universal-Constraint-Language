@@ -1,4 +1,4 @@
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import { build, BuilderContext } from "./db";
 import { evaluateList } from "./evaluate";
 import { CompileError } from "./report";

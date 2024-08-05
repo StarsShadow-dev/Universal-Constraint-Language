@@ -4,7 +4,7 @@
 
 import path from "path";
 
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import logger from "./logger";
 import { lex } from "./lexer";
 import { parse, ParserMode } from "./parser";
@@ -68,14 +68,13 @@ try {
 	const lexStart = Date.now();
 	tokens = lex(options.filePath, text);
 	logger.addTime("lexing", Date.now() - lexStart);
-	console.log("tokens:", tokens);
+	// console.log("tokens:", tokens);
 
 	const parseStart = Date.now();
 	AST = parse({
 		tokens: tokens,
 		i: 0,
-		indentationOutMin: 0,
-	}, ParserMode.normal, null);
+	}, ParserMode.normal, null, 0);
 	logger.addTime("parsing", Date.now() - parseStart);
 	console.log("AST:", JSON.stringify(AST, null, 2));
 	

@@ -1,4 +1,4 @@
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import { ASTnode } from "./parser";
 
 export type CodeGenContext = {
@@ -36,10 +36,11 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 		case "identifier": {
 			return node.name;
 		}
-		// case "call": {
-		// 	const argText = getArgText(context, node.arg);
-		// 	return `${printASTnode(context, node.left)}(${argText})`;
-		// }
+		case "call": {
+			const left = printASTnode(context, node.left);
+			const arg = printASTnode(context, node.arg);
+			return `(${left} ${arg})`;
+		}
 		case "operator": {
 			const left = printASTnode(context, node.left);
 			const right = printASTnode(context, node.right);

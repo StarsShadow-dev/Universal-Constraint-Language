@@ -1,4 +1,4 @@
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import { SourceLocation } from "./types";
 import { CompileError } from "./report";
 import { Token, TokenKind } from "./lexer";
@@ -152,7 +152,6 @@ ASTnode_alias
 export type ParserContext = {
 	tokens: Token[],
 	i: number,
-	indentationOutMin: number,
 }
 
 export enum ParserMode {
@@ -268,7 +267,9 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 			} else {
 				mode = ParserMode.singleNoOperatorContinue;
 			}
-			right = parseOperators(context, parse(context, mode, null)[0], nextPrecedence);
+			
+			const _r = parse(context, mode, null, getIndentation(left))[0];
+			right = parseOperators(context, _r, nextPrecedence);
 			
 			if (nextOperator.text == "=") {
 				if (left.kind != "identifier") {
@@ -304,7 +305,7 @@ function parseType(context: ParserContext, separatingText: string): ASTnode | nu
 	if (separator.text == separatingText) {
 		forward(context);
 		
-		type = parse(context, ParserMode.singleNoEqualsOperatorContinue, null)[0];
+		type = parse(context, ParserMode.singleNoEqualsOperatorContinue, null, getIndentation(separator))[0];
 	}
 	
 	return type;
@@ -365,7 +366,7 @@ function getIndentation(ASTnode: ASTnode | Token): number {
 	return ASTnode.location.startColumn;
 }
 
-export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null): ASTnode[] {
+export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}" | "]" | null, indentationOutMin: number): ASTnode[] {
 	let ASTnodes: ASTnode[] = [];
 	
 	function earlyReturn() {
@@ -396,7 +397,8 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		}
 		
 		// indentation canceling
-		if (getIndentation(next(context)) < context.indentationOutMin) {
+		if (getIndentation(next(context)) <= indentationOutMin) {
+			earlyReturn();
 			return ASTnodes;
 		}
 		
@@ -404,17 +406,15 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			mode != ParserMode.singleNoCall &&
 			ASTnodes.length > 0 &&
 			more(context) &&
-			next(context).type != TokenKind.operator
+			next(context).type != TokenKind.operator &&
+			ASTnodes[ASTnodes.length - 1].kind != "alias"
 		) {
 			const left = ASTnodes.pop();
 			if (!left) {
 				throw utilities.unreachable();
 			}
 			
-			const oldIndentationOutMin = context.indentationOutMin;
-			context.indentationOutMin = getIndentation(left);
-			const arg = parse(context, ParserMode.singleNoCall, null)[0];
-			context.indentationOutMin = oldIndentationOutMin;
+			const arg = parse(context, ParserMode.singleNoCall, null, getIndentation(left))[0];
 			if (arg == undefined) {
 				ASTnodes.push(left); // undo pop
 			} else {
@@ -428,7 +428,13 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
-		let token = forward(context);
+		if (mode == ParserMode.single && ASTnodes.length > 0) {
+			earlyReturn();
+			return ASTnodes;
+		}
+		
+		const token = forward(context);
+		const tokenIn = getIndentation(token);
 		
 		switch (token.type) {
 			case TokenKind.endOfFile: {
@@ -532,7 +538,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
-					const codeBlock = parse(context, ParserMode.normal, "}");
+					const codeBlock = parse(context, ParserMode.normal, "}", tokenIn);
 					for (let i = 0; i < codeBlock.length; i++) {
 						const ASTnode = codeBlock[i];
 						if (ASTnode.kind == "identifier") {
@@ -560,13 +566,13 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "match") {
-					const expression = parse(context, ParserMode.singleNoNewInstanceContinue, null)[0];
+					const expression = parse(context, ParserMode.singleNoNewInstanceContinue, null, tokenIn)[0];
 					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
 						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
 					}
-					const codeBlock = parse(context, ParserMode.normal, "}");
+					const codeBlock = parse(context, ParserMode.normal, "}", tokenIn);
 					
 					ASTnodes.push({
 						kind: "match",
@@ -591,7 +597,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					return ASTnodes;
 				}
 				if (token.text == "(") {
-					const elements = parse(context, ParserMode.comma, ")");
+					const elements = parse(context, ParserMode.comma, ")", tokenIn);
 					if (elements.length == 0) {
 						throw utilities.unreachable();
 					} else if (elements.length > 1) {
@@ -600,7 +606,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						ASTnodes.push(elements[0]);
 					}
 				} else if (token.text == "[") {
-					const elements = parse(context, ParserMode.comma, "]");
+					const elements = parse(context, ParserMode.comma, "]", tokenIn);
 					
 					ASTnodes.push({
 						kind: "list",
@@ -618,9 +624,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("function argument without a type").indicator(name.location, "here");
 					}
 					
-					context.indentationOutMin += getIndentation(token);
-					const body = parse(context, ParserMode.normal, null)[0];
-					context.indentationOutMin -= getIndentation(token);
+					const body = parse(context, ParserMode.normal, null, tokenIn)[0];
 					ASTnodes.push({
 						kind: "function",
 						location: token.location,
@@ -654,7 +658,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					// 	returnType: returnType,
 					// });
 				} else {
+					// if (endAt == null) {
+					// 	return ASTnodes;
+					// } else {
 					throw new CompileError("unexpected separator").indicator(token.location, "here");
+					// }
 				}
 				break;
 			}
@@ -748,7 +756,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			const left = ASTnodes.pop();
 			if (left) {
 				forward(context);
-				const codeBlock = parse(context, ParserMode.normal, "}");
+				const codeBlock = parse(context, ParserMode.normal, "}", getIndentation(left));
 				
 				ASTnodes.push({
 					kind: "instance",
@@ -761,7 +769,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
-		if (mode == ParserMode.single || mode == ParserMode.singleNoCall) {
+		if (mode == ParserMode.singleNoCall) {
 			earlyReturn();
 			return ASTnodes;
 		}

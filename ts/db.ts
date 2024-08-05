@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import logger, { LogType } from "./logger";
 import { evaluateList, evaluate } from "./evaluate";
 import { printASTnode } from "./printAST";
@@ -83,7 +83,7 @@ export function makeBuilderContext(db: DB): BuilderContext {
 }
 
 export function getAlias(context: BuilderContext, name: string): ASTnode_alias | null {
-	for (let i = 0; i < context.levels.length; i++) {
+	for (let i = context.levels.length-1; i >= 0; i--) {
 		for (let j = 0; j < context.levels[i].length; j++) {
 			const alias = context.levels[i][j];
 			if (alias.name == name) {

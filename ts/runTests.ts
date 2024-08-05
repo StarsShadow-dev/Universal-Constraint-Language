@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import path from "path";
 
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import logger from "./logger";
 import { CompilerOptions } from "./compiler";
 import { addToDB, makeDB } from "./db";
@@ -77,8 +77,7 @@ function testFile(filePath: string) {
 		const AST = parse({
 			tokens: tokens,
 			i: 0,
-			indentationOutMin: 0,
-		}, ParserMode.normal, null);
+		}, ParserMode.normal, null, 0);
 		logger.addTime("parsing", Date.now() - parseStart);
 
 		addToDB(db, AST);

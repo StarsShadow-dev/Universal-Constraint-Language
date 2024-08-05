@@ -1,4 +1,4 @@
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import { BuilderContext, getAlias, unAlias } from "./db";
 import { ASTnode, ASTnode_argument, ASTnode_function, ASTnode_isAtype } from "./parser";
 import { evaluateBuiltin, getBuiltinType } from "./builtin";
@@ -12,7 +12,8 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			if (!value) throw utilities.unreachable();
 			
 			if (context.resolve) {
-				return evaluate(context, value);
+				return value;
+				// return evaluate(context, value);
 			} else {
 				const alias = getAlias(context, node.name);
 				if (alias && alias.unalias) {

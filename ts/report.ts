@@ -1,4 +1,4 @@
-import utilities from "./utilities";
+import * as utilities from "./utilities";
 import { SourceLocation } from "./types";
 
 const lineNumberPadding = 4;
