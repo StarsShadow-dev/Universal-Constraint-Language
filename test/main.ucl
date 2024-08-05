@@ -105,7 +105,5 @@
 // 	y
 // }
 
-add1 = @x: Number x + 1
-add2 = @x: Number add1 (add1 x)
-add3 = @x: Number add1 (add2 x)
-add3 (add3 3)
+makeIdentity = @T: Type @x: T x
+makeIdentity String

@@ -305,7 +305,7 @@ function parseType(context: ParserContext, separatingText: string): ASTnode | nu
 	if (separator.text == separatingText) {
 		forward(context);
 		
-		type = parse(context, ParserMode.singleNoEqualsOperatorContinue, null, getIndentation(separator))[0];
+		type = parse(context, ParserMode.singleNoContinue, null, getIndentation(separator))[0];
 	}
 	
 	return type;
@@ -407,7 +407,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			ASTnodes.length > 0 &&
 			more(context) &&
 			next(context).type != TokenKind.operator &&
-			ASTnodes[ASTnodes.length - 1].kind != "alias"
+			ASTnodes[ASTnodes.length - 1].kind != "alias" &&
+			!(
+				next(context).type == TokenKind.separator &&
+				next(context).text == ")"
+			)
 		) {
 			const left = ASTnodes.pop();
 			if (!left) {
@@ -428,7 +432,11 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			}
 		}
 		
-		if (mode == ParserMode.single && ASTnodes.length > 0) {
+		if (
+			mode == ParserMode.single &&
+			ASTnodes.length > 0 &&
+			next(context).type != TokenKind.operator
+		) {
 			earlyReturn();
 			return ASTnodes;
 		}
@@ -624,7 +632,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("function argument without a type").indicator(name.location, "here");
 					}
 					
-					const body = parse(context, ParserMode.normal, null, tokenIn)[0];
+					const body = parse(context, ParserMode.single, null, tokenIn)[0];
 					ASTnodes.push({
 						kind: "function",
 						location: token.location,

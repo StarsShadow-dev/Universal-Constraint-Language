@@ -1,9 +1,0 @@
-// compOut
-// line:5 -> "expected type Number, but got type String"
-// line:9 -> ""
-
-@getError(fn() -> Number {
-	"testing"
-})
-
-@getError(1)

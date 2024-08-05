@@ -1,7 +1,0 @@
-// compError
-// error: functions must have a return type
-// line:5 -> here
-
-test = fn() {
-	1
-}

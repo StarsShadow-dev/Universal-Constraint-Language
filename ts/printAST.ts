@@ -54,11 +54,11 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			const argText = getArgText(context, node.fields);
 			return `struct(${argText})`;
 		}
-		// case "functionType": {
-		// 	const argText = getArgText(context, node.functionArguments);
-		// 	const returnType = printASTnode(context, node.returnType);
-		// 	return `\(${argText}) -> ${returnType}`;
-		// }
+		case "functionType": {
+			const argType = printASTnode(context, node.arg);
+			const returnType = printASTnode(context, node.returnType);
+			return `\\${argType} -> ${returnType}`;
+		}
 		case "function": {
 			let type = "";
 			if (node.arg.type) {

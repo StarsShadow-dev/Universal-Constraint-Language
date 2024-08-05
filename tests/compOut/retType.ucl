@@ -1,14 +1,9 @@
 // compOut
-// line:13 -> String
-// line:14 -> "Hello, World"
+// line:8 -> String
+// line:9 -> "Hello, World"
 
-getType = fn() -> Type {
-	String
-}
+getType = @T: Type T
+test = @x: (getType String) x
 
-test = fn() -> getType() {
-	"Hello, World"
-}
-
-getType()
-test()
+(getType String)
+test "Hello, World"

@@ -31,6 +31,7 @@ export const builtinTypes: (ASTnode_alias & { value: {kind: "struct"} })[] = [
 	makeBuiltinType("String"),
 	makeBuiltinType("Effect"),
 	makeBuiltinType("Function"),
+	makeBuiltinType("Any"),
 ];
 
 export function getBuiltinType(name: string): ASTnodeType {

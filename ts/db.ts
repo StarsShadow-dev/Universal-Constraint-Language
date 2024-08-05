@@ -207,13 +207,32 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 				throw utilities.unreachable();
 			}
 			
-			const left = evaluate(context, node.left);
-			if (left.kind != "function") {
+			const functionToCall = evaluate(context, node.left);
+			if (functionToCall.kind != "function") {
 				throw utilities.TODO();
 			}
+			const functionToCallArgType = evaluate(context, functionToCall.arg.type);
+			if (!ASTnode_isAtype(functionToCallArgType)) {
+				utilities.TODO();
+			}
 			
-			const newNode = evaluateList(context, [node])[0];
-			const returnType = buildlevel(context, [newNode]);
+			const arg = node.arg;
+			
+			const newNode = evaluate(context, node);
+			context.levels[context.levels.length-1].push({
+				kind: "alias",
+				location: arg.location,
+				unalias: false,
+				name: functionToCall.arg.name,
+				value: {
+					kind: "_selfType",
+					location: arg.location,
+					id: "TODO?",
+					type: functionToCallArgType,
+				},
+			});
+			const returnType = build(context, newNode);
+			context.levels[context.levels.length-1].pop();
 			
 			return returnType;
 		}
@@ -271,10 +290,10 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 			}
 			
 			const arg = node.arg;
-			const argumentType = evaluateList(context, [arg.type])[0];
+			let argumentType = evaluate(context, arg.type);
 			if (!ASTnode_isAtype(argumentType)) {
-				end();
-				return ASTnode_error_new(node.location, null);
+				// TODO errors
+				argumentType = getBuiltinType("Any");
 			}
 			context.levels[context.levels.length-1].push({
 				kind: "alias",
@@ -289,7 +308,7 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 				},
 			});
 			
-			const actualResultType = buildlevel(context, [node.body]);
+			const actualResultType = build(context, node.body);
 			if (actualResultType.kind == "error") {
 				end();
 				return actualResultType;
@@ -417,7 +436,10 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			const location = ASTnode.location;
 			const error = buildlevel(makeBuilderContext(db), [ASTnode]);
 			if (error.kind == "error") {
-				if (!error.compileError) break;
+				if (!error.compileError) {
+					logger.log(LogType.addToDB, `!error.compileError ???`);
+					break;
+				}
 				db.errors.push(error.compileError);
 				continue;
 			}
