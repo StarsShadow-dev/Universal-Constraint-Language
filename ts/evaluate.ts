@@ -50,7 +50,8 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 				name: arg.name,
 				value: argValue,
 			});
-			const result = evaluate(context, functionToCall.body);
+			const resultList = evaluateList(context, functionToCall.body);
+			const result = resultList[resultList.length-1];
 			context.levels[context.levels.length-1].pop();
 			context.levels.pop();
 			context.setUnalias = oldSetUnalias;
@@ -131,7 +132,7 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			const oldResolve = context.resolve;
 			context.setUnalias = false;
 			context.resolve = false;
-			const codeBlock = evaluate(context, node.body);
+			const codeBlock = evaluateList(context, node.body);
 			context.setUnalias = oldSetUnalias;
 			context.resolve = oldResolve;
 			context.levels[context.levels.length-1].pop();
@@ -186,8 +187,6 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 }
 
 export function evaluateList(context: BuilderContext, AST: ASTnode[]): ASTnode[] {
-	context.levels.push([]);
-	
 	let output = [];
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
@@ -212,8 +211,6 @@ export function evaluateList(context: BuilderContext, AST: ASTnode[]): ASTnode[]
 		// }
 		output.push(result);
 	}
-	
-	context.levels.pop();
 	
 	return output;
 }

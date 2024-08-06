@@ -60,11 +60,14 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			return `\\${argType} -> ${returnType}`;
 		}
 		case "function": {
-			let type = "";
-			if (node.arg.type) {
-				type = `: ${printASTnode(context, node.arg.type)}`;
+			let type = printASTnode(context, node.arg.type);
+			let body = "";
+			if (node.body.length == 1) {
+				body = printASTnode(context, node.body[0]);
+			} else {
+				body = printAST(context, node.body);
 			}
-			return `@${node.arg.name}${type} ${printASTnode(context, node.body)}`;
+			return `@${node.arg.name}(${type}) ${body}`;
 		}
 		// case "if": {
 		// 	const condition = printASTnode(context, node.condition);

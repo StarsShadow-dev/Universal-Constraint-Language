@@ -29,7 +29,7 @@ export function TODO(): never {
 
 export function TODO_addError(): never {
 	debugger;
-	throw "TODO reached";
+	throw "TODO_addError";
 }
 
 export function byteSize(str: string): number {

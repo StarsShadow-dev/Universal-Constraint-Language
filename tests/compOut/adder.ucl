@@ -1,9 +1,9 @@
 // compOut
 // line:9 -> 9
 
-add = @x: Number @y: Number x + y
+add = @x(Number) @y(Number) x + y
 
-add1 = @x: Number x + 1
-add2 = @x: Number add1 (add1 x)
-add3 = @x: Number x + (add 1 2)
+add1 = @x(Number) x + 1
+add2 = @x(Number) add1 (add1 x)
+add3 = @x(Number) x + (add 1 2)
 add3 (add3 3)

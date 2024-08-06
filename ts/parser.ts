@@ -69,7 +69,7 @@ export type ASTnode_function = genericASTnode & {
 	kind: "function",
 	hasError: boolean,
 	arg: ASTnode_argument,
-	body: ASTnode,
+	body: ASTnode[],
 };
 
 export type ASTnode_alias = genericASTnode & {
@@ -627,12 +627,17 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("expected name for function argument").indicator(token.location, "here");
 					}
 					
-					const type = parseType(context, ":");
+					const openingParentheses = forward(context);
+					if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
+						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
+					}
+					
+					const type = parse(context, ParserMode.normal, ")", tokenIn)[0];
 					if (!type) {
 						throw new CompileError("function argument without a type").indicator(name.location, "here");
 					}
 					
-					const body = parse(context, ParserMode.single, null, tokenIn)[0];
+					const body = parse(context, ParserMode.normal, null, tokenIn);
 					ASTnodes.push({
 						kind: "function",
 						location: token.location,
@@ -666,11 +671,12 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					// 	returnType: returnType,
 					// });
 				} else {
-					// if (endAt == null) {
-					// 	return ASTnodes;
-					// } else {
-					throw new CompileError("unexpected separator").indicator(token.location, "here");
-					// }
+					if (endAt == null) {
+						context.i--;
+						return ASTnodes;
+					} else {
+						throw new CompileError("unexpected separator").indicator(token.location, "here");
+					}
 				}
 				break;
 			}

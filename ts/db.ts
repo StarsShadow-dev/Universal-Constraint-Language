@@ -308,7 +308,7 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 				},
 			});
 			
-			const actualResultType = getType(context, node.body);
+			const actualResultType = getTypeFromList(context, node.body);
 			if (actualResultType.kind == "error") {
 				end();
 				return actualResultType;

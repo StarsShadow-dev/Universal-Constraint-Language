@@ -100,7 +100,9 @@
 // map = genericFn ["In", "Out"] (@input: [In] @callBack: \(In) -> Out (...)) // -> [Out]
 // map (Number, String) [1, 2, 3] (@input Number.toString(input))
 
-// I = @x: Number {
-// 	let y = x
+// I = @x: Number 
+// 	y = x
 // 	y
-// }
+
+a = @x(String) x
+a
