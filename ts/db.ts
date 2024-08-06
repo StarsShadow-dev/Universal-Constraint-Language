@@ -69,27 +69,25 @@ export function getDefFromList(list: topLevelDef[], name: string): topLevelDef |
 
 export type BuilderContext = {
 	db: DB,
-	levels: ASTnode_alias[][],
+	aliases: ASTnode_alias[],
 	setUnalias: boolean,
 	resolve: boolean,
 };
 export function makeBuilderContext(db: DB): BuilderContext {
 	return {
 		db: db,
-		levels: [],
+		aliases: [],
 		setUnalias: false,
 		resolve: true,
 	};
 }
 
 export function getAlias(context: BuilderContext, name: string): ASTnode_alias | null {
-	for (let i = context.levels.length-1; i >= 0; i--) {
-		for (let j = 0; j < context.levels[i].length; j++) {
-			const alias = context.levels[i][j];
+	for (let i = context.aliases.length-1; i >= 0; i--) {
+		const alias = context.aliases[i];
 			if (alias.name == name) {
 				return alias;
 			}
-		}
 	}
 	
 	for (let i = 0; i < builtinTypes.length; i++) {
@@ -101,6 +99,13 @@ export function getAlias(context: BuilderContext, name: string): ASTnode_alias |
 	
 	return null;
 }
+
+// export function withAlias<T>(context: BuilderContext, newAlias: ASTnode_alias, callBack: () => T): T {
+// 	context.aliases.push(newAlias);
+// 	const result = callBack();
+// 	context.aliases.pop();
+// 	return result;
+// }
 
 export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 	{
@@ -219,7 +224,7 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 			const arg = node.arg;
 			
 			const newNode = evaluate(context, node);
-			context.levels[context.levels.length-1].push({
+			context.aliases.push({
 				kind: "alias",
 				location: arg.location,
 				unalias: false,
@@ -232,7 +237,7 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 				},
 			});
 			const returnType = getType(context, newNode);
-			context.levels[context.levels.length-1].pop();
+			context.aliases.pop();
 			
 			return returnType;
 		}
@@ -284,18 +289,13 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 		}
 		
 		case "function": {
-			context.levels.push([]);
-			function end() {
-				context.levels.pop();
-			}
-			
 			const arg = node.arg;
 			let argumentType = evaluate(context, arg.type);
 			if (!ASTnode_isAtype(argumentType)) {
 				// TODO errors
 				argumentType = getBuiltinType("Any");
 			}
-			context.levels[context.levels.length-1].push({
+			context.aliases.push({
 				kind: "alias",
 				location: arg.location,
 				unalias: false,
@@ -307,10 +307,9 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 					type: argumentType,
 				},
 			});
-			
 			const actualResultType = getTypeFromList(context, node.body);
+			context.aliases.pop();
 			if (actualResultType.kind == "error") {
-				end();
 				return actualResultType;
 			}
 			
@@ -366,8 +365,6 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 }
 
 export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
-	context.levels.push([]);
-	
 	let outNode = null;
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
@@ -389,8 +386,6 @@ export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnod
 		// 	}
 		// }
 	}
-	
-	context.levels.pop();
 	
 	if (!outNode) throw utilities.unreachable();
 	return outNode;

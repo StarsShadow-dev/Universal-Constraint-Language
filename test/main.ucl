@@ -104,5 +104,4 @@
 // 	y = x
 // 	y
 
-a = @x(String) x
-a
+@x(String) x
