@@ -1,5 +1,5 @@
 import * as utilities from "./utilities";
-import { build, BuilderContext } from "./db";
+import { getType, BuilderContext } from "./db";
 import { evaluateList } from "./evaluate";
 import { CompileError } from "./report";
 import {
@@ -106,7 +106,7 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 				.indicator(builtinCall.location, "here");
 		}
 		index++;
-		const input = build(context, node);
+		const input = getType(context, node);
 		
 		let output = "";
 		if (input.kind == "error") {

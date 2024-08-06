@@ -1,7 +1,7 @@
 import * as utilities from "./utilities";
 import { BuilderContext, getAlias, unAlias } from "./db";
-import { ASTnode, ASTnode_argument, ASTnode_function, ASTnode_isAtype } from "./parser";
-import { evaluateBuiltin, getBuiltinType } from "./builtin";
+import { ASTnode, ASTnode_function, ASTnode_isAtype } from "./parser";
+import { evaluateBuiltin } from "./builtin";
 import logger, { LogType } from "./logger";
 import { printASTnode } from "./printAST";
 

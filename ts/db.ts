@@ -176,7 +176,7 @@ function expectType(
 	return null;
 }
 
-export function build(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
+export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
 	switch (node.kind) {
 		case "bool": {
 			return getBuiltinType("Bool");
@@ -197,11 +197,11 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 				);
 			}
 			
-			return build(context, def);
+			return getType(context, def);
 		}
 		
 		case "call": {
-			const leftType = build(context, node.left);
+			const leftType = getType(context, node.left);
 			if (leftType.kind == "error") return leftType;
 			if (leftType.kind != "functionType" || !ASTnode_isAtype(leftType.returnType)) {
 				throw utilities.unreachable();
@@ -231,25 +231,25 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 					type: functionToCallArgType,
 				},
 			});
-			const returnType = build(context, newNode);
+			const returnType = getType(context, newNode);
 			context.levels[context.levels.length-1].pop();
 			
 			return returnType;
 		}
 		
 		case "builtinCall": {
-			return build(context, evaluateBuiltin(context, node));
+			return getType(context, evaluateBuiltin(context, node));
 		}
 		
 		case "operator": {
 			const op = node.operatorText;
 			
 			if (op == "+" || op == "-") {
-				const left = build(context, node.left);
+				const left = getType(context, node.left);
 				if (left.kind == "error") {
 					return left;
 				}
-				const right = build(context, node.right);
+				const right = getType(context, node.right);
 				if (right.kind == "error") {
 					return right;
 				}
@@ -308,7 +308,7 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 				},
 			});
 			
-			const actualResultType = build(context, node.body);
+			const actualResultType = getType(context, node.body);
 			if (actualResultType.kind == "error") {
 				end();
 				return actualResultType;
@@ -324,16 +324,16 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		}
 		
 		case "if": {
-			const condition = build(context, node.condition);
+			const condition = getType(context, node.condition);
 			if (condition.kind == "error") {
 				return condition;
 			}
 			
-			const trueType = build(context, node.trueBody);
+			const trueType = getType(context, node.trueBody);
 			if (trueType.kind == "error") {
 				return trueType;
 			}
-			const falseType = build(context, node.falseBody);
+			const falseType = getType(context, node.falseBody);
 			if (falseType.kind == "error") {
 				return falseType;
 			}
@@ -353,7 +353,7 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 		}
 		
 		case "instance": {
-			const template = build(context, node.template);
+			const template = getType(context, node.template);
 			return template;
 		}
 		
@@ -365,7 +365,7 @@ export function build(context: BuilderContext, node: ASTnode): ASTnodeType | AST
 	throw utilities.unreachable();
 }
 
-export function buildlevel(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
+export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
 	context.levels.push([]);
 	
 	let outNode = null;
@@ -376,7 +376,7 @@ export function buildlevel(context: BuilderContext, AST: ASTnode[]): ASTnodeType
 		// 	context.levels[context.levels.length-1].push(ASTnode);
 		// 	continue;
 		// }
-		outNode = build(context, ASTnode);
+		outNode = getType(context, ASTnode);
 		// if (ASTnode.kind == "identifier") {
 		// 	const alias = getAlias(context, ASTnode.name);
 		// 	if (alias) {
@@ -420,7 +420,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			if (!def) throw utilities.unreachable();
 			
 			const value = ASTnode.value;
-			const error = buildlevel(makeBuilderContext(db), [value]);
+			const error = getTypeFromList(makeBuilderContext(db), [value]);
 			if (error.kind == "error" && error.compileError) {
 				db.errors.push(error.compileError);
 				break; // ?
@@ -434,7 +434,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			logger.log(LogType.addToDB, `found top level evaluation`);
 			
 			const location = ASTnode.location;
-			const error = buildlevel(makeBuilderContext(db), [ASTnode]);
+			const error = getTypeFromList(makeBuilderContext(db), [ASTnode]);
 			if (error.kind == "error") {
 				if (!error.compileError) {
 					logger.log(LogType.addToDB, `!error.compileError ???`);
