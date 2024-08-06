@@ -27,6 +27,11 @@ export function TODO(): never {
 	throw "TODO reached";
 }
 
+export function TODO_addError(): never {
+	debugger;
+	throw "TODO reached";
+}
+
 export function byteSize(str: string): number {
 	return new Blob([str]).size;
 }

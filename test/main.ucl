@@ -104,6 +104,3 @@
 // 	let y = x
 // 	y
 // }
-
-makeIdentity = @T: Type @x: T x
-makeIdentity String
