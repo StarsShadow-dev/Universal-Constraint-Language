@@ -637,7 +637,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						throw new CompileError("function argument without a type").indicator(name.location, "here");
 					}
 					
-					const body = parse(context, ParserMode.normal, null, tokenIn);
+					const body = parse(context, ParserMode.normal, null, indentationOutMin);
 					ASTnodes.push({
 						kind: "function",
 						location: token.location,

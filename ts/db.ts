@@ -14,6 +14,7 @@ import {
 	ASTnode_error_new,
 	ASTnode_isAtype,
 } from "./parser";
+import { SourceLocation } from "./types";
 
 export type topLevelDef = {
 	// uuid: string,
@@ -181,6 +182,21 @@ function expectType(
 	return null;
 }
 
+export function makeAliasWithType(location: SourceLocation, name: string, type: ASTnodeType): ASTnode_alias {
+	return {
+		kind: "alias",
+		location: location,
+		unalias: false,
+		name: name,
+		value: {
+			kind: "_selfType",
+			location: location,
+			id: "TODO?",
+			type: type,
+		},
+	};
+}
+
 export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
 	switch (node.kind) {
 		case "bool": {
@@ -224,18 +240,7 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 			const arg = node.arg;
 			
 			const newNode = evaluate(context, node);
-			context.aliases.push({
-				kind: "alias",
-				location: arg.location,
-				unalias: false,
-				name: functionToCall.arg.name,
-				value: {
-					kind: "_selfType",
-					location: arg.location,
-					id: "TODO?",
-					type: functionToCallArgType,
-				},
-			});
+			context.aliases.push(makeAliasWithType(arg.location, functionToCall.arg.name, functionToCallArgType));
 			const returnType = getType(context, newNode);
 			context.aliases.pop();
 			
@@ -295,18 +300,7 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 				// TODO errors
 				argumentType = getBuiltinType("Any");
 			}
-			context.aliases.push({
-				kind: "alias",
-				location: arg.location,
-				unalias: false,
-				name: arg.name,
-				value: {
-					kind: "_selfType",
-					location: arg.location,
-					id: "TODO?",
-					type: argumentType,
-				},
-			});
+			context.aliases.push(makeAliasWithType(arg.location, arg.name, argumentType));
 			const actualResultType = getTypeFromList(context, node.body);
 			context.aliases.pop();
 			if (actualResultType.kind == "error") {
@@ -368,12 +362,15 @@ export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnod
 	let outNode = null;
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
-		// if (ASTnode.kind == "alias") {
-		// 	buildlevel(context, [ASTnode.value]);
-		// 	context.levels[context.levels.length-1].push(ASTnode);
-		// 	continue;
-		// }
-		outNode = getType(context, ASTnode);
+		if (ASTnode.kind == "alias") {
+			const valueType = getType(context, ASTnode.value);
+			if (valueType.kind == "error") {
+				return valueType;
+			}
+			context.aliases.push(makeAliasWithType(ASTnode.location, ASTnode.name, valueType));
+		} else {
+			outNode = getType(context, ASTnode);
+		}
 		// if (ASTnode.kind == "identifier") {
 		// 	const alias = getAlias(context, ASTnode.name);
 		// 	if (alias) {
@@ -385,6 +382,13 @@ export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnod
 		// 		}
 		// 	}
 		// }
+	}
+	
+	for (let i = 0; i < AST.length; i++) {
+		const ASTnode = AST[i];
+		if (ASTnode.kind == "alias") {
+			context.aliases.pop();
+		}
 	}
 	
 	if (!outNode) throw utilities.unreachable();

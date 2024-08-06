@@ -96,12 +96,12 @@
 // 		fib(n - 1) + fib(n - 2)
 
 
-// genericFn = @names: [String] @function: Function (...) // -> Function
-// map = genericFn ["In", "Out"] (@input: [In] @callBack: \(In) -> Out (...)) // -> [Out]
-// map (Number, String) [1, 2, 3] (@input Number.toString(input))
+// genericFn = @names([String]) @function(Function) (...) // -> Function
+// map = genericFn ["In", "Out"] (@input([In]) @callBack(\(In) -> Out) (...)) // -> [Out]
+// map (Number, String) [1, 2, 3] (@input() Number.toString(input))
 
-// I = @x: Number 
-// 	y = x
-// 	y
+I = @x(Number) 
+	y = x
+	y
 
-@x(String) x
+I 2
