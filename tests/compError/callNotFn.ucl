@@ -1,0 +1,12 @@
+// compError
+// error: can not call type Number
+// line:10 -> here
+// error: can not call type Bool
+// line:11 -> here
+// error: can not call type String
+// line:12 -> here
+
+add1 = @x(Number) x + 1
+add1 1 2
+true false
+"test" 4

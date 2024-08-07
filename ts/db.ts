@@ -3,7 +3,7 @@ import crypto from "crypto";
 import * as utilities from "./utilities";
 import logger, { LogType } from "./logger";
 import { evaluateList, evaluate } from "./evaluate";
-import { printASTnode } from "./printAST";
+import { justPrint, printASTnode } from "./printAST";
 import { CompileError, Indicator } from "./report";
 import { evaluateBuiltin, builtinTypes, getBuiltinType, isBuiltinType } from "./builtin";
 import {
@@ -172,8 +172,8 @@ function expectType(
 	// }
 	
 	if (expectedType.id != actualType.id) {
-		const expectedTypeText = printASTnode({level: 0}, expectedType);
-		const actualTypeText = printASTnode({level: 0}, actualType);
+		const expectedTypeText = justPrint(expectedType);
+		const actualTypeText = justPrint(actualType);
 		const error = new CompileError(`expected type ${expectedTypeText}, but got type ${actualTypeText}`);
 		debugger;
 		return error;
@@ -225,7 +225,9 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 			const leftType = getType(context, node.left);
 			if (leftType.kind == "error") return leftType;
 			if (leftType.kind != "functionType" || !ASTnode_isAtype(leftType.returnType)) {
-				throw utilities.unreachable();
+				const error = new CompileError(`can not call type ${justPrint(leftType)}`)
+					.indicator(node.left.location, `here`);
+				return ASTnode_error_new(node.location, error);
 			}
 			
 			const functionToCall = evaluate(context, node.left);
@@ -458,7 +460,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				continue;
 			}
 			const result = evaluateList(makeBuilderContext(db), [ASTnode])[0];
-			const resultText = printASTnode({level: 0}, result);
+			const resultText = justPrint(result);
 			
 			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
 		}

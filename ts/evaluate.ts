@@ -3,7 +3,7 @@ import { BuilderContext, getAlias, unAlias } from "./db";
 import { ASTnode, ASTnode_alias, ASTnode_function, ASTnode_isAtype } from "./parser";
 import { evaluateBuiltin } from "./builtin";
 import logger, { LogType } from "./logger";
-import { printASTnode } from "./printAST";
+import { getCodeGenContext, justPrint, printASTnode } from "./printAST";
 import { SourceLocation } from "./types";
 
 export function makeAlias(location: SourceLocation, unalias: boolean, name: string, value: ASTnode): ASTnode_alias {
@@ -147,7 +147,7 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 				body: codeBlock,
 			};
 			
-			logger.log(LogType.evaluate, "newFunction", printASTnode({level: 0}, newFunction));
+			logger.log(LogType.evaluate, "newFunction", justPrint(newFunction));
 			
 			return newFunction;
 		}

@@ -1,9 +1,15 @@
 import * as utilities from "./utilities";
 import { ASTnode } from "./parser";
 
-export type CodeGenContext = {
+type CodeGenContext = {
 	level: number,
 };
+
+export function getCodeGenContext(): CodeGenContext {
+	return {
+		level: 0,
+	}
+}
 
 function getArgText(context: CodeGenContext, args: ASTnode[]): string {
 	let argText = "";
@@ -105,3 +111,6 @@ export function printAST(context: CodeGenContext, AST: ASTnode[]): string {
 	
 	return text + "\n" + "\t".repeat(context.level);
 }
+
+export function justPrint(ASTnode: ASTnode) { return printASTnode(getCodeGenContext(), ASTnode) }
+export function justPrintList(AST: ASTnode[]) { return printAST(getCodeGenContext(), AST) }
