@@ -1,0 +1,13 @@
+// compError
+// error: expected type Number, but got type String
+// line:12 -> for function call here
+// line:12 -> (this argument)
+// line:11 -> function from here
+// error: expected type Number, but got type Bool
+// line:13 -> for function call here
+// line:13 -> (this argument)
+// line:11 -> function from here
+
+add1 = @x(Number) x + 1
+add1 "text"
+add1 true
