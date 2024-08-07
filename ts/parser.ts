@@ -319,14 +319,14 @@ function parseArgumentList(context: ParserContext): ASTnode_argument[] {
 	}
 	
 	while (context.i < context.tokens.length) {
-		let comptime = false;
-		if (
-			next(context).type == TokenKind.word &&
-			next(context).text == "comptime"
-		) {
-			comptime = true;
-			forward(context);
-		}
+		// let comptime = false;
+		// if (
+		// 	next(context).type == TokenKind.word &&
+		// 	next(context).text == "comptime"
+		// ) {
+		// 	comptime = true;
+		// 	forward(context);
+		// }
 		
 		const name = forward(context);
 		if (name.type != TokenKind.word) {

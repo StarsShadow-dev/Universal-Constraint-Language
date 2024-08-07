@@ -230,11 +230,26 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 			
 			const functionToCall = evaluate(context, node.left);
 			if (functionToCall.kind != "function") {
-				throw utilities.TODO();
+				throw utilities.TODO_addError();
 			}
 			const functionToCallArgType = evaluate(context, functionToCall.arg.type);
 			if (!ASTnode_isAtype(functionToCallArgType)) {
-				utilities.TODO();
+				utilities.TODO_addError();
+			}
+			
+			const actualArgType = getType(context, node.arg);
+			if (actualArgType.kind == "error") {
+				return actualArgType;
+			}
+			
+			{
+				const error = expectType(context, functionToCallArgType, actualArgType);
+				if (error) {
+					error.indicator(node.location, `for function call here`);
+					error.indicator(node.arg.location, `(this argument)`);
+					error.indicator(functionToCall.location, `function from here`);
+					return ASTnode_error_new(node.location, error);
+				}
 			}
 			
 			const arg = node.arg;
@@ -297,7 +312,7 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 			const arg = node.arg;
 			let argumentType = evaluate(context, arg.type);
 			if (!ASTnode_isAtype(argumentType)) {
-				// TODO errors
+				// TODO: errors?
 				argumentType = getBuiltinType("Any");
 			}
 			context.aliases.push(makeAliasWithType(arg.location, arg.name, argumentType));

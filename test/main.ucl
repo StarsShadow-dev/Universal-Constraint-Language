@@ -100,12 +100,17 @@
 // map = genericFn ["In", "Out"] (@input([In]) @callBack(\(In) -> Out) (...)) // -> [Out]
 // map (Number, String) [1, 2, 3] (@input() Number.toString(input))
 
-Vec2 = struct(x: Number, y: Number)
 
-makeVec2 = @x(Number) @y(Number)
-	&Vec2{
-		x = x
-		y = y
-	}
+// Vec2 = struct(x: Number, y: Number)
 
-makeVec2 1 2
+// makeVec2 = @x(Number) @y(Number)
+// 	&Vec2{
+// 		x = x
+// 		y = y
+// 	}
+
+// makeVec2 1 2
+
+add1 = @x(Number) x + 1
+
+add1 "text"
