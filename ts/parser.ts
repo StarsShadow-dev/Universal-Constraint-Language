@@ -160,7 +160,6 @@ export enum ParserMode {
 	singleNoContinue,
 	singleNoOperatorContinue,
 	singleNoEqualsOperatorContinue,
-	singleNoNewInstanceContinue,
 	singleNoCall,
 	comma,
 }
@@ -574,7 +573,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "match") {
-					const expression = parse(context, ParserMode.singleNoNewInstanceContinue, null, tokenIn)[0];
+					const expression = parse(context, ParserMode.single, null, tokenIn)[0];
 					
 					const openingBracket = forward(context);
 					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
@@ -649,6 +648,24 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 							type: type,
 						},
 						body: body,
+					});
+				} else if (token.text == "&") {
+					const template = parse(context, ParserMode.single, null, tokenIn)[0];
+					if (!template) {
+						utilities.TODO_addError();
+					}
+					
+					const openingBracket = forward(context);
+					if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
+						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+					}
+					const codeBlock = parse(context, ParserMode.normal, "}", tokenIn);
+					
+					ASTnodes.push({
+						kind: "instance",
+						location: token.location,
+						template: template,
+						codeBlock: codeBlock,
 					});
 				} else if (token.text == "\\") {
 					throw utilities.TODO();
@@ -729,12 +746,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 			
 			case TokenKind.singleQuote: {
 				utilities.unreachable();
-				break;
 			}
 		
 			default: {
 				utilities.unreachable();
-				break;
 			}
 		}
 		
@@ -759,28 +774,6 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		if (mode == ParserMode.singleNoEqualsOperatorContinue) {
 			earlyReturn();
 			return ASTnodes;
-		}
-		
-		if (mode == ParserMode.singleNoNewInstanceContinue) {
-			earlyReturn();
-			return ASTnodes;
-		}
-		
-		if (context.tokens[context.i] && next(context).type == TokenKind.separator && next(context).text == "{") {
-			const left = ASTnodes.pop();
-			if (left) {
-				forward(context);
-				const codeBlock = parse(context, ParserMode.normal, "}", getIndentation(left));
-				
-				ASTnodes.push({
-					kind: "instance",
-					location: left.location,
-					template: left,
-					codeBlock: codeBlock,
-				});
-			} else {
-				utilities.unreachable();
-			}
 		}
 		
 		if (mode == ParserMode.singleNoCall) {

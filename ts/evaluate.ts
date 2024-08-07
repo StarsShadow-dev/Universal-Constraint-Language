@@ -167,6 +167,19 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			}
 		}
 		
+		case "instance": {
+			const template = evaluate(context, node.template);
+			
+			const codeBlock = evaluateList(context, node.codeBlock);
+			
+			return {
+				kind: "instance",
+				location: node.location,
+				template: template,
+				codeBlock: codeBlock,
+			};
+		}
+		
 		case "alias": {
 			const value = evaluate(context, node.value);
 			

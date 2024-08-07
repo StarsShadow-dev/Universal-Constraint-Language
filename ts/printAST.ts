@@ -46,6 +46,10 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			const right = printASTnode(context, node.right);
 			return `(${left} ${node.operatorText} ${right})`;
 		}
+		case "argument": {
+			const type = printASTnode(context, node.type);
+			return `${node.name}: ${type}`;
+		}
 		case "struct": {
 			if (node.id.startsWith("builtin:")) {
 				return node.id.split(":")[1];
@@ -76,8 +80,8 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 		// 	return `if (${condition}) {${trueCodeBlock}} else {${falseCodeBlock}}`;
 		// }
 		case "instance": {
-			// TODO
-			return `${printASTnode(context, node.template)} {}`;
+			const codeBlock = printAST(context, node.codeBlock);
+			return `${printASTnode(context, node.template)} {${codeBlock}}`;
 		}
 		case "alias": {
 			const value = printASTnode(context, node.value);

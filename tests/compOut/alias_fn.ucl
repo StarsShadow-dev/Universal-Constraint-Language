@@ -1,8 +1,10 @@
 // compOut
-// line:8 -> 2
+// line:10 -> 3
 
-I = @x(Number) 
-	y = x
-	y
+test = @x(Number)
+	a = x
+	@y(Number)
+		b = y
+		a + b
 
-I 2
+test 1 2

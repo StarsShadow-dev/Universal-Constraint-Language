@@ -63,6 +63,7 @@ function separator(text: string, i: number): boolean {
 	text[i] == ';' ||
 	text[i] == ',' ||
 	text[i] == '@' ||
+	text[i] == '&' ||
 	text[i] == '\\';
 }
 
