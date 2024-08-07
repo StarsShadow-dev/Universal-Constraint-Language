@@ -101,16 +101,18 @@
 // map (Number, String) [1, 2, 3] (@input() Number.toString(input))
 
 
-// Vec2 = struct(x: Number, y: Number)
+Vec2 = struct(x: Number, y: Number)
 
-// makeVec2 = @x(Number) @y(Number)
-// 	&Vec2{
-// 		x = x
-// 		y = y
-// 	}
+addVec2 = @v1(Vec2) @v2(Vec2)
+	&Vec2{
+		x = v1.x + v2.x
+		y = v1.y + v2.y
+	}
 
-// makeVec2 1 2
+makeVec2 = @x(Number) @y(Number)
+	&Vec2{
+		x = x
+		y = y
+	}
 
-add1 = @x(Number) x + 1
-
-add1 1 2
+addVec2 (makeVec2 1 2) //(makeVec2 2 1)

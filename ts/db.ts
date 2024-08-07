@@ -58,7 +58,7 @@ export function getDefFromList(list: topLevelDef[], name: string): topLevelDef |
 	for (let i = 0; i < list.length; i++) {
 		const def = list[i];
 		if (def.value == null) {
-			throw utilities.unreachable();
+			utilities.unreachable();
 		}
 		if (def.name == name) {
 			return def as topLevelDef;
@@ -86,9 +86,9 @@ export function makeBuilderContext(db: DB): BuilderContext {
 export function getAlias(context: BuilderContext, name: string): ASTnode_alias | null {
 	for (let i = context.aliases.length-1; i >= 0; i--) {
 		const alias = context.aliases[i];
-			if (alias.name == name) {
-				return alias;
-			}
+		if (alias.name == name) {
+			return alias;
+		}
 	}
 	
 	for (let i = 0; i < builtinTypes.length; i++) {
@@ -98,6 +98,20 @@ export function getAlias(context: BuilderContext, name: string): ASTnode_alias |
 		}
 	}
 	
+	return null;
+}
+
+export function getAliasFromList(AST: ASTnode[], name: string): ASTnode_alias | null {
+	for (let i = 0; i < AST.length; i++) {
+		const alias = AST[i];
+		if (alias.kind != "alias") {
+			utilities.unreachable();
+		}
+		if (alias.name == name) {
+			return alias;
+		}
+	}
+
 	return null;
 }
 
@@ -146,7 +160,7 @@ function expectType(
 	
 	// if (expectedType.kind == "functionType" && actualType.kind == "functionType") {
 	// 	if (!OpCode_isAtype(expectedType.returnType) || !OpCode_isAtype(actualType.returnType)) {
-	// 		throw utilities.TODO();
+	// 		utilities.TODO();
 	// 	}
 	// 	expectType(context, expectedType.returnType, actualType.returnType, (error) => {
 	// 		error.msg =
@@ -162,7 +176,7 @@ function expectType(
 	// 	for (let i = 0; i < expectedType.codeBlock.length; i++) {
 	// 		const alias = expectedType.codeBlock[i];
 	// 		if (alias.kind != "alias" || alias.value.kind != "struct") {
-	// 			throw utilities.unreachable();
+	// 			utilities.unreachable();
 	// 		}
 			
 	// 		if (alias.value.id == actualType.id) {
@@ -297,8 +311,25 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 				}
 				
 				return getBuiltinType("Number");
+			} else if (op == ".") {
+				const left = evaluate(context, node.left);
+				if (left.kind != "instance") {
+					utilities.TODO_addError();
+				}
+				
+				if (node.right.kind != "identifier") {
+					utilities.TODO_addError();
+				}
+				const name = node.right.name;
+				
+				const alias = getAliasFromList(left.codeBlock, name);
+				if (!alias) {
+					utilities.TODO_addError();
+				}
+				
+				return getType(context, alias.value);
 			} else {
-				throw utilities.TODO();
+				utilities.TODO();
 			}
 		}
 		
@@ -363,7 +394,10 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 		}
 		
 		case "instance": {
-			const template = getType(context, node.template);
+			const template = evaluate(context, node.template);
+			if (!ASTnode_isAtype(template)) {
+				utilities.TODO_addError();
+			}
 			return template;
 		}
 		
@@ -372,7 +406,7 @@ export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | A
 		}
 	}
 	
-	throw utilities.unreachable();
+	utilities.unreachable();
 }
 
 export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
@@ -408,7 +442,7 @@ export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnod
 		}
 	}
 	
-	if (!outNode) throw utilities.unreachable();
+	if (!outNode) utilities.unreachable();
 	return outNode;
 }
 
@@ -433,7 +467,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 		
 		if (ASTnode.kind == "alias") {
 			const def = getDefFromList(db.defs, ASTnode.name);
-			if (!def) throw utilities.unreachable();
+			if (!def) utilities.unreachable();
 			
 			const value = ASTnode.value;
 			const error = getTypeFromList(makeBuilderContext(db), [value]);

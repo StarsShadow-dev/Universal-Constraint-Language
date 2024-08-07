@@ -97,7 +97,7 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 			return `___selfType___`;
 		}
 	}
-	throw utilities.TODO();
+	utilities.TODO();
 }
 
 export function printAST(context: CodeGenContext, AST: ASTnode[]): string {

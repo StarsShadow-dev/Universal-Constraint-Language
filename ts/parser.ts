@@ -210,7 +210,7 @@ function getOperatorPrecedence(operatorText: string): number {
 	}
 	
 	else {
-		throw utilities.unreachable();
+		utilities.unreachable();
 	}
 }
 
@@ -361,7 +361,7 @@ function parseArgumentList(context: ParserContext): ASTnode_argument[] {
 }
 
 function getIndentation(ASTnode: ASTnode | Token): number {
-	if (typeof ASTnode.location == "string") throw utilities.unreachable();
+	if (typeof ASTnode.location == "string") utilities.unreachable();
 	return ASTnode.location.startColumn;
 }
 
@@ -414,7 +414,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 		) {
 			const left = ASTnodes.pop();
 			if (!left) {
-				throw utilities.unreachable();
+				utilities.unreachable();
 			}
 			
 			const arg = parse(context, ParserMode.singleNoCall, null, getIndentation(left))[0];
@@ -499,7 +499,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				}
 				
 				else if (token.text == "if") {
-					throw utilities.TODO();
+					utilities.TODO();
 					// const openingParentheses = forward(context);
 					// if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 					// 	throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
@@ -606,9 +606,9 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 				if (token.text == "(") {
 					const elements = parse(context, ParserMode.comma, ")", tokenIn);
 					if (elements.length == 0) {
-						throw utilities.unreachable();
+						utilities.unreachable();
 					} else if (elements.length > 1) {
-						throw utilities.TODO();
+						utilities.TODO();
 					} else {
 						ASTnodes.push(elements[0]);
 					}
@@ -668,7 +668,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						codeBlock: codeBlock,
 					});
 				} else if (token.text == "\\") {
-					throw utilities.TODO();
+					utilities.TODO();
 					// const openingParentheses = forward(context);
 					// if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
 					// 	throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
@@ -703,10 +703,10 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 					utilities.TODO();
 				} else {
 					if (token.text == "->") {
-						throw utilities.TODO();
+						utilities.TODO();
 						// const identifier = ASTnodes.pop();
 						// if (!identifier || (identifier.kind != "identifier" && identifier.kind != "call")) {
-						// 	throw utilities.TODO();
+						// 	utilities.TODO();
 						// }
 						
 						// const openingBracket = forward(context);
@@ -722,7 +722,7 @@ export function parse(context: ParserContext, mode: ParserMode, endAt: ")" | "}"
 						// 	name = identifier.name;
 						// } else {
 						// 	if (identifier.left.kind != "identifier") {
-						// 		throw utilities.TODO();
+						// 		utilities.TODO();
 						// 	}
 						// 	name = identifier.left.name;
 						// 	types = identifier.arg;

@@ -42,7 +42,7 @@ export function getBuiltinType(name: string): ASTnodeType {
 		}
 	}
 	
-	throw utilities.unreachable();
+	utilities.unreachable();
 }
 
 export function isBuiltinType(type: ASTnodeType, name: string): boolean {
@@ -66,21 +66,21 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 	function getBool(): boolean {
 		const opCode = getArg();
 		if (opCode.kind != "bool") {
-			throw utilities.TODO();
+			utilities.TODO();
 		}
 		return opCode.value;
 	}
 	function getString(): string {
 		const opCode = getArg();
 		if (opCode.kind != "string") {
-			throw utilities.TODO();
+			utilities.TODO();
 		}
 		return opCode.value;
 	}
 	function getNumber(): number {
 		const opCode = getArg();
 		if (opCode.kind != "number") {
-			throw utilities.TODO();
+			utilities.TODO();
 		}
 		return opCode.value;
 	}
@@ -113,7 +113,7 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 			if (input.compileError) {
 				output = input.compileError.msg;
 			} else {
-				throw utilities.unreachable();
+				utilities.unreachable();
 			}
 		}
 		
@@ -123,6 +123,6 @@ export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_bu
 			value: output,
 		};
 	} else {
-		throw utilities.unreachable();
+		utilities.unreachable();
 	}
 }
