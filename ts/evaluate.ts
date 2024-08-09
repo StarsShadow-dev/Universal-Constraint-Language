@@ -33,7 +33,11 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			} else {
 				const alias = getAlias(context, node.name);
 				if (alias && alias.unalias) {
-					return evaluate(context, value);
+					// const oldResolve = context.resolve;
+					// context.resolve = true;
+					// const resolvedValue = evaluate(context, value);
+					// context.resolve = oldResolve;
+					return value;
 				} else {
 					return node;
 				}
@@ -59,7 +63,16 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			context.aliases.pop();
 			context.setUnalias = oldSetUnalias;
 			
-			return result;
+			if (context.resolve) {
+				return result;
+			} else {
+				return {
+					kind: "call",
+					location: node.location,
+					left: evaluate(context, node.left),
+					arg: argValue,
+				};
+			}
 		}
 		
 		case "builtinCall": {
@@ -71,7 +84,7 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			if (op == "+" || op == "-") {
 				const left = evaluate(context, node.left);
 				const right = evaluate(context, node.right);
-				if (left.kind != "number" || right.kind != "number") {
+				if (left.kind != "number" || right.kind != "number" || !context.resolve) {
 					// (x + y) knowing x is 1 -> (1 + y)
 					return {
 						kind: "operator",

@@ -72,6 +72,14 @@ export type BuilderContext = {
 	db: DB,
 	aliases: ASTnode_alias[],
 	setUnalias: boolean,
+	
+	// Resolve is for a case like this:
+	// @x(Number) x + (1 + 1)
+	// If the function is a evaluated at top level, I want the AST to stay the same.
+	// If resolve always happened the output of that expression would be:
+	// @x(Number) x + 2
+	// Which is probably fine in this case, but for more complex expressions,
+	// having everything be simplified can make things completely unreadable.
 	resolve: boolean,
 };
 export function makeBuilderContext(db: DB): BuilderContext {
@@ -469,12 +477,12 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			const def = getDefFromList(db.defs, ASTnode.name);
 			if (!def) utilities.unreachable();
 			
-			const value = ASTnode.value;
-			const error = getTypeFromList(makeBuilderContext(db), [value]);
+			const error = getTypeFromList(makeBuilderContext(db), [ASTnode.value]);
 			if (error.kind == "error" && error.compileError) {
 				db.errors.push(error.compileError);
-				break; // ?
+				break;
 			}
+			const value = evaluate(makeBuilderContext(db), ASTnode.value);
 			
 			if (ASTnode_isAtype(value)) {
 				value.id = def.name;
@@ -484,15 +492,18 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			logger.log(LogType.addToDB, `found top level evaluation`);
 			
 			const location = ASTnode.location;
-			const error = getTypeFromList(makeBuilderContext(db), [ASTnode]);
-			if (error.kind == "error") {
-				if (!error.compileError) {
-					logger.log(LogType.addToDB, `!error.compileError ???`);
-					break;
+			{
+				const error = getTypeFromList(makeBuilderContext(db), [ASTnode]);
+				if (error.kind == "error") {
+					if (!error.compileError) {
+						logger.log(LogType.addToDB, `!error.compileError ???`);
+						break;
+					}
+					db.errors.push(error.compileError);
+					continue;
 				}
-				db.errors.push(error.compileError);
-				continue;
 			}
+			
 			const result = evaluateList(makeBuilderContext(db), [ASTnode])[0];
 			const resultText = justPrint(result);
 			

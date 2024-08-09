@@ -1,0 +1,33 @@
+// compOut
+// line:31 -> struct(x: Number, y: Number) {
+// 	x = 1
+// 	y = 2
+// }
+// line:32 -> struct(x: Number, y: Number) {
+// 	x = 2
+// 	y = 1
+// }
+// line:33 -> struct(x: Number, y: Number) {
+// 	x = 3
+// 	y = 3
+// }
+
+Vec2 = struct(x: Number, y: Number)
+
+addVec2 = @v1(Vec2) @v2(Vec2)
+	&Vec2{
+		x = v1.x + v2.x
+		y = v1.y + v2.y
+	}
+
+makeVec2 = @x(Number) @y(Number)
+	&Vec2{
+		x = x
+		y = y
+	}
+
+a = (makeVec2 1 2)
+b = (makeVec2 2 1)
+a
+b
+addVec2 a b
