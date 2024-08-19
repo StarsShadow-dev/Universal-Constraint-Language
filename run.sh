@@ -1,0 +1,1 @@
+tsc -p ./tsconfig.json --incremental && node out/main.js test/main.ucl

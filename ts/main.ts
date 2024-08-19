@@ -74,7 +74,7 @@ try {
 	AST = parse({
 		tokens: tokens,
 		i: 0,
-	}, ParserMode.normal, null, 0);
+	}, ParserMode.normal, 0, null, -1);
 	logger.addTime("parsing", Date.now() - parseStart);
 	console.log("AST:", JSON.stringify(AST, null, 2));
 	

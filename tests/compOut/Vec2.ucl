@@ -1,13 +1,13 @@
 // compOut
-// line:31 -> struct(x: Number, y: Number) {
+// line:31 -> &Vec2{
 // 	x = 1
 // 	y = 2
 // }
-// line:32 -> struct(x: Number, y: Number) {
+// line:32 -> &Vec2{
 // 	x = 2
 // 	y = 1
 // }
-// line:33 -> struct(x: Number, y: Number) {
+// line:33 -> &Vec2{
 // 	x = 3
 // 	y = 3
 // }

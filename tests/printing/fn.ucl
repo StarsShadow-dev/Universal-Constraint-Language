@@ -1,0 +1,5 @@
+// compOut
+// line:5 -> @x(Number) add x 2
+
+add = @x(Number) @y(Number) x + y
+@x(Number) add x 2

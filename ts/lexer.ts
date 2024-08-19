@@ -9,14 +9,14 @@ export enum TokenKind {
 	
 	separator,
 	operator,
-	singleQuote,
 	endOfFile,
 };
 
 export type Token = {
-	type: TokenKind,
+	kind: TokenKind,
 	text: string,
 	location: SourceLocation,
+	indentation: number,
 	endLine?: number,
 };
 
@@ -72,13 +72,17 @@ export function lex(filePath: string, text: string): Token[] {
 	
 	let line = 1;
 	let column = 1;
-	let columnStartI = 0
+	let columnStartI = 0;
+	let indentation = 0;
+	let onIndentation = true;
 	
 	for (let i = 0; i < text.length; i++) {
 		if (text[i] == "\n") {
 			line++;
 			column = 0;
 			columnStartI = i;
+			indentation = 0;
+			onIndentation = true;
 			continue;
 		}
 		
@@ -87,10 +91,13 @@ export function lex(filePath: string, text: string): Token[] {
 		columnStartI = i;
 		const startColumn = column;
 		
+		let type;
+		let str = "";
+		let location;
+		let endLine;
+		
 		// comment
 		if (text[i] == '/' && text[i+1] == '/') {
-			let str = "";
-			
 			i++;
 			if (text[i+1] == " ") i++;
 			
@@ -105,7 +112,7 @@ export function lex(filePath: string, text: string): Token[] {
 			if (
 				tokens.length > 0 &&
 				tokens[tokens.length - 1] &&
-				tokens[tokens.length - 1].type == TokenKind.comment
+				tokens[tokens.length - 1].kind == TokenKind.comment
 			) {
 				const lastComment = tokens[tokens.length - 1];
 				if (lastComment.location != "builtin" && lastComment.endLine && lastComment.endLine + 1 == line) {
@@ -115,34 +122,17 @@ export function lex(filePath: string, text: string): Token[] {
 				}
 			}
 			
-			tokens.push({
-				type: TokenKind.comment,
-				text: str,
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn,
-				},
-				endLine: line,
-			});
-		}
-		
-		else if (text[i] == "'") {
-			tokens.push({
-				type: TokenKind.singleQuote,
-				text: text[i],
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn,
-				},
-			});
+			type = TokenKind.comment;
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn,
+			};
+			endLine = line;
 		}
 		
 		else if ((text[i] == "-" && base10Number(text, i + 1)) || base10Number(text, i)) {
-			let str = "";
 			if (text[i] == "-") {
 				str += "-";
 				i++;
@@ -157,61 +147,51 @@ export function lex(filePath: string, text: string): Token[] {
 			
 			i--;
 			
-			tokens.push({
-				type: TokenKind.number,
-				text: str,
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn + str.length - 1,
-				},
-			});
+			type = TokenKind.number;
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn + str.length - 1,
+			};
 		}
 		
 		else if (twoCharacterOperator(text, i)) {
 			i++;
-			tokens.push({
-				type: TokenKind.operator,
-				text: text[i-1] + text[i],
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn + 1,
-				},
-			});
+			type = TokenKind.operator;
+			str = text[i-1] + text[i];
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn + 1,
+			};
 		}
 		
 		else if (oneCharacterOperator(text, i)) {
-			tokens.push({
-				type: TokenKind.operator,
-				text: text[i],
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn,
-				},
-			});
+			type = TokenKind.operator;
+			str = text[i];
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn,
+			};
 		}
 		
 		else if (separator(text, i)) {
-			tokens.push({
-				type: TokenKind.separator,
-				text: text[i],
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn,
-				},
-			});
+			type = TokenKind.separator;
+			str = text[i];
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn,
+			};
 		}
 		
 		// word
 		else if (wordStart(text, i)) {
-			let str = "";
 			for (; i < text.length; i++) {
 				if (wordContinue(text, i)) {
 					str += text[i];	
@@ -222,22 +202,18 @@ export function lex(filePath: string, text: string): Token[] {
 			
 			i--;
 			
-			tokens.push({
-				type: TokenKind.word,
-				text: str,
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn + str.length - 1,
-				},
-			});
+			type = TokenKind.word;
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn + str.length - 1,
+			};
 		}
 		
 		// string
 		else if (text[i] == "\"") {
 			i++;
-			let str = "";
 			for (; i < text.length; i++) {
 				if (text[i] != "\"") { // "
 					if (text[i] == "\\") { // \
@@ -259,17 +235,29 @@ export function lex(filePath: string, text: string): Token[] {
 				}
 			}
 			
-			tokens.push({
-				type: TokenKind.string,
-				text: str,
-				location: {
-					path: filePath,
-					line: line,
-					startColumn: startColumn,
-					endColumn: startColumn + str.length + 1,
-				},
-			});
+			type = TokenKind.string;
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn + str.length + 1,
+			};
+		} else {
+			if (onIndentation && (text[i] == " " || text[i] == "\t")) {
+				indentation++;
+			}
+			continue;
 		}
+		
+		onIndentation = false;
+		
+		tokens.push({
+			kind: type,
+			text: str,
+			location: location,
+			indentation: indentation,
+			endLine: endLine,
+		});
 	}
 	
 	return tokens;

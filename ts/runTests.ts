@@ -58,7 +58,7 @@ function testFile(filePath: string) {
 
 		const lexStart = Date.now();
 		const tokens = lex(options.filePath, text);
-		if (!tokens[0] || tokens[0].type != TokenKind.comment) {
+		if (!tokens[0] || tokens[0].kind != TokenKind.comment) {
 			console.log(`unable to test file '${filePath}' (no top comment)`);
 			utilities.unreachable();
 		}
@@ -77,7 +77,7 @@ function testFile(filePath: string) {
 		const AST = parse({
 			tokens: tokens,
 			i: 0,
-		}, ParserMode.normal, null, 0);
+		}, ParserMode.normal, 0, null, -1);
 		logger.addTime("parsing", Date.now() - parseStart);
 
 		addToDB(db, AST);
@@ -164,6 +164,7 @@ function testDir(dirPath: string) {
 // testDir("./tests/compSucceed");
 testDir("./tests/compError");
 testDir("./tests/compOut");
+testDir("./tests/printing");
 // testDir("./tests/js");
 
 console.log(`total: ${total}`);

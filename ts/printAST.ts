@@ -87,7 +87,7 @@ export function printASTnode(context: CodeGenContext, node: ASTnode): string {
 		// }
 		case "instance": {
 			const codeBlock = printAST(context, node.codeBlock);
-			return `${printASTnode(context, node.template)} {${codeBlock}}`;
+			return `&${printASTnode(context, node.template)} {${codeBlock}}`;
 		}
 		case "alias": {
 			const value = printASTnode(context, node.value);

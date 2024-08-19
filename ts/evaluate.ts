@@ -28,7 +28,11 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 			}
 			
 			if (context.resolve) {
-				return value;
+				if (value.kind == "unknowable") {
+					return node;
+				} else {
+					return value;
+				}
 				// return evaluate(context, value);
 			} else {
 				const alias = getAlias(context, node.name);
@@ -82,6 +86,7 @@ export function evaluate(context: BuilderContext, node: ASTnode): ASTnode {
 		case "operator": {
 			const op = node.operatorText;
 			if (op == "+" || op == "-") {
+				debugger;
 				const left = evaluate(context, node.left);
 				const right = evaluate(context, node.right);
 				if (left.kind != "number" || right.kind != "number" || !context.resolve) {

@@ -100,5 +100,21 @@
 // map = genericFn ["In", "Out"] (@input([In]) @callBack(\(In) -> Out) (...)) // -> [Out]
 // map (Number, String) [1, 2, 3] (@input() Number.toString(input))
 
-add1 = @x(Number) x + 1
-@x(Number) x + (add1 1)
+// getStuff
+// 	|> doStuff
+// 	|> doMoreStuff
+
+d = @x(Number) @y(Number)
+	x + y
+
+test = @x(Number)
+	a = x
+	@y(Number)
+		b = y
+		a + b
+test 1 2
+
+test1 = @x(Number) x
+test2 = @x(Number) x
+1 + 1
+1 + 1
