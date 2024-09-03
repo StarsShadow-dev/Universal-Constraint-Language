@@ -77,7 +77,4 @@
 // a.b = 0
 // a.b
 
-TRUE = @x(Number) @y(Number) x
-FALSE = @x(Number) @y(Number) y
-TRUE 1 2
-FALSE 1 2
+1 + 2

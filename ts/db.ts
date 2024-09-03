@@ -101,20 +101,6 @@ export function getAlias(context: BuilderContext, name: string): ASTnode_alias |
 	return null;
 }
 
-export function getAliasFromList(AST: ASTnode[], name: string): ASTnode_alias | null {
-	for (let i = 0; i < AST.length; i++) {
-		const alias = AST[i];
-		if (!(alias instanceof ASTnode_alias)) {
-			utilities.unreachable();
-		}
-		if (alias.left instanceof ASTnode_identifier && alias.left.name == name) {
-			return alias;
-		}
-	}
-
-	return null;
-}
-
 // export function withAlias<T>(context: BuilderContext, newAlias: ASTnode_alias, callBack: () => T): T {
 // 	context.aliases.push(newAlias);
 // 	const result = callBack();
@@ -142,57 +128,6 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 
 // export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
 // 	switch (node.kind) {
-// 		case "operator": {
-// 			const op = node.operatorText;
-			
-// 			if (op == "+" || op == "-") {
-// 				const left = getType(context, node.left);
-// 				if (left.kind == "error") {
-// 					return left;
-// 				}
-// 				const right = getType(context, node.right);
-// 				if (right.kind == "error") {
-// 					return right;
-// 				}
-				
-// 				{
-// 					let error = expectType(context, getBuiltinType("Number"), left);
-// 					if (error) {
-// 						error.indicator(node.left.location, `on left of '${op}' operator`);
-// 						return ASTnode_error_new(node.location, error);
-// 					}
-// 				}
-// 				{
-// 					let error = expectType(context, getBuiltinType("Number"), right);
-// 					if (error) {
-// 						error.indicator(node.right.location, `on right of '${op}' operator`);
-// 						return ASTnode_error_new(node.location, error);
-// 					}
-// 				}
-				
-// 				return getBuiltinType("Number");
-// 			} else if (op == ".") {
-// 				const left = evaluate(context, node.left);
-// 				if (left.kind != "instance") {
-// 					utilities.TODO_addError();
-// 				}
-				
-// 				if (node.right.kind != "identifier") {
-// 					utilities.TODO_addError();
-// 				}
-// 				const name = node.right.name;
-				
-// 				const alias = getAliasFromList(left.codeBlock, name);
-// 				if (!alias) {
-// 					utilities.TODO_addError();
-// 				}
-				
-// 				return getType(context, alias.value);
-// 			} else {
-// 				utilities.TODO();
-// 			}
-// 		}
-		
 // 		case "struct": {
 // 			return getBuiltinType("Type");
 // 		}

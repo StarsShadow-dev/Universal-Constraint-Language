@@ -443,6 +443,108 @@ export class ASTnode_operator extends ASTnode {
 	) {
 		super(location);
 	}
+	
+	print(context: CodeGenContext = new CodeGenContext()): string {
+		const left = this.left.print(context);
+		const right = this.right.print(context);
+		return `(${left} ${this.operatorText} ${right})`;
+	}
+	
+	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		const op = this.operatorText;
+		
+		if (op == "+" || op == "-") {
+			const left = this.left.getType(context);
+			if (left instanceof ASTnode_error) {
+				return left;
+			}
+			const right = this.right.getType(context);
+			if (right instanceof ASTnode_error) {
+				return right;
+			}
+			
+			{
+				let error = expectType(context, getBuiltinType("Number"), left);
+				if (error) {
+					error.indicator(this.left.location, `on left of '${op}' operator`);
+					return new ASTnode_error(this.location, error);
+				}
+			}
+			{
+				let error = expectType(context, getBuiltinType("Number"), right);
+				if (error) {
+					error.indicator(this.right.location, `on right of '${op}' operator`);
+					return new ASTnode_error(this.location, error);
+				}
+			}
+			
+			return getBuiltinType("Number");
+		} else if (op == ".") {
+			const left = this.left.evaluate(context);
+			if (!(left instanceof ASTnode_instance)) {
+				utilities.TODO_addError();
+			}
+			
+			if (!(this.right instanceof ASTnode_identifier)) {
+				utilities.TODO_addError();
+			}
+			const name = this.right.name;
+			
+			const alias = getAliasFromList(left.codeBlock, name);
+			if (!alias) {
+				utilities.TODO_addError();
+			}
+			
+			return alias.value.getType(context);
+		} else {
+			utilities.TODO();
+		}
+	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		const op = this.operatorText;
+		if (op == "+" || op == "-") {
+			const left = this.left.evaluate(context);
+			const right = this.right.evaluate(context);
+			if (!(left instanceof ASTnode_number) || !(right instanceof ASTnode_number) || !context.resolve) {
+				// (x + y) knowing x is 1 and not knowing y 
+				// -> (1 + y)
+				return new ASTnode_operator(this.location, this.operatorText, left, right);
+			}
+			const left_v = left.value;
+			const right_v = right.value;
+			
+			let result: number;
+			if (op == "+") {
+				result = left_v + right_v;
+			} else if (op == "-") {
+				result = left_v - right_v;
+			} else {
+				utilities.unreachable();
+			}
+			
+			return new ASTnode_number(this.location, result);
+		} else if (op == ".") {
+			const left = this.left.evaluate(context);
+			if (!(left instanceof ASTnode_instance)) {
+				return this;
+			}
+			
+			if (!(this.right instanceof ASTnode_identifier)) {
+				utilities.unreachable();
+			}
+			const name = this.right.name;
+			
+			const alias = getAliasFromList(left.codeBlock, name);
+			if (!alias) {
+				utilities.TODO_addError();
+			}
+			
+			return alias.value;
+		} else {
+			utilities.TODO();
+		}
+	}
 };
 
 export class ASTnode_field extends ASTnode {
@@ -549,6 +651,20 @@ export function makeAliasWithType(location: SourceLocation, name: string, type: 
 		new ASTnode_identifier(location, name),
 		new ASTnodeType_selfType(location, "TODO?", type)
 	);
+}
+
+export function getAliasFromList(AST: ASTnode[], name: string): ASTnode_alias | null {
+	for (let i = 0; i < AST.length; i++) {
+		const alias = AST[i];
+		if (!(alias instanceof ASTnode_alias)) {
+			utilities.unreachable();
+		}
+		if (alias.left instanceof ASTnode_identifier && alias.left.name == name) {
+			return alias;
+		}
+	}
+
+	return null;
 }
 
 /**
