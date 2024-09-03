@@ -4,7 +4,6 @@ import { ASTnode_alias, ASTnode_identifier, ASTnodeType, ASTnodeType_struct } fr
 type BuiltinType = ASTnode_alias & { left: ASTnode_identifier, value: ASTnodeType_struct };
 
 function makeBuiltinType(name: string): BuiltinType {
-	debugger;
 	return new ASTnode_alias(
 		"builtin",
 		new ASTnode_identifier("builtin", name),

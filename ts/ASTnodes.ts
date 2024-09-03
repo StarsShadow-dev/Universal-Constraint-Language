@@ -1,8 +1,9 @@
 import * as utilities from "./utilities.js";
-import { BuilderContext } from "./db.js";
+import { BuilderContext, getAlias, unAlias } from "./db.js";
 import { SourceLocation } from "./types.js";
 import { CompileError } from "./report.js";
 import { getBuiltinType } from "./builtin.js";
+import logger, { LogType } from "./logger.js";
 
 export class CodeGenContext {
 	level = 0;
@@ -15,14 +16,14 @@ export class ASTnode {
 	
 	print(context: CodeGenContext = new CodeGenContext()): string {
 		utilities.TODO();
-	};
+	}
 	
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
 		utilities.TODO();
-	};
+	}
 	
 	evaluate(context: BuilderContext): ASTnode {
-		utilities.TODO();
+		return this;
 	}
 }
 
@@ -184,6 +185,14 @@ export class ASTnode_alias extends ASTnode {
 	) {
 		super(location);
 	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		const value = this.value.evaluate(context);
+		
+		const out = new ASTnode_alias(this.location, this.left, value);
+		out.unalias = this.unalias; // TODO: ?
+		return out;
+	}
 };
 
 export class ASTnode_identifier extends ASTnode {
@@ -192,6 +201,47 @@ export class ASTnode_identifier extends ASTnode {
 		public name: string,
 	) {
 		super(location);
+	}
+	
+	print(context: CodeGenContext = new CodeGenContext()): string {
+		return `${this.name}`;
+	}
+	
+	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		const def = unAlias(context, this.name);
+		if (!def) {
+			return new ASTnode_error(this.location,
+				new CompileError(`alias '${this.name}' does not exist`)
+					.indicator(this.location, `here`)
+			);
+		}
+		
+		return def.getType(context);
+	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		const value = unAlias(context, this.name);
+		if (!value) utilities.unreachable();
+		
+		if (value instanceof ASTnodeType_selfType) {
+			logger.log(LogType.evaluate, `${this.name} = _selfType, can not unAlias`);
+			return this;
+		}
+		
+		if (context.resolve) {
+			if (value instanceof ASTnode_unknowable) {
+				return this;
+			} else {
+				return value;
+			}
+		} else {
+			const alias = getAlias(context, this.name);
+			if (alias && alias.unalias) {
+				return value;
+			} else {
+				return this;
+			}
+		}
 	}
 };
 
@@ -293,7 +343,6 @@ export class ASTnode_instance extends ASTnode {
 export class ASTnode_error extends ASTnode {
 	constructor(
 		location: SourceLocation,
-		public name: string,
 		public compileError: CompileError | null,
 	) {
 		super(location);

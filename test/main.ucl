@@ -72,5 +72,10 @@
 // test = @v1(Vec2) @v2(Vec2) @v3(Vec2)
 // 	add (add v1 v2) v3
 
-a.b = 0
-a.b
+// -----
+
+// a.b = 0
+// a.b
+
+a = "1"
+a

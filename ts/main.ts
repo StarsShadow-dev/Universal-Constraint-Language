@@ -58,8 +58,9 @@ while (i < process.argv.length) {
 }
 // console.log("options:", options);
 
-const db = makeDB();
+setUpBuiltinTypes();
 
+const db = makeDB();
 const text = utilities.readFile(options.filePath);
 // console.log("text:", text);
 
@@ -87,8 +88,6 @@ try {
 		throw error;
 	}
 }
-
-setUpBuiltinTypes();
 
 // console.log("db:", JSON.stringify(db, null, 4));
 

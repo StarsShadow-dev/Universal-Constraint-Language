@@ -3,7 +3,7 @@ import crypto from "crypto";
 import * as utilities from "./utilities.js";
 import logger, { LogType } from "./logger.js";
 import { CompileError, Indicator } from "./report.js";
-import { builtinTypes, getBuiltinType, isBuiltinType } from "./builtin.js";
+import { builtinTypes, isBuiltinType } from "./builtin.js";
 import { SourceLocation } from "./types.js";
 import { ASTnode, ASTnode_alias, ASTnode_error, ASTnode_identifier, ASTnodeType, ASTnodeType_functionType, ASTnodeType_selfType, evaluateList } from "./ASTnodes.js";
 
