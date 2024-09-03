@@ -5,12 +5,13 @@ import logger, { LogType } from "./logger.js";
 import { CompileError, Indicator } from "./report.js";
 import { builtinTypes, isBuiltinType } from "./builtin.js";
 import { SourceLocation } from "./types.js";
-import { ASTnode, ASTnode_alias, ASTnode_error, ASTnode_identifier, ASTnodeType, ASTnodeType_functionType, ASTnodeType_selfType, evaluateList } from "./ASTnodes.js";
+import { ASTnode, ASTnode_alias, ASTnode_error, ASTnode_function, ASTnode_identifier, ASTnodeType, ASTnodeType_functionType, ASTnodeType_selfType, evaluateList, getTypeFromList } from "./ASTnodes.js";
 
 export type topLevelDef = {
 	// uuid: string,
 	name: string,
 	value: ASTnode,
+	hasError: boolean,
 };
 
 export type DB = {
@@ -139,131 +140,8 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 	}
 }
 
-/**
- * Takes an expectedType and an actualType, if the types are different then it throws an error.
- * 
- * @param callBack Used to modify the error message to add more context.
- */
-function expectType(
-	context: BuilderContext,
-	expectedType: ASTnodeType,
-	actualType: ASTnodeType,
-): CompileError | null {
-	if (expectedType instanceof ASTnodeType_selfType) {
-		return null;
-	}
-	
-	if (isBuiltinType(expectedType, "Function") && actualType instanceof ASTnodeType_functionType) {
-		return null;
-	}
-	
-	// if (expectedType.kind == "functionType" && actualType.kind == "functionType") {
-	// 	if (!OpCode_isAtype(expectedType.returnType) || !OpCode_isAtype(actualType.returnType)) {
-	// 		utilities.TODO();
-	// 	}
-	// 	expectType(context, expectedType.returnType, actualType.returnType, (error) => {
-	// 		error.msg =
-	// 		`expected type \"${OpCodeType_getName(expectedType)}\", but got type \"${OpCodeType_getName(actualType)}\"\n  return type `
-	// 		+ error.msg;
-			
-	// 		callBack(error);
-	// 	});
-	// 	return;
-	// }
-	
-	// if (expectedType.kind == "enum" && actualType.kind == "struct") {
-	// 	for (let i = 0; i < expectedType.codeBlock.length; i++) {
-	// 		const alias = expectedType.codeBlock[i];
-	// 		if (alias.kind != "alias" || alias.value.kind != "struct") {
-	// 			utilities.unreachable();
-	// 		}
-			
-	// 		if (alias.value.id == actualType.id) {
-	// 			return;
-	// 		}
-	// 	}
-	// }
-	
-	if (expectedType.id != actualType.id) {
-		const expectedTypeText = expectedType.print();
-		const actualTypeText = actualType.print();
-		const error = new CompileError(`expected type ${expectedTypeText}, but got type ${actualTypeText}`);
-		debugger;
-		return error;
-	}
-	
-	return null;
-}
-
-export function makeAliasWithType(location: SourceLocation, name: string, type: ASTnodeType): ASTnode_alias {
-	return new ASTnode_alias(
-		location,
-		new ASTnode_identifier(location, name),
-		new ASTnodeType_selfType(location, "TODO?", type)
-	);
-}
-
 // export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
 // 	switch (node.kind) {
-// 		case "identifier": {
-// 			const def = unAlias(context, node.name);
-// 			if (!def) {
-// 				return ASTnode_error_new(node.location,
-// 					new CompileError(`alias '${node.name}' does not exist`)
-// 						.indicator(node.location, `here`)
-// 				);
-// 			}
-			
-// 			return getType(context, def);
-// 		}
-		
-// 		case "call": {
-// 			const leftType = getType(context, node.left);
-// 			if (leftType.kind == "error") return leftType;
-// 			if (leftType.kind != "functionType" || !ASTnode_isAtype(leftType.returnType)) {
-// 				const error = new CompileError(`can not call type ${justPrint(leftType)}`)
-// 					.indicator(node.left.location, `here`);
-// 				return ASTnode_error_new(node.location, error);
-// 			}
-			
-// 			const functionToCall = evaluate(context, node.left);
-// 			if (functionToCall.kind != "function") {
-// 				throw utilities.TODO_addError();
-// 			}
-// 			const functionToCallArgType = evaluate(context, functionToCall.arg.type);
-// 			if (!ASTnode_isAtype(functionToCallArgType)) {
-// 				utilities.TODO_addError();
-// 			}
-			
-// 			const actualArgType = getType(context, node.arg);
-// 			if (actualArgType.kind == "error") {
-// 				return actualArgType;
-// 			}
-			
-// 			{
-// 				const error = expectType(context, functionToCallArgType, actualArgType);
-// 				if (error) {
-// 					error.indicator(node.location, `for function call here`);
-// 					error.indicator(node.arg.location, `(this argument)`);
-// 					error.indicator(functionToCall.location, `function from here`);
-// 					return ASTnode_error_new(node.location, error);
-// 				}
-// 			}
-			
-// 			const arg = node.arg;
-			
-// 			const newNode = evaluate(context, node);
-// 			context.aliases.push(makeAliasWithType(arg.location, functionToCall.arg.name, functionToCallArgType));
-// 			const returnType = getType(context, newNode);
-// 			context.aliases.pop();
-			
-// 			return returnType;
-// 		}
-		
-// 		case "builtinCall": {
-// 			return getType(context, evaluateBuiltin(context, node));
-// 		}
-		
 // 		case "operator": {
 // 			const op = node.operatorText;
 			
@@ -323,29 +201,6 @@ export function makeAliasWithType(location: SourceLocation, name: string, type: 
 // 			return node;
 // 		}
 		
-// 		case "function": {
-// 			const arg = node.arg;
-// 			let argumentType = evaluate(context, arg.type);
-// 			if (!ASTnode_isAtype(argumentType)) {
-// 				// TODO: errors?
-// 				argumentType = getBuiltinType("Any");
-// 			}
-// 			context.aliases.push(makeAliasWithType(arg.location, arg.name, argumentType));
-// 			const actualResultType = getTypeFromList(context, node.body);
-// 			context.aliases.pop();
-// 			if (actualResultType.kind == "error") {
-// 				return actualResultType;
-// 			}
-			
-// 			return {
-// 				kind: "functionType",
-// 				location: node.location,
-// 				id: `${JSON.stringify(node.location)}`,
-// 				arg: argumentType,
-// 				returnType: actualResultType,
-// 			};
-// 		}
-		
 // 		case "if": {
 // 			const condition = getType(context, node.condition);
 // 			if (condition.kind == "error") {
@@ -391,58 +246,29 @@ export function makeAliasWithType(location: SourceLocation, name: string, type: 
 // 	utilities.unreachable();
 // }
 
-export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
-	let outNode = null;
-	for (let i = 0; i < AST.length; i++) {
-		const ASTnode = AST[i];
-		if (ASTnode instanceof ASTnode_alias) {
-			const valueType = ASTnode.value.getType(context);
-			if (valueType instanceof ASTnode_error) {
-				return valueType;
-			}
-			const name = ASTnode.left.print();
-			context.aliases.push(makeAliasWithType(ASTnode.location, name, valueType));
-		} else {
-			outNode = ASTnode.getType(context);
-		}
-		// if (ASTnode.kind == "identifier") {
-		// 	const alias = getAlias(context, ASTnode.name);
-		// 	if (alias) {
-		// 		if (alias.unalias) {
-		// 			logger.log(LogType.build, `unalias ${ASTnode.name}`);
-		// 			AST[i] = alias.value[0];
-		// 		} else {
-		// 			logger.log(LogType.build, `no unalias ${ASTnode.name}`);
-		// 		}
-		// 	}
-		// }
-	}
-	
-	for (let i = 0; i < AST.length; i++) {
-		const ASTnode = AST[i];
-		if (ASTnode instanceof ASTnode_alias) {
-			context.aliases.pop();
-		}
-	}
-	
-	if (!outNode) utilities.unreachable();
-	return outNode;
-}
-
 export function addToDB(db: DB, AST: ASTnode[]) {
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
 		
 		if (ASTnode instanceof ASTnode_alias) {
-			// const hash = hashString(JSON.stringify(ASTnode.value)); // TODO: locations...
+			// const hash = hashString(JSON.stringify(ASTnode.value));
 			// const uuid = getUUID();
+			let hasError = false;
 			const name = ASTnode.left.print();
+			{
+				const error = ASTnode.getType(makeBuilderContext(db));
+				if (error instanceof ASTnode_error && error.compileError) {
+					db.errors.push(error.compileError);
+					hasError = true;
+				}
+			}
 			db.defs.push({
 				// uuid: uuid,
 				name: name,
 				value: ASTnode.value,
+				hasError: hasError,
 			});
-			logger.log(LogType.addToDB, `added ${ASTnode.left}`);
+			logger.log(LogType.addToDB, `added ${name}`);
 		}
 	}
 	
@@ -453,6 +279,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			const name = ASTnode.left.print();
 			const def = getDefFromList(db.defs, name);
 			if (!def) utilities.unreachable();
+			if (def.hasError) continue;
 			
 			const error = getTypeFromList(makeBuilderContext(db), [ASTnode.value]);
 			if (error instanceof ASTnode_error && error.compileError) {

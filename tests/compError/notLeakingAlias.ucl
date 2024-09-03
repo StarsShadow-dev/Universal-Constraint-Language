@@ -1,0 +1,9 @@
+// compError
+// error: alias 'x' does not exist
+// line:6 -> here
+
+b = @y(Number)
+	x
+
+a = @x(Number)
+	b 1

@@ -1,0 +1,6 @@
+// compError
+// error: alias 'a' is already defined
+// line:6 -> redefinition here
+
+a = 1
+a = 2

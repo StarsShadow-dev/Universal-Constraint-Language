@@ -1,0 +1,7 @@
+// compError
+// error: alias 'a' is already defined
+// line:6 -> redefinition here
+
+test = @a(Number)
+	a = 1
+	a

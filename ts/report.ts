@@ -155,3 +155,22 @@ export class CompileError {
 		return text;
 	}
 }
+
+export function removeDuplicateErrors(list: CompileError[]): CompileError[] {
+	const newList: CompileError[] = [];
+	for (let i = 0; i < list.length; i++) {
+		const error = list[i];
+		let isDuplicate = false;
+		for (let j = i+1; j < list.length; j++) {
+			const otherError = list[j];
+			if (error.getText(false, false) == otherError.getText(false, false)) {
+				isDuplicate = true;
+				break;
+			}
+		}
+		if (!isDuplicate) {
+			newList.push(error);
+		}
+	}
+	return newList;
+}

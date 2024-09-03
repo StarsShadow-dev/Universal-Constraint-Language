@@ -9,7 +9,7 @@ import logger from "./logger.js";
 import { lex } from "./lexer.js";
 import { parse, ParserMode } from "./parser.js";
 import { addToDB, DB, makeDB } from "./db.js";
-import { CompileError, getIndicatorText } from "./report.js";
+import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { CompilerOptions } from "./compiler.js";
 import { setUpBuiltinTypes } from "./builtin.js";
 
@@ -91,12 +91,14 @@ try {
 
 // console.log("db:", JSON.stringify(db, null, 4));
 
-for (let i = 0; i < db.errors.length; i++) {
-	const error = db.errors[i];
+const errors = removeDuplicateErrors(db.errors);
+
+for (let i = 0; i < errors.length; i++) {
+	const error = errors[i];
 	console.log(error.getText(true, options.fancyErrors));
 }
 
-if (db.errors.length == 0) {
+if (errors.length == 0) {
 	console.log("top level evaluations:");
 	for (let i = 0; i < db.topLevelEvaluations.length; i++) {
 		const evaluation = db.topLevelEvaluations[i];

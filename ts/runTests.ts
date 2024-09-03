@@ -6,7 +6,7 @@ import logger from "./logger.js";
 import { CompilerOptions } from "./compiler.js";
 import { addToDB, makeDB } from "./db.js";
 import { lex, TokenKind } from "./lexer.js";
-import { CompileError, getIndicatorText } from "./report.js";
+import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { parse, ParserMode } from "./parser.js";
 import { setUpBuiltinTypes } from "./builtin.js";
 
@@ -94,7 +94,9 @@ function testFile(filePath: string) {
 		}
 	}
 	
-	if (db.errors.length == 0) {
+	const errors = removeDuplicateErrors(db.errors);
+	
+	if (errors.length == 0) {
 		if (mode == "compError") {
 			const expectedOutput = comments.join("\n");
 			testFailure(`expected error output = ${expectedOutput}\n\nactual output is success`);
@@ -130,8 +132,8 @@ function testFile(filePath: string) {
 		}
 	} else {
 		let errorText = "";
-		for (let i = 0; i < db.errors.length; i++) {
-			const error = db.errors[i];
+		for (let i = 0; i < errors.length; i++) {
+			const error = errors[i];
 			if (errorText != "") {
 				errorText += "\n";
 			}
