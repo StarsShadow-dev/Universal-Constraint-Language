@@ -5,7 +5,15 @@ import logger, { LogType } from "./logger.js";
 import { CompileError, Indicator } from "./report.js";
 import { builtinTypes, isBuiltinType } from "./builtin.js";
 import { SourceLocation } from "./types.js";
-import { ASTnode, ASTnode_alias, ASTnode_error, ASTnode_function, ASTnode_identifier, ASTnodeType, ASTnodeType_functionType, ASTnodeType_selfType, evaluateList, getTypeFromList } from "./ASTnodes.js";
+import {
+	ASTnode,
+	ASTnode_alias,
+	ASTnode_error,
+	ASTnode_identifier,
+	ASTnodeType,
+	BuilderContext,
+	getTypeFromList
+} from "./ASTnodes.js";
 
 export type topLevelDef = {
 	// uuid: string,
@@ -60,28 +68,6 @@ export function getDefFromList(list: topLevelDef[], name: string): topLevelDef |
 	return null;
 }
 
-export type BuilderContext = {
-	db: DB,
-	aliases: ASTnode_alias[],
-	setUnalias: boolean,
-	
-	// Resolve is for a case like this:
-	// @x(Number) x + (1 + 1)
-	// If the function is a evaluated at top level, I want the AST to stay the same.
-	// If resolve always happened the output of that expression would be:
-	// @x(Number) x + 2
-	// Which is probably fine in this case, but for more complex expressions,
-	// having everything be simplified can make things completely unreadable.
-	resolve: boolean,
-};
-export function makeBuilderContext(db: DB): BuilderContext {
-	return {
-		db: db,
-		aliases: [],
-		setUnalias: false,
-		resolve: true,
-	};
-}
 
 export function getAlias(context: BuilderContext, name: string): ASTnode_alias | null {
 	for (let i = context.aliases.length-1; i >= 0; i--) {
@@ -191,7 +177,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			let hasError = false;
 			const name = ASTnode.left.print();
 			{
-				const error = ASTnode.getType(makeBuilderContext(db));
+				const error = ASTnode.getType(new BuilderContext(db));
 				if (error instanceof ASTnode_error && error.compileError) {
 					db.errors.push(error.compileError);
 					hasError = true;
@@ -216,12 +202,12 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			if (!def) utilities.unreachable();
 			if (def.hasError) continue;
 			
-			const error = getTypeFromList(makeBuilderContext(db), [ASTnode.value]);
+			const error = getTypeFromList(new BuilderContext(db), [ASTnode.value]);
 			if (error instanceof ASTnode_error && error.compileError) {
 				db.errors.push(error.compileError);
 				break;
 			}
-			const value = ASTnode.value.evaluate(makeBuilderContext(db));
+			const value = ASTnode.value.evaluate(new BuilderContext(db));
 			
 			if (value instanceof ASTnodeType) {
 				value.id = def.name;
@@ -232,7 +218,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			
 			const location = ASTnode.location;
 			{
-				const error = ASTnode.getType(makeBuilderContext(db));
+				const error = ASTnode.getType(new BuilderContext(db));
 				if (error instanceof ASTnode_error) {
 					if (!error.compileError) {
 						logger.log(LogType.addToDB, `!error.compileError ???`);
@@ -243,7 +229,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				}
 			}
 			
-			const result = ASTnode.evaluate(makeBuilderContext(db));
+			const result = ASTnode.evaluate(new BuilderContext(db));
 			const resultText = result.print();
 			
 			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });

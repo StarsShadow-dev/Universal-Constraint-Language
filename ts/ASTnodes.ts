@@ -1,9 +1,27 @@
 import * as utilities from "./utilities.js";
-import { BuilderContext, getAlias, unAlias } from "./db.js";
+import { DB, getAlias, unAlias } from "./db.js";
 import { SourceLocation } from "./types.js";
 import { CompileError } from "./report.js";
 import { getBuiltinType, isBuiltinType } from "./builtin.js";
 import logger, { LogType } from "./logger.js";
+
+export class BuilderContext {
+	aliases: ASTnode_alias[] = [];
+	setUnalias: boolean = false;
+	
+	// Resolve is for a case like this:
+	// @x(Number) x + (1 + 1)
+	// If the function is a evaluated at top level, I want the AST to stay the same.
+	// If resolve always happened the output of that expression would be:
+	// @x(Number) x + 2
+	// Which is probably fine in this case, but for more complex expressions,
+	// having everything be simplified can make things completely unreadable.
+	resolve: boolean = true;
+	
+	constructor(
+		public db: DB,
+	) {}
+}
 
 export class CodeGenContext {
 	level = 0;
@@ -115,6 +133,19 @@ export class ASTnodeType_struct extends ASTnodeType {
 		},
 	) {
 		super(location, id);
+	}
+	
+	print(context: CodeGenContext = new CodeGenContext()): string {
+		if (this.id.startsWith("builtin:")) {
+			return this.id.split(":")[1];
+		}
+		
+		const argText = getArgText(context, this.fields);
+		return `struct(${argText})`;
+	}
+	
+	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		return getBuiltinType("Type");
 	}
 }
 
@@ -305,7 +336,12 @@ export class ASTnode_identifier extends ASTnode {
 			);
 		}
 		
-		return def.getType(context);
+		const oldAliases = context.aliases;
+		context.aliases = [];
+		const value = def.getType(context);
+		context.aliases = oldAliases;
+		
+		return value;
 	}
 	
 	evaluate(context: BuilderContext): ASTnode {
@@ -356,10 +392,10 @@ export class ASTnode_call extends ASTnode {
 	}
 	
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
-		const oldAliases = context.aliases;
-		context.aliases = [];
+		// const oldAliases = context.aliases;
+		// context.aliases = [];
 		const leftType = this.left.getType(context);
-		context.aliases = oldAliases;
+		// context.aliases = oldAliases;
 		if (leftType instanceof ASTnode_error) {
 			return leftType;
 		}
@@ -395,10 +431,11 @@ export class ASTnode_call extends ASTnode {
 		
 		const arg = this.arg;
 		
+		const newNode = this.evaluate(context);
+		
 		const newAlias = makeAliasWithType(arg.location, functionToCall.arg.name, functionToCallArgType);
 		newAlias.unalias = true;
 		context.aliases.push(newAlias);
-		const newNode = this.evaluate(context);
 		const returnType = newNode.getType(context);
 		context.aliases.pop();
 		
@@ -644,6 +681,19 @@ export class ASTnode_unknowable extends ASTnode {
 //#endregion
 
 //#region utilities
+
+function getArgText(context: CodeGenContext, args: ASTnode[]): string {
+	let argText = "";
+	for (let i = 0; i < args.length; i++) {
+		const argNode = args[i];
+		const comma = argText == "";
+		argText += argNode.print(context);
+		if (comma) {
+			argText += ", ";
+		}
+	}
+	return argText;
+}
 
 export function makeAliasWithType(location: SourceLocation, name: string, type: ASTnodeType): ASTnode_alias {
 	return new ASTnode_alias(
