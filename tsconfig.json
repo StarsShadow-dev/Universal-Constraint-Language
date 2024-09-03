@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		"target": "esnext",
 		"module": "nodenext",
+		"moduleResolution": "NodeNext",
 		"outDir": "./out",
 		"sourceMap": false,
 		
@@ -11,6 +12,7 @@
 		"pretty": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedIndexedAccess": false,
+		"incremental": true,
 	},
 	"include": ["ts/**/*"],
 }

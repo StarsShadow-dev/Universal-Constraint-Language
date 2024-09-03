@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "",
 	"main": "ts/main.ts",
+	"type": "module",
 	"scripts": {
 		"start": "tsc -p ./tsconfig.json && node out/main.js test/main.ucl"
 	},

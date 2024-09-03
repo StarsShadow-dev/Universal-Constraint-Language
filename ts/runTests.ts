@@ -1,13 +1,13 @@
 import * as fs from "fs";
 import path from "path";
 
-import * as utilities from "./utilities";
-import logger from "./logger";
-import { CompilerOptions } from "./compiler";
-import { addToDB, makeDB } from "./db";
-import { lex, TokenKind } from "./lexer";
-import { CompileError, getIndicatorText } from "./report";
-import { parse, ParserMode } from "./parser";
+import * as utilities from "./utilities.js";
+import logger from "./logger.js";
+import { CompilerOptions } from "./compiler.js";
+import { addToDB, makeDB } from "./db.js";
+import { lex, TokenKind } from "./lexer.js";
+import { CompileError, getIndicatorText } from "./report.js";
+import { parse, ParserMode } from "./parser.js";
 
 const c_green = "\x1B[32m";
 const c_red = "\x1B[31m"

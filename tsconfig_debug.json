@@ -9,7 +9,8 @@
 		"removeComments": true,
 		"noImplicitAny": true,
 		"pretty": true,
-		"noFallthroughCasesInSwitch": true
+		"noFallthroughCasesInSwitch": true,
+		"incremental": true
 	},
 	"include": ["ts/**/*"]
 }

@@ -1,4 +1,4 @@
-import { SourceLocation } from "./types";
+import { SourceLocation } from "./types.js";
 
 export enum TokenKind {
 	comment,

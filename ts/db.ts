@@ -1,20 +1,11 @@
 import crypto from "crypto";
 
-import * as utilities from "./utilities";
-import logger, { LogType } from "./logger";
-import { evaluateList, evaluate } from "./evaluate";
-import { justPrint, printASTnode } from "./printAST";
-import { CompileError, Indicator } from "./report";
-import { evaluateBuiltin, builtinTypes, getBuiltinType, isBuiltinType } from "./builtin";
-import {
-	ASTnode,
-	ASTnodeType,
-	ASTnode_alias,
-	ASTnode_error,
-	ASTnode_error_new,
-	ASTnode_isAtype,
-} from "./parser";
-import { SourceLocation } from "./types";
+import * as utilities from "./utilities.js";
+import logger, { LogType } from "./logger.js";
+import { CompileError, Indicator } from "./report.js";
+import { builtinTypes, getBuiltinType, isBuiltinType } from "./builtin.js";
+import { SourceLocation } from "./types.js";
+import { ASTnode, ASTnode_alias, ASTnode_error, ASTnode_identifier, ASTnodeType, ASTnodeType_functionType, ASTnodeType_selfType, evaluateList } from "./ASTnodes.js";
 
 export type topLevelDef = {
 	// uuid: string,
@@ -94,14 +85,14 @@ export function makeBuilderContext(db: DB): BuilderContext {
 export function getAlias(context: BuilderContext, name: string): ASTnode_alias | null {
 	for (let i = context.aliases.length-1; i >= 0; i--) {
 		const alias = context.aliases[i];
-		if (alias.name == name) {
+		if (alias.left instanceof ASTnode_identifier && alias.left.name == name) {
 			return alias;
 		}
 	}
 	
 	for (let i = 0; i < builtinTypes.length; i++) {
 		const alias = builtinTypes[i];
-		if (alias.name == name) {
+		if (alias.left instanceof ASTnode_identifier && alias.left.name == name) {
 			return alias;
 		}
 	}
@@ -112,10 +103,10 @@ export function getAlias(context: BuilderContext, name: string): ASTnode_alias |
 export function getAliasFromList(AST: ASTnode[], name: string): ASTnode_alias | null {
 	for (let i = 0; i < AST.length; i++) {
 		const alias = AST[i];
-		if (alias.kind != "alias") {
+		if (!(alias instanceof ASTnode_alias)) {
 			utilities.unreachable();
 		}
-		if (alias.name == name) {
+		if (alias.left instanceof ASTnode_identifier && alias.left.name == name) {
 			return alias;
 		}
 	}
@@ -158,11 +149,11 @@ function expectType(
 	expectedType: ASTnodeType,
 	actualType: ASTnodeType,
 ): CompileError | null {
-	if (expectedType.kind == "_selfType") {
+	if (expectedType instanceof ASTnodeType_selfType) {
 		return null;
 	}
 	
-	if (isBuiltinType(expectedType, "Function") && actualType.kind == "functionType") {
+	if (isBuiltinType(expectedType, "Function") && actualType instanceof ASTnodeType_functionType) {
 		return null;
 	}
 	
@@ -194,8 +185,8 @@ function expectType(
 	// }
 	
 	if (expectedType.id != actualType.id) {
-		const expectedTypeText = justPrint(expectedType);
-		const actualTypeText = justPrint(actualType);
+		const expectedTypeText = expectedType.print();
+		const actualTypeText = actualType.print();
 		const error = new CompileError(`expected type ${expectedTypeText}, but got type ${actualTypeText}`);
 		debugger;
 		return error;
@@ -205,230 +196,214 @@ function expectType(
 }
 
 export function makeAliasWithType(location: SourceLocation, name: string, type: ASTnodeType): ASTnode_alias {
-	return {
-		kind: "alias",
-		location: location,
-		unalias: false,
-		name: name,
-		value: {
-			kind: "_selfType",
-			location: location,
-			id: "TODO?",
-			type: type,
-		},
-	};
+	return new ASTnode_alias(
+		location,
+		new ASTnode_identifier(location, name),
+		new ASTnodeType_selfType(location, "TODO?", type)
+	);
 }
 
-export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
-	switch (node.kind) {
-		case "bool": {
-			return getBuiltinType("Bool");
-		}
-		case "number": {
-			return getBuiltinType("Number");
-		}
-		case "string": {
-			return getBuiltinType("String");
-		}
+// export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
+// 	switch (node.kind) {
+// 		case "identifier": {
+// 			const def = unAlias(context, node.name);
+// 			if (!def) {
+// 				return ASTnode_error_new(node.location,
+// 					new CompileError(`alias '${node.name}' does not exist`)
+// 						.indicator(node.location, `here`)
+// 				);
+// 			}
+			
+// 			return getType(context, def);
+// 		}
 		
-		case "identifier": {
-			const def = unAlias(context, node.name);
-			if (!def) {
-				return ASTnode_error_new(node.location,
-					new CompileError(`alias '${node.name}' does not exist`)
-						.indicator(node.location, `here`)
-				);
-			}
+// 		case "call": {
+// 			const leftType = getType(context, node.left);
+// 			if (leftType.kind == "error") return leftType;
+// 			if (leftType.kind != "functionType" || !ASTnode_isAtype(leftType.returnType)) {
+// 				const error = new CompileError(`can not call type ${justPrint(leftType)}`)
+// 					.indicator(node.left.location, `here`);
+// 				return ASTnode_error_new(node.location, error);
+// 			}
 			
-			return getType(context, def);
-		}
+// 			const functionToCall = evaluate(context, node.left);
+// 			if (functionToCall.kind != "function") {
+// 				throw utilities.TODO_addError();
+// 			}
+// 			const functionToCallArgType = evaluate(context, functionToCall.arg.type);
+// 			if (!ASTnode_isAtype(functionToCallArgType)) {
+// 				utilities.TODO_addError();
+// 			}
+			
+// 			const actualArgType = getType(context, node.arg);
+// 			if (actualArgType.kind == "error") {
+// 				return actualArgType;
+// 			}
+			
+// 			{
+// 				const error = expectType(context, functionToCallArgType, actualArgType);
+// 				if (error) {
+// 					error.indicator(node.location, `for function call here`);
+// 					error.indicator(node.arg.location, `(this argument)`);
+// 					error.indicator(functionToCall.location, `function from here`);
+// 					return ASTnode_error_new(node.location, error);
+// 				}
+// 			}
+			
+// 			const arg = node.arg;
+			
+// 			const newNode = evaluate(context, node);
+// 			context.aliases.push(makeAliasWithType(arg.location, functionToCall.arg.name, functionToCallArgType));
+// 			const returnType = getType(context, newNode);
+// 			context.aliases.pop();
+			
+// 			return returnType;
+// 		}
 		
-		case "call": {
-			const leftType = getType(context, node.left);
-			if (leftType.kind == "error") return leftType;
-			if (leftType.kind != "functionType" || !ASTnode_isAtype(leftType.returnType)) {
-				const error = new CompileError(`can not call type ${justPrint(leftType)}`)
-					.indicator(node.left.location, `here`);
-				return ASTnode_error_new(node.location, error);
-			}
-			
-			const functionToCall = evaluate(context, node.left);
-			if (functionToCall.kind != "function") {
-				throw utilities.TODO_addError();
-			}
-			const functionToCallArgType = evaluate(context, functionToCall.arg.type);
-			if (!ASTnode_isAtype(functionToCallArgType)) {
-				utilities.TODO_addError();
-			}
-			
-			const actualArgType = getType(context, node.arg);
-			if (actualArgType.kind == "error") {
-				return actualArgType;
-			}
-			
-			{
-				const error = expectType(context, functionToCallArgType, actualArgType);
-				if (error) {
-					error.indicator(node.location, `for function call here`);
-					error.indicator(node.arg.location, `(this argument)`);
-					error.indicator(functionToCall.location, `function from here`);
-					return ASTnode_error_new(node.location, error);
-				}
-			}
-			
-			const arg = node.arg;
-			
-			const newNode = evaluate(context, node);
-			context.aliases.push(makeAliasWithType(arg.location, functionToCall.arg.name, functionToCallArgType));
-			const returnType = getType(context, newNode);
-			context.aliases.pop();
-			
-			return returnType;
-		}
+// 		case "builtinCall": {
+// 			return getType(context, evaluateBuiltin(context, node));
+// 		}
 		
-		case "builtinCall": {
-			return getType(context, evaluateBuiltin(context, node));
-		}
-		
-		case "operator": {
-			const op = node.operatorText;
+// 		case "operator": {
+// 			const op = node.operatorText;
 			
-			if (op == "+" || op == "-") {
-				const left = getType(context, node.left);
-				if (left.kind == "error") {
-					return left;
-				}
-				const right = getType(context, node.right);
-				if (right.kind == "error") {
-					return right;
-				}
+// 			if (op == "+" || op == "-") {
+// 				const left = getType(context, node.left);
+// 				if (left.kind == "error") {
+// 					return left;
+// 				}
+// 				const right = getType(context, node.right);
+// 				if (right.kind == "error") {
+// 					return right;
+// 				}
 				
-				{
-					let error = expectType(context, getBuiltinType("Number"), left);
-					if (error) {
-						error.indicator(node.left.location, `on left of '${op}' operator`);
-						return ASTnode_error_new(node.location, error);
-					}
-				}
-				{
-					let error = expectType(context, getBuiltinType("Number"), right);
-					if (error) {
-						error.indicator(node.right.location, `on right of '${op}' operator`);
-						return ASTnode_error_new(node.location, error);
-					}
-				}
+// 				{
+// 					let error = expectType(context, getBuiltinType("Number"), left);
+// 					if (error) {
+// 						error.indicator(node.left.location, `on left of '${op}' operator`);
+// 						return ASTnode_error_new(node.location, error);
+// 					}
+// 				}
+// 				{
+// 					let error = expectType(context, getBuiltinType("Number"), right);
+// 					if (error) {
+// 						error.indicator(node.right.location, `on right of '${op}' operator`);
+// 						return ASTnode_error_new(node.location, error);
+// 					}
+// 				}
 				
-				return getBuiltinType("Number");
-			} else if (op == ".") {
-				const left = evaluate(context, node.left);
-				if (left.kind != "instance") {
-					utilities.TODO_addError();
-				}
+// 				return getBuiltinType("Number");
+// 			} else if (op == ".") {
+// 				const left = evaluate(context, node.left);
+// 				if (left.kind != "instance") {
+// 					utilities.TODO_addError();
+// 				}
 				
-				if (node.right.kind != "identifier") {
-					utilities.TODO_addError();
-				}
-				const name = node.right.name;
+// 				if (node.right.kind != "identifier") {
+// 					utilities.TODO_addError();
+// 				}
+// 				const name = node.right.name;
 				
-				const alias = getAliasFromList(left.codeBlock, name);
-				if (!alias) {
-					utilities.TODO_addError();
-				}
+// 				const alias = getAliasFromList(left.codeBlock, name);
+// 				if (!alias) {
+// 					utilities.TODO_addError();
+// 				}
 				
-				return getType(context, alias.value);
-			} else {
-				utilities.TODO();
-			}
-		}
+// 				return getType(context, alias.value);
+// 			} else {
+// 				utilities.TODO();
+// 			}
+// 		}
 		
-		case "struct": {
-			return getBuiltinType("Type");
-		}
+// 		case "struct": {
+// 			return getBuiltinType("Type");
+// 		}
 		
-		case "functionType": {
-			return node;
-		}
+// 		case "functionType": {
+// 			return node;
+// 		}
 		
-		case "function": {
-			const arg = node.arg;
-			let argumentType = evaluate(context, arg.type);
-			if (!ASTnode_isAtype(argumentType)) {
-				// TODO: errors?
-				argumentType = getBuiltinType("Any");
-			}
-			context.aliases.push(makeAliasWithType(arg.location, arg.name, argumentType));
-			const actualResultType = getTypeFromList(context, node.body);
-			context.aliases.pop();
-			if (actualResultType.kind == "error") {
-				return actualResultType;
-			}
+// 		case "function": {
+// 			const arg = node.arg;
+// 			let argumentType = evaluate(context, arg.type);
+// 			if (!ASTnode_isAtype(argumentType)) {
+// 				// TODO: errors?
+// 				argumentType = getBuiltinType("Any");
+// 			}
+// 			context.aliases.push(makeAliasWithType(arg.location, arg.name, argumentType));
+// 			const actualResultType = getTypeFromList(context, node.body);
+// 			context.aliases.pop();
+// 			if (actualResultType.kind == "error") {
+// 				return actualResultType;
+// 			}
 			
-			return {
-				kind: "functionType",
-				location: node.location,
-				id: `${JSON.stringify(node.location)}`,
-				arg: argumentType,
-				returnType: actualResultType,
-			};
-		}
+// 			return {
+// 				kind: "functionType",
+// 				location: node.location,
+// 				id: `${JSON.stringify(node.location)}`,
+// 				arg: argumentType,
+// 				returnType: actualResultType,
+// 			};
+// 		}
 		
-		case "if": {
-			const condition = getType(context, node.condition);
-			if (condition.kind == "error") {
-				return condition;
-			}
+// 		case "if": {
+// 			const condition = getType(context, node.condition);
+// 			if (condition.kind == "error") {
+// 				return condition;
+// 			}
 			
-			const trueType = getType(context, node.trueBody);
-			if (trueType.kind == "error") {
-				return trueType;
-			}
-			const falseType = getType(context, node.falseBody);
-			if (falseType.kind == "error") {
-				return falseType;
-			}
+// 			const trueType = getType(context, node.trueBody);
+// 			if (trueType.kind == "error") {
+// 				return trueType;
+// 			}
+// 			const falseType = getType(context, node.falseBody);
+// 			if (falseType.kind == "error") {
+// 				return falseType;
+// 			}
 			
-			{
-				const error = expectType(context, trueType, falseType);
-				if (error) {
-					const trueLocation = node.trueBody.location;
-					const falseLocation = node.falseBody.location;
-					error.indicator(trueLocation, `expected same type as trueBody (${printASTnode({level:0}, trueType)})`);
-					error.indicator(falseLocation, `but got type ${printASTnode({level:0}, falseType)}`);
-					return ASTnode_error_new(node.location, error);
-				}
-			}
+// 			{
+// 				const error = expectType(context, trueType, falseType);
+// 				if (error) {
+// 					const trueLocation = node.trueBody.location;
+// 					const falseLocation = node.falseBody.location;
+// 					error.indicator(trueLocation, `expected same type as trueBody (${printASTnode({level:0}, trueType)})`);
+// 					error.indicator(falseLocation, `but got type ${printASTnode({level:0}, falseType)}`);
+// 					return ASTnode_error_new(node.location, error);
+// 				}
+// 			}
 			
-			return trueType;
-		}
+// 			return trueType;
+// 		}
 		
-		case "instance": {
-			const template = evaluate(context, node.template);
-			if (!ASTnode_isAtype(template)) {
-				utilities.TODO_addError();
-			}
-			return template;
-		}
+// 		case "instance": {
+// 			const template = evaluate(context, node.template);
+// 			if (!ASTnode_isAtype(template)) {
+// 				utilities.TODO_addError();
+// 			}
+// 			return template;
+// 		}
 		
-		case "_selfType": {
-			return node.type;
-		}
-	}
+// 		case "_selfType": {
+// 			return node.type;
+// 		}
+// 	}
 	
-	utilities.unreachable();
-}
+// 	utilities.unreachable();
+// }
 
 export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {
 	let outNode = null;
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
-		if (ASTnode.kind == "alias") {
-			const valueType = getType(context, ASTnode.value);
-			if (valueType.kind == "error") {
+		if (ASTnode instanceof ASTnode_alias) {
+			const valueType = ASTnode.value.getType(context);
+			if (valueType instanceof ASTnode_error) {
 				return valueType;
 			}
-			context.aliases.push(makeAliasWithType(ASTnode.location, ASTnode.name, valueType));
+			const name = ASTnode.left.print();
+			context.aliases.push(makeAliasWithType(ASTnode.location, name, valueType));
 		} else {
-			outNode = getType(context, ASTnode);
+			outNode = ASTnode.getType(context);
 		}
 		// if (ASTnode.kind == "identifier") {
 		// 	const alias = getAlias(context, ASTnode.name);
@@ -445,7 +420,7 @@ export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnod
 	
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
-		if (ASTnode.kind == "alias") {
+		if (ASTnode instanceof ASTnode_alias) {
 			context.aliases.pop();
 		}
 	}
@@ -458,33 +433,35 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
 		
-		if (ASTnode.kind == "alias") {
+		if (ASTnode instanceof ASTnode_alias) {
 			// const hash = hashString(JSON.stringify(ASTnode.value)); // TODO: locations...
 			// const uuid = getUUID();
+			const name = ASTnode.left.print();
 			db.defs.push({
 				// uuid: uuid,
-				name: ASTnode.name,
+				name: name,
 				value: ASTnode.value,
 			});
-			logger.log(LogType.addToDB, `added ${ASTnode.name}`);
+			logger.log(LogType.addToDB, `added ${ASTnode.left}`);
 		}
 	}
 	
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
 		
-		if (ASTnode.kind == "alias") {
-			const def = getDefFromList(db.defs, ASTnode.name);
+		if (ASTnode instanceof ASTnode_alias) {
+			const name = ASTnode.left.print();
+			const def = getDefFromList(db.defs, name);
 			if (!def) utilities.unreachable();
 			
 			const error = getTypeFromList(makeBuilderContext(db), [ASTnode.value]);
-			if (error.kind == "error" && error.compileError) {
+			if (error instanceof ASTnode_error && error.compileError) {
 				db.errors.push(error.compileError);
 				break;
 			}
-			const value = evaluate(makeBuilderContext(db), ASTnode.value);
+			const value = ASTnode.value.evaluate(makeBuilderContext(db));
 			
-			if (ASTnode_isAtype(value)) {
+			if (value instanceof ASTnodeType) {
 				value.id = def.name;
 			}
 			def.value = value;
@@ -494,7 +471,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			const location = ASTnode.location;
 			{
 				const error = getTypeFromList(makeBuilderContext(db), [ASTnode]);
-				if (error.kind == "error") {
+				if (error instanceof ASTnode_error) {
 					if (!error.compileError) {
 						logger.log(LogType.addToDB, `!error.compileError ???`);
 						break;
@@ -505,7 +482,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			}
 			
 			const result = evaluateList(makeBuilderContext(db), [ASTnode])[0];
-			const resultText = justPrint(result);
+			const resultText = result.print();
 			
 			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
 		}

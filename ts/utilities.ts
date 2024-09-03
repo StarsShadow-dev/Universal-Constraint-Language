@@ -2,8 +2,8 @@ import * as fs from "fs";
 import { exit } from "process";
 import path from "path";
 
-import logger from "./logger";
-import { CompileError } from "./report";
+import logger from "./logger.js";
+import { CompileError } from "./report.js";
 
 export function unreachable(): never {
 	debugger;

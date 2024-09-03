@@ -4,13 +4,14 @@
 
 import path from "path";
 
-import * as utilities from "./utilities";
-import logger from "./logger";
-import { lex } from "./lexer";
-import { parse, ParserMode } from "./parser";
-import { addToDB, DB, makeDB } from "./db";
-import { CompileError, getIndicatorText } from "./report";
-import { CompilerOptions } from "./compiler";
+import * as utilities from "./utilities.js";
+import logger from "./logger.js";
+import { lex } from "./lexer.js";
+import { parse, ParserMode } from "./parser.js";
+import { addToDB, DB, makeDB } from "./db.js";
+import { CompileError, getIndicatorText } from "./report.js";
+import { CompilerOptions } from "./compiler.js";
+import { setUpBuiltinTypes } from "./builtin.js";
 
 function readDB(): DB {
 	const DBtextPath = path.join(path.dirname(options.filePath), "db.json");
@@ -86,6 +87,8 @@ try {
 		throw error;
 	}
 }
+
+setUpBuiltinTypes();
 
 // console.log("db:", JSON.stringify(db, null, 4));
 

@@ -1,5 +1,5 @@
-import * as utilities from "./utilities";
-import { SourceLocation } from "./types";
+import * as utilities from "./utilities.js";
+import { SourceLocation } from "./types.js";
 
 const lineNumberPadding = 4;
 const indicatorTextWindowSize = 1;

@@ -1,59 +1,3 @@
-// Vec2 = struct(x: Number, y: Number)
-// Vec2.new = fn() -> Vec2 {
-	
-// }
-
-// Test = struct() // struct(next: Test)
-
-// Number = @Number(0, 10)
-
-// main = fn() -> Number {
-// 	11
-// }
-
-// main()
-
-// @Number(0, 10)
-
-// ----------
-
-// RetType = effect Type
-
-// main = fn() -> RetType {
-// 	1
-// }
-
-// with RetType as Number {
-// 	main()
-// }
-
-// ----------
-
-// Number = effect Type
-
-// add = fn(x1: Number, y2: Number, x1: Number, y2: Number) -> (Number, Number) {
-// 	(x1 + x2, y1 + y2)
-// }
-
-// with Number as @Number(0, 10, overflow) {
-// 	add(10, 10, 1, 1)
-// }
-
-// with Number as @Number(0, 10, clamp) {
-// 	add(10, 10, 1, 1)
-// }
-
-// ----------
-
-// map = fn<In, Out>(input: [In], callBack: (In) -> Out) -> [Out] {
-// 	...
-// }
-// map<Number, String>([1, 2, 3], fn(input: Number) -> String {
-// 	Number.toString(input)
-// })
-
-
-
 // map = fn(In: Type, Out: Type) -> Function {
 // 	fn(input: [In], callBack: (In) -> Out) -> [Out] {
 // 		...
@@ -104,17 +48,29 @@
 // 	|> doStuff
 // 	|> doMoreStuff
 
-d = @x(Number) @y(Number)
-	x + y
+// cd ~lib.std.math
+// Vec2 = struct(x: Numner, y: Number)
+// Vec2.new = ...
 
-test = @x(Number)
-	a = x
-	@y(Number)
-		b = y
-		a + b
-test 1 2
+// Vec2.new = @x(getNumber 1) @y(Number)
+// 	&Vec2{
+// 		x = x
+// 		y = y
+// 	}
 
-test1 = @x(Number) x
-test2 = @x(Number) x
-1 + 1
-1 + 1
+// Vec2.add = @v1(Vec2) @v2(Vec2)
+// 	&Vec2{
+// 		x = v1.x + v2.x
+// 		y = v1.y + v2.y
+// 	}
+
+// // ----------
+
+// cd ~myCode
+// add = ~lib.std.math.Vec2.add
+
+// test = @v1(Vec2) @v2(Vec2) @v3(Vec2)
+// 	add (add v1 v2) v3
+
+a.b = 0
+a.b

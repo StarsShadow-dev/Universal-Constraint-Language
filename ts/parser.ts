@@ -1,153 +1,7 @@
-import * as utilities from "./utilities";
-import { SourceLocation } from "./types";
-import { CompileError } from "./report";
-import { Token, TokenKind } from "./lexer";
-
-type genericASTnode = {
-	location: SourceLocation,
-};
-
-// TODO: rm this
-export type ASTnode_builtinCall = genericASTnode & {
-	kind: "builtinCall",
-	name: string,
-	callArguments: ASTnode[],
-};
-
-export type ASTnode_argument = genericASTnode & {
-	kind: "argument",
-	name: string,
-	type: ASTnode,
-};
-
-export type genericASTnodeType = genericASTnode & {
-	id: string,
-};
-export function ASTnode_isAtype(node: ASTnode): node is ASTnodeType {
-	if (node.kind == "struct" || node.kind == "enum" || node.kind == "functionType" || node.kind == "_selfType") {
-		return true;
-	}
-	
-	return false;
-}
-export type ASTnodeType =
-genericASTnodeType & {
-	kind: "struct",
-	fields: ASTnode_argument[],
-	data?: {
-		kind: "number",
-		min: number,
-		max: number,
-	},
-} | genericASTnodeType & {
-	kind: "enum",
-	codeBlock: ASTnode[],
-} | genericASTnodeType & {
-	kind: "functionType",
-	arg: ASTnode,
-	returnType: ASTnode,
-} | ASTnode_selfType;
-
-export type ASTnode_selfType = genericASTnodeType & {
-	kind: "_selfType",
-	type: ASTnodeType,
-};
-
-export type ASTnode_error = genericASTnode & {
-	kind: "error",
-	compileError: CompileError | null,
-};
-export function ASTnode_error_new(location: SourceLocation, error: CompileError | null): ASTnode_error {
-	return {
-		kind: "error",
-		location: location,
-		compileError: error,
-	}
-}
-
-export type ASTnode_function = genericASTnode & {
-	kind: "function",
-	hasError: boolean,
-	arg: ASTnode_argument,
-	body: ASTnode[],
-};
-
-export type ASTnode_alias = genericASTnode & {
-	kind: "alias",
-	unalias: boolean,
-	name: string,
-	value: ASTnode,
-};
-
-export type ASTnode =
-genericASTnode & {
-	kind: "bool",
-	value: boolean,
-} | genericASTnode & {
-	kind: "number",
-	value: number,
-} | genericASTnode & {
-	kind: "string",
-	value: string,
-} | genericASTnode & {
-	kind: "identifier",
-	name: string,
-} | genericASTnode & {
-	kind: "list",
-	elements: ASTnode[],
-} | genericASTnode & {
-	kind: "call",
-	left: ASTnode,
-	arg: ASTnode,
-} |
-ASTnode_builtinCall |
-genericASTnode & {
-	kind: "operator",
-	operatorText: string,
-	left: ASTnode,
-	right: ASTnode,
-} | genericASTnode & {
-	kind: "field",
-	name: string,
-	type: ASTnode,
-} |
-ASTnode_argument |
-ASTnodeType |
-ASTnode_function |
-genericASTnode & {
-	kind: "match",
-	expression: ASTnode,
-	codeBlock: ASTnode[],
-} | genericASTnode & {
-	kind: "matchCase",
-	name: string,
-	types: ASTnode[],
-	codeBlock: ASTnode[],
-} | genericASTnode & {
-	kind: "while",
-	condition: ASTnode,
-	codeBlock: ASTnode[],
-} | genericASTnode & {
-	kind: "if",
-	condition: ASTnode,
-	trueBody: ASTnode,
-	falseBody: ASTnode,
-} | genericASTnode & {
-	kind: "codeBlock",
-	codeBlock: ASTnode[],
-} | genericASTnode & {
-	kind: "instance",
-	template: ASTnode,
-	codeBlock: ASTnode[],
-} |
-ASTnode_alias
-| genericASTnode & {
-	kind: "effect",
-	type: ASTnode,
-}
-| genericASTnode & {
-	kind: "unknowable",
-};
+import * as utilities from "./utilities.js";
+import { CompileError } from "./report.js";
+import { Token, TokenKind } from "./lexer.js";
+import { ASTnode, ASTnode_alias, ASTnode_argument, ASTnode_bool, ASTnode_call, ASTnode_field, ASTnode_function, ASTnode_identifier, ASTnode_instance, ASTnode_list, ASTnode_number, ASTnode_operator, ASTnode_string, ASTnodeType_struct } from "./ASTnodes.js";
 
 export type ParserContext = {
 	tokens: Token[],
@@ -282,25 +136,9 @@ function parseOperators(context: ParserContext, left: ASTnode, lastPrecedence: n
 			right = parseOperators(context, _r, nextPrecedence);
 			
 			if (nextOperator.text == "=") {
-				if (left.kind != "identifier") {
-					throw new CompileError("left side of assignment must be an identifier")
-						.indicator(left.location, "left side here");
-				}
-				return {
-					kind: "alias",
-					location: nextOperator.location,
-					unalias: false,
-					name: left.name,
-					value: right,
-				}
+				return new ASTnode_alias(nextOperator.location, left, right);
 			} else {
-				return {
-					kind: "operator",
-					location: nextOperator.location,
-					operatorText: nextOperator.text,
-					left: left,
-					right: right,
-				}
+				return new ASTnode_operator(nextOperator.location, nextOperator.text, left, right);
 			}
 		}
 	}
@@ -350,12 +188,7 @@ function parseArgumentList(context: ParserContext): ASTnode_argument[] {
 			throw new CompileError("function argument without a type").indicator(name.location, "here");
 		}
 		
-		AST.push({
-			kind: "argument",
-			location: name.location,
-			name: name.text,
-			type: type,
-		});	
+		AST.push(new ASTnode_argument(name.location, name.text, type));	
 		
 		const end = forward(context);
 		
@@ -462,7 +295,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 			ASTnodes.length > 0 &&
 			more(context) &&
 			next(context).kind != TokenKind.operator &&
-			ASTnodes[ASTnodes.length - 1].kind != "alias" &&
+			ASTnodes[ASTnodes.length - 1] instanceof ASTnode &&
 			!(
 				next(context).kind == TokenKind.separator &&
 				next(context).text == ")"
@@ -473,7 +306,6 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 				utilities.unreachable();
 			}
 			
-			debugger;
 			const arg = parse(context, ParserMode.singleNoCall, next(context).indentation + 1, null, getLine(left))[0];
 			if (arg == undefined) {
 				ASTnodes.push(left); // undo pop
@@ -482,12 +314,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 				// 	return ASTnodes;
 				// }
 			} else {
-				ASTnodes.push({
-					kind: "call",
-					location: left.location,
-					left: left,
-					arg: arg,
-				});
+				ASTnodes.push(new ASTnode_call(left.location, left, arg));
 				continue;
 			}
 		}
@@ -514,30 +341,18 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 			}
 			
 			case TokenKind.number: {
-				ASTnodes.push({
-					kind: "number",
-					location: token.location,
-					value: Number(token.text),
-				});
+				ASTnodes.push(new ASTnode_number(token.location, Number(token.text)));
 				break;
 			}
 			
 			case TokenKind.string: {
-				ASTnodes.push({
-					kind: "string",
-					location: token.location,
-					value: token.text,
-				});
+				ASTnodes.push(new ASTnode_string(token.location, token.text));
 				break;
 			}
 			
 			case TokenKind.word: {
 				if (token.text == "true" || token.text == "false") {
-					ASTnodes.push({
-						kind: "bool",
-						location: token.location,
-						value: token.text == "true",
-					});
+					ASTnodes.push(new ASTnode_bool(token.location, token.text == "true"));
 				}
 				
 				else if (token.text == "field") {
@@ -551,12 +366,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 						throw new CompileError("a field must have a type").indicator(name.location, "here");
 					}
 					
-					ASTnodes.push({
-						kind: "field",
-						location: token.location,
-						name: name.text,
-						type: type,
-					});
+					ASTnodes.push(new ASTnode_field(token.location, name.text, type));
 				}
 				
 				else if (token.text == "if") {
@@ -593,45 +403,33 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 					// }
 					// const codeBlock = parse(context, ParserMode.normal, "}");
 					
-					ASTnodes.push({
-						kind: "struct",
-						location: token.location,
-						id: JSON.stringify(token.location),
-						fields: fields,
-					});
+					ASTnodes.push(new ASTnodeType_struct(token.location, JSON.stringify(token.location), fields));
 				}
 				
-				else if (token.text == "enum") {
-					const openingBracket = forward(context);
-					if (openingBracket.kind != TokenKind.separator || openingBracket.text != "{") {
-						throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
-					}
-					const codeBlock = parse(context, ParserMode.normal, indentation, "}", getLine(token));
-					for (let i = 0; i < codeBlock.length; i++) {
-						const ASTnode = codeBlock[i];
-						if (ASTnode.kind == "identifier") {
-							codeBlock[i] = {
-								kind: "alias",
-								location: ASTnode.location,
-								unalias: false,
-								name: ASTnode.name,
-								value: {
-									kind: "struct",
-									location: ASTnode.location,
-									id: JSON.stringify(token.location),
-									fields: [],
-								},
-							};
-						}
-					}
+				// else if (token.text == "enum") {
+				// 	const openingBracket = forward(context);
+				// 	if (openingBracket.kind != TokenKind.separator || openingBracket.text != "{") {
+				// 		throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
+				// 	}
+				// 	const codeBlock = parse(context, ParserMode.normal, indentation, "}", getLine(token));
+				// 	for (let i = 0; i < codeBlock.length; i++) {
+				// 		const node = codeBlock[i];
+				// 		if (node.kind == "identifier") {
+				// 			codeBlock[i] = new ASTnode_alias(
+				// 				node.location,
+				// 				node,
+				// 				new ASTnodeType_struct(node.location, JSON.stringify(token.location), [])
+				// 			);
+				// 		}
+				// 	}
 					
-					ASTnodes.push({
-						kind: "enum",
-						location: token.location,
-						id: JSON.stringify(token.location),
-						codeBlock: codeBlock,
-					});
-				}
+				// 	ASTnodes.push({
+				// 		kind: "enum",
+				// 		location: token.location,
+				// 		id: JSON.stringify(token.location),
+				// 		codeBlock: codeBlock,
+				// 	});
+				// }
 				
 				// else if (token.text == "match") {
 				// 	const expression = parse(context, ParserMode.single, indentation, null, getLine(token))[0];
@@ -651,12 +449,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 				// }
 				
 				else {
-					ASTnodes.push({
-						kind: "identifier",
-						location: token.location,
-						name: token.text,
-					});
-					debugger;
+					ASTnodes.push(new ASTnode_identifier(token.location, token.text));
 				}
 				break;
 			}
@@ -677,11 +470,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 				} else if (token.text == "[") {
 					const elements = parse(context, ParserMode.comma, nextIndentation, "]", getLine(token));
 					
-					ASTnodes.push({
-						kind: "list",
-						location: token.location,
-						elements: elements,
-					});
+					ASTnodes.push(new ASTnode_list(token.location, elements));
 				} else if (token.text == "@") {
 					const name = forward(context);
 					if (name.kind != TokenKind.word) {
@@ -698,20 +487,12 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 						throw new CompileError("function argument without a type").indicator(name.location, "here");
 					}
 					
-					debugger;
 					const body = parse(context, ParserMode.normal, nextIndentation, null, getLine(token));
-					ASTnodes.push({
-						kind: "function",
-						location: token.location,
-						hasError: false,
-						arg: {
-							kind: "argument",
-							location: token.location,
-							name: name.text,
-							type: type,
-						},
-						body: body,
-					});
+					ASTnodes.push(new ASTnode_function(
+						token.location, 
+						new ASTnode_argument(token.location, name.text, type),
+						body,
+					));
 				} else if (token.text == "&") {
 					const template = parse(context, ParserMode.single, nextIndentation, null, getLine(token))[0];
 					if (!template) {
@@ -724,12 +505,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 					}
 					const codeBlock = parse(context, ParserMode.normal, nextIndentation, "}", getLine(token));
 					
-					ASTnodes.push({
-						kind: "instance",
-						location: token.location,
-						template: template,
-						codeBlock: codeBlock,
-					});
+					ASTnodes.push(new ASTnode_instance(token.location, template, codeBlock));
 				} else if (token.text == "\\") {
 					utilities.TODO();
 					// const openingParentheses = forward(context);
