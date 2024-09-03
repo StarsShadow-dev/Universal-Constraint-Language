@@ -1,0 +1,12 @@
+// compOut
+// line:12 -> 1
+
+b = @y(Number)
+	t = 2
+	1
+
+a = @x(Number)
+	t = 2
+	b 1
+
+a 2

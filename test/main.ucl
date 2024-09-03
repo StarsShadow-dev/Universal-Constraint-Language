@@ -77,12 +77,7 @@
 // a.b = 0
 // a.b
 
-b = @y(Number)
-	t = 2
-	1
-
-a = @x(Number)
-	t = 2
-	b 1
-
-a 2
+TRUE = @x(Number) @y(Number) x
+FALSE = @x(Number) @y(Number) y
+TRUE 1 2
+FALSE 1 2

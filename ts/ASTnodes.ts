@@ -193,6 +193,34 @@ export class ASTnode_function extends ASTnode {
 		
 		return new ASTnodeType_functionType(this.location, `${JSON.stringify(this.location)}`, argumentType, actualResultType);
 	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		const arg = this.arg;
+		
+		const oldResolve = context.resolve;
+		context.resolve = false;
+		const argumentType = arg.type.evaluate(context);
+		
+		let argValue: ASTnode = new ASTnode_unknowable(arg.location);
+		if (argumentType instanceof ASTnodeType) {
+			argValue = new ASTnodeType_selfType(arg.location, "TODO?", argumentType);
+		}
+		
+		context.aliases.push(new ASTnode_alias(arg.location, new ASTnode_identifier(arg.location, arg.name), argValue));
+		const oldSetUnalias = context.setUnalias;
+		context.setUnalias = false;
+		const codeBlock = evaluateList(context, this.body);
+		context.setUnalias = oldSetUnalias;
+		context.aliases.pop();
+		
+		context.resolve = oldResolve;
+		
+		const newFunction = new ASTnode_function(this.location, new ASTnode_argument(arg.location, arg.name, argumentType), codeBlock);
+		
+		logger.log(LogType.evaluate, "newFunction", newFunction.print());
+		
+		return newFunction;
+	}
 };
 
 export class ASTnode_argument extends ASTnode {
@@ -230,9 +258,9 @@ export class ASTnode_alias extends ASTnode {
 	 * Currently this gets the type of `value`.
 	 */
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
-		const left = this.left.evaluate(context);
+		const leftType = this.left.getType(context);
 		// If the left side does not give us an error, then that means left is already defined.
-		if (!(left instanceof ASTnode_error)) {
+		if (!(leftType instanceof ASTnode_error)) {
 			return new ASTnode_error(this.location,
 				new CompileError(`alias '${this.left.print()}' is already defined`)
 					.indicator(this.location, `redefinition here`)
@@ -283,10 +311,11 @@ export class ASTnode_identifier extends ASTnode {
 	evaluate(context: BuilderContext): ASTnode {
 		const value = unAlias(context, this.name);
 		if (!value) {
-			return new ASTnode_error(this.location,
-				new CompileError(`alias '${this.name}' does not exist`)
-					.indicator(this.location, `here`)
-			);
+			utilities.unreachable();
+			// return new ASTnode_error(this.location,
+			// 	new CompileError(`alias '${this.name}' does not exist`)
+			// 		.indicator(this.location, `here`)
+			// );
 		}
 		
 		if (value instanceof ASTnodeType_selfType) {
@@ -327,8 +356,13 @@ export class ASTnode_call extends ASTnode {
 	}
 	
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		const oldAliases = context.aliases;
+		context.aliases = [];
 		const leftType = this.left.getType(context);
-		if (leftType instanceof ASTnode_error) return leftType;
+		context.aliases = oldAliases;
+		if (leftType instanceof ASTnode_error) {
+			return leftType;
+		}
 		if (!(leftType instanceof ASTnodeType_functionType) || !(leftType.returnType instanceof ASTnodeType)) {
 			const error = new CompileError(`can not call type ${leftType.print()}`)
 				.indicator(this.left.location, `here`);
@@ -337,7 +371,7 @@ export class ASTnode_call extends ASTnode {
 		
 		const functionToCall = this.left.evaluate(context);
 		if (!(functionToCall instanceof ASTnode_function)) {
-			throw utilities.TODO_addError();
+			utilities.TODO_addError();
 		}
 		const functionToCallArgType = functionToCall.arg.type.evaluate(context);
 		if (!(functionToCallArgType instanceof ASTnodeType)) {
@@ -361,8 +395,10 @@ export class ASTnode_call extends ASTnode {
 		
 		const arg = this.arg;
 		
+		const newAlias = makeAliasWithType(arg.location, functionToCall.arg.name, functionToCallArgType);
+		newAlias.unalias = true;
+		context.aliases.push(newAlias);
 		const newNode = this.evaluate(context);
-		context.aliases.push(makeAliasWithType(arg.location, functionToCall.arg.name, functionToCallArgType));
 		const returnType = newNode.getType(context);
 		context.aliases.pop();
 		
@@ -384,7 +420,7 @@ export class ASTnode_call extends ASTnode {
 		const argValue = this.arg.evaluate(context);
 		const newAlias = new ASTnode_alias(arg.location, new ASTnode_identifier(arg.location, arg.name), argValue);
 		newAlias.unalias = true;
-		context.aliases.push();
+		context.aliases.push(newAlias);
 		const resultList = evaluateList(context, functionToCall.body);
 		const result = resultList[resultList.length-1];
 		context.aliases.pop();

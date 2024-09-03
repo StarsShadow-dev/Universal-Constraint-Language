@@ -297,7 +297,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			
 			const location = ASTnode.location;
 			{
-				const error = getTypeFromList(makeBuilderContext(db), [ASTnode]);
+				const error = ASTnode.getType(makeBuilderContext(db));
 				if (error instanceof ASTnode_error) {
 					if (!error.compileError) {
 						logger.log(LogType.addToDB, `!error.compileError ???`);
@@ -308,7 +308,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				}
 			}
 			
-			const result = evaluateList(makeBuilderContext(db), [ASTnode])[0];
+			const result = ASTnode.evaluate(makeBuilderContext(db));
 			const resultText = result.print();
 			
 			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
