@@ -1,9 +1,9 @@
 // compOut
-// line:11 -> @f((\(String) -> (\(String) -> String))) ((f "hello") "world")
+// line:11 -> @f(\(String) -> \(String) -> String) ((f "hello") "world")
 // line:12 -> "hello"
 // line:13 -> "world"
 
-pair = @x(String) @y(String) @f(\(String) -> (\(String) -> String)) f x y
+pair = @x(String) @y(String) @f(\(String) -> \(String) -> String) f x y
 first = @x(String) @y(String) x
 second = @x(String) @y(String) y
 

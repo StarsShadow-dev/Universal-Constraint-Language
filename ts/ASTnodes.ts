@@ -172,7 +172,7 @@ export class ASTnodeType_functionType extends ASTnodeType {
 	print(context: CodeGenContext = new CodeGenContext()): string {
 		const argType = this.argType.print(context);
 		const returnType = this.returnType.print(context);
-		return `(\\(${argType}) -> ${returnType})`;
+		return `\\(${argType}) -> ${returnType}`;
 	}
 	
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
@@ -232,6 +232,11 @@ export class ASTnode_function extends ASTnode {
 	
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
 		const arg = this.arg;
+		const argumentTypeType = arg.type.getType(context);
+		if (argumentTypeType instanceof ASTnode_error) {
+			return argumentTypeType;
+		}
+		
 		let argumentType = arg.type.evaluate(context);
 		if (!(argumentType instanceof ASTnodeType)) {
 			// TODO: errors?
@@ -421,7 +426,7 @@ export class ASTnode_call extends ASTnode {
 		if (leftType instanceof ASTnode_error) {
 			return leftType;
 		}
-		if (!(leftType instanceof ASTnodeType_functionType) || !(leftType.returnType instanceof ASTnodeType)) {
+		if (!(leftType instanceof ASTnodeType_functionType)) {
 			const error = new CompileError(`can not call type ${leftType.print()}`)
 				.indicator(this.left.location, `here`);
 			return new ASTnode_error(this.location, error);
@@ -429,7 +434,9 @@ export class ASTnode_call extends ASTnode {
 		
 		const functionToCall = this.left.evaluate(context);
 		if (!(functionToCall instanceof ASTnode_function)) {
-			return leftType.returnType;
+			const returnType = leftType.returnType.getType(context);
+			
+			return returnType;
 		}
 		const functionToCallArgType = functionToCall.arg.type.evaluate(context);
 		if (!(functionToCallArgType instanceof ASTnodeType)) {

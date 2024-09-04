@@ -1,0 +1,12 @@
+// compOut
+// line:10 -> @f(\(String) -> \(String) -> String) ((f "hello") "world")
+// line:11 -> "hello"
+// line:12 -> "world"
+
+pair = @T(Type) @x(T) @y(T) @f(\(T) -> \(T) -> T) f x y
+first = @T(Type) @x(T) @y(T) x
+second = @T(Type) @x(T) @y(T) y
+a = pair String "hello" "world"
+a
+a (first String)
+a (second String)
