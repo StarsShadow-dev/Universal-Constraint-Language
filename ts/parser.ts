@@ -1,7 +1,23 @@
 import * as utilities from "./utilities.js";
 import { CompileError } from "./report.js";
 import { Token, TokenKind } from "./lexer.js";
-import { ASTnode, ASTnode_alias, ASTnode_argument, ASTnode_bool, ASTnode_call, ASTnode_field, ASTnode_function, ASTnode_identifier, ASTnode_instance, ASTnode_list, ASTnode_number, ASTnode_operator, ASTnode_string, ASTnodeType_functionType, ASTnodeType_struct } from "./ASTnodes.js";
+import {
+	ASTnode,
+	ASTnode_alias,
+	ASTnode_argument,
+	ASTnode_bool,
+	ASTnode_call,
+	ASTnode_field,
+	ASTnode_function,
+	ASTnode_identifier,
+	ASTnode_instance,
+	ASTnode_list,
+	ASTnode_number,
+	ASTnode_operator,
+	ASTnode_string,
+	ASTnodeType_functionType,
+	ASTnodeType_struct
+} from "./ASTnodes.js";
 
 export type ParserContext = {
 	tokens: Token[],

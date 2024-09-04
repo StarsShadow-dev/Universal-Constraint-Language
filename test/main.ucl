@@ -76,12 +76,3 @@
 
 // a.b = 0
 // a.b
-
-pair = @x(String) @y(String) @f(\(String) -> (\(String) -> String)) f x y
-first = @x(String) @y(String) x
-second = @x(String) @y(String) y
-
-a = pair "hello" "world"
-a
-a first
-a second
