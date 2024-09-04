@@ -1,7 +1,7 @@
 import * as utilities from "./utilities.js";
 import { CompileError } from "./report.js";
 import { Token, TokenKind } from "./lexer.js";
-import { ASTnode, ASTnode_alias, ASTnode_argument, ASTnode_bool, ASTnode_call, ASTnode_field, ASTnode_function, ASTnode_identifier, ASTnode_instance, ASTnode_list, ASTnode_number, ASTnode_operator, ASTnode_string, ASTnodeType_struct } from "./ASTnodes.js";
+import { ASTnode, ASTnode_alias, ASTnode_argument, ASTnode_bool, ASTnode_call, ASTnode_field, ASTnode_function, ASTnode_identifier, ASTnode_instance, ASTnode_list, ASTnode_number, ASTnode_operator, ASTnode_string, ASTnodeType_functionType, ASTnodeType_struct } from "./ASTnodes.js";
 
 export type ParserContext = {
 	tokens: Token[],
@@ -507,25 +507,27 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 					
 					ASTnodes.push(new ASTnode_instance(token.location, template, codeBlock));
 				} else if (token.text == "\\") {
-					utilities.TODO();
-					// const openingParentheses = forward(context);
-					// if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
-					// 	throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
-					// }
+					const openingParentheses = forward(context);
+					if (openingParentheses.kind != TokenKind.separator || openingParentheses.text != "(") {
+						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
+					}
 					
-					// const functionArguments = parse(context, ParserMode.comma, ")");
-					// const returnType = parseType(context, "->");
-					// if (!returnType) {
-					// 	throw new CompileError("function type must have a return type").indicator(token.location, "here");
-					// }
+					const type = parse(context, ParserMode.normal, nextIndentation, ")", getLine(token))[0];
+					if (!type) {
+						throw new CompileError("function argument without a type").indicator(token.location, "here");
+					}
 					
-					// ASTnodes.push({
-					// 	kind: "functionType",
-					// 	location: token.location,
-					// 	id: JSON.stringify(token.location),
-					// 	functionArguments: functionArguments,
-					// 	returnType: returnType,
-					// });
+					const returnType = parseType(context, "->");
+					if (!returnType) {
+						throw new CompileError("function type must have a return type").indicator(token.location, "here");
+					}
+					
+					ASTnodes.push(new ASTnodeType_functionType(
+						token.location,
+						JSON.stringify(token.location),
+						type,
+						returnType,
+					));
 				} else {
 					if (endAt == null) {
 						context.i--;

@@ -118,10 +118,6 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 // 			return getBuiltinType("Type");
 // 		}
 		
-// 		case "functionType": {
-// 			return node;
-// 		}
-		
 // 		case "if": {
 // 			const condition = getType(context, node.condition);
 // 			if (condition.kind == "error") {
@@ -157,10 +153,6 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 // 				utilities.TODO_addError();
 // 			}
 // 			return template;
-// 		}
-		
-// 		case "_selfType": {
-// 			return node.type;
 // 		}
 // 	}
 	

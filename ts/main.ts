@@ -12,6 +12,7 @@ import { addToDB, DB, makeDB } from "./db.js";
 import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { CompilerOptions } from "./compiler.js";
 import { setUpBuiltinTypes } from "./builtin.js";
+import { printAST } from "./ASTnodes.js";
 
 function readDB(): DB {
 	const DBtextPath = path.join(path.dirname(options.filePath), "db.json");
@@ -78,7 +79,8 @@ try {
 		i: 0,
 	}, ParserMode.normal, 0, null, -1);
 	logger.addTime("parsing", Date.now() - parseStart);
-	console.log("AST:", JSON.stringify(AST, null, 2));
+	// console.log("AST:", JSON.stringify(AST, null, 2));
+	console.log("AST:", printAST({level:0}, AST));
 	
 	addToDB(db, AST);
 } catch (error) {

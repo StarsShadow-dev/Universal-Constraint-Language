@@ -163,10 +163,32 @@ export class ASTnodeType_functionType extends ASTnodeType {
 	constructor(
 		location: SourceLocation,
 		id: string,
-		public arg: ASTnode,
+		public argType: ASTnode,
 		public returnType: ASTnode,
 	) {
 		super(location, id);
+	}
+	
+	print(context: CodeGenContext = new CodeGenContext()): string {
+		const argType = this.argType.print(context);
+		const returnType = this.returnType.print(context);
+		return `(\\(${argType}) -> ${returnType})`;
+	}
+	
+	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		return this;
+	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		let argType = this.argType.evaluate(context);
+		if (!(argType instanceof ASTnodeType)) {
+			argType = this.argType;
+		}
+		let returnType = this.returnType.evaluate(context);
+		if (!(returnType instanceof ASTnodeType)) {
+			returnType = this.returnType;
+		}
+		return new ASTnodeType_functionType(this.location, this.id, argType, returnType);
 	}
 }
 
@@ -407,7 +429,7 @@ export class ASTnode_call extends ASTnode {
 		
 		const functionToCall = this.left.evaluate(context);
 		if (!(functionToCall instanceof ASTnode_function)) {
-			utilities.TODO_addError();
+			return leftType.returnType;
 		}
 		const functionToCallArgType = functionToCall.arg.type.evaluate(context);
 		if (!(functionToCallArgType instanceof ASTnodeType)) {
@@ -447,27 +469,27 @@ export class ASTnode_call extends ASTnode {
 		context.resolve = true;
 		const functionToCall = this.left.evaluate(context);
 		context.resolve = oldResolve;
-		if (!(functionToCall instanceof ASTnode_function)) {
-			utilities.TODO();
-		}
 		
-		const oldSetUnalias = context.setUnalias;
-		context.setUnalias = true;
-		const arg = functionToCall.arg;
 		const argValue = this.arg.evaluate(context);
-		const newAlias = new ASTnode_alias(arg.location, new ASTnode_identifier(arg.location, arg.name), argValue);
-		newAlias.unalias = true;
-		context.aliases.push(newAlias);
-		const resultList = evaluateList(context, functionToCall.body);
-		const result = resultList[resultList.length-1];
-		context.aliases.pop();
-		context.setUnalias = oldSetUnalias;
 		
-		if (context.resolve) {
-			return result;
-		} else {
-			return new ASTnode_call(this.location, this.left.evaluate(context), argValue);
+		if (functionToCall instanceof ASTnode_function) {
+			const oldSetUnalias = context.setUnalias;
+			context.setUnalias = true;
+			const arg = functionToCall.arg;
+			const newAlias = new ASTnode_alias(arg.location, new ASTnode_identifier(arg.location, arg.name), argValue);
+			newAlias.unalias = true;
+			context.aliases.push(newAlias);
+			const resultList = evaluateList(context, functionToCall.body);
+			const result = resultList[resultList.length-1];
+			context.aliases.pop();
+			context.setUnalias = oldSetUnalias;
+			
+			if (context.resolve) {
+				return result;
+			}
 		}
+		
+		return new ASTnode_call(this.location, this.left.evaluate(context), argValue);
 	}
 };
 
@@ -735,19 +757,21 @@ function expectType(
 		return null;
 	}
 	
-	// if (expectedType.kind == "functionType" && actualType.kind == "functionType") {
-	// 	if (!OpCode_isAtype(expectedType.returnType) || !OpCode_isAtype(actualType.returnType)) {
-	// 		utilities.TODO();
-	// 	}
-	// 	expectType(context, expectedType.returnType, actualType.returnType, (error) => {
-	// 		error.msg =
-	// 		`expected type \"${OpCodeType_getName(expectedType)}\", but got type \"${OpCodeType_getName(actualType)}\"\n  return type `
-	// 		+ error.msg;
-			
-	// 		callBack(error);
-	// 	});
-	// 	return;
-	// }
+	if (expectedType instanceof ASTnodeType_functionType && actualType instanceof ASTnodeType_functionType) {
+		if (
+			!(expectedType.returnType instanceof ASTnodeType) ||
+			!(actualType.returnType instanceof ASTnodeType)
+		) {
+			utilities.unreachable();
+		}
+		const error = expectType(context, expectedType.returnType, actualType.returnType);
+		if (error != null) {
+			error.msg =
+			`expected type \"${expectedType.print()}\", but got type \"${actualType.print()}\"\n  return type `
+			+ error.msg;
+		}
+		return error;
+	}
 	
 	// if (expectedType.kind == "enum" && actualType.kind == "struct") {
 	// 	for (let i = 0; i < expectedType.codeBlock.length; i++) {
