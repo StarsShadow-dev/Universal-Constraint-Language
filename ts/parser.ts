@@ -371,19 +371,19 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 					ASTnodes.push(new ASTnode_bool(token.location, token.text == "true"));
 				}
 				
-				else if (token.text == "field") {
-					const name = forward(context);
-					if (name.kind != TokenKind.word) {
-						throw new CompileError("expected name").indicator(name.location, "here");
-					}
+				// else if (token.text == "field") {
+				// 	const name = forward(context);
+				// 	if (name.kind != TokenKind.word) {
+				// 		throw new CompileError("expected name").indicator(name.location, "here");
+				// 	}
 					
-					const type = parseType(context, ":");
-					if (!type) {
-						throw new CompileError("a field must have a type").indicator(name.location, "here");
-					}
+				// 	const type = parseType(context, ":");
+				// 	if (!type) {
+				// 		throw new CompileError("a field must have a type").indicator(name.location, "here");
+				// 	}
 					
-					ASTnodes.push(new ASTnode_field(token.location, name.text, type));
-				}
+				// 	ASTnodes.push(new ASTnode_field(token.location, name.text, type));
+				// }
 				
 				else if (token.text == "if") {
 					utilities.TODO();

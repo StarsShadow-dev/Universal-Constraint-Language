@@ -25,7 +25,7 @@ function wordStart(text: string, i: number): boolean {
 }
 
 function wordContinue(text: string, i: number): boolean {
-	return wordStart(text, i) || base10Number(text, i);
+	return wordStart(text, i) || base10Number(text, i) || text[i] == ':';
 }
 
 function base10Number(text: string, i: number): boolean {
@@ -59,7 +59,6 @@ function separator(text: string, i: number): boolean {
 	text[i] == '}' ||
 	text[i] == '[' ||
 	text[i] == ']' ||
-	text[i] == ':' ||
 	text[i] == ';' ||
 	text[i] == ',' ||
 	text[i] == '@' ||

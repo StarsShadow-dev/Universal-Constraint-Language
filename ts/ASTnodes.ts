@@ -317,7 +317,7 @@ export class ASTnode_alias extends ASTnode {
 	 */
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
 		const leftType = this.left.getType(context);
-		// If the left side does not give us an error, then that means left is already defined.
+		// If the left side does not give an error, then that means left is already defined.
 		if (!(leftType instanceof ASTnode_error)) {
 			return new ASTnode_error(this.location,
 				new CompileError(`alias '${this.left.print()}' is already defined`)
@@ -513,7 +513,11 @@ export class ASTnode_operator extends ASTnode {
 	print(context: CodeGenContext = new CodeGenContext()): string {
 		const left = this.left.print(context);
 		const right = this.right.print(context);
-		return `(${left} ${this.operatorText} ${right})`;
+		if (this.operatorText == ".") {
+			return `${left}.${right}`;
+		} else {
+			return `(${left} ${this.operatorText} ${right})`;
+		}
 	}
 	
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
@@ -546,6 +550,11 @@ export class ASTnode_operator extends ASTnode {
 			
 			return getBuiltinType("Number");
 		} else if (op == ".") {
+			const leftType = this.left.getType(context);
+			if (leftType instanceof ASTnode_error) {
+				return leftType;
+			}
+			
 			const left = this.left.evaluate(context);
 			if (!(left instanceof ASTnode_instance)) {
 				utilities.TODO_addError();
