@@ -1,0 +1,17 @@
+// compOut
+// line:11 -> 2
+// line:13 -> 4
+// line:16 -> 6
+// line:17 -> 8
+
+>cd ~math
+add = @x(Number) @y(Number)
+	x + y
+
+add 1 1
+
+~math:add 2 2
+
+>cd ~
+~math:add 3 3
+math:add 4 4

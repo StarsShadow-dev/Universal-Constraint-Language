@@ -1,6 +1,7 @@
 import { SourceLocation } from "./types.js";
 
 export enum TokenKind {
+	command,
 	comment,
 	
 	number,
@@ -21,7 +22,7 @@ export type Token = {
 };
 
 function wordStart(text: string, i: number): boolean {
-	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_';
+	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_' || text[i] == '~';
 }
 
 function wordContinue(text: string, i: number): boolean {
@@ -129,6 +130,28 @@ export function lex(filePath: string, text: string): Token[] {
 				endColumn: startColumn,
 			};
 			endLine = line;
+		}
+		
+		else if (text[i] == '>' && startColumn == 1) {
+			i++;
+			
+			for (; i < text.length; i++) {
+				console.log(text[i], str);
+				if (text[i] == "\n") {
+					i--;
+					break;
+				} else {
+					str += text[i];
+				}
+			}
+			
+			type = TokenKind.command;
+			location = {
+				path: filePath,
+				line: line,
+				startColumn: startColumn,
+				endColumn: startColumn,
+			};
 		}
 		
 		else if ((text[i] == "-" && base10Number(text, i + 1)) || base10Number(text, i)) {

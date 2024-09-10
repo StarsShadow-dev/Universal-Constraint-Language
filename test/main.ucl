@@ -1,53 +1,3 @@
-// map = fn(In: Type, Out: Type) -> Function {
-// 	fn(input: [In], callBack: (In) -> Out) -> [Out] {
-// 		...
-// 	}
-// }
-// map(Number, String)([1, 2, 3], fn(input: Number) -> String {
-// 	Number.toString(input)
-// })
-
-
-
-// genericFn = fn(names: [String] function: Function) -> Function {
-// 	...
-// }
-// map = genericFn <| ["In", "Out"] <| fn(input: [In], callBack: (In) -> Out) -> [Out] {
-// 	...
-// }
-// map(Number, String)([1, 2, 3], fn(input: Number) -> String {
-// 	Number.toString(input)
-// })
-
-// ----------
-
-// genericFn = fn(F: Function) -> Function {
-// 	F
-// }
-
-// if (false) {
-// 	1
-// } else {
-// 	"2"
-// }
-
-// map(Number, String)([1, 2, 3], @in Number.toString(in))
-
-// fib = @n
-// 	if n < 2 then
-// 		n
-// 	else
-// 		fib(n - 1) + fib(n - 2)
-
-
-// genericFn = @names([String]) @function(Function) (...) // -> Function
-// map = genericFn ["In", "Out"] (@input([In]) @callBack(\(In) -> Out) (...)) // -> [Out]
-// map (Number, String) [1, 2, 3] (@input() Number.toString(input))
-
-// getStuff
-// 	|> doStuff
-// 	|> doMoreStuff
-
 // cd ~lib.std.math
 // Vec2 = struct(x: Numner, y: Number)
 // Vec2.new = ...
@@ -74,7 +24,14 @@
 
 // -----
 
-a = 0
-a:b = 1
-a
-a:b
+>cd ~math
+add = @x(Number) @y(Number)
+	x + y
+
+add 1 1
+
+~math:add 2 2
+
+>cd ~
+~math:add 3 3
+math:add 4 4

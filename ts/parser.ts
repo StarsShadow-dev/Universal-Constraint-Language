@@ -7,6 +7,7 @@ import {
 	ASTnode_argument,
 	ASTnode_bool,
 	ASTnode_call,
+	ASTnode_command,
 	ASTnode_field,
 	ASTnode_function,
 	ASTnode_identifier,
@@ -312,6 +313,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 			more(context) &&
 			next(context).kind != TokenKind.operator &&
 			ASTnodes[ASTnodes.length - 1] instanceof ASTnode &&
+			!(ASTnodes[ASTnodes.length - 1] instanceof ASTnode_command) &&
 			!(
 				next(context).kind == TokenKind.separator &&
 				next(context).text == ")"
@@ -348,8 +350,9 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 		const nextIndentation = token.indentation + 1;
 		
 		switch (token.kind) {
-			case TokenKind.endOfFile: {
-				return ASTnodes;
+			case TokenKind.command: {
+				ASTnodes.push(new ASTnode_command(token.location, token.text));
+				break;
 			}
 			
 			case TokenKind.comment: {
@@ -599,6 +602,10 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 					}
 				}
 				break;
+			}
+			
+			case TokenKind.endOfFile: {
+				return ASTnodes;
 			}
 		
 			default: {

@@ -1,5 +1,5 @@
 import * as utilities from "./utilities.js";
-import { DB, getAlias, unAlias } from "./db.js";
+import { DB, getAlias, TopLevelDef, unAlias } from "./db.js";
 import { SourceLocation } from "./types.js";
 import { CompileError } from "./report.js";
 import { getBuiltinType, isBuiltinType } from "./builtin.js";
@@ -42,6 +42,27 @@ export class ASTnode {
 	
 	evaluate(context: BuilderContext): ASTnode {
 		return this;
+	}
+}
+
+export class ASTnode_command extends ASTnode {
+	constructor(
+		location: SourceLocation,
+		public text: string,
+	) {
+		super(location);
+	}
+	
+	print(context: CodeGenContext = new CodeGenContext()): string {
+		return `>${this.text}`;
+	}
+	
+	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		utilities.unreachable();
+	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		utilities.unreachable();
 	}
 }
 
@@ -293,6 +314,7 @@ export class ASTnode_argument extends ASTnode {
 
 export class ASTnode_alias extends ASTnode {
 	unalias = false;
+	public def?: TopLevelDef = undefined;
 	
 	constructor(
 		location: SourceLocation,

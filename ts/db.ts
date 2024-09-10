@@ -8,6 +8,7 @@ import { SourceLocation } from "./types.js";
 import {
 	ASTnode,
 	ASTnode_alias,
+	ASTnode_command,
 	ASTnode_error,
 	ASTnode_identifier,
 	ASTnodeType,
@@ -15,24 +16,26 @@ import {
 	getTypeFromList
 } from "./ASTnodes.js";
 
-export type topLevelDef = {
+export type TopLevelDef = {
 	// uuid: string,
 	name: string,
 	value: ASTnode,
-	hasError: boolean,
+	hasError: boolean, // TODO: rm?
 };
 
 export type DB = {
-	defs: topLevelDef[],
+	defs: TopLevelDef[],
 	// changeLog
 	topLevelEvaluations: Indicator[],
 	errors: CompileError[],
+	currentDirectory: string,
 };
 export function makeDB(): DB {
 	return {
 		defs: [],
 		topLevelEvaluations: [],
 		errors: [],
+		currentDirectory: "",
 	};
 }
 
@@ -54,14 +57,14 @@ function getUUID(): string {
 	return string;
 }
 
-export function getDefFromList(list: topLevelDef[], name: string): topLevelDef | null {
+export function getDefFromList(list: TopLevelDef[], name: string): TopLevelDef | null {
 	for (let i = 0; i < list.length; i++) {
 		const def = list[i];
 		if (def.value == null) {
 			utilities.unreachable();
 		}
 		if (def.name == name) {
-			return def as topLevelDef;
+			return def as TopLevelDef;
 		}
 	}
 
@@ -96,20 +99,28 @@ export function getAlias(context: BuilderContext, name: string): ASTnode_alias |
 
 export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 	{
-		const alias = getDefFromList(context.db.defs, name);
+		const alias = getAlias(context, name);
 		if (alias) {
 			return alias.value;
 		}
 	}
 	
 	{
-		const alias = getAlias(context, name);
-		if (alias) {
-			return alias.value;
+		let path = "";
+		if (name.startsWith("~")) {
+			path = name.slice(1);
+		} else if (context.db.currentDirectory != "") {
+			path = `${context.db.currentDirectory}:${name}`;
 		} else {
-			return null;
+			path = name;
+		}
+		const alias = getDefFromList(context.db.defs, path);
+		if (alias != null) {
+			return alias.value;
 		}
 	}
+	
+	return null;
 }
 
 // export function getType(context: BuilderContext, node: ASTnode): ASTnodeType | ASTnode_error {
@@ -160,14 +171,31 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 // }
 
 export function addToDB(db: DB, AST: ASTnode[]) {
+	// find aliases
+	// for (let i = 0; i < AST.length; i++) {
+	// 	const ASTnode = AST[i];
+		
+		
+	// }
+	
 	for (let i = 0; i < AST.length; i++) {
 		const ASTnode = AST[i];
 		
-		if (ASTnode instanceof ASTnode_alias) {
+		// if (ASTnode instanceof ASTnode_command) {
+		// 	continue;
+		// }
+		
+		if (ASTnode instanceof ASTnode_command) {
+			runCommand(db, ASTnode.text.split(" "));
+			continue;
+		} else if (ASTnode instanceof ASTnode_alias) {
 			// const hash = hashString(JSON.stringify(ASTnode.value));
 			// const uuid = getUUID();
 			let hasError = false;
-			const name = ASTnode.left.print();
+			let name = ASTnode.left.print();
+			if (db.currentDirectory != "") {
+				name = db.currentDirectory + ":" + name;
+			}
 			{
 				const error = ASTnode.getType(new BuilderContext(db));
 				if (error instanceof ASTnode_error && error.compileError) {
@@ -175,22 +203,19 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 					hasError = true;
 				}
 			}
-			db.defs.push({
+			const newDef: TopLevelDef = {
 				// uuid: uuid,
 				name: name,
 				value: ASTnode.value,
 				hasError: hasError,
-			});
+			};
+			ASTnode.def = newDef;
+			db.defs.push(newDef);
 			logger.log(LogType.addToDB, `added ${name}`);
 		}
-	}
-	
-	for (let i = 0; i < AST.length; i++) {
-		const ASTnode = AST[i];
 		
 		if (ASTnode instanceof ASTnode_alias) {
-			const name = ASTnode.left.print();
-			const def = getDefFromList(db.defs, name);
+			const def = ASTnode.def;
 			if (!def) utilities.unreachable();
 			if (def.hasError) continue;
 			
@@ -213,7 +238,7 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 				const error = ASTnode.getType(new BuilderContext(db));
 				if (error instanceof ASTnode_error) {
 					if (!error.compileError) {
-						logger.log(LogType.addToDB, `!error.compileError ???`);
+						logger.log(LogType.addToDB, `!error.compileError`);
 						break;
 					}
 					db.errors.push(error.compileError);
@@ -225,6 +250,21 @@ export function addToDB(db: DB, AST: ASTnode[]) {
 			const resultText = result.print();
 			
 			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
+		}
+	}
+}
+
+function runCommand(db: DB, args: string[]) {
+	switch (args[0]) {
+		case "cd": {
+			const path = args[1];
+			if (!path.startsWith("~")) utilities.TODO();
+			db.currentDirectory = path.slice(1);
+			break;
+		}
+	
+		default: {
+			utilities.TODO_addError();
 		}
 	}
 }
