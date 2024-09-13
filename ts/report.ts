@@ -88,7 +88,7 @@ export function getIndicatorText(indicator: Indicator, printPath: boolean, fancy
 			if (line == indicator.location.line) {
 				const size = writeLine();
 				for (let index = 0; index < size; index++) {
-					errorText += " ";
+					errorText += "-";
 				}
 				for (let index = 0; index < indicator.location.endColumn - indicator.location.startColumn + 1; index++) {
 					errorText += "^";
