@@ -32,7 +32,7 @@ export class ASTnode {
 		public location: SourceLocation,
 	) {}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		utilities.TODO();
 	}
 	
@@ -53,7 +53,7 @@ export class ASTnode_command extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		return `>${this.text}`;
 	}
 	
@@ -76,7 +76,7 @@ export class ASTnode_bool extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		if (this.value) {
 			return "true";
 		} else {
@@ -96,7 +96,7 @@ export class ASTnode_number extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		return `${this.value}`;
 	}
 	
@@ -112,7 +112,7 @@ export class ASTnode_string extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		return `"${this.value}"`;
 	}
 	
@@ -156,7 +156,7 @@ export class ASTnodeType_struct extends ASTnodeType {
 		super(location, id);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		if (this.id.startsWith("builtin:")) {
 			return this.id.split(":")[1];
 		}
@@ -190,7 +190,7 @@ export class ASTnodeType_functionType extends ASTnodeType {
 		super(location, id);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		const argType = this.argType.print(context);
 		const returnType = this.returnType.print(context);
 		return `\\(${argType}) -> ${returnType}`;
@@ -240,7 +240,7 @@ export class ASTnode_function extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		let type = this.arg.type.print(context);
 		let body = "";
 		if (this.body.length == 1) {
@@ -328,7 +328,7 @@ export class ASTnode_alias extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		const left = this.left.print(context);
 		const value = this.value.print(context);
 		return `${left} = ${value}`;
@@ -372,7 +372,7 @@ export class ASTnode_identifier extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		return `${this.name}`;
 	}
 	
@@ -434,7 +434,7 @@ export class ASTnode_call extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		const left = this.left.print();
 		const arg = this.arg.print();
 		return `(${left} ${arg})`;
@@ -532,7 +532,7 @@ export class ASTnode_operator extends ASTnode {
 		super(location);
 	}
 	
-	print(context: CodeGenContext = new CodeGenContext()): string {
+	print(context = new CodeGenContext()): string {
 		const left = this.left.print(context);
 		const right = this.right.print(context);
 		if (this.operatorText == ".") {
@@ -689,9 +689,61 @@ export class ASTnode_if extends ASTnode {
 	constructor(
 		location: SourceLocation,
 		public condition: ASTnode,
-		public codeBlock: ASTnode[],
+		public trueBody: ASTnode[],
+		public falseBody: ASTnode[],
 	) {
 		super(location);
+	}
+	
+	print(context = new CodeGenContext()): string {
+		const condition = this.condition.print();
+		const trueBody = printAST(new CodeGenContext(), this.trueBody);
+		const falseBody = printAST(new CodeGenContext(), this.falseBody);
+		return `if ${condition} then${trueBody}\nelse${falseBody}\n`;
+	}
+	
+	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		const condition = this.condition.getType(context);
+		if (condition instanceof ASTnode_error) {
+			return condition;
+		}
+		
+		const trueType = getTypeFromList(context, this.trueBody);
+		if (trueType instanceof ASTnode_error) {
+			return trueType;
+		}
+		const falseType = getTypeFromList(context, this.falseBody);
+		if (falseType instanceof ASTnode_error) {
+			return falseType;
+		}
+		
+		{
+			const error = expectType(context, trueType, falseType);
+			if (error) {
+				const trueLocation = this.trueBody[this.trueBody.length-1].location;
+				const falseLocation = this.falseBody[this.falseBody.length-1].location;
+				error.indicator(trueLocation, `expected same type as trueBody (${trueType.print()})`);
+				error.indicator(falseLocation, `but got type ${falseType.print()}`);
+				return new ASTnode_error(this.location, error);
+			}
+		}
+		
+		return trueType;
+	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		const condition = this.condition.evaluate(context);
+		if (!(condition instanceof ASTnode_bool)) {
+			utilities.unreachable();
+		}
+		
+		if (condition.value) {
+			const resultList = evaluateList(context, this.trueBody);
+			return resultList[resultList.length-1];
+		} else {
+			const resultList = evaluateList(context, this.falseBody);
+			return resultList[resultList.length-1];
+		}
 	}
 };
 
@@ -840,11 +892,12 @@ export function printAST(context: CodeGenContext, AST: ASTnode[]): string {
 	
 	context.level++;
 	for (let i = 0; i < AST.length; i++) {
-		text += "\n" + "\t".repeat(context.level) + AST[i].print(context);
+		let nodeText = `\n${AST[i].print(context)}`;
+		text += nodeText.replaceAll("\n", "\n\t");
 	}
 	context.level--;
 	
-	return text + "\n" + "\t".repeat(context.level);
+	return `${text}`;
 }
 
 export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {

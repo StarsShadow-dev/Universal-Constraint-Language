@@ -10,6 +10,7 @@ import {
 	ASTnode_command,
 	ASTnode_function,
 	ASTnode_identifier,
+	ASTnode_if,
 	ASTnode_instance,
 	ASTnode_list,
 	ASTnode_number,
@@ -300,6 +301,13 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 			}
 		}
 		
+		if (next(context).kind == TokenKind.word) {
+			const nextWord = next(context).text;
+			if (nextWord == "then" || nextWord == "else") {
+				return ASTnodes;
+			}
+		}
+		
 		// indentation canceling
 		if (doIndentationCancel()) {
 			earlyReturn();
@@ -388,24 +396,29 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 				// }
 				
 				else if (token.text == "if") {
-					utilities.TODO();
-					// const openingParentheses = forward(context);
-					// if (openingParentheses.type != TokenKind.separator || openingParentheses.text != "(") {
-					// 	throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
-					// }
+					const condition = parse(context, ParserMode.normal, nextIndentation, null, getLine(token))[0];
+					if (!condition) {
+						throw new CompileError("if expression is missing a condition").indicator(token.location, "here");
+					}
+					const _then = forward(context);
+					if (_then.kind != TokenKind.word || _then.text != "then") {
+						throw new CompileError("expected then").indicator(_then.location, "here");
+					}
 					
-					// const condition = parse(context, ParserMode.single, ")")[0];
-					// if (!condition) {
-					// 	throw new CompileError("if expression is missing a condition").indicator(token.location, "here");
-					// }
+					const trueBody = parse(context, ParserMode.normal, nextIndentation, null, getLine(token));
+					const _else = forward(context);
+					if (_else.kind != TokenKind.word || _else.text != "else") {
+						throw new CompileError("expected else").indicator(_else.location, "here");
+					}
 					
-					// ASTnodes.push({
-					// 	kind: "if",
-					// 	location: token.location,
-					// 	condition: condition,
-					// 	trueBody: codeBlock,
-					// 	falseBody: falseCodeBlock,
-					// });	
+					const falseBody = parse(context, ParserMode.normal, nextIndentation, null, getLine(token));
+					
+					ASTnodes.push(new ASTnode_if(
+						token.location,
+						condition,
+						trueBody,
+						falseBody
+					));	
 				}
 				
 				else if (token.text == "struct") {

@@ -12,7 +12,7 @@ import { DB } from "./db.js";
 import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { CompilerOptions } from "./compiler.js";
 import { setUpBuiltinTypes } from "./builtin.js";
-import { printAST } from "./ASTnodes.js";
+import { CodeGenContext, printAST } from "./ASTnodes.js";
 
 function readDB(): DB {
 	const DBtextPath = path.join(path.dirname(options.filePath), "db.json");
@@ -80,7 +80,7 @@ try {
 	}, ParserMode.normal, 0, null, -1);
 	logger.addTime("parsing", Date.now() - parseStart);
 	// console.log("AST:", JSON.stringify(AST, null, 2));
-	console.log("AST:", printAST({level:0}, AST));
+	console.log("AST:", printAST(new CodeGenContext(), AST));
 	
 	db.addAST(AST);
 } catch (error) {
