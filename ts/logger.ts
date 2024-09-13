@@ -18,7 +18,7 @@ const times: any = {};
 const globals: any[][] = [];
 
 export enum LogType {
-	addToDB,
+	DB,
 	build,
 	evaluate,
 }
@@ -42,6 +42,7 @@ export default {
 	},
 	
 	log(type: LogType, ...args: any[]) {
+		if (LogType[type] != "DB") return;
 		console.log(`[${LogType[type]}]`, ...args);
 		// globals.push(args);
 	},

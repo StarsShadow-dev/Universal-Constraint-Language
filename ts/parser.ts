@@ -8,7 +8,6 @@ import {
 	ASTnode_bool,
 	ASTnode_call,
 	ASTnode_command,
-	ASTnode_field,
 	ASTnode_function,
 	ASTnode_identifier,
 	ASTnode_instance,

@@ -136,7 +136,6 @@ export function lex(filePath: string, text: string): Token[] {
 			i++;
 			
 			for (; i < text.length; i++) {
-				console.log(text[i], str);
 				if (text[i] == "\n") {
 					i--;
 					break;

@@ -3,8 +3,7 @@ import crypto from "crypto";
 import * as utilities from "./utilities.js";
 import logger, { LogType } from "./logger.js";
 import { CompileError, Indicator } from "./report.js";
-import { builtinTypes, isBuiltinType } from "./builtin.js";
-import { SourceLocation } from "./types.js";
+import { builtinTypes } from "./builtin.js";
 import {
 	ASTnode,
 	ASTnode_alias,
@@ -13,31 +12,8 @@ import {
 	ASTnode_identifier,
 	ASTnodeType,
 	BuilderContext,
-	getTypeFromList
+	getTypeFromList,
 } from "./ASTnodes.js";
-
-export type TopLevelDef = {
-	// uuid: string,
-	name: string,
-	value: ASTnode,
-	hasError: boolean, // TODO: rm?
-};
-
-export type DB = {
-	defs: TopLevelDef[],
-	// changeLog
-	topLevelEvaluations: Indicator[],
-	errors: CompileError[],
-	currentDirectory: string,
-};
-export function makeDB(): DB {
-	return {
-		defs: [],
-		topLevelEvaluations: [],
-		errors: [],
-		currentDirectory: "",
-	};
-}
 
 type Hash = string;
 function hashString(text: string): Hash {
@@ -57,20 +33,137 @@ function getUUID(): string {
 	return string;
 }
 
-export function getDefFromList(list: TopLevelDef[], name: string): TopLevelDef | null {
-	for (let i = 0; i < list.length; i++) {
-		const def = list[i];
-		if (def.value == null) {
-			utilities.unreachable();
-		}
-		if (def.name == name) {
-			return def as TopLevelDef;
+export type TopLevelDef = {
+	// uuid: string,
+	value: ASTnode,
+};
+
+export class DB {
+	private defs = new Map<string, TopLevelDef>();
+	private evalQueue: string[] = [];
+	// changeLog
+	topLevelEvaluations: Indicator[] = [];
+	errors: CompileError[] = [];
+	currentDirectory: string = "";
+	
+	setDef(name: string, newDef: TopLevelDef) {
+		this.defs.set(name, newDef);
+		logger.log(LogType.DB, `set ${name}`);
+	}
+	
+	getDef(name: string): TopLevelDef | null {
+		const def = this.defs.get(name);
+		if (def != undefined) {
+			return def;
+		} else {
+			return null;
 		}
 	}
-
-	return null;
+	
+	printDefs(): string {
+		let text = "";
+		this.defs.forEach((value, name) => {
+			text += `\n${name} = ${value.value.print()}`;
+		});
+		return text;
+	}
+	
+	addToEvalQueue(name: string) {
+		if (!this.evalQueue.includes(name)) {
+			this.evalQueue.push(name);
+			logger.log(LogType.DB, `added to evalQueue: ${name}`);
+		}
+	}
+	
+	runEvalQueue() {
+		logger.log(LogType.DB, `runEvalQueue ${JSON.stringify(this.evalQueue)}`);
+		
+		for (let i = 0; i < this.evalQueue.length; i++) {
+			const name = this.evalQueue[i];
+			const def = this.getDef(name);
+			if (def == null) utilities.unreachable();
+			
+			const error = def.value.getType(new BuilderContext(this));
+			if (error instanceof ASTnode_error && error.compileError) {
+				this.errors.push(error.compileError);
+				break;
+			}
+			const value = def.value.evaluate(new BuilderContext(this));
+			
+			if (value instanceof ASTnodeType) {
+				value.id = name;
+			}
+			def.value = value;
+		}
+		this.evalQueue = [];
+	}
+	
+	addAST(AST: ASTnode[]) {
+		for (let i = 0; i < AST.length; i++) {
+			const ASTnode = AST[i];
+			
+			if (ASTnode instanceof ASTnode_command) {
+				runCommand(this, ASTnode.text.split(" "));
+				continue;
+			} else if (ASTnode instanceof ASTnode_alias) {
+				// const hash = hashString(JSON.stringify(ASTnode.value));
+				// const uuid = getUUID();
+				let name = ASTnode.left.print();
+				if (this.currentDirectory != "") {
+					name = this.currentDirectory + ":" + name;
+				}
+				// {
+				// 	const error = ASTnode.getType(new BuilderContext(db));
+				// 	if (error instanceof ASTnode_error && error.compileError) {
+				// 		db.errors.push(error.compileError);
+				// 		hasError = true;
+				// 	}
+				// }
+				const newDef: TopLevelDef = {
+					// uuid: uuid,
+					value: ASTnode.value,
+				};
+				ASTnode.def = newDef;
+				this.setDef(name, newDef);
+				this.addToEvalQueue(name);
+			} else {
+				logger.log(LogType.DB, `found top level evaluation`);
+				
+				this.runEvalQueue();
+				
+				const location = ASTnode.location;
+				{
+					const error = ASTnode.getType(new BuilderContext(this));
+					if (error instanceof ASTnode_error) {
+						if (!error.compileError) {
+							logger.log(LogType.DB, `!error.compileError`);
+							break;
+						}
+						this.errors.push(error.compileError);
+						continue;
+					}
+				}
+				
+				const result = ASTnode.evaluate(new BuilderContext(this));
+				const resultText = result.print();
+				
+				this.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
+			}
+		}
+		
+		this.runEvalQueue();
+		
+		// for (let i = 0; i < AST.length; i++) {
+		// 	const ASTnode = AST[i];
+			
+		// 	if (ASTnode instanceof ASTnode_command || ASTnode instanceof ASTnode_alias) {
+		// 		continue;
+		// 	}
+			
+			
+		// }
+	}
 }
-
 
 export function getAlias(context: BuilderContext, name: string): ASTnode_alias | null {
 	for (let i = context.aliases.length-1; i >= 0; i--) {
@@ -114,7 +207,7 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 		} else {
 			path = name;
 		}
-		const alias = getDefFromList(context.db.defs, path);
+		const alias = context.db.getDef(path);
 		if (alias != null) {
 			return alias.value;
 		}
@@ -170,98 +263,19 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 // 	utilities.unreachable();
 // }
 
-export function addToDB(db: DB, AST: ASTnode[]) {
-	// find aliases
-	// for (let i = 0; i < AST.length; i++) {
-	// 	const ASTnode = AST[i];
-		
-		
-	// }
-	
-	for (let i = 0; i < AST.length; i++) {
-		const ASTnode = AST[i];
-		
-		// if (ASTnode instanceof ASTnode_command) {
-		// 	continue;
-		// }
-		
-		if (ASTnode instanceof ASTnode_command) {
-			runCommand(db, ASTnode.text.split(" "));
-			continue;
-		} else if (ASTnode instanceof ASTnode_alias) {
-			// const hash = hashString(JSON.stringify(ASTnode.value));
-			// const uuid = getUUID();
-			let hasError = false;
-			let name = ASTnode.left.print();
-			if (db.currentDirectory != "") {
-				name = db.currentDirectory + ":" + name;
-			}
-			{
-				const error = ASTnode.getType(new BuilderContext(db));
-				if (error instanceof ASTnode_error && error.compileError) {
-					db.errors.push(error.compileError);
-					hasError = true;
-				}
-			}
-			const newDef: TopLevelDef = {
-				// uuid: uuid,
-				name: name,
-				value: ASTnode.value,
-				hasError: hasError,
-			};
-			ASTnode.def = newDef;
-			db.defs.push(newDef);
-			logger.log(LogType.addToDB, `added ${name}`);
-		}
-		
-		if (ASTnode instanceof ASTnode_alias) {
-			const def = ASTnode.def;
-			if (!def) utilities.unreachable();
-			if (def.hasError) continue;
-			
-			const error = getTypeFromList(new BuilderContext(db), [ASTnode.value]);
-			if (error instanceof ASTnode_error && error.compileError) {
-				db.errors.push(error.compileError);
-				break;
-			}
-			const value = ASTnode.value.evaluate(new BuilderContext(db));
-			
-			if (value instanceof ASTnodeType) {
-				value.id = def.name;
-			}
-			def.value = value;
-		} else {
-			logger.log(LogType.addToDB, `found top level evaluation`);
-			
-			const location = ASTnode.location;
-			{
-				const error = ASTnode.getType(new BuilderContext(db));
-				if (error instanceof ASTnode_error) {
-					if (!error.compileError) {
-						logger.log(LogType.addToDB, `!error.compileError`);
-						break;
-					}
-					db.errors.push(error.compileError);
-					continue;
-				}
-			}
-			
-			const result = ASTnode.evaluate(new BuilderContext(db));
-			const resultText = result.print();
-			
-			db.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
-		}
-	}
-}
-
 function runCommand(db: DB, args: string[]) {
 	switch (args[0]) {
 		case "cd": {
 			const path = args[1];
 			if (!path.startsWith("~")) utilities.TODO();
 			db.currentDirectory = path.slice(1);
-			break;
+			return;
 		}
+		
+		// case "debug_runEvalQueue": {
+		// 	db.runEvalQueue();
+		// 	return;
+		// }
 	
 		default: {
 			utilities.TODO_addError();

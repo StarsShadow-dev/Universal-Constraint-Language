@@ -1,5 +1,10 @@
 import * as utilities from "./utilities.js";
-import { ASTnode_alias, ASTnode_identifier, ASTnodeType, ASTnodeType_struct } from "./ASTnodes.js";
+import {
+	ASTnode_alias,
+	ASTnode_identifier,
+	ASTnodeType,
+	ASTnodeType_struct
+} from "./ASTnodes.js";
 
 type BuiltinType = ASTnode_alias & { left: ASTnode_identifier, value: ASTnodeType_struct };
 

@@ -23,15 +23,3 @@
 // 	add (add v1 v2) v3
 
 // -----
-
->cd ~math
-add = @x(Number) @y(Number)
-	x + y
-
-add 1 1
-
-~math:add 2 2
-
->cd ~
-~math:add 3 3
-math:add 4 4

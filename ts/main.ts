@@ -8,7 +8,7 @@ import * as utilities from "./utilities.js";
 import logger from "./logger.js";
 import { lex } from "./lexer.js";
 import { parse, ParserMode } from "./parser.js";
-import { addToDB, DB, makeDB } from "./db.js";
+import { DB } from "./db.js";
 import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { CompilerOptions } from "./compiler.js";
 import { setUpBuiltinTypes } from "./builtin.js";
@@ -61,7 +61,7 @@ while (i < process.argv.length) {
 
 setUpBuiltinTypes();
 
-const db = makeDB();
+const db = new DB();
 const text = utilities.readFile(options.filePath);
 // console.log("text:", text);
 
@@ -82,7 +82,7 @@ try {
 	// console.log("AST:", JSON.stringify(AST, null, 2));
 	console.log("AST:", printAST({level:0}, AST));
 	
-	addToDB(db, AST);
+	db.addAST(AST);
 } catch (error) {
 	if (error instanceof CompileError) {
 		db.errors.push(error);
@@ -91,7 +91,7 @@ try {
 	}
 }
 
-// console.log("db:", JSON.stringify(db, null, 4));
+console.log("defs:", db.printDefs());
 
 const errors = removeDuplicateErrors(db.errors);
 

@@ -4,7 +4,7 @@ import path from "path";
 import * as utilities from "./utilities.js";
 import logger from "./logger.js";
 import { CompilerOptions } from "./compiler.js";
-import { addToDB, makeDB } from "./db.js";
+import { DB } from "./db.js";
 import { lex, TokenKind } from "./lexer.js";
 import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { parse, ParserMode } from "./parser.js";
@@ -52,7 +52,7 @@ function testFile(filePath: string) {
 		includeLogs: [],
 	};
 	
-	const db = makeDB();
+	const db = new DB();
 	
 	try {
 		const text = utilities.readFile(options.filePath);
@@ -81,7 +81,7 @@ function testFile(filePath: string) {
 		}, ParserMode.normal, 0, null, -1);
 		logger.addTime("parsing", Date.now() - parseStart);
 
-		addToDB(db, AST);
+		db.addAST(AST);
 	} catch (error) {
 		if (error == "__testSkip__") {
 			testSkip();
