@@ -23,3 +23,12 @@
 // 	add (add v1 v2) v3
 
 // -----
+
+test = @bool(Bool)
+	if bool then
+		"Hello!"
+	else
+		"World!"
+
+test true
+test false

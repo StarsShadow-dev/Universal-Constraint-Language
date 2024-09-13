@@ -4,6 +4,9 @@ import { SourceLocation } from "./types.js";
 const lineNumberPadding = 4;
 const indicatorTextWindowSize = 1;
 
+const beforeErrorChar = "-";
+const underErrorChar = "^";
+
 export type Indicator = {
 	location: SourceLocation,
 	msg: string,
@@ -88,10 +91,10 @@ export function getIndicatorText(indicator: Indicator, printPath: boolean, fancy
 			if (line == indicator.location.line) {
 				const size = writeLine();
 				for (let index = 0; index < size; index++) {
-					errorText += "-";
+					errorText += beforeErrorChar;
 				}
 				for (let index = 0; index < indicator.location.endColumn - indicator.location.startColumn + 1; index++) {
-					errorText += "^";
+					errorText += underErrorChar;
 				}
 				let endText = "";
 				if (startAtNextLine) {

@@ -734,7 +734,15 @@ export class ASTnode_if extends ASTnode {
 	evaluate(context: BuilderContext): ASTnode {
 		const condition = this.condition.evaluate(context);
 		if (!(condition instanceof ASTnode_bool)) {
-			utilities.unreachable();
+			const trueBody = evaluateList(context, this.trueBody);
+			const falseBody = evaluateList(context, this.falseBody);
+			
+			return new ASTnode_if(
+				this.location,
+				condition,
+				trueBody,
+				falseBody,
+			);
 		}
 		
 		if (condition.value) {
