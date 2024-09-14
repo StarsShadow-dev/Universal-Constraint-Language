@@ -24,11 +24,18 @@
 
 // -----
 
-test = @bool(Bool)
-	if bool then
-		"Hello!"
-	else
-		"World!"
+// fib = @n(Number)
+// 	if n <= 1 then
+// 		n
+// 	else
+// 		(fib n - 1) + (fib n - 2)
 
-test true
-test false
+// fib 1
+
+sum = @n(Number)
+	if n <= 0 then
+		0
+	else
+		(sum n - 1) + n
+
+sum 6

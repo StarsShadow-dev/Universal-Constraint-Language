@@ -52,7 +52,9 @@ function getOperatorPrecedence(operatorText: string): number {
 		operatorText == "==" ||
 		operatorText == "!=" ||
 		operatorText == ">" ||
-		operatorText == "<"
+		operatorText == "<" ||
+		operatorText == ">=" ||
+		operatorText == "<="
 	) {
 		return 4;
 	}
