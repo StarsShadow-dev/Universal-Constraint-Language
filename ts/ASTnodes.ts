@@ -274,11 +274,9 @@ export class ASTnode_function extends ASTnode {
 	
 	print(context = new CodeGenContext()): string {
 		let type = this.arg.type.print(context);
-		let body = "";
-		if (this.body.length == 1) {
+		let body = printAST(context, this.body);
+		if (this.body.length == 1 && !body.slice(1).includes("\n")) {
 			body = this.body[0].print(context);
-		} else {
-			body = printAST(context, this.body);
 		}
 		return `@${this.arg.name}(${type}) ${body}`;
 	}
@@ -978,7 +976,14 @@ export function printAST(context: CodeGenContext, AST: ASTnode[]): string {
 	context.level++;
 	for (let i = 0; i < AST.length; i++) {
 		let nodeText = `\n${AST[i].print(context)}`;
-		text += nodeText.replaceAll("\n", "\n\t");
+		// text += nodeText.replaceAll("\n", "\n\t");
+		for (let c = 0; c < nodeText.length; c++) {
+			const char = nodeText[c];
+			text += char;
+			if (char == "\n" && c != nodeText.length-1) {
+				text += "\t";
+			}
+		}
 	}
 	context.level--;
 	
