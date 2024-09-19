@@ -31,20 +31,3 @@
 // 		(fib n - 1) + (fib n - 2)
 
 // fib 1
-
-// sum = @n(Number)
-// 	if n <= 0 then
-// 		0
-// 	else
-// 		(sum n - 1) + n
-
-// sum 6
-
-pair = @x(String) @y(String) @f(\(String) -> \(String) -> String) f x y
-first = @x(String) @y(String) x
-second = @x(String) @y(String) y
-
-a = pair "hello" "world"
-a
-a first
-a second
