@@ -8,7 +8,7 @@ import { DB } from "./db.js";
 import { lex, TokenKind } from "./lexer.js";
 import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { parse, ParserMode } from "./parser.js";
-import { setUpBuiltinTypes } from "./builtin.js";
+import { setUpBuiltins } from "./builtin.js";
 
 const c_green = "\x1B[32m";
 const c_red = "\x1B[31m"
@@ -164,7 +164,7 @@ function testDir(dirPath: string) {
 	})
 }
 
-setUpBuiltinTypes();
+setUpBuiltins();
 
 // testDir("./tests/compSucceed");
 testDir("./tests/compError");

@@ -1,10 +1,16 @@
 import * as utilities from "./utilities.js";
 import {
+	ASTnode,
 	ASTnode_alias,
+	ASTnode_argument,
+	ASTnode_function,
 	ASTnode_identifier,
+	ASTnode_number,
+	ASTnode_operator,
 	ASTnodeType,
 	ASTnodeType_struct
 } from "./ASTnodes.js";
+import { TopLevelDef } from "./db.js";
 
 type BuiltinType = ASTnode_alias & { left: ASTnode_identifier, value: ASTnodeType_struct };
 
@@ -17,8 +23,9 @@ function makeBuiltinType(name: string): BuiltinType {
 }
 
 export let builtinTypes: BuiltinType[] = [];
+export const builtinFunctions = new Map<string, TopLevelDef>();
 
-export function setUpBuiltinTypes() {
+export function setUpBuiltins() {
 	builtinTypes = [
 		makeBuiltinType("Type"),
 		makeBuiltinType("Bool"),
@@ -28,6 +35,19 @@ export function setUpBuiltinTypes() {
 		makeBuiltinType("Function"),
 		makeBuiltinType("Any"),
 	];
+	builtinFunctions.set("test", {
+		value: new ASTnode_function("builtin",
+			new ASTnode_argument("builtin", "n", getBuiltinType("Number")),
+			[
+				new ASTnode_operator(
+					"builtin",
+					"+",
+					new ASTnode_identifier("builtin", "n"),
+					new ASTnode_number("builtin", 1),
+				),
+			]
+		)
+	})
 }
 
 export function getBuiltinType(name: string): ASTnodeType {

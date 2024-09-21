@@ -31,3 +31,12 @@
 // 		(fib n - 1) + (fib n - 2)
 
 // fib 1
+
+// log = @string(String)
+// 	rawEval "console.log(%%1%%)" [string]
+
+// test = log "testing js codegen"
+
+//__builtin:test = @n(Number) n + 1
+
+__builtin:test 1

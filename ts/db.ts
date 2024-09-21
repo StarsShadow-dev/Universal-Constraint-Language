@@ -3,7 +3,7 @@ import crypto from "crypto";
 import * as utilities from "./utilities.js";
 import logger, { LogType } from "./logger.js";
 import { CompileError, Indicator } from "./report.js";
-import { builtinTypes } from "./builtin.js";
+import { builtinFunctions, builtinTypes } from "./builtin.js";
 import {
 	ASTnode,
 	ASTnode_alias,
@@ -52,6 +52,12 @@ export class DB {
 	}
 	
 	getDef(name: string): TopLevelDef | null {
+		if (name.startsWith("__builtin:")) {
+			const builtin = builtinFunctions.get(name.slice("__builtin:".length));
+			if (builtin != undefined) {
+				return builtin;
+			}
+		}
 		const def = this.defs.get(name);
 		if (def != undefined) {
 			return def;

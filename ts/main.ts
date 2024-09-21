@@ -11,7 +11,7 @@ import { parse, ParserMode } from "./parser.js";
 import { DB } from "./db.js";
 import { CompileError, getIndicatorText, removeDuplicateErrors } from "./report.js";
 import { CompilerOptions } from "./compiler.js";
-import { setUpBuiltinTypes } from "./builtin.js";
+import { setUpBuiltins } from "./builtin.js";
 import { CodeGenContext, printAST } from "./ASTnodes.js";
 
 function readDB(): DB {
@@ -59,7 +59,7 @@ while (i < process.argv.length) {
 }
 // console.log("options:", options);
 
-setUpBuiltinTypes();
+setUpBuiltins();
 
 const db = new DB();
 const text = utilities.readFile(options.filePath);
