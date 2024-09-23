@@ -42,10 +42,3 @@
 // [1]
 
 // I = @T(Type) T
-
-List = __builtin:List
-String = __builtin:String
-Number = __builtin:Number
-
-I = @x(List String) x
-I [1]

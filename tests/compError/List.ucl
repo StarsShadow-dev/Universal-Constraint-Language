@@ -1,0 +1,17 @@
+// compError
+// error: expected type "__builtin:List(
+// 	T(__builtin:String())
+// )", but got type "__builtin:List(
+// 	T(__builtin:Number())
+// )"
+//   field "T" expected type __builtin:String(), but got type __builtin:Number()
+// line:17 -> for function call here
+// line:17 -> (this argument)
+// line:16 -> function from here
+
+List = __builtin:List
+String = __builtin:String
+Number = __builtin:Number
+
+I = @x(List String) x
+I [1]
