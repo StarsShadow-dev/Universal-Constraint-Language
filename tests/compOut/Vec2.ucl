@@ -13,7 +13,7 @@
 // 	y = 3
 // }
 
-Vec2 = struct(x: Number, y: Number)
+Vec2 = struct(x: __builtin:Number, y: __builtin:Number)
 
 addVec2 = @v1(Vec2) @v2(Vec2)
 	&Vec2{
@@ -21,7 +21,7 @@ addVec2 = @v1(Vec2) @v2(Vec2)
 		y = v1.y + v2.y
 	}
 
-makeVec2 = @x(Number) @y(Number)
+makeVec2 = @x(__builtin:Number) @y(__builtin:Number)
 	&Vec2{
 		x = x
 		y = y

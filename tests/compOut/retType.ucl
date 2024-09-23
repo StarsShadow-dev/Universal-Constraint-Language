@@ -1,9 +1,9 @@
 // compOut
-// line:8 -> String
+// line:8 -> __builtin:String()
 // line:9 -> "Hello, World"
 
-getType = @T(Type) T
-test = @x(getType String) x
+getType = @T(__builtin:Type) T
+test = @x(getType __builtin:String) x
 
-(getType String)
+(getType __builtin:String)
 test "Hello, World"

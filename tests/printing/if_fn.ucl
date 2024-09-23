@@ -1,12 +1,12 @@
 // compOut
-// line:9 -> @bool(Bool) 
+// line:9 -> @bool(__builtin:Bool) 
 // 	if bool then
 // 		1
 // 	else
 // 		0
 //
 
-@bool(Bool)
+@bool(__builtin:Bool)
 	if bool then
 		1
 	else

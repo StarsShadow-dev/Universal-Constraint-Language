@@ -3,14 +3,16 @@ import {
 	ASTnode,
 	ASTnode_alias,
 	ASTnode_argument,
+	ASTnode_builtinTask,
+	ASTnode_error,
 	ASTnode_function,
 	ASTnode_identifier,
-	ASTnode_number,
-	ASTnode_operator,
 	ASTnodeType,
-	ASTnodeType_struct
+	ASTnodeType_struct,
+	BuilderContext,
+	withResolve
 } from "./ASTnodes.js";
-import { TopLevelDef } from "./db.js";
+import { TopLevelDef, unAlias } from "./db.js";
 
 type BuiltinType = ASTnode_alias & { left: ASTnode_identifier, value: ASTnodeType_struct };
 
@@ -18,12 +20,30 @@ function makeBuiltinType(name: string): BuiltinType {
 	return new ASTnode_alias(
 		"builtin",
 		new ASTnode_identifier("builtin", name),
-		new ASTnodeType_struct("builtin", "builtin:" + name, [])
+		new ASTnodeType_struct("builtin", "__builtin:" + name, [])
 	) as BuiltinType;
 }
 
+export function isBuiltinType(type: ASTnodeType, name: string): boolean {
+	return isSomeBuiltinType(type) && type.id.split(":")[1] == name;
+}
+
+export function isSomeBuiltinType(type: ASTnodeType): boolean {
+	return type.id.startsWith("__builtin:");
+}
+
 export let builtinTypes: BuiltinType[] = [];
-export const builtinFunctions = new Map<string, TopLevelDef>();
+export const builtins = new Map<string, TopLevelDef>();
+
+export function makeListType(T: ASTnodeType): ASTnodeType {
+	return new ASTnodeType_struct(
+		"builtin",
+		`__builtin:List`,
+		[
+			new ASTnode_argument("builtin", "T", T),
+		]
+	);
+}
 
 export function setUpBuiltins() {
 	builtinTypes = [
@@ -34,20 +54,43 @@ export function setUpBuiltins() {
 		makeBuiltinType("Effect"),
 		makeBuiltinType("Function"),
 		makeBuiltinType("Any"),
+		makeBuiltinType("__Unknown__"),
 	];
-	builtinFunctions.set("test", {
-		value: new ASTnode_function("builtin",
-			new ASTnode_argument("builtin", "n", getBuiltinType("Number")),
+	for (let i = 0; i < builtinTypes.length; i++) {
+		const type = builtinTypes[i];
+		builtins.set(type.left.name, {
+			value: type.value,
+		});
+	}
+	function makeFunction(arg: string, argType: ASTnodeType, body: ASTnode[]): ASTnode_function {
+		return new ASTnode_function("builtin",
+			new ASTnode_argument("builtin", arg, argType),
+			body
+		);
+	}
+	
+	function useIdentifier(context: BuilderContext, name: string): ASTnode {
+		return new ASTnode_identifier("builtin", name).evaluate(context);
+	}
+	
+	builtins.set("List", {
+		value: makeFunction("T", getBuiltinType("Type"),
 			[
-				new ASTnode_operator(
-					"builtin",
-					"+",
-					new ASTnode_identifier("builtin", "n"),
-					new ASTnode_number("builtin", 1),
-				),
+				new ASTnode_builtinTask((context): ASTnodeType | ASTnode_error => {
+					return getBuiltinType("Type");
+				}, (context): ASTnode => {
+					return withResolve(context, () => {
+						const T = useIdentifier(context, "T");
+						if (!(T instanceof ASTnodeType)) {
+							useIdentifier(context, "T");
+							utilities.unreachable();
+						}
+						return makeListType(T);
+					});
+				})
 			]
 		)
-	})
+	});
 }
 
 export function getBuiltinType(name: string): ASTnodeType {
@@ -59,10 +102,6 @@ export function getBuiltinType(name: string): ASTnodeType {
 	}
 	
 	utilities.unreachable();
-}
-
-export function isBuiltinType(type: ASTnodeType, name: string): boolean {
-	return type.id.split(":")[1] == name;
 }
 
 // export function evaluateBuiltin(context: BuilderContext, builtinCall: ASTnode_builtinCall): ASTnode {

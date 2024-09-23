@@ -1,9 +1,9 @@
 // compOut
 // line:10 -> 3
 
-test = @x(Number)
+test = @x(__builtin:Number)
 	a = x
-	@y(Number)
+	@y(__builtin:Number)
 		b = y
 		a + b
 

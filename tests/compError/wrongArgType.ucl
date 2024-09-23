@@ -1,13 +1,13 @@
 // compError
-// error: expected type Number, but got type String
+// error: expected type __builtin:Number(), but got type __builtin:String()
 // line:12 -> for function call here
 // line:12 -> (this argument)
 // line:11 -> function from here
-// error: expected type Number, but got type Bool
+// error: expected type __builtin:Number(), but got type __builtin:Bool()
 // line:13 -> for function call here
 // line:13 -> (this argument)
 // line:11 -> function from here
 
-add1 = @x(Number) x + 1
+add1 = @x(__builtin:Number) x + 1
 add1 "text"
 add1 true

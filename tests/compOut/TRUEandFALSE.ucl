@@ -2,7 +2,7 @@
 // line:7 -> 1
 // line:8 -> 2
 
-TRUE = @x(Number) @y(Number) x
-FALSE = @x(Number) @y(Number) y
+TRUE = @x(__builtin:Number) @y(__builtin:Number) x
+FALSE = @x(__builtin:Number) @y(__builtin:Number) y
 TRUE 1 2
 FALSE 1 2

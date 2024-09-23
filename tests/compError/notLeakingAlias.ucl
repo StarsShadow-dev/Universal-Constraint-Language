@@ -2,8 +2,8 @@
 // error: alias 'x' does not exist
 // line:6 -> here
 
-b = @y(Number)
+b = @y(__builtin:Number)
 	x
 
-a = @x(Number)
+a = @x(__builtin:Number)
 	b 1

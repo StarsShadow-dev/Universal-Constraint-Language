@@ -1,12 +1,12 @@
 // compError
-// error: can not call type Number
+// error: can not call type __builtin:Number()
 // line:10 -> here
-// error: can not call type Bool
+// error: can not call type __builtin:Bool()
 // line:11 -> here
-// error: can not call type String
+// error: can not call type __builtin:String()
 // line:12 -> here
 
-add1 = @x(Number) x + 1
+add1 = @x(__builtin:Number) x + 1
 add1 1 2
 true false
 "test" 4

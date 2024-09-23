@@ -1,11 +1,11 @@
 // compOut
-// line:11 -> @f(\(String) -> \(String) -> String) ((f "hello") "world")
+// line:11 -> @f(\(__builtin:String) -> \(__builtin:String) -> __builtin:String) ((f "hello") "world")
 // line:12 -> "hello"
 // line:13 -> "world"
 
-pair = @x(String) @y(String) @f(\(String) -> \(String) -> String) f x y
-first = @x(String) @y(String) x
-second = @x(String) @y(String) y
+pair = @x(__builtin:String) @y(__builtin:String) @f(\(__builtin:String) -> \(__builtin:String) -> __builtin:String) f x y
+first = @x(__builtin:String) @y(__builtin:String) x
+second = @x(__builtin:String) @y(__builtin:String) y
 
 a = pair "hello" "world"
 a

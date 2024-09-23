@@ -1,18 +1,18 @@
 // compOut
-// line:12 -> @x(String) x
+// line:12 -> @x(__builtin:String()) x
 // line:13 -> "Hello, World!"
-// line:14 -> @x(Number) x
+// line:14 -> @x(__builtin:Number()) x
 // line:15 -> 81
-// line:16 -> @x(Function) x
-// line:17 -> @x(String) x
+// line:16 -> @x(__builtin:Function()) x
+// line:17 -> @x(__builtin:String) x
 // line:18 -> "Bye, World?"
 
-makeIdentity = @T(Type) @x(T) x
+makeIdentity = @T(__builtin:Type) @x(T) x
 
-makeIdentity String
-makeIdentity String "Hello, World!"
-makeIdentity Number
-makeIdentity Number 81
-makeIdentity Function
-makeIdentity Function (@x(String) x)
-makeIdentity Function (@x(String) x) "Bye, World?"
+makeIdentity __builtin:String
+makeIdentity __builtin:String "Hello, World!"
+makeIdentity __builtin:Number
+makeIdentity __builtin:Number 81
+makeIdentity __builtin:Function
+makeIdentity __builtin:Function (@x(__builtin:String) x)
+makeIdentity __builtin:Function (@x(__builtin:String) x) "Bye, World?"

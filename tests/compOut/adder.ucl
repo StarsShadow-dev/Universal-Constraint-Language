@@ -1,12 +1,12 @@
 // compOut
-// line:11 -> @x(Number) (x + ((add 1) 2))
+// line:11 -> @x(__builtin:Number) (x + ((add 1) 2))
 // line:12 -> 9
 
-add = @x(Number) @y(Number) x + y
+add = @x(__builtin:Number) @y(__builtin:Number) x + y
 
-add1 = @x(Number) x + 1
-add2 = @x(Number) add1 (add1 x)
-add3 = @x(Number) x + (add 1 2)
+add1 = @x(__builtin:Number) x + 1
+add2 = @x(__builtin:Number) add1 (add1 x)
+add3 = @x(__builtin:Number) x + (add 1 2)
 
 add3
 add3 (add3 3)

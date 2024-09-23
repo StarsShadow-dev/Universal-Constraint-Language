@@ -524,7 +524,7 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 					ASTnodes.push(new ASTnode_function(
 						token.location, 
 						new ASTnode_argument(token.location, name.text, type),
-						body,
+						body
 					));
 				} else if (token.text == "&") {
 					const template = parse(context, ParserMode.single, nextIndentation, null, getLine(token))[0];

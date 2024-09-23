@@ -2,7 +2,7 @@
 // line:11 -> "Hello!"
 // line:12 -> "World!"
 
-test = @bool(Bool)
+test = @bool(__builtin:Bool)
 	if bool then
 		"Hello!"
 	else

@@ -1,5 +1,5 @@
 // testSkip
 
 // TODO: This is an issue with the type system.
-a = @x(Number) b x
-b = @x(Number) a x
+a = @x(__builtin:Number) b x
+b = @x(__builtin:Number) a x

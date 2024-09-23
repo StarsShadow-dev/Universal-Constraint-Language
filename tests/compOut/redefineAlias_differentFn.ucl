@@ -1,11 +1,11 @@
 // compOut
 // line:12 -> 1
 
-b = @y(Number)
+b = @y(__builtin:Number)
 	t = 2
 	1
 
-a = @x(Number)
+a = @x(__builtin:Number)
 	t = 2
 	b 1
 

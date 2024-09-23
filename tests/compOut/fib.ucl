@@ -1,6 +1,6 @@
 // testSkip
 
-fib = @n(Number)
+fib = @n(__builtin:Number)
 	if n <= 1 then
 		n
 	else

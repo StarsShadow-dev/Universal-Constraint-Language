@@ -2,7 +2,7 @@
 // line:8 -> 4
 
 a = 1
-b = @x(Number) x + a
+b = @x(__builtin:Number) x + a
 a = 2
 
 b 2
