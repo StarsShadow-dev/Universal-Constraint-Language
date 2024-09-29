@@ -1,8 +1,10 @@
 // compOut
-// line:11 -> "Hello!"
-// line:12 -> "World!"
+// line:13 -> "Hello!"
+// line:14 -> "World!"
 
-test = @bool(__builtin:Bool)
+Bool = __builtin:Bool
+
+test = @bool(Bool)
 	if bool then
 		"Hello!"
 	else

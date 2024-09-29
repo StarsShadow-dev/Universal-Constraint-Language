@@ -1,8 +1,12 @@
 // compOut
-// line:7 -> 0
-// line:8 -> 1
+// line:10 -> 1
+// line:11 -> 2
+// line:12 -> 3
 
-a = 0
-a:b = 1
+a = 1
+a:b = 2
+a:b:c = 3
+>cd ~a
 a
-a:b
+b
+b:c

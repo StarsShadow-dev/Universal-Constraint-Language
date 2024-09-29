@@ -196,7 +196,7 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 			if (alias != null) {
 				return alias.value;
 			}
-		} else if (context.db.currentDirectory != "") {
+		} else {
 			const paths = context.db.currentDirectory.split(":");
 			debugger;
 			for (let i = 0; i < paths.length + 1; i++) {
