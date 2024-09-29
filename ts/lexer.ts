@@ -22,7 +22,7 @@ export type Token = {
 };
 
 function wordStart(text: string, i: number): boolean {
-	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_' || text[i] == '~';
+	return (text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z') || text[i] == '_';
 }
 
 function wordContinue(text: string, i: number): boolean {

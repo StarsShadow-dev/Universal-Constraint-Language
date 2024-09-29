@@ -190,17 +190,24 @@ export function unAlias(context: BuilderContext, name: string): ASTnode | null {
 	}
 	
 	{
-		let path = "";
 		if (name.startsWith("~")) {
-			path = name.slice(1);
+			const path = name.slice(1);
+			const alias = context.db.getDef(path);
+			if (alias != null) {
+				return alias.value;
+			}
 		} else if (context.db.currentDirectory != "") {
-			path = `${context.db.currentDirectory}:${name}`;
-		} else {
-			path = name;
-		}
-		const alias = context.db.getDef(path);
-		if (alias != null) {
-			return alias.value;
+			const paths = context.db.currentDirectory.split(":");
+			debugger;
+			for (let i = 0; i < paths.length + 1; i++) {
+				const pathList = paths.slice(0, i);
+				pathList.push(name);
+				console.log("pathList:", i, pathList.join(":"));
+				const alias = context.db.getDef(pathList.join(":"));
+				if (alias != null) {
+					return alias.value;
+				}
+			}
 		}
 	}
 	

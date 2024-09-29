@@ -37,8 +37,14 @@
 
 // test = log "testing js codegen"
 
-// __builtin:test
+// a = 1
+// >cd ~b
+// c = a
 
-// [1]
-
-// I = @T(Type) T
+a = 1
+a:b = 2
+a:b:c = 3
+>cd ~a
+a
+b
+b:c
