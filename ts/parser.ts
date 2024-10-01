@@ -178,7 +178,7 @@ function parseType(context: ParserContext, separatingText: string): ASTnode | nu
 	return type;
 }
 
-function parseArgumentList(context: ParserContext): ASTnode_argument[] {
+function parseFields(context: ParserContext): ASTnode_argument[] {
 	let AST: ASTnode_argument[] = [];
 	
 	if (next(context).kind == TokenKind.separator && next(context).text == ")") {
@@ -198,13 +198,17 @@ function parseArgumentList(context: ParserContext): ASTnode_argument[] {
 		
 		const name = forward(context);
 		if (name.kind != TokenKind.word) {
-			throw new CompileError("expected name in function arguments").indicator(name.location, "here");
+			throw new CompileError("expected name in field list").indicator(name.location, "here");
 		}
 		
-		const type = parseType(context, ":");
+		const openingParentheses = forward(context);
+		if (openingParentheses.kind != TokenKind.separator || openingParentheses.text != "(") {
+			throw new CompileError("expected openingParentheses for arg in field list").indicator(openingParentheses.location, "here");
+		}
 		
+		const type = parse(context, ParserMode.normal, openingParentheses.indentation + 1, ")", getLine(openingParentheses))[0];
 		if (!type) {
-			throw new CompileError("function argument without a type").indicator(name.location, "here");
+			throw new CompileError("field without a type").indicator(name.location, "here");
 		}
 		
 		AST.push(new ASTnode_argument(name.location, name.text, type));	
@@ -428,15 +432,9 @@ export function parse(context: ParserContext, mode: ParserMode, indentation: num
 					if (openingParentheses.kind != TokenKind.separator || openingParentheses.text != "(") {
 						throw new CompileError("expected openingParentheses").indicator(openingParentheses.location, "here");
 					}
-					const fields = parseArgumentList(context);
+					const fields = parseFields(context);
 					
-					// const openingBracket = forward(context);
-					// if (openingBracket.type != TokenKind.separator || openingBracket.text != "{") {
-					// 	throw new CompileError("expected openingBracket").indicator(openingBracket.location, "here");
-					// }
-					// const codeBlock = parse(context, ParserMode.normal, "}");
-					
-					ASTnodes.push(new ASTnodeType_struct(token.location, JSON.stringify(token.location), fields));
+					ASTnodes.push(new ASTnodeType_struct(token.location, "", fields));
 				}
 				
 				// else if (token.text == "enum") {

@@ -38,7 +38,7 @@ export class BuilderContext {
 }
 
 export class CodeGenContext {
-	level = 0;
+	// level = 0;
 	// inspect = false;
 	
 	// constructor(
@@ -148,7 +148,7 @@ export class ASTnode_list extends ASTnode {
 	}
 	
 	print(context = new CodeGenContext()): string {
-		const elements = printAST(context, this.elements);
+		const elements = printAST(context, this.elements).join(", ");
 		return `[${elements}]`;
 	}
 	
@@ -209,11 +209,6 @@ export class ASTnodeType_struct extends ASTnodeType {
 		location: SourceLocation,
 		id: string,
 		public fields: ASTnode_argument[],
-		public data?: {
-			kind: "number",
-			min: number,
-			max: number,
-		},
 	) {
 		super(location, id);
 	}
@@ -233,16 +228,27 @@ export class ASTnodeType_struct extends ASTnodeType {
 		// 	return this.id.split(":")[1];
 		// }
 		
-		let argText = printAST(context, this.fields);
-		if (argText != "") {
-			argText += "\n";
-		}
-		return `${this.id}(${argText})`;
-		// return `struct(${argText})`;
+		let argText = printAST(context, this.fields).join(", ");
+		// let argText = "\n" + printAST(context, this.fields, true).join(",\n") + "\n";
+		// return `${this.id}(${argText})`;
+		return `struct ${this.id}(${argText})`;
 	}
 	
 	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
 		return getBuiltinType("Type");
+	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		// const oldResolve = context.resolve;
+		// context.resolve = false;
+		debugger;
+		const fields: ASTnode_argument[] = [];
+		for (let i = 0; i < this.fields.length; i++) {
+			const field = this.fields[i];
+			fields.push(field.evaluate(context));
+		}
+		// context.resolve = oldResolve;
+		return new ASTnodeType_struct(this.location, this.id, fields);
 	}
 }
 
@@ -335,10 +341,10 @@ export class ASTnode_function extends ASTnode {
 	
 	print(context = new CodeGenContext()): string {
 		let type = this.arg.type.print(context);
-		let body = printAST(context, this.body);
-		if (this.body.length == 1 && !body.slice(1).includes("\n")) {
-			body = this.body[0].print(context);
-		}
+		let body = printAST(context, this.body).join("\n");
+		// if (this.body.length == 1 && !body.slice(1).includes("\n")) {
+		// 	body = this.body[0].print(context);
+		// }
 		return `@${this.arg.name}(${type}) ${body}`;
 	}
 	
@@ -411,6 +417,11 @@ export class ASTnode_argument extends ASTnode {
 	print(context = new CodeGenContext()): string {
 		const type = this.type.print();
 		return `${this.name}(${type})`;
+	}
+	
+	evaluate(context: BuilderContext): ASTnode_argument {
+		const type = this.type.evaluate(context);
+		return new ASTnode_argument(this.location, this.name, type);
 	}
 };
 
@@ -818,8 +829,8 @@ export class ASTnode_if extends ASTnode {
 	
 	print(context = new CodeGenContext()): string {
 		const condition = this.condition.print();
-		const trueBody = printAST(new CodeGenContext(), this.trueBody);
-		const falseBody = printAST(new CodeGenContext(), this.falseBody);
+		const trueBody = printAST(new CodeGenContext(), this.trueBody).join("\n");
+		const falseBody = printAST(new CodeGenContext(), this.falseBody).join("\n");
 		return `if ${condition} then${trueBody}\nelse${falseBody}\n`;
 	}
 	
@@ -903,6 +914,69 @@ export class ASTnode_instance extends ASTnode {
 		public codeBlock: ASTnode[],
 	) {
 		super(location);
+	}
+	
+	print(context = new CodeGenContext()): string {
+		const template = this.template.print(context);
+		const codeBlock = printAST(context, this.codeBlock, true).join("\n");
+		return `&${template} {\n${codeBlock}\n}`;
+	}
+	
+	getType(context: BuilderContext): ASTnodeType | ASTnode_error {
+		const template = this.template.evaluate(context);
+		
+		if (!(template instanceof ASTnodeType_struct)) {
+			utilities.TODO_addError();
+		}
+		
+		if (template.fields.length > this.codeBlock.length) {
+			utilities.TODO_addError();
+		}
+		
+		if (template.fields.length < this.codeBlock.length) {
+			utilities.TODO_addError();
+		}
+		
+		const codeBlock: ASTnode[] = [];
+		for (let i = 0; i < this.codeBlock.length; i++) {
+			const alias = this.codeBlock[i];
+			if (!(alias instanceof ASTnode_alias)) {
+				utilities.TODO_addError();
+			}
+			const field = template.fields[i];
+			
+			const fieldType = field.type.evaluate(context);
+			if (!(fieldType instanceof ASTnodeType)) {
+				utilities.TODO_addError();
+			}
+			const aliasType = alias.value.getType(context);
+			if (aliasType instanceof ASTnode_error) {
+				return aliasType;
+			}
+			
+			const error = expectType(context, fieldType, aliasType);
+			if (error != null) {
+				return new ASTnode_error(this.location, error);
+			}
+			
+			codeBlock.push(alias);
+		}
+		
+		return template;
+	}
+	
+	evaluate(context: BuilderContext): ASTnode {
+		const template = this.template.evaluate(context);
+		
+		const codeBlock: ASTnode[] = [];
+		for (let i = 0; i < this.codeBlock.length; i++) {
+			const alias = this.codeBlock[i];
+			
+			debugger;
+			
+			codeBlock.push(alias.evaluate(context));
+		}
+		return new ASTnode_instance(this.location, template, codeBlock);
 	}
 };
 
@@ -1097,25 +1171,26 @@ function expectType(
 	return null;
 }
 
-export function printAST(context: CodeGenContext, AST: ASTnode[]): string {
-	let text = "";
+export function printAST(context: CodeGenContext, AST: ASTnode[], addTab?: boolean): string[] {
+	let textList: string[] = [];
 	
-	context.level++;
 	for (let i = 0; i < AST.length; i++) {
-		let nodeText = `${AST[i].print(context)}`;
-		nodeText = "\n" + nodeText;
-		// text += nodeText.replaceAll("\n", "\n\t");
-		for (let c = 0; c < nodeText.length; c++) {
-			const char = nodeText[c];
-			text += char;
-			if (char == "\n" && c != nodeText.length-1) {
-				text += "\t";
-			}
+		let nodeText = AST[i].print(context);
+		if (addTab == true) {
+			nodeText = "\t" + nodeText;
 		}
+		textList.push(nodeText);
+		// text += nodeText.replaceAll("\n", "\n\t");
+		// for (let c = 0; c < nodeText.length; c++) {
+		// 	const char = nodeText[c];
+		// 	textList += char;
+		// 	if (char == "\n" && c != nodeText.length-1) {
+		// 		textList += "\t";
+		// 	}
+		// }
 	}
-	context.level--;
 	
-	return `${text}`;
+	return textList;
 }
 
 export function getTypeFromList(context: BuilderContext, AST: ASTnode[]): ASTnodeType | ASTnode_error {

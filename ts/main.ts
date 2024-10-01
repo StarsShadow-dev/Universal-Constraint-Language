@@ -80,7 +80,7 @@ try {
 	}, ParserMode.normal, 0, null, -1);
 	logger.addTime("parsing", Date.now() - parseStart);
 	// console.log("AST:", JSON.stringify(AST, null, 2));
-	console.log("AST:", printAST(new CodeGenContext(), AST));
+	console.log("AST:", printAST(new CodeGenContext(), AST).join("\n"));
 	
 	db.addAST(AST);
 } catch (error) {

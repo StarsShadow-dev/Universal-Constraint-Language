@@ -45,4 +45,57 @@
 // b
 // b:c
 
-__builtin:Bool
+// Number = __builtin:Number
+
+// Vec2 = struct
+// 	x = Number
+// 	y = Number
+// 	z = 3 // error!
+
+// Option = enum
+// 	Some = Vec2
+// 	None
+
+// ----------------------
+
+// Number = __builtin:Number
+
+// add = @left(Number) @right(Number) left + right
+// add left: 1 right: 2
+
+// add = @args(struct
+// 	left = Number
+// 	right = Number
+// ) args.left + args.right
+// add {
+// 	left = 1
+// 	right = 2
+// }
+
+// ----------------------
+
+// Shape = enum
+// 	Circle = struct
+// 		radius = Int32
+// 	Square = struct
+// 		sideLength = Int32
+// 	Rectangle = struct
+// 		width = Int32
+// 		height = Int32
+
+// area = @shape(Shape)
+// 	match s
+// 		Circle(radius) -> 3 * (radius * radius)
+// 		Square(sideLength) -> sideLength * sideLength
+// 		Rectangle(width, height) -> width * height
+
+Number = __builtin:Number
+
+Vec2 = struct(x(Number), y(Number))
+
+I = @x(Vec2) x
+
+I &Vec2 {
+	x = 1
+	y = 2
+}
