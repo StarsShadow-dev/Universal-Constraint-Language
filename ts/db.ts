@@ -12,6 +12,7 @@ import {
 	ASTnode_identifier,
 	ASTnodeType,
 	BuilderContext,
+	CodeGenContext,
 } from "./ASTnodes.js";
 
 type Hash = string;
@@ -150,7 +151,9 @@ export class DB {
 				}
 				
 				const result = ASTnode.evaluate(new BuilderContext(this));
-				const resultText = result.print();
+				const codeGenContext = new CodeGenContext();
+				codeGenContext.noPrintOrigin = true;
+				const resultText = result.print(codeGenContext);
 				
 				this.topLevelEvaluations.push({ location: location, msg: `${resultText}` });
 			}

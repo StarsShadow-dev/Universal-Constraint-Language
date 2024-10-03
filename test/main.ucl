@@ -89,13 +89,39 @@
 // 		Square(sideLength) -> sideLength * sideLength
 // 		Rectangle(width, height) -> width * height
 
+// I = @x(Vec2) x
+
+// I &Vec2 {
+// 	x = 1
+// 	y = 2
+// }
+
+// new = @x(Number) @y(Number)
+// 	&Vec2 {
+// 		x = x
+// 		y = y
+// 	}
+
+// new 1 2
+
+// List = __builtin:List
+// String = __builtin:String
+// Number = __builtin:Number
+
+// I = @x(List String) x
+// I [1]
+// Number
+
+// ----------------------
+
 Number = __builtin:Number
-
 Vec2 = struct(x(Number), y(Number))
+Vec2
 
-I = @x(Vec2) x
+// ----------------------
 
-I &Vec2 {
-	x = 1
-	y = 2
-}
+// getType = @T(__builtin:Type) T
+// test = @x(getType __builtin:String) x
+
+// (getType __builtin:String)
+// test "Hello, World"

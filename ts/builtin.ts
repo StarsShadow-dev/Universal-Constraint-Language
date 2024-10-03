@@ -8,11 +8,13 @@ import {
 	ASTnode_function,
 	ASTnode_identifier,
 	ASTnodeType,
+	ASTnodeType_selfType,
 	ASTnodeType_struct,
 	BuilderContext,
 	withResolve
 } from "./ASTnodes.js";
 import { TopLevelDef, unAlias } from "./db.js";
+import { CompileError } from "./report.js";
 
 type BuiltinType = ASTnode_alias & { left: ASTnode_identifier, value: ASTnodeType_struct };
 
@@ -80,10 +82,12 @@ export function setUpBuiltins() {
 					return getBuiltinType("Type");
 				}, (context): ASTnode => {
 					return withResolve(context, () => {
-						const T = useIdentifier(context, "T");
+						// const T = useIdentifier(context, "T");
+						const T = unAlias(context, "T");
+						debugger;
 						if (!(T instanceof ASTnodeType)) {
-							useIdentifier(context, "T");
-							utilities.unreachable();
+							return new ASTnode_error("builtin", new CompileError("T is not a type"));
+							// return new ASTnodeType_selfType("builtin", "__builtin:List", new )
 						}
 						return makeListType(T);
 					});

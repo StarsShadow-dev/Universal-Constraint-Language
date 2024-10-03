@@ -1,4 +1,4 @@
-import { SourceLocation } from "./types.js";
+import { SourceLocation } from "./ASTnodes.js";
 
 export enum TokenKind {
 	command,
@@ -95,7 +95,7 @@ export function lex(filePath: string, text: string): Token[] {
 		
 		let type;
 		let str = "";
-		let location;
+		let location: SourceLocation;
 		let endLine;
 		
 		// comment
@@ -130,6 +130,7 @@ export function lex(filePath: string, text: string): Token[] {
 				line: line,
 				startColumn: startColumn,
 				endColumn: startColumn,
+				
 			};
 			endLine = line;
 		}

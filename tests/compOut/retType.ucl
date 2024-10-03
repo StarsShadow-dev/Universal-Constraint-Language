@@ -1,5 +1,5 @@
 // compOut
-// line:8 -> __builtin:String()
+// line:8 -> struct __builtin:String()
 // line:9 -> "Hello, World"
 
 getType = @T(__builtin:Type) T
